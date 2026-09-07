@@ -32,14 +32,14 @@ Fontes: [roadmap.md](roadmap.md), [../decisions/open-decisions.md](../decisions/
 
 ## Próximos trabalhos
 
-Ordem lógica. O item `próximo` é o trabalho crítico imediato; ele responde ao risco R-01 e é pré-condição de qualquer implementação de pagamentos.
+Ordem lógica. F0-010 está `bloqueado` por falta de credenciais de teste do gateway (bloqueio externo, ver abaixo); enquanto isso, o item `próximo` é F0-013, que não tem dependência pendente e desbloqueia F0-014, F0-015 e F0-018.
 
 | ID | Título | Objetivo | Dependências | Estado |
 | --- | --- | --- | --- | --- |
-| F0-010 | Spike do gateway Pix para exatamente R$ 0,99 | Provar, em sandbox do primeiro candidato (Mercado Pago) e, se necessário, de alternativas, a cobrança de exatamente R$ 0,99, confirmação, webhook, idempotência e tarifas (DEC-018, R-01). O spike é descartável e não entra no código do produto | F0-005 | próximo |
+| F0-010 | Spike do gateway Pix para exatamente R$ 0,99 | Provar, em sandbox do primeiro candidato (Mercado Pago) e, se necessário, de alternativas, a cobrança de exatamente R$ 0,99, confirmação, webhook, idempotência e tarifas (DEC-018, R-01). O spike é descartável e não entra no código do produto | F0-005; credenciais de teste do gateway e endpoint HTTPS público para webhook | bloqueado |
 | F0-011 | Registrar resultado e decisão do gateway | Documentar evidências do spike, fechar OD-08 com ADR-0004 e atualizar decision log, riscos e requisitos RF-011 e RF-012 | F0-010 | bloqueado |
-| F0-012 | Fechar ORM e estratégia de migrations | Fechar OD-09 com ADR-0005 (ORM ou ausência de ORM, ferramenta de migrations, política de execução em deploy) | F0-003 | pendente |
-| F0-013 | Detalhar ciclo de vida do anúncio | Fechar OD-04 em `product/listing-lifecycle.md`: estados, transições e efeitos sobre solicitações | F0-005 | pendente |
+| F0-012 | Fechar ORM e estratégia de migrations | Fechar OD-09 com [ADR-0005](../adr/0005-prisma-orm-migrations.md): Prisma ORM 7.x, Prisma Migrate, política dev/staging/produção, `db push` e migrations destrutivas (DEC-026) | F0-003 | concluído |
+| F0-013 | Detalhar ciclo de vida do anúncio | Fechar OD-04 em `product/listing-lifecycle.md`: estados, transições e efeitos sobre solicitações | F0-005 | próximo |
 | F0-014 | Definir regras de imagens | Fechar OD-05: quantidade, formatos, tamanho, processamento e moderação de imagens; atualizar RF-006 e RNF-005 | F0-013 | bloqueado |
 | F0-015 | Definir mecanismo de encerramento | Fechar OD-01: quem aciona, confirmação, prazos e estados intermediários; atualizar RF-016 | F0-013 | bloqueado |
 | F0-016 | Definir avaliações | Fechar OD-02 em `product/ratings.md`; atualizar RF-017 | F0-015 | bloqueado |
@@ -51,6 +51,10 @@ Ordem lógica. O item `próximo` é o trabalho crítico imediato; ele responde a
 | F0-022 | Produzir arquitetura de dados e API pré-implementação | `architecture/overview.md`, `architecture/data-model.md`, `architecture/payments-design.md` e `architecture/contact-release.md`, com base nas decisões fechadas | F0-011, F0-012, F0-013, F0-014, F0-015, F0-018, F0-019, F0-020, F0-024 | bloqueado |
 | F0-023 | Preparar transição para a Fase 1 | Verificar o gate de saída da Fase 0 em [roadmap.md](roadmap.md), revisar riscos e produzir o prompt inicial da Fase 1 | F0-022 | bloqueado |
 | F0-024 | Definir natureza da demonstração de interesse | Fechar OD-12 e atualizar RF-008, definindo se a demonstração de interesse é uma ação independente (com ou sem entidade persistida, gratuita ou não) ou apenas parte da solicitação paga | F0-005 | pendente |
+
+### Bloqueio externo de F0-010
+
+A primeira execução de F0-010 foi registrada em [spikes/f0-010-mercado-pago-pix-r099.md](spikes/f0-010-mercado-pago-pix-r099.md) e classificada como `INCONCLUSIVO`: não havia credenciais de teste do Mercado Pago nem endpoint HTTPS público para receber webhook. O item **não** está concluído e deve ser reexecutado quando essas duas condições existirem. Enquanto isso, OD-08 permanece aberta, nenhuma decisão de gateway pode ser inferida e F0-011 permanece `bloqueado`.
 
 ## Fora deste backlog
 

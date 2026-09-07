@@ -444,7 +444,7 @@ Catálogo inicial de requisitos rastreáveis do MVP. Contém **apenas** requisit
 | OD-06 | RF-013, RF-015 |
 | OD-07 | RF-009, RF-010, RF-011, RF-012, RF-020 |
 | OD-08 | RF-009, RF-011, RF-012, RNF-014 |
-| OD-09 | nenhum requisito funcional direto; bloqueia schema e migrations (Fase 1) |
+| OD-09 | fechada por [../adr/0005-prisma-orm-migrations.md](../adr/0005-prisma-orm-migrations.md) (DEC-026); nenhum requisito funcional direto; deixa de bloquear schema e migrations |
 | OD-10 | RF-006, RF-020, RF-022, RF-023, RNF-009, RNF-011 |
 | OD-11 | RF-001, RNF-009 |
 | OD-12 | RF-008 |

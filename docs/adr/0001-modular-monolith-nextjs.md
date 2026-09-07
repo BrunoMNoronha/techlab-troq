@@ -30,7 +30,7 @@ Negativas e restrições:
 - Regras sensíveis (liberação de contato, limite de 3 solicitações, pagamentos) precisam de disciplina de fronteira dentro do mesmo processo: autorização server-side, auditoria e proteção contra concorrência não podem depender de separação física.
 - Dados protegidos (telefone/WhatsApp) nunca podem transitar em componentes renderizados no cliente, payloads públicos, cache público ou logs; a estrutura de módulos deve tornar isso verificável.
 - Operações que exigem garantias fortes (reserva atômica de vaga, idempotência de webhook) dependem do banco relacional ([ADR-0002](0002-postgresql-neon.md)), não de infraestrutura de mensageria.
-- A escolha do ORM e da estratégia de migrations permanece em aberto ([../decisions/open-decisions.md](../decisions/open-decisions.md), OD-09).
+- A escolha do ORM e da estratégia de migrations não é objeto desta ADR; foi decidida posteriormente em [ADR-0005](0005-prisma-orm-migrations.md), que fechou OD-09.
 
 ## Alternativas consideradas
 

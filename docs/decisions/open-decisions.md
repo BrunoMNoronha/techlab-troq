@@ -57,12 +57,6 @@ Registro das questões que **ainda não foram decididas** na Fase 0. Nenhum item
 - **O que falta decidir:** escolha do gateway, condicionada a um spike que prove cobrança de exatamente R$ 0,99, confirmação, webhook, idempotência e tarifas.
 - **Bloqueia:** implementação de pagamentos e criação de ADR de pagamento.
 
-### OD-09 — ORM e estratégia de migrations
-
-- **Contexto:** PostgreSQL/Neon já decididos ([../adr/0002-postgresql-neon.md](../adr/0002-postgresql-neon.md)).
-- **O que falta decidir:** ORM (ou ausência de ORM), ferramenta de migrations, política de execução de migrations em deploy.
-- **Bloqueia:** criação de schema e migrations.
-
 ### OD-10 — Retenção e exclusão de dados
 
 - **Contexto:** a plataforma trata dados pessoais, incluindo telefone/WhatsApp (dado protegido), o que sujeita o projeto à LGPD.
@@ -87,6 +81,14 @@ Registro das questões que **ainda não foram decididas** na Fase 0. Nenhum item
 - **Impacto:** RF-008; experiência do interessado; modelo de dados; métricas/funil; arquitetura/API da Fase 3.
 - **Bloqueia:** fechamento do status de RF-008 e a arquitetura de dados/API pré-implementação no que se refere ao interesse. Não é gate do spike de pagamento (OD-08).
 
+## Decisões fechadas
+
+Itens que já constaram desta lista e foram fechados por documento próprio. O ID **não** é reutilizado.
+
+| ID | Tema | Fechada por | Registro |
+| --- | --- | --- | --- |
+| OD-09 | ORM e estratégia de migrations | [../adr/0005-prisma-orm-migrations.md](../adr/0005-prisma-orm-migrations.md) | DEC-026 em [decision-log.md](decision-log.md) |
+
 ## Itens explicitamente fora desta lista
 
-Já decididos e registrados como vigentes: arquitetura, stack, banco, deploy, autenticação inicial, armazenamento de imagens, email transacional e a recomendação de reserva atômica de vaga. Ver [../project-state.md](../project-state.md).
+Já decididos e registrados como vigentes: arquitetura, stack, banco, deploy, autenticação inicial, armazenamento de imagens, email transacional, a recomendação de reserva atômica de vaga e o ORM/estratégia de migrations. Ver [../project-state.md](../project-state.md).

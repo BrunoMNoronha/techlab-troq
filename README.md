@@ -23,13 +23,14 @@ As regras de negócio homologadas (RB-001 a RB-006) estão em [docs/product/busi
 | Arquitetura | Monólito modular ([ADR-0001](docs/adr/0001-modular-monolith-nextjs.md)) |
 | Frontend/backend | Next.js + TypeScript, App Router |
 | Banco de dados | PostgreSQL, provedor preferencial Neon ([ADR-0002](docs/adr/0002-postgresql-neon.md)) |
+| Acesso a dados e migrations | Prisma ORM 7.x e Prisma Migrate ([ADR-0005](docs/adr/0005-prisma-orm-migrations.md)) |
 | Deploy | Vercel (produção comercial não pode depender do plano Hobby) |
 | Autenticação | Better Auth, email/senha com verificação de email |
 | Armazenamento de imagens | Cloudflare R2, S3-compatible ([ADR-0003](docs/adr/0003-object-storage-r2.md)) |
 | Email transacional | Resend |
 | Pagamentos | Pix-first; gateway ainda não decidido |
 
-Decisões ainda abertas (gateway de pagamento, ORM, mecanismo de encerramento, regras de avaliação, entre outras) estão registradas em [docs/decisions/open-decisions.md](docs/decisions/open-decisions.md) e não devem ser tratadas como homologadas.
+Decisões ainda abertas (gateway de pagamento, mecanismo de encerramento, regras de avaliação, entre outras) estão registradas em [docs/decisions/open-decisions.md](docs/decisions/open-decisions.md) e não devem ser tratadas como homologadas.
 
 ## Documentação
 

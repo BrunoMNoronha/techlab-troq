@@ -41,7 +41,7 @@ Ponto de partida: [project-state.md](project-state.md). Decisões vigentes: [dec
 | [adr/0002-postgresql-neon.md](adr/0002-postgresql-neon.md) | existente | PostgreSQL com Neon como provedor preferencial |
 | [adr/0003-object-storage-r2.md](adr/0003-object-storage-r2.md) | existente | Cloudflare R2 como armazenamento S3-compatible para imagens |
 | adr/0004-… | futuro | Gateway de pagamento (somente após spike de R$ 0,99) |
-| adr/0005-… | futuro | ORM e estratégia de migrations |
+| [adr/0005-prisma-orm-migrations.md](adr/0005-prisma-orm-migrations.md) | existente | Prisma ORM e Prisma Migrate; política de migrations em desenvolvimento, staging e produção |
 
 ### engineering — convenções e práticas de engenharia
 

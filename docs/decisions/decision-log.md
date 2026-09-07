@@ -28,13 +28,14 @@ Decisões **abertas** não aparecem aqui como vigentes. Elas estão em [open-dec
 | --- | --- | --- | --- | --- | --- |
 | DEC-007 | 2026-09-07 | Monólito modular como arquitetura inicial; sem microserviços nem API Node separada no MVP sem necessidade comprovada | vigente | [../adr/0001-modular-monolith-nextjs.md](../adr/0001-modular-monolith-nextjs.md) | Um único deploy; fronteiras de módulo internas; autorização e auditoria dentro do mesmo processo |
 | DEC-008 | 2026-09-07 | Next.js + TypeScript com App Router para frontend e backend | vigente | [../adr/0001-modular-monolith-nextjs.md](../adr/0001-modular-monolith-nextjs.md) | Backend em Route Handlers/Server Actions; nenhuma outra tecnologia de framework será avaliada sem ADR |
-| DEC-009 | 2026-09-07 | PostgreSQL como banco relacional, usando PostgreSQL padrão | vigente | [../adr/0002-postgresql-neon.md](../adr/0002-postgresql-neon.md) | Garantias de consistência via transações e restrições; ORM e migrations seguem abertos (OD-09) |
+| DEC-009 | 2026-09-07 | PostgreSQL como banco relacional, usando PostgreSQL padrão | vigente | [../adr/0002-postgresql-neon.md](../adr/0002-postgresql-neon.md) | Garantias de consistência via transações e restrições; ORM e migrations definidos em DEC-026 |
 | DEC-010 | 2026-09-07 | Neon como provedor PostgreSQL preferencial | vigente | [../adr/0002-postgresql-neon.md](../adr/0002-postgresql-neon.md) | Decisão de provedor, não de dialeto; troca deve permanecer viável |
 | DEC-011 | 2026-09-07 | Vercel como plataforma de deploy; produção comercial não pode depender do plano Hobby | vigente | [../project-state.md](../project-state.md) | Custo de plano pago previsto para produção (R-09) |
 | DEC-012 | 2026-09-07 | Better Auth como solução de autenticação inicial | vigente | [../project-state.md](../project-state.md) | Base de RF-001 a RF-003 |
 | DEC-013 | 2026-09-07 | Autenticação inicial por email/senha com verificação de email; login social fora do núcleo inicial | vigente | [../project-state.md](../project-state.md), [../product/mvp-scope.md](../product/mvp-scope.md) | Login social é candidato pós-MVP |
 | DEC-014 | 2026-09-07 | Cloudflare R2 como armazenamento de objetos preferencial para imagens, acessado via API S3-compatible | vigente | [../adr/0003-object-storage-r2.md](../adr/0003-object-storage-r2.md) | Dados protegidos nunca em objetos públicos; regras de imagem seguem abertas (OD-05) |
 | DEC-015 | 2026-09-07 | Resend como provedor inicial de email transacional | vigente | [../project-state.md](../project-state.md) | Base de RF-002 e RF-021 |
+| DEC-026 | 2026-09-07 | Prisma ORM (linha 7.x estável, versão pinada) como camada de acesso a dados e Prisma Migrate como mecanismo oficial de migrations; migrations versionadas no Git e imutáveis após aplicação em ambiente compartilhado; `migrate dev` restrito a desenvolvimento; `migrate deploy` por job controlado de CI/CD em staging/produção, nunca no startup nem em Serverless Function; `db push` proibido fora de desenvolvimento; mudanças destrutivas por expand/contract | vigente | [../adr/0005-prisma-orm-migrations.md](../adr/0005-prisma-orm-migrations.md) | Fecha OD-09 e mitiga R-07; desbloqueia criação de schema e migrations na Fase 1; migrations usam conexão direta (não pooled) do Neon |
 
 ## Pagamentos
 
@@ -75,7 +76,6 @@ Nenhuma das questões abaixo foi fechada e nenhuma deve ser inferida a partir de
 | OD-06 | Política de desistência e reseleção |
 | OD-07 | Chargebacks, duplicidade e exceções de pagamento |
 | OD-08 | Validação e escolha do gateway para R$ 0,99 |
-| OD-09 | ORM e estratégia de migrations |
 | OD-10 | Retenção e exclusão de dados |
 | OD-11 | Elegibilidade etária formal |
 | OD-12 | Natureza da demonstração de interesse |
