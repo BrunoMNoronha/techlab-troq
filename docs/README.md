@@ -59,6 +59,7 @@ Ponto de partida: [project-state.md](project-state.md). Decisões vigentes: [dec
 | [delivery/risks.md](delivery/risks.md) | existente | Riscos conhecidos, impacto e mitigação inicial |
 | [delivery/roadmap.md](delivery/roadmap.md) | existente | Roadmap macro por fases: objetivo, entregáveis, dependências e gate de saída, sem datas |
 | [delivery/backlog.md](delivery/backlog.md) | existente | Backlog de alto nível da Fase 0 (F0-xxx) e próximos trabalhos |
+| [delivery/spikes/f0-010-mercado-pago-pix-r099.md](delivery/spikes/f0-010-mercado-pago-pix-r099.md) | existente | Evidências do spike F0-010 do gateway Pix para exatamente R$ 0,99 (Mercado Pago); classificação `INCONCLUSIVO`, OD-08 permanece aberta |
 | delivery/release-checklist.md | futuro | Checklist de release |
 
 ## Convenções

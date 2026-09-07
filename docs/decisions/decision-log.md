@@ -78,5 +78,6 @@ Nenhuma das questões abaixo foi fechada e nenhuma deve ser inferida a partir de
 | OD-09 | ORM e estratégia de migrations |
 | OD-10 | Retenção e exclusão de dados |
 | OD-11 | Elegibilidade etária formal |
+| OD-12 | Natureza da demonstração de interesse |
 
 Detalhes em [open-decisions.md](open-decisions.md). Quando uma delas for fechada, adiciona-se uma entrada `DEC-xxx` aqui, atualiza-se [open-decisions.md](open-decisions.md) e, se aplicável, cria-se o ADR correspondente.
