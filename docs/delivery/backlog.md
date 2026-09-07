@@ -48,8 +48,9 @@ Ordem lógica. O item `próximo` é o trabalho crítico imediato; ele responde a
 | F0-019 | Definir tratamento de exceções de pagamento | Fechar OD-07: chargebacks, duplicidade, pagamento após expiração da reserva, falhas de confirmação; atualizar RF-009 a RF-012 | F0-011 | bloqueado |
 | F0-020 | Definir retenção e exclusão de dados | Fechar OD-10: prazos, exclusão de conta, anonimização, retenção de auditoria; atualizar RF-023, RNF-009 e RNF-011 | F0-005 | pendente |
 | F0-021 | Definir elegibilidade etária formal | Fechar OD-11: idade mínima, declaração/verificação, critérios jurídicos e operacionais; atualizar RF-001. O público-alvo de 18 a 50 anos não determina esta decisão | F0-005 | pendente |
-| F0-022 | Produzir arquitetura de dados e API pré-implementação | `architecture/overview.md`, `architecture/data-model.md`, `architecture/payments-design.md` e `architecture/contact-release.md`, com base nas decisões fechadas | F0-011, F0-012, F0-013, F0-014, F0-015, F0-018, F0-019, F0-020 | bloqueado |
+| F0-022 | Produzir arquitetura de dados e API pré-implementação | `architecture/overview.md`, `architecture/data-model.md`, `architecture/payments-design.md` e `architecture/contact-release.md`, com base nas decisões fechadas | F0-011, F0-012, F0-013, F0-014, F0-015, F0-018, F0-019, F0-020, F0-024 | bloqueado |
 | F0-023 | Preparar transição para a Fase 1 | Verificar o gate de saída da Fase 0 em [roadmap.md](roadmap.md), revisar riscos e produzir o prompt inicial da Fase 1 | F0-022 | bloqueado |
+| F0-024 | Definir natureza da demonstração de interesse | Fechar OD-12 e atualizar RF-008, definindo se a demonstração de interesse é uma ação independente (com ou sem entidade persistida, gratuita ou não) ou apenas parte da solicitação paga | F0-005 | pendente |
 
 ## Fora deste backlog
 
