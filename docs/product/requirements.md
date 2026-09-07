@@ -120,9 +120,9 @@ Catálogo inicial de requisitos rastreáveis do MVP. Contém **apenas** requisit
 - **Prioridade MVP:** obrigatória.
 - **Origem:** fluxo central (passo 3).
 - **Regra de negócio relacionada:** RB-003.
-- **Decisão aberta relacionada:** OD-04 (efeito dos estados do anúncio sobre o interesse), OD-06.
+- **Decisão aberta relacionada:** OD-12 (natureza da demonstração de interesse: ação própria, persistência, gratuidade, cancelamento, visibilidade ao anunciante ou apenas início da solicitação paga), OD-04 (efeito dos estados do anúncio sobre o interesse, se este existir como estado próprio).
 - **Critério de aceite (alto nível):** interesse só pode ser registrado por usuário autenticado e verificado, em anúncio consultável; a demonstração de interesse não libera contato.
-- **Status:** parcialmente definido. Se a demonstração de interesse existe como ação distinta e gratuita, ou apenas como início da solicitação paga, não está registrado em decisão; deve ser detalhado junto com o ciclo de vida (OD-04) sem criar regra nova neste catálogo.
+- **Status:** parcialmente definido. Este requisito **não** determina se a demonstração de interesse existe como entidade persistida nem se é uma ação gratuita e distinta da solicitação paga; essas questões estão em OD-12 e não devem ser inferidas deste catálogo.
 
 #### RF-009 — Solicitação paga de desbloqueio de contato
 
@@ -441,9 +441,10 @@ Catálogo inicial de requisitos rastreáveis do MVP. Contém **apenas** requisit
 | OD-03 | RF-004, RF-018, RF-019, RF-020 |
 | OD-04 | RF-004, RF-005, RF-006, RF-008, RF-019, RF-020 |
 | OD-05 | RF-004, RF-006, RF-020, RNF-005 |
-| OD-06 | RF-008, RF-013, RF-015 |
+| OD-06 | RF-013, RF-015 |
 | OD-07 | RF-009, RF-010, RF-011, RF-012, RF-020 |
 | OD-08 | RF-009, RF-011, RF-012, RNF-014 |
 | OD-09 | nenhum requisito funcional direto; bloqueia schema e migrations (Fase 1) |
 | OD-10 | RF-006, RF-020, RF-022, RF-023, RNF-009, RNF-011 |
 | OD-11 | RF-001, RNF-009 |
+| OD-12 | RF-008 |

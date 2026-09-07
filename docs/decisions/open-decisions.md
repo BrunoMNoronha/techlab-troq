@@ -74,6 +74,19 @@ Registro das questões que **ainda não foram decididas** na Fase 0. Nenhum item
 - **O que falta decidir:** idade mínima para uso da plataforma e forma de declaração/verificação.
 - **Bloqueia:** regras de cadastro e termos de uso.
 
+### OD-12 — Natureza da demonstração de interesse
+
+- **Contexto:** o fluxo central vigente ([../product/mvp-scope.md](../product/mvp-scope.md)) contém três passos conceitualmente separados: o interessado demonstra interesse (passo 3), depois solicita desbloqueio de contato (passo 4), depois paga R$ 0,99 (passo 5). A existência de passos separados não define suficientemente a implementação nem a persistência dessa demonstração de interesse. RF-008 registra apenas o núcleo (interesse por usuário autenticado e verificado, em anúncio consultável, sem liberar contato).
+- **O que falta decidir:**
+  - se "demonstrar interesse" é uma ação funcional própria;
+  - se existe antes da solicitação paga como entidade/estado persistido;
+  - se é gratuita;
+  - se pode ser cancelada;
+  - se o anunciante visualiza interesses ainda não convertidos em solicitação paga;
+  - ou se o passo deve ser tratado apenas como início da solicitação de desbloqueio, sem entidade separada.
+- **Impacto:** RF-008; experiência do interessado; modelo de dados; métricas/funil; arquitetura/API da Fase 3.
+- **Bloqueia:** fechamento do status de RF-008 e a arquitetura de dados/API pré-implementação no que se refere ao interesse. Não é gate do spike de pagamento (OD-08).
+
 ## Itens explicitamente fora desta lista
 
 Já decididos e registrados como vigentes: arquitetura, stack, banco, deploy, autenticação inicial, armazenamento de imagens, email transacional e a recomendação de reserva atômica de vaga. Ver [../project-state.md](../project-state.md).
