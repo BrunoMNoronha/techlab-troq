@@ -1,0 +1,22 @@
+# Riscos conhecidos
+
+Riscos identificados na Fase 0, com impacto e mitigação inicial. Não são atribuídas probabilidades: não há dados para estimá-las. A lista será revisada a cada fase.
+
+Decisões abertas relacionadas a cada risco estão em [../decisions/open-decisions.md](../decisions/open-decisions.md).
+
+| ID | Risco | Impacto | Mitigação inicial | Relacionado |
+| --- | --- | --- | --- | --- |
+| R-01 | Inviabilidade econômica ou técnica da cobrança de R$ 0,99 (tarifas do gateway podem consumir ou exceder o valor; gateway pode não suportar o valor exato ou o fluxo Pix esperado) | Modelo de receita do MVP inviável ou cobrança divergente de RB-004 | Spike obrigatório antes de implementar pagamentos, provando cobrança de exatamente R$ 0,99, confirmação, webhook, idempotência e tarifas. Mercado Pago é apenas primeiro candidato | OD-08 |
+| R-02 | Corrida para exceder três solicitações pagas no mesmo anúncio (solicitações concorrentes ultrapassando RB-003) | Violação de regra de negócio; cobranças além do limite; disputa com solicitantes | Reserva atômica de vaga antes da cobrança, com expiração, a detalhar no design de pagamentos | RB-003, OD-07 |
+| R-03 | Vazamento de telefone/WhatsApp (em payload público, cache público, logs ou para solicitante não escolhido) | Violação de RB-001 e da LGPD; perda de confiança; exposição de dados pessoais | Contato tratado como dado protegido; liberação somente com autorização server-side e auditoria; nunca em payload público, cache público ou logs | RB-001, OD-10 |
+| R-04 | Inconsistência entre webhook do gateway e estado interno (webhook perdido, duplicado, fora de ordem ou recebido após expiração da reserva) | Contato liberado sem pagamento aprovado ou pagamento aprovado sem vaga; estados inconsistentes | Idempotência e reconciliação previstas no spike e no design de pagamentos; tratamento de exceções a definir | OD-07, OD-08 |
+| R-05 | Moderação de itens proibidos insuficiente (catálogo indefinido, moderação lenta ou inconsistente) | Anúncios ilegais ou nocivos permanecem publicados; exposição legal e reputacional | Definir catálogo/política de itens proibidos e fluxo de denúncia antes de abrir a plataforma ao público | RB-006, OD-03 |
+| R-06 | Não conformidade com a LGPD (dados pessoais, contato protegido, retenção e exclusão indefinidas) | Sanções, obrigação de adequação tardia, retrabalho no modelo de dados | Minimização de dados desde o início (localização limitada a cidade/UF, contato protegido); definir retenção/exclusão antes de coletar dados reais | RB-005, OD-10, OD-11 |
+| R-07 | Migrations de banco sem estratégia definida (ORM/ferramenta não escolhidos; risco de migrations manuais ou destrutivas em produção) | Perda de dados; deploys bloqueados; divergência entre ambientes | Decidir ORM e estratégia de migrations antes de criar schema; nenhuma migration existe na Fase 0 | OD-09 |
+| R-08 | Dependência de serviços externos (Vercel, Neon, R2, Resend, gateway de pagamento) | Indisponibilidade ou mudança de preço/termos afeta a plataforma inteira | Preferir interfaces padrão (PostgreSQL, S3-compatible) que permitam troca de provedor; monitorar termos de cada serviço | ADR-0002, ADR-0003 |
+| R-09 | Custo de produção comercial na Vercel (produção comercial não pode depender do plano Hobby) | Custo recorrente acima do previsto ou bloqueio de uso comercial | Planejar plano pago da Vercel para produção desde o início; revisar custos antes do lançamento | — |
+| R-10 | Desempenho mobile em redes 3G/4G (público principal acessa por celular; imagens e JavaScript pesados degradam a experiência) | Abandono de usuários; conversão baixa de solicitações | Direcionamento mobile com PWA; otimização de imagens e carregamento a tratar nas fases de implementação | OD-05 |
+
+## Revisão
+
+Este documento deve ser atualizado quando uma decisão aberta for fechada, quando um risco se materializar ou quando novos riscos forem identificados.
