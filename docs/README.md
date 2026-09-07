@@ -1,0 +1,64 @@
+# Documentação — TechLab+ TROQ
+
+Índice da documentação do projeto. Documentos marcados como **existente** fazem parte do baseline da Fase 0. Documentos marcados como **futuro** ainda não existem e serão criados progressivamente nas fases seguintes; os nomes são indicativos e podem mudar.
+
+Ponto de partida: [project-state.md](project-state.md).
+
+## Grupos
+
+### product — produto e regras de negócio
+
+| Documento | Status | Conteúdo |
+| --- | --- | --- |
+| [product/mvp-scope.md](product/mvp-scope.md) | existente | Objetivo, público, fluxo central, capacidades obrigatórias e adiáveis do MVP |
+| [product/business-rules.md](product/business-rules.md) | existente | Regras de negócio homologadas RB-001 a RB-006 |
+| product/prohibited-items.md | futuro | Catálogo/política de itens proibidos |
+| product/listing-lifecycle.md | futuro | Ciclo de vida completo do anúncio |
+| product/ratings.md | futuro | Regras detalhadas de avaliação |
+
+### decisions — decisões em aberto e registro de decisões de produto
+
+| Documento | Status | Conteúdo |
+| --- | --- | --- |
+| [decisions/open-decisions.md](decisions/open-decisions.md) | existente | Questões ainda não decididas, separadas das decisões vigentes |
+
+### architecture — visão de arquitetura e design técnico
+
+| Documento | Status | Conteúdo |
+| --- | --- | --- |
+| architecture/overview.md | futuro | Visão geral do monólito modular e seus módulos |
+| architecture/data-model.md | futuro | Modelo de dados |
+| architecture/payments-design.md | futuro | Design de pagamentos, reserva atômica de vaga, webhook e idempotência |
+| architecture/contact-release.md | futuro | Autorização server-side e auditoria da liberação de contato |
+
+### adr — registros de decisão arquitetural
+
+| Documento | Status | Conteúdo |
+| --- | --- | --- |
+| [adr/0001-modular-monolith-nextjs.md](adr/0001-modular-monolith-nextjs.md) | existente | Monólito modular com Next.js + TypeScript (App Router) |
+| [adr/0002-postgresql-neon.md](adr/0002-postgresql-neon.md) | existente | PostgreSQL com Neon como provedor preferencial |
+| [adr/0003-object-storage-r2.md](adr/0003-object-storage-r2.md) | existente | Cloudflare R2 como armazenamento S3-compatible para imagens |
+| adr/0004-… | futuro | Gateway de pagamento (somente após spike de R$ 0,99) |
+| adr/0005-… | futuro | ORM e estratégia de migrations |
+
+### engineering — convenções e práticas de engenharia
+
+| Documento | Status | Conteúdo |
+| --- | --- | --- |
+| engineering/conventions.md | futuro | Convenções de código, estrutura de módulos e revisão |
+| engineering/environments.md | futuro | Ambientes, variáveis e segredos |
+| engineering/testing.md | futuro | Estratégia de testes |
+
+### delivery — entrega, riscos e planejamento
+
+| Documento | Status | Conteúdo |
+| --- | --- | --- |
+| [delivery/risks.md](delivery/risks.md) | existente | Riscos conhecidos, impacto e mitigação inicial |
+| delivery/roadmap.md | futuro | Fases e marcos |
+| delivery/release-checklist.md | futuro | Checklist de release |
+
+## Convenções
+
+- Regras de negócio usam o prefixo `RB-` e não têm sua semântica alterada sem decisão registrada.
+- ADRs seguem a estrutura: Status, Contexto, Decisão, Consequências, Alternativas consideradas.
+- Toda decisão listada em [decisions/open-decisions.md](decisions/open-decisions.md) permanece aberta até ser fechada por documento próprio (ADR ou documento de produto).
