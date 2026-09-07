@@ -28,6 +28,7 @@ Decisões já tomadas e válidas na Fase 0. Detalhes nos ADRs indicados.
 - Next.js + TypeScript com App Router para frontend e backend — [ADR-0001](adr/0001-modular-monolith-nextjs.md).
 - Sem microserviços nem API Node separada no MVP, salvo necessidade futura comprovada.
 - PostgreSQL como banco relacional; Neon como provedor preferencial — [ADR-0002](adr/0002-postgresql-neon.md).
+- Prisma ORM (linha 7.x estável, versão pinada) como camada de acesso a dados e Prisma Migrate como mecanismo oficial de migrations, com `migrate deploy` por job controlado de CI/CD, `db push` proibido fora de desenvolvimento e mudanças destrutivas por expand/contract — [ADR-0005](adr/0005-prisma-orm-migrations.md).
 - Vercel como plataforma de deploy. Produção comercial não pode depender do plano Vercel Hobby.
 - Cloudflare R2 como armazenamento S3-compatible preferencial para imagens — [ADR-0003](adr/0003-object-storage-r2.md).
 - Resend como provedor inicial de email transacional.
@@ -65,7 +66,7 @@ Nada de código existe. Em particular, não foram criados:
 
 ## 4. Decisões abertas
 
-Itens que **não** estão decididos e não devem ser tratados como homologados (por exemplo: gateway final, ORM, mecanismo de encerramento da negociação, regras de avaliação) estão listados em [decisions/open-decisions.md](decisions/open-decisions.md).
+Itens que **não** estão decididos e não devem ser tratados como homologados (por exemplo: gateway final, mecanismo de encerramento da negociação, regras de avaliação) estão listados em [decisions/open-decisions.md](decisions/open-decisions.md). ORM e estratégia de migrations deixaram de constar dessa lista: OD-09 foi fechada por [ADR-0005](adr/0005-prisma-orm-migrations.md).
 
 ## 5. Riscos
 

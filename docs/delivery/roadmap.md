@@ -25,7 +25,7 @@ Fontes: [../product/mvp-scope.md](../product/mvp-scope.md), [../product/requirem
 - Baseline documental: escopo do MVP, regras RB-001 a RB-006, decisões abertas, riscos, ADRs 0001 a 0003 (concluído).
 - Público-alvo completo, requisitos rastreáveis, decision log, roadmap, backlog e workflow de agentes (esta entrega).
 - Spike do gateway Pix para exatamente R$ 0,99, com resultado registrado e decisão do gateway (OD-08, ADR-0004).
-- Fechamento das decisões que bloqueiam o modelo de dados: ORM e migrations (OD-09), ciclo de vida do anúncio (OD-04), regras de imagens (OD-05).
+- Fechamento das decisões que bloqueiam o modelo de dados: ORM e migrations (OD-09, fechada por [ADR-0005](../adr/0005-prisma-orm-migrations.md)), ciclo de vida do anúncio (OD-04), regras de imagens (OD-05).
 - Fechamento das decisões de produto: encerramento (OD-01), avaliações (OD-02), itens proibidos (OD-03), desistência/reseleção (OD-06), exceções de pagamento (OD-07), retenção/exclusão (OD-10), elegibilidade etária (OD-11), natureza da demonstração de interesse (OD-12).
 - Arquitetura de dados e de API necessária antes da implementação (`architecture/overview.md`, `architecture/data-model.md`, `architecture/payments-design.md`, `architecture/contact-release.md`). OD-12 deve estar fechada antes da arquitetura final pré-implementação, salvo adiamento formal com impacto registrado; OD-12 não é gate do spike de pagamento.
 
@@ -33,7 +33,7 @@ Fontes: [../product/mvp-scope.md](../product/mvp-scope.md), [../product/requirem
 
 **Gate de saída:**
 
-- OD-08 e OD-09 fechadas, com ADRs correspondentes.
+- OD-08 e OD-09 fechadas, com ADRs correspondentes. OD-09 já está fechada por [ADR-0005](../adr/0005-prisma-orm-migrations.md); OD-08 permanece aberta.
 - OD-04 e OD-05 fechadas, ou explicitamente adiadas com registro de impacto no modelo de dados.
 - Requisitos que a Fase 1 e a Fase 2 dependem com status `definido`.
 - Backlog da Fase 0 ([backlog.md](backlog.md)) sem itens `próximo` ou `bloqueado` que impeçam a Fase 1.
@@ -48,11 +48,11 @@ Fontes: [../product/mvp-scope.md](../product/mvp-scope.md), [../product/requirem
 - Padrões de projeto: convenções de código, lint, formatação, estrutura de testes (`engineering/conventions.md`, `engineering/testing.md`).
 - CI: lint, typecheck, testes e build em toda PR.
 - Configuração de ambientes e segredos (`engineering/environments.md`).
-- Banco PostgreSQL/Neon provisionado, ORM e migrations conforme OD-09 fechada, schema inicial derivado de `architecture/data-model.md`.
+- Banco PostgreSQL/Neon provisionado, Prisma ORM e Prisma Migrate conforme [ADR-0005](../adr/0005-prisma-orm-migrations.md), incluindo o job de CI/CD que aplica `prisma migrate deploy`, e schema inicial derivado de `architecture/data-model.md`.
 - Infraestrutura mínima: projeto Vercel, bucket R2, Resend, em ambientes de desenvolvimento e preview.
 - Observabilidade básica: logs estruturados e rastreamento de erros, sem dados protegidos (RNF-018).
 
-**Dependências:** gate da Fase 0; em particular OD-09 (ORM/migrations) e modelo de dados.
+**Dependências:** gate da Fase 0; em particular [ADR-0005](../adr/0005-prisma-orm-migrations.md) (ORM/migrations, OD-09 fechada) e modelo de dados.
 
 **Gate de saída:**
 

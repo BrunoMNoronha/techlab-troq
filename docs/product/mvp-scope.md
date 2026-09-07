@@ -80,6 +80,5 @@ Fora do núcleo inicial do MVP:
 | Moderação | Catálogo/política de itens proibidos |
 | Ciclo de vida do anúncio | Definição do ciclo de vida completo |
 | Upload de imagens | Definição de quantidade e regras das imagens |
-| Persistência | Escolha de ORM e estratégia de migrations |
 | Tratamento de dados pessoais | Política de retenção/exclusão de dados (LGPD) |
 | Cadastro | Definição formal de elegibilidade etária (OD-11) |
