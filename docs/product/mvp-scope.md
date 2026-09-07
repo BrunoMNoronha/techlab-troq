@@ -8,10 +8,24 @@ Permitir que pessoas publiquem anúncios e que interessados obtenham o contato (
 
 ## Público principal
 
+### Perfil do público-alvo
+
+- Adultos entre 18 e 50 anos.
+- Principalmente usuários de grandes centros urbanos.
+- Familiarizados com marketplaces.
+- Uso prioritário em smartphones.
+- Experiência projetada para funcionar adequadamente também em redes móveis 3G/4G.
+
+Este perfil orienta decisões de produto, design e prioridade (mobile-first, desempenho em 3G/4G, otimização de imagens). Os requisitos não funcionais derivados estão em [requirements.md](requirements.md).
+
+**Distinção obrigatória sobre idade:** o intervalo "18 a 50 anos" descreve o público-alvo, não uma regra técnica de cadastro. Idade mínima formal, forma de declaração de idade, eventual verificação e critérios jurídicos e operacionais de elegibilidade continuam abertos em [OD-11](../decisions/open-decisions.md) e não devem ser inferidos deste perfil.
+
+### Papéis no produto
+
 - **Anunciantes:** pessoas que publicam anúncios e escolhem com quem negociar.
 - **Interessados (solicitantes):** pessoas que consultam anúncios e pagam R$ 0,99 para solicitar o desbloqueio de contato.
 
-Critérios formais de elegibilidade (incluindo elegibilidade etária) ainda não foram definidos.
+Critérios formais de elegibilidade (incluindo elegibilidade etária) ainda não foram definidos ([OD-11](../decisions/open-decisions.md)).
 
 ## Fluxo central
 
@@ -68,4 +82,4 @@ Fora do núcleo inicial do MVP:
 | Upload de imagens | Definição de quantidade e regras das imagens |
 | Persistência | Escolha de ORM e estratégia de migrations |
 | Tratamento de dados pessoais | Política de retenção/exclusão de dados (LGPD) |
-| Cadastro | Definição formal de elegibilidade etária |
+| Cadastro | Definição formal de elegibilidade etária (OD-11) |
