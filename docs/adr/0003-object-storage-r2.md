@@ -28,7 +28,7 @@ Negativas e restrições:
 
 - Dependência de serviço externo (R-08); termos e custos devem ser acompanhados.
 - **Quantidade de imagens por anúncio, formatos, limites de tamanho e processamento não estão decididos** ([../decisions/open-decisions.md](../decisions/open-decisions.md), OD-05).
-- Política de remoção de imagens quando um anúncio é removido (RB-006) ou quando dados são excluídos (OD-10) depende do ciclo de vida do anúncio (OD-04) e da política de retenção.
+- Política de remoção de imagens quando um anúncio é removido (RB-006) ou quando dados são excluídos (OD-10) depende do ciclo de vida do anúncio (definido em [../product/listing-lifecycle.md](../product/listing-lifecycle.md): as imagens deixam de ser servidas publicamente junto com o anúncio) e da política de retenção (OD-10).
 - Nenhuma configuração de bucket, credencial ou integração existe na Fase 0.
 
 ## Alternativas consideradas

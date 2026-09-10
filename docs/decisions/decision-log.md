@@ -61,6 +61,7 @@ Decisões **abertas** não aparecem aqui como vigentes. Elas estão em [open-dec
 | --- | --- | --- | --- | --- | --- |
 | DEC-024 | 2026-09-07 | Público-alvo principal: adultos entre 18 e 50 anos, principalmente de grandes centros urbanos, familiarizados com marketplaces, uso prioritário em smartphones, experiência adequada em redes 3G/4G. O intervalo etário descreve público-alvo, **não** regra técnica de cadastro | vigente | [../product/mvp-scope.md](../product/mvp-scope.md) | Fundamenta RNF-001 a RNF-005; elegibilidade etária formal segue aberta (OD-11) |
 | DEC-025 | 2026-09-07 | Modo operacional com Bruno como responsável final, ChatGPT como orquestrador e Claude Code/Antigravity como executores de tarefas delimitadas, com hierarquia de verdade e relatório obrigatório | vigente | [../engineering/ai-agent-workflow.md](../engineering/ai-agent-workflow.md) | Todo prompt executor e todo relatório seguem esse documento |
+| DEC-027 | 2026-09-10 | Ciclo de vida do anúncio no MVP: cinco estados (`draft`, `published`, `paused`, `closed`, `removed`), estado inicial `draft`, somente `published` é público e aceita novos interesses e novas solicitações, `closed` e `removed` são terminais, `removed` é exclusivo da moderação e bloqueia nova escolha e nova liberação de contato, nenhuma transição cancela solicitação paga nem revoga liberação já autorizada, e **não** há expiração automática no MVP | vigente | [../product/listing-lifecycle.md](../product/listing-lifecycle.md) | Fecha OD-04; desbloqueia o modelo de dados do anúncio e F0-014, F0-015 e F0-018; atualiza RF-004, RF-005, RF-006, RF-008, RF-019 e RF-020; preserva RB-003, RB-004 e RB-006; anúncio e negociação seguem ciclos distintos (encerramento da negociação permanece em OD-01) |
 
 ## Decisões que permanecem abertas
 
@@ -71,7 +72,6 @@ Nenhuma das questões abaixo foi fechada e nenhuma deve ser inferida a partir de
 | OD-01 | Mecanismo de encerramento da negociação |
 | OD-02 | Regras detalhadas de avaliação |
 | OD-03 | Catálogo/política de itens proibidos |
-| OD-04 | Ciclo de vida completo do anúncio |
 | OD-05 | Quantidade e regras das imagens |
 | OD-06 | Política de desistência e reseleção |
 | OD-07 | Chargebacks, duplicidade e exceções de pagamento |
@@ -79,5 +79,7 @@ Nenhuma das questões abaixo foi fechada e nenhuma deve ser inferida a partir de
 | OD-10 | Retenção e exclusão de dados |
 | OD-11 | Elegibilidade etária formal |
 | OD-12 | Natureza da demonstração de interesse |
+
+OD-04 foi fechada por [../product/listing-lifecycle.md](../product/listing-lifecycle.md) (DEC-027) e deixou esta lista.
 
 Detalhes em [open-decisions.md](open-decisions.md). Quando uma delas for fechada, adiciona-se uma entrada `DEC-xxx` aqui, atualiza-se [open-decisions.md](open-decisions.md) e, se aplicável, cria-se o ADR correspondente.

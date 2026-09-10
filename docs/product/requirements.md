@@ -1,6 +1,6 @@
 # Catálogo de requisitos — TROQ
 
-Catálogo inicial de requisitos rastreáveis do MVP. Contém **apenas** requisitos derivados das decisões já vigentes na Fase 0 ([../project-state.md](../project-state.md), [business-rules.md](business-rules.md), ADRs em [../adr/](../adr/), [../decisions/decision-log.md](../decisions/decision-log.md)). Nenhum requisito aqui fecha uma decisão listada em [../decisions/open-decisions.md](../decisions/open-decisions.md).
+Catálogo inicial de requisitos rastreáveis do MVP. Contém **apenas** requisitos derivados das decisões já vigentes na Fase 0 ([../project-state.md](../project-state.md), [business-rules.md](business-rules.md), [listing-lifecycle.md](listing-lifecycle.md), ADRs em [../adr/](../adr/), [../decisions/decision-log.md](../decisions/decision-log.md)). Nenhum requisito aqui fecha uma decisão listada em [../decisions/open-decisions.md](../decisions/open-decisions.md).
 
 ## Convenções
 
@@ -18,7 +18,7 @@ Catálogo inicial de requisitos rastreáveis do MVP. Contém **apenas** requisit
 | Grupo | IDs | Definido | Parcialmente definido | Bloqueado |
 | --- | --- | --- | --- | --- |
 | Identidade e conta | RF-001 a RF-003, RF-023 | 2 | 1 | 1 |
-| Anúncios | RF-004 a RF-007 | 1 | 2 | 1 |
+| Anúncios | RF-004 a RF-007 | 2 | 1 | 1 |
 | Solicitações e pagamentos | RF-008 a RF-012 | 0 | 3 | 2 |
 | Escolha e contato | RF-013 a RF-015 | 2 | 1 | 0 |
 | Encerramento e avaliações | RF-016, RF-017 | 0 | 1 | 1 |
@@ -78,8 +78,8 @@ Catálogo inicial de requisitos rastreáveis do MVP. Contém **apenas** requisit
 - **Prioridade MVP:** obrigatória.
 - **Origem:** fluxo central (passo 2); capacidade obrigatória em [mvp-scope.md](mvp-scope.md).
 - **Regra de negócio relacionada:** RB-005, RB-006.
-- **Decisão aberta relacionada:** OD-04 (estados e transições do anúncio), OD-05 (imagens), OD-03 (itens proibidos).
-- **Critério de aceite (alto nível):** anúncio criado por usuário autenticado e verificado; nenhum dado de localização mais preciso que cidade/UF é armazenado ou exibido publicamente; o conjunto de estados do anúncio segue OD-04 quando fechada.
+- **Decisão aberta relacionada:** OD-05 (imagens), OD-03 (itens proibidos). OD-04 foi fechada por [listing-lifecycle.md](listing-lifecycle.md) (DEC-027).
+- **Critério de aceite (alto nível):** anúncio criado por usuário autenticado e verificado; nenhum dado de localização mais preciso que cidade/UF é armazenado ou exibido publicamente; o anúncio nasce no estado `draft` e só se torna público por publicação explícita do anunciante, conforme [listing-lifecycle.md](listing-lifecycle.md).
 - **Status:** parcialmente definido. Campos além de título, descrição, imagens e cidade/UF não estão definidos.
 
 #### RF-005 — Consulta de anúncios
@@ -88,9 +88,9 @@ Catálogo inicial de requisitos rastreáveis do MVP. Contém **apenas** requisit
 - **Prioridade MVP:** obrigatória.
 - **Origem:** fluxo central (passo 2); DEC-023 (contato protegido).
 - **Regra de negócio relacionada:** RB-001, RB-005.
-- **Decisão aberta relacionada:** OD-04 (quais estados são visíveis publicamente).
-- **Critério de aceite (alto nível):** listagem e detalhe exibem apenas cidade/UF como localização; telefone/WhatsApp nunca aparece em payload público ou cache público; filtros e ordenação são definidos na fase de implementação.
-- **Status:** parcialmente definido.
+- **Decisão aberta relacionada:** — (OD-04 fechada por [listing-lifecycle.md](listing-lifecycle.md), DEC-027).
+- **Critério de aceite (alto nível):** somente anúncios no estado `published` são consultáveis publicamente; anúncio em qualquer outro estado responde ao público como recurso não disponível, sem revelar existência prévia nem estado interno; listagem e detalhe exibem apenas cidade/UF como localização; telefone/WhatsApp nunca aparece em payload público ou cache público; filtros e ordenação são definidos na fase de implementação.
+- **Status:** definido. Filtros e ordenação são detalhe de implementação, não decisão aberta.
 
 #### RF-006 — Imagens do anúncio
 
@@ -98,7 +98,7 @@ Catálogo inicial de requisitos rastreáveis do MVP. Contém **apenas** requisit
 - **Prioridade MVP:** obrigatória.
 - **Origem:** [../adr/0003-object-storage-r2.md](../adr/0003-object-storage-r2.md) (DEC-014).
 - **Regra de negócio relacionada:** RB-006 (remoção do anúncio implica tratamento das imagens).
-- **Decisão aberta relacionada:** OD-05 (quantidade, formatos, tamanho, processamento, moderação), OD-04 e OD-10 (remoção de imagens).
+- **Decisão aberta relacionada:** OD-05 (quantidade, formatos, tamanho, processamento, moderação), OD-10 (expurgo e retenção das imagens). O efeito do estado do anúncio sobre as imagens está definido em [listing-lifecycle.md](listing-lifecycle.md): imagens deixam de ser servidas publicamente junto com o anúncio; o expurgo dos objetos segue OD-05 e OD-10.
 - **Critério de aceite (alto nível):** a definir após OD-05; imagens nunca contêm dados protegidos em objetos públicos.
 - **Status:** bloqueado por decisão aberta (OD-05). A decisão de armazenamento está vigente; as regras de imagem não.
 
@@ -120,8 +120,8 @@ Catálogo inicial de requisitos rastreáveis do MVP. Contém **apenas** requisit
 - **Prioridade MVP:** obrigatória.
 - **Origem:** fluxo central (passo 3).
 - **Regra de negócio relacionada:** RB-003.
-- **Decisão aberta relacionada:** OD-12 (natureza da demonstração de interesse: ação própria, persistência, gratuidade, cancelamento, visibilidade ao anunciante ou apenas início da solicitação paga), OD-04 (efeito dos estados do anúncio sobre o interesse, se este existir como estado próprio).
-- **Critério de aceite (alto nível):** interesse só pode ser registrado por usuário autenticado e verificado, em anúncio consultável; a demonstração de interesse não libera contato.
+- **Decisão aberta relacionada:** OD-12 (natureza da demonstração de interesse: ação própria, persistência, gratuidade, cancelamento, visibilidade ao anunciante ou apenas início da solicitação paga). OD-04 foi fechada: o efeito do estado do anúncio sobre o interesse está em [listing-lifecycle.md](listing-lifecycle.md).
+- **Critério de aceite (alto nível):** interesse só pode ser registrado por usuário autenticado e verificado, em anúncio no estado `published`; interesses já registrados são preservados quando o anúncio é pausado, encerrado ou removido; a demonstração de interesse não libera contato.
 - **Status:** parcialmente definido. Este requisito **não** determina se a demonstração de interesse existe como entidade persistida nem se é uma ação gratuita e distinta da solicitação paga; essas questões estão em OD-12 e não devem ser inferidas deste catálogo.
 
 #### RF-009 — Solicitação paga de desbloqueio de contato
@@ -236,8 +236,8 @@ Catálogo inicial de requisitos rastreáveis do MVP. Contém **apenas** requisit
 - **Prioridade MVP:** obrigatória.
 - **Origem:** RB-006; R-05.
 - **Regra de negócio relacionada:** RB-006.
-- **Decisão aberta relacionada:** OD-03 (critérios e prazos), OD-04 (estado "removido").
-- **Critério de aceite (alto nível):** decisão de moderação registrada em auditoria (RF-022); anúncio removido deixa de ser consultável.
+- **Decisão aberta relacionada:** OD-03 (critérios, gatilhos, prazos, recurso e reincidência). O estado `removed` e suas transições estão definidos em [listing-lifecycle.md](listing-lifecycle.md) (DEC-027).
+- **Critério de aceite (alto nível):** a moderação leva o anúncio de `draft`, `published` ou `paused` para `removed`, que é terminal; decisão de moderação registrada em auditoria com motivo (RF-022); anúncio removido deixa de ser consultável e não autoriza nova escolha nem nova liberação de contato.
 - **Status:** parcialmente definido. Perfis de moderador e ferramentas serão definidos na implementação; critérios dependem de OD-03.
 
 #### RF-020 — Remoção de anúncio com item proibido
@@ -246,8 +246,8 @@ Catálogo inicial de requisitos rastreáveis do MVP. Contém **apenas** requisit
 - **Prioridade MVP:** obrigatória.
 - **Origem:** RB-006.
 - **Regra de negócio relacionada:** RB-006.
-- **Decisão aberta relacionada:** OD-03 (catálogo), OD-04 (efeitos sobre solicitações existentes), OD-05 e OD-10 (imagens e dados do anúncio removido).
-- **Critério de aceite (alto nível):** anúncio classificado como item proibido é removido e não volta a ser público; efeitos sobre solicitações pagas existentes seguem OD-04 e OD-07.
+- **Decisão aberta relacionada:** OD-03 (catálogo), OD-07 (tratamento financeiro das solicitações pagas de anúncio removido), OD-05 e OD-10 (imagens e dados do anúncio removido). Os efeitos do estado sobre as solicitações estão definidos em [listing-lifecycle.md](listing-lifecycle.md).
+- **Critério de aceite (alto nível):** anúncio classificado como item proibido vai para `removed`, estado terminal, e não volta a ser público; solicitações pagas existentes são preservadas e a cobrança permanece definitiva (RB-004); o tratamento financeiro de exceção segue OD-07.
 - **Status:** parcialmente definido. A regra está vigente; o catálogo não.
 
 ### Transversais
@@ -439,7 +439,7 @@ Catálogo inicial de requisitos rastreáveis do MVP. Contém **apenas** requisit
 | OD-01 | RF-016, RF-017 |
 | OD-02 | RF-017 |
 | OD-03 | RF-004, RF-018, RF-019, RF-020 |
-| OD-04 | RF-004, RF-005, RF-006, RF-008, RF-019, RF-020 |
+| OD-04 | fechada por [listing-lifecycle.md](listing-lifecycle.md) (DEC-027); define estados, transições, visibilidade pública e efeitos sobre interesses e solicitações; deixa de bloquear o modelo de dados do anúncio |
 | OD-05 | RF-004, RF-006, RF-020, RNF-005 |
 | OD-06 | RF-013, RF-015 |
 | OD-07 | RF-009, RF-010, RF-011, RF-012, RF-020 |

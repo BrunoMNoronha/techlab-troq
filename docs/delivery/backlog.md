@@ -32,19 +32,19 @@ Fontes: [roadmap.md](roadmap.md), [../decisions/open-decisions.md](../decisions/
 
 ## Próximos trabalhos
 
-Ordem lógica. F0-010 está `bloqueado` por falta de credenciais de teste do gateway (bloqueio externo, ver abaixo); enquanto isso, o item `próximo` é F0-013, que não tem dependência pendente e desbloqueia F0-014, F0-015 e F0-018.
+Ordem lógica. F0-010 está `bloqueado` por falta de credenciais de teste do gateway (bloqueio externo, ver abaixo). F0-013 foi concluído e fechou OD-04, o que desbloqueou F0-014, F0-015 e F0-018. O item `próximo` passa a ser F0-014; F0-015 e F0-018 ficam `pendente`, sem bloqueio.
 
 | ID | Título | Objetivo | Dependências | Estado |
 | --- | --- | --- | --- | --- |
 | F0-010 | Spike do gateway Pix para exatamente R$ 0,99 | Provar, em sandbox do primeiro candidato (Mercado Pago) e, se necessário, de alternativas, a cobrança de exatamente R$ 0,99, confirmação, webhook, idempotência e tarifas (DEC-018, R-01). O spike é descartável e não entra no código do produto | F0-005; credenciais de teste do gateway e endpoint HTTPS público para webhook | bloqueado |
 | F0-011 | Registrar resultado e decisão do gateway | Documentar evidências do spike, fechar OD-08 com ADR-0004 e atualizar decision log, riscos e requisitos RF-011 e RF-012 | F0-010 | bloqueado |
 | F0-012 | Fechar ORM e estratégia de migrations | Fechar OD-09 com [ADR-0005](../adr/0005-prisma-orm-migrations.md): Prisma ORM 7.x, Prisma Migrate, política dev/staging/produção, `db push` e migrations destrutivas (DEC-026) | F0-003 | concluído |
-| F0-013 | Detalhar ciclo de vida do anúncio | Fechar OD-04 em `product/listing-lifecycle.md`: estados, transições e efeitos sobre solicitações | F0-005 | próximo |
-| F0-014 | Definir regras de imagens | Fechar OD-05: quantidade, formatos, tamanho, processamento e moderação de imagens; atualizar RF-006 e RNF-005 | F0-013 | bloqueado |
-| F0-015 | Definir mecanismo de encerramento | Fechar OD-01: quem aciona, confirmação, prazos e estados intermediários; atualizar RF-016 | F0-013 | bloqueado |
+| F0-013 | Detalhar ciclo de vida do anúncio | Fechar OD-04 em [../product/listing-lifecycle.md](../product/listing-lifecycle.md): estados, transições, visibilidade pública e efeitos sobre interesses e solicitações (DEC-027) | F0-005 | concluído |
+| F0-014 | Definir regras de imagens | Fechar OD-05: quantidade, formatos, tamanho, processamento e moderação de imagens; atualizar RF-006 e RNF-005 | F0-013 | próximo |
+| F0-015 | Definir mecanismo de encerramento | Fechar OD-01: quem aciona, confirmação, prazos e estados intermediários; atualizar RF-016 | F0-013 | pendente |
 | F0-016 | Definir avaliações | Fechar OD-02 em `product/ratings.md`; atualizar RF-017 | F0-015 | bloqueado |
 | F0-017 | Definir catálogo/política de itens proibidos | Fechar OD-03 em `product/prohibited-items.md`, incluindo fluxo de denúncia e prazos; atualizar RF-018 a RF-020 | F0-005 | pendente |
-| F0-018 | Definir política de desistência e reseleção | Fechar OD-06; atualizar RF-013 e RF-015 | F0-013 | bloqueado |
+| F0-018 | Definir política de desistência e reseleção | Fechar OD-06; atualizar RF-013 e RF-015 | F0-013 | pendente |
 | F0-019 | Definir tratamento de exceções de pagamento | Fechar OD-07: chargebacks, duplicidade, pagamento após expiração da reserva, falhas de confirmação; atualizar RF-009 a RF-012 | F0-011 | bloqueado |
 | F0-020 | Definir retenção e exclusão de dados | Fechar OD-10: prazos, exclusão de conta, anonimização, retenção de auditoria; atualizar RF-023, RNF-009 e RNF-011 | F0-005 | pendente |
 | F0-021 | Definir elegibilidade etária formal | Fechar OD-11: idade mínima, declaração/verificação, critérios jurídicos e operacionais; atualizar RF-001. O público-alvo de 18 a 50 anos não determina esta decisão | F0-005 | pendente |

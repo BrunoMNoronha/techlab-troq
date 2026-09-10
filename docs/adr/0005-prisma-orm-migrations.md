@@ -162,4 +162,4 @@ Negativas e trade-offs:
 - Registra: DEC-026 em [../decisions/decision-log.md](../decisions/decision-log.md).
 - Depende de: [ADR-0001](0001-modular-monolith-nextjs.md), [ADR-0002](0002-postgresql-neon.md).
 - Mitiga: R-07 em [../delivery/risks.md](../delivery/risks.md).
-- Não altera: OD-07, OD-08 e nenhuma decisão de pagamento. Não define modelo de dados (OD-04 e demais permanecem como estão).
+- Não altera: OD-07, OD-08 e nenhuma decisão de pagamento. Não define modelo de dados; as decisões de produto que o alimentam permanecem como estão, exceto OD-04, fechada posteriormente por [../product/listing-lifecycle.md](../product/listing-lifecycle.md).

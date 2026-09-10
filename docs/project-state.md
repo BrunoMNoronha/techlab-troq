@@ -51,6 +51,7 @@ Decisões já tomadas e válidas na Fase 0. Detalhes nos ADRs indicados.
 ### Produto
 
 - Regras de negócio RB-001 a RB-006 homologadas — [product/business-rules.md](product/business-rules.md).
+- Ciclo de vida do anúncio: estados `draft`, `published`, `paused`, `closed` e `removed`; somente `published` é público e aceita novos interesses e solicitações; `closed` e `removed` são terminais; `removed` é exclusivo da moderação; nenhuma transição cancela solicitação paga nem revoga liberação de contato já autorizada; sem expiração automática no MVP — [product/listing-lifecycle.md](product/listing-lifecycle.md) (DEC-027).
 - Escopo do MVP — [product/mvp-scope.md](product/mvp-scope.md).
 
 ## 3. Ainda não implementado
@@ -66,7 +67,7 @@ Nada de código existe. Em particular, não foram criados:
 
 ## 4. Decisões abertas
 
-Itens que **não** estão decididos e não devem ser tratados como homologados (por exemplo: gateway final, mecanismo de encerramento da negociação, regras de avaliação) estão listados em [decisions/open-decisions.md](decisions/open-decisions.md). ORM e estratégia de migrations deixaram de constar dessa lista: OD-09 foi fechada por [ADR-0005](adr/0005-prisma-orm-migrations.md).
+Itens que **não** estão decididos e não devem ser tratados como homologados (por exemplo: gateway final, mecanismo de encerramento da negociação, regras de avaliação) estão listados em [decisions/open-decisions.md](decisions/open-decisions.md). Duas questões deixaram de constar dessa lista: OD-09, fechada por [ADR-0005](adr/0005-prisma-orm-migrations.md), e OD-04, fechada por [product/listing-lifecycle.md](product/listing-lifecycle.md) (DEC-027).
 
 ## 5. Riscos
 
