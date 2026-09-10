@@ -50,7 +50,7 @@ As regras de negócio que governam este fluxo estão em [business-rules.md](busi
 | Capacidade | Regras relacionadas | Observação |
 | --- | --- | --- |
 | Cadastro e login por email/senha com verificação de email | — | Better Auth como solução inicial |
-| Publicação e consulta de anúncios com imagens | RB-005, RB-006 | Localização pública limitada a cidade/UF; quantidade e regras de imagens em aberto |
+| Publicação e consulta de anúncios com imagens | RB-005, RB-006 | Localização pública limitada a cidade/UF; ciclo de vida do anúncio definido em [listing-lifecycle.md](listing-lifecycle.md); quantidade e regras de imagens em aberto |
 | Demonstração de interesse e solicitação de desbloqueio de contato | RB-003, RB-004 | Máximo de 3 solicitações pagas por anúncio; cobrança definitiva |
 | Cobrança de R$ 0,99 via Pix | RB-004 | Gateway não decidido; depende de spike |
 | Escolha de solicitante pelo anunciante | RB-001 | — |
@@ -78,7 +78,6 @@ Fora do núcleo inicial do MVP:
 | Encerramento da negociação | Definição do mecanismo de encerramento |
 | Avaliações | Definição das regras detalhadas de avaliação |
 | Moderação | Catálogo/política de itens proibidos |
-| Ciclo de vida do anúncio | Definição do ciclo de vida completo |
 | Upload de imagens | Definição de quantidade e regras das imagens |
 | Tratamento de dados pessoais | Política de retenção/exclusão de dados (LGPD) |
 | Cadastro | Definição formal de elegibilidade etária (OD-11) |

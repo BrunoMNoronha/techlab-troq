@@ -25,7 +25,7 @@ Fontes: [../product/mvp-scope.md](../product/mvp-scope.md), [../product/requirem
 - Baseline documental: escopo do MVP, regras RB-001 a RB-006, decisões abertas, riscos, ADRs 0001 a 0003 (concluído).
 - Público-alvo completo, requisitos rastreáveis, decision log, roadmap, backlog e workflow de agentes (esta entrega).
 - Spike do gateway Pix para exatamente R$ 0,99, com resultado registrado e decisão do gateway (OD-08, ADR-0004).
-- Fechamento das decisões que bloqueiam o modelo de dados: ORM e migrations (OD-09, fechada por [ADR-0005](../adr/0005-prisma-orm-migrations.md)), ciclo de vida do anúncio (OD-04), regras de imagens (OD-05).
+- Fechamento das decisões que bloqueiam o modelo de dados: ORM e migrations (OD-09, fechada por [ADR-0005](../adr/0005-prisma-orm-migrations.md)), ciclo de vida do anúncio (OD-04, fechada por [../product/listing-lifecycle.md](../product/listing-lifecycle.md)), regras de imagens (OD-05, aberta).
 - Fechamento das decisões de produto: encerramento (OD-01), avaliações (OD-02), itens proibidos (OD-03), desistência/reseleção (OD-06), exceções de pagamento (OD-07), retenção/exclusão (OD-10), elegibilidade etária (OD-11), natureza da demonstração de interesse (OD-12).
 - Arquitetura de dados e de API necessária antes da implementação (`architecture/overview.md`, `architecture/data-model.md`, `architecture/payments-design.md`, `architecture/contact-release.md`). OD-12 deve estar fechada antes da arquitetura final pré-implementação, salvo adiamento formal com impacto registrado; OD-12 não é gate do spike de pagamento.
 
@@ -34,7 +34,7 @@ Fontes: [../product/mvp-scope.md](../product/mvp-scope.md), [../product/requirem
 **Gate de saída:**
 
 - OD-08 e OD-09 fechadas, com ADRs correspondentes. OD-09 já está fechada por [ADR-0005](../adr/0005-prisma-orm-migrations.md); OD-08 permanece aberta.
-- OD-04 e OD-05 fechadas, ou explicitamente adiadas com registro de impacto no modelo de dados.
+- OD-05 fechada, ou explicitamente adiada com registro de impacto no modelo de dados. OD-04 já está fechada por [../product/listing-lifecycle.md](../product/listing-lifecycle.md).
 - Requisitos que a Fase 1 e a Fase 2 dependem com status `definido`.
 - Backlog da Fase 0 ([backlog.md](backlog.md)) sem itens `próximo` ou `bloqueado` que impeçam a Fase 1.
 
@@ -69,13 +69,13 @@ Fontes: [../product/mvp-scope.md](../product/mvp-scope.md), [../product/requirem
 
 - Autenticação com Better Auth: cadastro, verificação de email, login, logout, sessão (RF-001 a RF-003).
 - Conta do usuário (dados mínimos necessários, sem contato exposto).
-- Publicação de anúncio com ciclo de vida conforme OD-04 (RF-004).
+- Publicação de anúncio com ciclo de vida conforme [../product/listing-lifecycle.md](../product/listing-lifecycle.md) (RF-004).
 - Upload e otimização de imagens no R2 conforme OD-05 (RF-006, RNF-005).
 - Localização pública por cidade/UF (RF-007).
 - Consulta de anúncios: listagem e detalhe sem contato (RF-005).
 - Email transacional de verificação via Resend (RF-021).
 
-**Dependências:** gate da Fase 1; OD-04, OD-05 e OD-11 fechadas ou adiadas com registro.
+**Dependências:** gate da Fase 1; OD-04 fechada; OD-05 e OD-11 fechadas ou adiadas com registro.
 
 **Gate de saída:**
 
