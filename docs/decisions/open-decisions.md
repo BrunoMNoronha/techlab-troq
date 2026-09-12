@@ -11,12 +11,6 @@ Registro das questões que **ainda não foram decididas** na Fase 0. Nenhum item
 
 ## Lista de decisões abertas
 
-### OD-03 — Catálogo/política de itens proibidos
-
-- **Contexto:** RB-006 exige remoção de anúncios com itens proibidos.
-- **O que falta decidir:** lista de categorias proibidas, critérios de moderação, fluxo de denúncia e prazos de resposta.
-- **Bloqueia:** implementação de moderação.
-
 ### OD-06 — Política de desistência e reseleção
 
 - **Contexto:** o anunciante escolhe uma solicitação entre até 3 pagas (RB-001, RB-003).
@@ -67,10 +61,11 @@ Itens que já constaram desta lista e foram fechados por documento próprio. O I
 | --- | --- | --- | --- |
 | OD-01 | Mecanismo de encerramento da negociação | [../product/negotiation-lifecycle.md](../product/negotiation-lifecycle.md) | DEC-029 em [decision-log.md](decision-log.md) |
 | OD-02 | Regras detalhadas de avaliação | [../product/ratings.md](../product/ratings.md) | DEC-030 em [decision-log.md](decision-log.md) |
+| OD-03 | Catálogo/política de itens proibidos | [../product/prohibited-items.md](../product/prohibited-items.md) | DEC-031 em [decision-log.md](decision-log.md) |
 | OD-04 | Ciclo de vida completo do anúncio | [../product/listing-lifecycle.md](../product/listing-lifecycle.md) | DEC-027 em [decision-log.md](decision-log.md) |
 | OD-05 | Quantidade e regras das imagens | [../product/image-policy.md](../product/image-policy.md) | DEC-028 em [decision-log.md](decision-log.md) |
 | OD-09 | ORM e estratégia de migrations | [../adr/0005-prisma-orm-migrations.md](../adr/0005-prisma-orm-migrations.md) | DEC-026 em [decision-log.md](decision-log.md) |
 
 ## Itens explicitamente fora desta lista
 
-Já decididos e registrados como vigentes: arquitetura, stack, banco, deploy, autenticação inicial, armazenamento de imagens, email transacional, a recomendação de reserva atômica de vaga, o ORM/estratégia de migrations, o ciclo de vida do anúncio, a política de imagens do anúncio, o ciclo de vida e encerramento da negociação e a política de avaliações. Ver [../project-state.md](../project-state.md).
+Já decididos e registrados como vigentes: arquitetura, stack, banco, deploy, autenticação inicial, armazenamento de imagens, email transacional, a recomendação de reserva atômica de vaga, o ORM/estratégia de migrations, o ciclo de vida do anúncio, a política de imagens do anúncio, o ciclo de vida e encerramento da negociação, a política de avaliações e a política de itens proibidos, denúncia, moderação e remoção. Ver [../project-state.md](../project-state.md).

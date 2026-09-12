@@ -38,7 +38,7 @@ Observações aparecem somente quando já confirmadas. Questões derivadas que a
 
 - **Regra:** anúncios com itens proibidos devem ser removidos.
 - **Implicação operacional:** deve existir um caminho de denúncia e moderação que resulte na remoção de anúncios com itens proibidos.
-- **Observações confirmadas:** o catálogo/política de itens proibidos ainda não foi definido.
+- **Observações confirmadas:** o catálogo/política de itens proibidos está definido em [prohibited-items.md](prohibited-items.md) (DEC-031): catálogo por categorias PI-01 a PI-12 com fundamento `ilegal`, `regulado` ou `política`; ausência de um item na lista não o torna permitido; o MVP não oferece fluxo de autorização documental para categorias reguladas; a denúncia exige usuário autenticado e verificado e não altera o estado do anúncio; a moderação decide `procedente`, `improcedente` ou `sem_acao`; a remoção usa exclusivamente as transições administrativas de [listing-lifecycle.md](listing-lifecycle.md) e é terminal; os prazos de decisão são de 24 horas corridas na classe crítica e 5 dias úteis na comum; há reincidência progressiva e contestação administrativa sem restauração automática; a identidade do denunciante não é revelada ao anunciante.
 
 ## Referência cruzada
 
@@ -49,4 +49,4 @@ Observações aparecem somente quando já confirmadas. Questões derivadas que a
 | RB-003 | 5, 6 | [../delivery/risks.md](../delivery/risks.md) |
 | RB-004 | 5 | [../delivery/risks.md](../delivery/risks.md) |
 | RB-005 | 2 | [mvp-scope.md](mvp-scope.md) |
-| RB-006 | 11 | [../delivery/risks.md](../delivery/risks.md) |
+| RB-006 | 11 | [prohibited-items.md](prohibited-items.md), [listing-lifecycle.md](listing-lifecycle.md), [../delivery/risks.md](../delivery/risks.md) |

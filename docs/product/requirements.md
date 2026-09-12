@@ -1,6 +1,6 @@
 # Catálogo de requisitos — TROQ
 
-Catálogo inicial de requisitos rastreáveis do MVP. Contém **apenas** requisitos derivados das decisões já vigentes na Fase 0 ([../project-state.md](../project-state.md), [business-rules.md](business-rules.md), [listing-lifecycle.md](listing-lifecycle.md), [image-policy.md](image-policy.md), [negotiation-lifecycle.md](negotiation-lifecycle.md), ADRs em [../adr/](../adr/), [../decisions/decision-log.md](../decisions/decision-log.md)). Nenhum requisito aqui fecha uma decisão listada em [../decisions/open-decisions.md](../decisions/open-decisions.md).
+Catálogo inicial de requisitos rastreáveis do MVP. Contém **apenas** requisitos derivados das decisões já vigentes na Fase 0 ([../project-state.md](../project-state.md), [business-rules.md](business-rules.md), [listing-lifecycle.md](listing-lifecycle.md), [image-policy.md](image-policy.md), [negotiation-lifecycle.md](negotiation-lifecycle.md), [ratings.md](ratings.md), [prohibited-items.md](prohibited-items.md), ADRs em [../adr/](../adr/), [../decisions/decision-log.md](../decisions/decision-log.md)). Nenhum requisito aqui fecha uma decisão listada em [../decisions/open-decisions.md](../decisions/open-decisions.md).
 
 ## Convenções
 
@@ -22,7 +22,7 @@ Catálogo inicial de requisitos rastreáveis do MVP. Contém **apenas** requisit
 | Solicitações e pagamentos | RF-008 a RF-012 | 0 | 3 | 2 |
 | Escolha e contato | RF-013 a RF-015 | 2 | 1 | 0 |
 | Encerramento e avaliações | RF-016, RF-017 | 2 | 0 | 0 |
-| Denúncia e moderação | RF-018 a RF-020 | 0 | 3 | 0 |
+| Denúncia e moderação | RF-018 a RF-020 | 3 | 0 | 0 |
 | Transversais | RF-021, RF-022 | 0 | 2 | 0 |
 | Não funcionais | RNF-001 a RNF-018 | 9 | 9 | 0 |
 
@@ -78,8 +78,8 @@ Catálogo inicial de requisitos rastreáveis do MVP. Contém **apenas** requisit
 - **Prioridade MVP:** obrigatória.
 - **Origem:** fluxo central (passo 2); capacidade obrigatória em [mvp-scope.md](mvp-scope.md).
 - **Regra de negócio relacionada:** RB-005, RB-006.
-- **Decisão aberta relacionada:** OD-03 (itens proibidos). OD-04 foi fechada por [listing-lifecycle.md](listing-lifecycle.md) (DEC-027) e OD-05 por [image-policy.md](image-policy.md) (DEC-028).
-- **Critério de aceite (alto nível):** anúncio criado por usuário autenticado e verificado; nenhum dado de localização mais preciso que cidade/UF é armazenado ou exibido publicamente; o anúncio nasce no estado `draft` e só se torna público por publicação explícita do anunciante, conforme [listing-lifecycle.md](listing-lifecycle.md); a publicação exige pelo menos uma imagem processada com sucesso, conforme [image-policy.md](image-policy.md).
+- **Decisão aberta relacionada:** — (OD-03 fechada por [prohibited-items.md](prohibited-items.md), DEC-031; OD-04 por [listing-lifecycle.md](listing-lifecycle.md), DEC-027; OD-05 por [image-policy.md](image-policy.md), DEC-028).
+- **Critério de aceite (alto nível):** anúncio criado por usuário autenticado e verificado; nenhum dado de localização mais preciso que cidade/UF é armazenado ou exibido publicamente; o anúncio nasce no estado `draft` e só se torna público por publicação explícita do anunciante, conforme [listing-lifecycle.md](listing-lifecycle.md); a publicação exige pelo menos uma imagem processada com sucesso, conforme [image-policy.md](image-policy.md); a publicação exige também a aceitação expressa da declaração de conformidade com [prohibited-items.md](prohibited-items.md) (DEC-031), registrada com instante, e admite validações preventivas apenas auxiliares, sem que um bloqueio preventivo constitua infração ou conte para reincidência.
 - **Status:** parcialmente definido. Campos além de título, descrição, imagens e cidade/UF não estão definidos.
 
 #### RF-005 — Consulta de anúncios
@@ -97,7 +97,7 @@ Catálogo inicial de requisitos rastreáveis do MVP. Contém **apenas** requisit
 - **Descrição:** o anunciante envia imagens do anúncio, armazenadas no Cloudflare R2 via API S3-compatible; os derivados processados são servidos publicamente conforme [image-policy.md](image-policy.md).
 - **Prioridade MVP:** obrigatória.
 - **Origem:** [../adr/0003-object-storage-r2.md](../adr/0003-object-storage-r2.md) (DEC-014); [image-policy.md](image-policy.md) (DEC-028).
-- **Regra de negócio relacionada:** RB-006 (remoção do anúncio implica tratamento das imagens).
+- **Regra de negócio relacionada:** RB-006 (remoção do anúncio implica tratamento das imagens; critérios de remoção em [prohibited-items.md](prohibited-items.md), DEC-031).
 - **Decisão aberta relacionada:** OD-10 (expurgo e retenção dos derivados persistidos). OD-05 foi fechada por [image-policy.md](image-policy.md) (DEC-028). O efeito do estado do anúncio sobre as imagens está definido em [listing-lifecycle.md](listing-lifecycle.md): imagens deixam de ser servidas publicamente junto com o anúncio; o expurgo definitivo dos objetos segue OD-10.
 - **Critério de aceite (alto nível):** de 1 a 6 imagens por anúncio, com pelo menos uma imagem processada com sucesso para publicar e a primeira da ordenação como capa; entrada restrita a JPEG, PNG e WebP estático, com no máximo 10 MB, no mínimo 320 px por lado e no máximo 50 megapixels; upload direto ao R2 por operação S3-compatible de curta duração autorizada server-side, sem trafegar o binário por Vercel Function; validação por conteúdo com decodificação efetiva, chave gerada pela aplicação, regravação da imagem e remoção de EXIF/GPS após auto-orientação; derivados públicos `thumb` 320 px, `medium` 768 px e `large` 1600 px em WebP qualidade 80, sem ampliação; original temporário nunca público e limpo em no máximo 24 horas; imagens deixam de ser servidas publicamente quando o anúncio sai de `published`; imagens nunca contêm dados protegidos em objetos públicos.
 - **Status:** parcialmente definido. Upload, validação e processamento estão definidos por [image-policy.md](image-policy.md); apenas a retenção e o expurgo definitivo dos derivados persistidos seguem abertos (OD-10).
@@ -222,13 +222,13 @@ Catálogo inicial de requisitos rastreáveis do MVP. Contém **apenas** requisit
 
 #### RF-018 — Denúncia de anúncio
 
-- **Descrição:** usuários podem denunciar anúncios.
+- **Descrição:** usuários autenticados podem denunciar anúncios que violem a política de itens proibidos.
 - **Prioridade MVP:** obrigatória.
-- **Origem:** fluxo central (passo 11); RB-006.
+- **Origem:** fluxo central (passo 11); RB-006; [prohibited-items.md](prohibited-items.md) (DEC-031).
 - **Regra de negócio relacionada:** RB-006.
-- **Decisão aberta relacionada:** OD-03 (fluxo de denúncia, categorias, prazos).
-- **Critério de aceite (alto nível):** denúncia registrada com anúncio, denunciante e motivo; encaminhada para moderação (RF-019).
-- **Status:** parcialmente definido.
+- **Decisão aberta relacionada:** — (OD-03 fechada por [prohibited-items.md](prohibited-items.md), DEC-031).
+- **Critério de aceite (alto nível):** somente usuário autenticado e com email verificado pode denunciar, não havendo denúncia anônima no MVP; a denúncia identifica um anúncio e é única por par (denunciante, anúncio), de modo que uma segunda tentativa do mesmo usuário sobre o mesmo anúncio é aceita de forma idempotente sem criar nova denúncia; o motivo é obrigatório e corresponde a exatamente uma categoria de lista fechada derivada do catálogo PI-01 a PI-12, mais a opção `outro`; existe um campo único de texto complementar opcional limitado a 500 caracteres; a denúncia nasce no estado `recebida` e está associada ao anúncio e ao denunciante; o denunciante recebe confirmação imediata de registro, sem promessa de resultado; a identidade do denunciante nunca é revelada ao anunciante, não aparece em payload público nem em cache público e não é exposta na contestação; a coleta é mínima, limitada a anúncio, denunciante, categoria, texto opcional, instante e estado; o antiabuso usa a regra de unicidade, limite de volume por usuário por janela de tempo e restrição administrativa auditada do canal em caso de denúncias reiteradamente improcedentes e manifestamente abusivas, sem que uma denúncia improcedente isolada caracterize abuso; registrar denúncia não altera o estado do anúncio, não o retira da consulta pública e não interrompe interesses, solicitações, pagamentos, escolha ou negociação; o anunciante não é notificado da existência da denúncia; o registro é auditado (RF-022).
+- **Status:** definido.
 
 #### RF-019 — Moderação
 
@@ -236,9 +236,9 @@ Catálogo inicial de requisitos rastreáveis do MVP. Contém **apenas** requisit
 - **Prioridade MVP:** obrigatória.
 - **Origem:** RB-006; R-05.
 - **Regra de negócio relacionada:** RB-006.
-- **Decisão aberta relacionada:** OD-03 (critérios, gatilhos, prazos, recurso e reincidência). O estado `removed` e suas transições estão definidos em [listing-lifecycle.md](listing-lifecycle.md) (DEC-027).
-- **Critério de aceite (alto nível):** a moderação leva o anúncio de `draft`, `published` ou `paused` para `removed`, que é terminal; decisão de moderação registrada em auditoria com motivo (RF-022); anúncio removido deixa de ser consultável e não autoriza nova escolha nem nova liberação de contato.
-- **Status:** parcialmente definido. Perfis de moderador e ferramentas serão definidos na implementação; critérios dependem de OD-03.
+- **Decisão aberta relacionada:** — (OD-03 fechada por [prohibited-items.md](prohibited-items.md), DEC-031). O estado `removed` e suas transições estão definidos em [listing-lifecycle.md](listing-lifecycle.md) (DEC-027).
+- **Critério de aceite (alto nível):** a denúncia é decidida em exatamente um de três estados terminais — `procedente`, `improcedente` ou `sem_acao`, este último para duplicada ou anúncio já `removed` —, a partir do estado inicial `recebida`, sem estado intermediário de análise, sem fila priorizada, sem SLA empresarial, sem escalonamento e com um único perfil de moderação; o moderador pode apenas ler denúncias e anúncios denunciados inclusive não públicos, decidir a denúncia com motivo registrado, remover o anúncio como efeito de decisão `procedente` ou de ofício, aplicar advertência, restrição temporária ou bloqueio administrativo, decidir contestações e restringir o canal de denúncia de usuário abusivo; o moderador não pode editar conteúdo de anúncio, ajustar nota de avaliação, cancelar pagamento, gerar reembolso, revogar liberação de contato já autorizada, restaurar anúncio removido, acessar telefone/WhatsApp fora do previsto por DEC-023 nem alterar o estado da negociação; a moderação pode agir de ofício, registrando a origem do conhecimento; em caso ambíguo, dúvida material razoável em categoria de alto risco leva à remoção com motivo expresso e dúvida fora de alto risco leva à manutenção com decisão improcedente, sem que o moderador produza análise jurídica ou exija documento do anunciante; o prazo de decisão é de 24 horas corridas na classe crítica e de 5 dias úteis na classe comum, contados do registro da denúncia ou do conhecimento de ofício, sem compromisso de operação 24x7, com classe determinada pela categoria informada e medição derivada da trilha de auditoria; a reincidência segue advertência na primeira decisão procedente, restrição de publicação de 7 dias corridos na segunda e bloqueio administrativo a partir da terceira, com bloqueio imediato em casos graves; existe contestação administrativa, uma por decisão, em 7 dias corridos, decidida em 5 dias úteis, sem anexo documental, sem efeito suspensivo e sem restauração automática; a decisão `procedente` é comunicada ao anunciante com a categoria aplicada e a possibilidade de contestar, sem identificar o denunciante; toda decisão, sanção e contestação é registrada em auditoria com ator, alvo, instante, ação, motivo/categoria e resultado (RF-022); a moderação leva o anúncio de `draft`, `published` ou `paused` para `removed`, que é terminal, e anúncio removido deixa de ser consultável e não autoriza nova escolha nem nova liberação de contato.
+- **Status:** definido. Perfil único de moderação, poderes, estados da denúncia, critérios, prazos, reincidência e contestação estão definidos em [prohibited-items.md](prohibited-items.md); ferramentas e painel administrativo são detalhe de implementação, não decisão aberta.
 
 #### RF-020 — Remoção de anúncio com item proibido
 
@@ -246,9 +246,9 @@ Catálogo inicial de requisitos rastreáveis do MVP. Contém **apenas** requisit
 - **Prioridade MVP:** obrigatória.
 - **Origem:** RB-006.
 - **Regra de negócio relacionada:** RB-006.
-- **Decisão aberta relacionada:** OD-03 (catálogo), OD-07 (tratamento financeiro das solicitações pagas de anúncio removido), OD-10 (retenção e expurgo dos dados e derivados de imagem do anúncio removido). Os efeitos do estado sobre as solicitações estão definidos em [listing-lifecycle.md](listing-lifecycle.md); os efeitos sobre as imagens estão definidos em [image-policy.md](image-policy.md) (DEC-028), que fechou OD-05.
-- **Critério de aceite (alto nível):** anúncio classificado como item proibido vai para `removed`, estado terminal, e não volta a ser público; solicitações pagas existentes são preservadas e a cobrança permanece definitiva (RB-004); o tratamento financeiro de exceção segue OD-07.
-- **Status:** parcialmente definido. A regra está vigente; o catálogo não.
+- **Decisão aberta relacionada:** OD-07 (tratamento financeiro das solicitações pagas de anúncio removido), OD-10 (retenção e expurgo dos dados e derivados de imagem do anúncio removido). OD-03 foi fechada por [prohibited-items.md](prohibited-items.md) (DEC-031), que define o catálogo e os critérios. Os efeitos do estado sobre as solicitações estão definidos em [listing-lifecycle.md](listing-lifecycle.md); os efeitos sobre as imagens estão definidos em [image-policy.md](image-policy.md) (DEC-028), que fechou OD-05.
+- **Critério de aceite (alto nível):** a remoção ocorre quando, e somente quando, uma denúncia é decidida como `procedente`, a moderação conclui de ofício que o anúncio viola [prohibited-items.md](prohibited-items.md), ou há dúvida material razoável em categoria de alto risco; nota baixa, discordância entre usuários, negociação malsucedida, denúncia improcedente, denúncia não analisada, suspeita fraca fora de alto risco e bloqueio preventivo na publicação não geram remoção; a classificação usa o catálogo por categorias PI-01 a PI-12, com distinção registrada entre item ilegal, item externamente regulado e item proibido por decisão de produto, e a ausência de um item na lista não o torna permitido; o anúncio vai para `removed`, estado terminal, e não volta a ser público, deixando imediatamente de ser servido em qualquer superfície pública, inclusive caches, junto com suas imagens conforme [image-policy.md](image-policy.md); os dados do anúncio, o motivo, o moderador e o instante são preservados para auditoria e para o direito de contestação; interesses existentes são preservados como histórico e solicitações não pagas são encerradas sem cobrança com liberação da vaga reservada; solicitações pagas existentes são preservadas e a cobrança permanece definitiva (RB-004), sem qualquer reembolso, estorno, crédito ou compensação criado por esta remoção, e o tratamento financeiro de exceção segue OD-07; o limite de RB-003 não é reiniciado nem devolvido; a liberação de contato já autorizada não é revogada e nenhuma nova escolha ou liberação é autorizada; a negociação existente permanece inalterada e seu encerramento continua exclusivo das partes (DEC-029); republicar conteúdo substancialmente equivalente ao removido é nova violação, salvo autorização expressa decorrente de contestação `revista`; a remoção é auditada com ator, alvo, instante, ação, motivo/categoria e resultado (RF-022).
+- **Status:** definido. Os critérios e o catálogo estão em [prohibited-items.md](prohibited-items.md); apenas o tratamento financeiro de exceção (OD-07) e a retenção/expurgo (OD-10) seguem abertos e não são pré-condição da remoção.
 
 ### Transversais
 
@@ -264,13 +264,13 @@ Catálogo inicial de requisitos rastreáveis do MVP. Contém **apenas** requisit
 
 #### RF-022 — Auditoria das operações críticas
 
-- **Descrição:** operações críticas geram registro de auditoria imutável: liberação de contato (obrigatória por decisão vigente), escolha de solicitante, aprovação de pagamento, encerramento da negociação (DEC-029), invalidação administrativa de avaliação (DEC-030) e decisões de moderação.
+- **Descrição:** operações críticas geram registro de auditoria imutável: liberação de contato (obrigatória por decisão vigente), escolha de solicitante, aprovação de pagamento, encerramento da negociação (DEC-029), invalidação administrativa de avaliação (DEC-030) e os eventos administrativos de itens proibidos (DEC-031): registro e decisão de denúncia, remoção administrativa inclusive de ofício, advertência, restrição temporária, bloqueio administrativo, restrição do canal de denúncia, registro e decisão de contestação e aceitação da declaração de conformidade na publicação.
 - **Prioridade MVP:** obrigatória.
 - **Origem:** DEC-023 (auditoria da liberação de contato); [../adr/0002-postgresql-neon.md](../adr/0002-postgresql-neon.md).
 - **Regra de negócio relacionada:** RB-001, RB-002, RB-003, RB-004, RB-006.
 - **Decisão aberta relacionada:** OD-10 (retenção das trilhas de auditoria).
-- **Critério de aceite (alto nível):** cada operação listada registra ator, alvo, instante e resultado; o encerramento da negociação registra ainda estado anterior e estado resultante (`active` -> `closed`); a invalidação administrativa de avaliação registra ator administrativo, avaliação, negociação, instante e motivo ([ratings.md](ratings.md), DEC-030); o registro não contém o contato em texto claro fora da própria liberação autorizada.
-- **Status:** parcialmente definido. A liberação de contato, o encerramento da negociação e a invalidação administrativa de avaliação estão definidos; a extensão às demais operações é direcionamento derivado e a retenção da trilha depende de OD-10.
+- **Critério de aceite (alto nível):** cada operação listada registra ator, alvo, instante e resultado; o encerramento da negociação registra ainda estado anterior e estado resultante (`active` -> `closed`); a invalidação administrativa de avaliação registra ator administrativo, avaliação, negociação, instante e motivo ([ratings.md](ratings.md), DEC-030); cada evento administrativo de itens proibidos registra ator, alvo, instante, ação, motivo/categoria e resultado, com indicação expressa quando a decisão se der por dúvida material em categoria de alto risco ([prohibited-items.md](prohibited-items.md), DEC-031); o registro não contém o contato em texto claro fora da própria liberação autorizada.
+- **Status:** parcialmente definido. A liberação de contato, o encerramento da negociação, a invalidação administrativa de avaliação e os eventos administrativos de denúncia, moderação, sanção e contestação estão definidos; a extensão às demais operações é direcionamento derivado e a retenção da trilha depende de OD-10.
 
 ## Requisitos não funcionais
 
@@ -430,7 +430,7 @@ Catálogo inicial de requisitos rastreáveis do MVP. Contém **apenas** requisit
 | RB-003 | RF-008, RF-009, RF-010, RF-012, RF-013, RF-022 |
 | RB-004 | RF-009, RF-011, RF-022 |
 | RB-005 | RF-004, RF-005, RF-007, RNF-008 |
-| RB-006 | RF-004, RF-006, RF-018, RF-019, RF-020, RF-022 |
+| RB-006 | RF-004, RF-006, RF-018, RF-019, RF-020, RF-021, RF-022 |
 
 ## Rastreabilidade por decisão aberta
 
@@ -438,7 +438,7 @@ Catálogo inicial de requisitos rastreáveis do MVP. Contém **apenas** requisit
 | --- | --- |
 | OD-01 | fechada por [negotiation-lifecycle.md](negotiation-lifecycle.md) (DEC-029); define estados `active`/`closed`, atores autorizados, encerramento unilateral, irreversibilidade, ausência de timeout, idempotência e auditoria; deixa de bloquear RF-016, que passa a `definido`, e sai de RF-017 |
 | OD-02 | fechada por [ratings.md](ratings.md) (DEC-030); define natureza bilateral, elegibilidade, nota 1–5 sem texto livre, janela de 14 dias corridos, publicação cega, edição antes da publicação, imutabilidade após a publicação, média simples com contagem e invalidação administrativa auditada; deixa de bloquear RF-017, que passa a `definido` |
-| OD-03 | RF-004, RF-018, RF-019, RF-020 |
+| OD-03 | fechada por [prohibited-items.md](prohibited-items.md) (DEC-031); define o catálogo por categorias PI-01 a PI-12 com distinção entre item ilegal, regulado e proibido por decisão de produto, a ausência de fluxo de autorização documental no MVP, a regra de casos ambíguos, a declaração de conformidade na publicação, o fluxo de denúncia, o fluxo de moderação, os critérios e efeitos da remoção, os prazos de decisão, a reincidência, a contestação, a auditoria e a privacidade do denunciante; deixa de bloquear RF-018, RF-019 e RF-020, que passam a `definido`, sai de RF-004 e estende RF-022 |
 | OD-04 | fechada por [listing-lifecycle.md](listing-lifecycle.md) (DEC-027); define estados, transições, visibilidade pública e efeitos sobre interesses e solicitações; deixa de bloquear o modelo de dados do anúncio |
 | OD-05 | fechada por [image-policy.md](image-policy.md) (DEC-028); define quantidade, formatos, limites, validação, processamento, derivados e visibilidade das imagens; deixa de bloquear RF-006 e define os critérios de RNF-005 |
 | OD-06 | RF-013, RF-015 |

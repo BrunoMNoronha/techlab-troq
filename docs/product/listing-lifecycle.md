@@ -36,7 +36,7 @@ São operacionalmente idênticos quanto a visibilidade e a novas solicitações,
 
 - **Autor da decisão:** o anunciante em `closed`, a moderação em `removed`.
 - **Direito de ação do anunciante:** um anúncio `removed` não pode ser recriado com o mesmo conteúdo (RB-006); um anúncio `closed` pode ser republicado como um **novo** anúncio.
-- **Consequências futuras:** reincidência, recurso e efeitos sobre a conta pertencem a OD-03 e precisam distinguir a origem da saída.
+- **Consequências futuras:** reincidência, contestação e efeitos sobre a conta pertenciam a OD-03 e precisam distinguir a origem da saída; foram definidos depois em [prohibited-items.md](prohibited-items.md) (DEC-031), que preserva integralmente esta máquina de estados.
 
 Modelar `removed` como um sinalizador sobre `closed` misturaria decisão do usuário com decisão administrativa e tornaria essa distinção dependente de um campo acessório. O custo de um estado adicional é menor que o custo dessa ambiguidade.
 
@@ -45,7 +45,7 @@ Modelar `removed` como um sinalizador sobre `closed` misturaria decisão do usu�
 | Estado avaliado | Origem | Decisão | Motivo |
 | --- | --- | --- | --- |
 | `expired` / expirado | Prática comum de marketplaces com prazo de veiculação | **Fora do MVP** | Ver seção 7. |
-| `under_review` / em análise | `under_review` do Mercado Livre | **Fora do MVP** | Exigiria definir gatilhos, critérios e SLA de análise, que são OD-03. Uma denúncia é uma entidade própria (RF-018) e não precisa alterar o estado do anúncio para existir. Um anúncio permanece `published` até que a moderação decida removê-lo. |
+| `under_review` / em análise | `under_review` do Mercado Livre | **Fora do MVP** | Exigiria definir gatilhos, critérios e prazos de análise, que eram OD-03; [prohibited-items.md](prohibited-items.md) (DEC-031) os definiu **sem** criar estado intermediário de anúncio, confirmando esta rejeição. Uma denúncia é uma entidade própria (RF-018) e não precisa alterar o estado do anúncio para existir. Um anúncio permanece `published` até que a moderação decida removê-lo. |
 | `inactive` / inativo | `inactive` do Mercado Livre | **Fora do MVP** | É consequência de `under_review` no modelo de origem; sem `under_review`, não tem função. Não acrescenta nada a `paused`. |
 | `out_of_stock` / esgotado | `OUT_OF_STOCK` do eBay | **Fora do MVP** | Pressupõe estoque e quantidade. O TROQ não é comércio de estoque: o anúncio é uma oferta única de contato controlado. `paused` cobre o caso de indisponibilidade temporária. |
 | `deleted` / excluído | `sub_status: deleted` do Mercado Livre | **Fora do MVP** | Exclusão de dados é assunto de retenção e LGPD ([OD-10](../decisions/open-decisions.md)), não de ciclo de vida da oferta. Introduzir esse estado agora anteciparia OD-10. |
@@ -57,7 +57,7 @@ Modelar `removed` como um sinalizador sobre `closed` misturaria decisão do usu�
 Registrados como atributos do anúncio, não como estados:
 
 - instante de publicação, de pausa, de reativação, de encerramento e de remoção (timestamps, base de auditoria em RF-022);
-- motivo da remoção administrativa e identificação do moderador (RF-019, detalhamento em OD-03);
+- motivo da remoção administrativa e identificação do moderador (RF-019, detalhamento em [prohibited-items.md](prohibited-items.md), DEC-031);
 - existência e quantidade de interesses, solicitações e solicitações pagas (entidades próprias, RF-008 a RF-010);
 - existência de solicitante escolhido (atributo da escolha, RF-013);
 - estado da negociação (ciclo próprio, [negotiation-lifecycle.md](negotiation-lifecycle.md), DEC-029).
@@ -159,7 +159,7 @@ Definido aqui:
 - em anúncio `removed`, **nenhuma nova liberação de contato deve ser autorizada**, ainda que exista solicitação paga elegível. Esta é a única restrição que a remoção impõe além da visibilidade, e ela protege RB-006: a plataforma não intermedia novos contatos originados de um anúncio reconhecidamente proibido;
 - a escolha de solicitante em anúncio `removed` fica igualmente indisponível, por ser o passo anterior à liberação (RF-013).
 
-**Não** definido aqui, e permanece em [OD-03](../decisions/open-decisions.md): catálogo de itens proibidos, critérios de classificação, gatilhos de análise, SLA, direito de recurso, revisão da decisão, reincidência e efeitos sobre a conta do anunciante. **Não** definido aqui, e permanece em [OD-07](../decisions/open-decisions.md): tratamento financeiro das solicitações pagas de um anúncio removido.
+**Não** definido aqui, e definido depois em [prohibited-items.md](prohibited-items.md) (DEC-031), que fechou OD-03: catálogo de itens proibidos, critérios de classificação, gatilhos de análise, prazos de decisão, contestação administrativa, reincidência e efeitos sobre a conta do anunciante. Aquele documento usa exclusivamente T7 a T9 desta matriz, mantém `removed` terminal e **não** cria estado novo de anúncio. **Não** definido aqui, e permanece em [OD-07](../decisions/open-decisions.md): tratamento financeiro das solicitações pagas de um anúncio removido.
 
 ## 7. Expiração automática — decisão explícita
 
@@ -228,11 +228,12 @@ Consequências normativas:
 | RF-009, RF-010 | Novas solicitações somente em `published`; vagas reservadas e não pagas são liberadas em `closed`/`removed`. |
 | RF-013, RF-015 | Escolha e liberação indisponíveis em `removed`; efeitos de desistência e reseleção seguem OD-06. |
 | RF-016, RF-017 | Independentes do estado do anúncio; RF-016 segue [negotiation-lifecycle.md](negotiation-lifecycle.md) (DEC-029) e RF-017 segue [ratings.md](ratings.md) (DEC-030). |
-| RF-019, RF-020 | Moderação usa T7 a T9; critérios seguem OD-03. |
+| RF-019, RF-020 | Moderação usa T7 a T9; os critérios estão em [prohibited-items.md](prohibited-items.md) (DEC-031). |
 | RF-022 | Transições T5 a T9 são auditadas. |
 | OD-05 | Fechada posteriormente por [image-policy.md](image-policy.md) (DEC-028); nada neste documento a antecipou. |
 | OD-01 | Fechada posteriormente por [negotiation-lifecycle.md](negotiation-lifecycle.md) (DEC-029); nada neste documento a antecipou, e DEC-029 preserva integralmente a máquina de estados do anúncio. |
-| OD-03, OD-06, OD-07, OD-08, OD-10, OD-11, OD-12 | Permanecem abertas. Nada neste documento as fecha ou antecipa. |
+| OD-06, OD-07, OD-08, OD-10, OD-11, OD-12 | Permanecem abertas. Nada neste documento as fecha ou antecipa. |
+| OD-03 | Permanecia aberta nesta decisão; foi fechada depois por [prohibited-items.md](prohibited-items.md) (DEC-031), que preserva integralmente os estados, a matriz de transições e os efeitos definidos aqui. |
 | OD-02 | Permanecia aberta nesta decisão; foi fechada depois por [ratings.md](ratings.md) (DEC-030), que preserva a independência entre o estado do anúncio e a elegibilidade da avaliação. |
 
 ## 11. Referências externas consultadas
