@@ -9,7 +9,7 @@ Regras de negócio preservadas integralmente: RB-001 a RB-006 em [business-rules
 ## 1. Princípios adotados
 
 1. **Máquina de estados mínima.** Um estado só existe quando altera visibilidade pública, permissão de ação ou autorização. Fatos que podem ser representados por timestamp, motivo ou entidade separada não viram estado.
-2. **Anúncio não é negociação.** O estado do anúncio governa a *oferta pública*; o encerramento da negociação é outro ciclo, definido em OD-01.
+2. **Anúncio não é negociação.** O estado do anúncio governa a *oferta pública*; o encerramento da negociação é outro ciclo, definido em [negotiation-lifecycle.md](negotiation-lifecycle.md) (DEC-029).
 3. **Ação do anunciante é distinta da ação administrativa.** Encerramento voluntário e remoção por moderação são transições diferentes, com atores diferentes e leitura diferente para o usuário.
 4. **Nenhuma transição do anúncio desfaz um pagamento.** RB-004 é definitiva.
 5. **Nenhuma transição do anúncio revoga uma liberação de contato já autorizada.** A liberação já ocorreu e é auditada (RB-001, RF-015, RF-022).
@@ -50,7 +50,7 @@ Modelar `removed` como um sinalizador sobre `closed` misturaria decisão do usu�
 | `out_of_stock` / esgotado | `OUT_OF_STOCK` do eBay | **Fora do MVP** | Pressupõe estoque e quantidade. O TROQ não é comércio de estoque: o anúncio é uma oferta única de contato controlado. `paused` cobre o caso de indisponibilidade temporária. |
 | `deleted` / excluído | `sub_status: deleted` do Mercado Livre | **Fora do MVP** | Exclusão de dados é assunto de retenção e LGPD ([OD-10](../decisions/open-decisions.md)), não de ciclo de vida da oferta. Introduzir esse estado agora anteciparia OD-10. |
 | `negotiating` / em negociação | Direcionamento interno | **Rejeitado** | Confundiria anúncio com negociação. Ver seção 8. |
-| `fulfilled` / concluído | Direcionamento interno | **Rejeitado** | O desfecho da negociação é OD-01. Um anúncio cuja negociação terminou é encerrado pelo anunciante via `closed`, se ele assim decidir. |
+| `fulfilled` / concluído | Direcionamento interno | **Rejeitado** | O desfecho da negociação pertence ao ciclo próprio da negociação ([negotiation-lifecycle.md](negotiation-lifecycle.md), DEC-029). Um anúncio cuja negociação terminou é encerrado pelo anunciante via `closed`, se ele assim decidir. |
 
 ### 2.3 Fatos que não são estados
 
@@ -60,7 +60,7 @@ Registrados como atributos do anúncio, não como estados:
 - motivo da remoção administrativa e identificação do moderador (RF-019, detalhamento em OD-03);
 - existência e quantidade de interesses, solicitações e solicitações pagas (entidades próprias, RF-008 a RF-010);
 - existência de solicitante escolhido (atributo da escolha, RF-013);
-- estado da negociação (ciclo próprio, OD-01).
+- estado da negociação (ciclo próprio, [negotiation-lifecycle.md](negotiation-lifecycle.md), DEC-029).
 
 ## 3. Capacidades por estado
 
@@ -180,14 +180,14 @@ Consequência aceita: a base pode acumular anúncios `published` antigos. A miti
 | --- | --- | --- |
 | Objeto | A oferta pública | A relação entre anunciante e solicitante escolhido |
 | Escopo | Um anúncio | Uma escolha dentro de um anúncio |
-| Estados | Este documento (`draft`, `published`, `paused`, `closed`, `removed`) | Não definidos; pertencem a [OD-01](../decisions/open-decisions.md) |
-| Quem governa | Anunciante e moderação | A definir em OD-01 |
+| Estados | Este documento (`draft`, `published`, `paused`, `closed`, `removed`) | `active` e `closed`, definidos em [negotiation-lifecycle.md](negotiation-lifecycle.md) (DEC-029) |
+| Quem governa | Anunciante e moderação | Qualquer uma das duas partes da negociação, unilateralmente (DEC-029) |
 | Habilita avaliação | Não | Sim, após encerramento (RB-002) |
 
 Consequências normativas:
 
-- **`closed` não é encerramento de negociação.** Um anúncio `closed` significa apenas que a oferta saiu do ar. A negociação relacionada pode continuar existindo, e seu encerramento — que é a pré-condição das avaliações (RB-002, RF-016) — é um evento próprio, definido em OD-01.
-- **Encerrar a negociação não encerra o anúncio.** Nada neste documento faz um anúncio mudar de estado por causa de um evento de negociação. Se, ao fechar OD-01, for desejável sugerir ao anunciante que encerre o anúncio, isso será uma ação voluntária dele (T5 ou T6), nunca uma transição automática.
+- **`closed` não é encerramento de negociação.** Um anúncio `closed` significa apenas que a oferta saiu do ar. A negociação relacionada pode continuar existindo, e seu encerramento — que é a pré-condição das avaliações (RB-002, RF-016) — é um evento próprio, definido em [negotiation-lifecycle.md](negotiation-lifecycle.md) (DEC-029). Os dois ciclos permanecem independentes.
+- **Encerrar a negociação não encerra o anúncio.** Nada neste documento faz um anúncio mudar de estado por causa de um evento de negociação. DEC-029 confirma essa independência: sugerir ao anunciante que encerre o anúncio após o encerramento da negociação será sempre uma ação voluntária dele (T5 ou T6), nunca uma transição automática.
 - **Um anúncio pode deixar de aceitar novos interessados e ainda ter negociação viva.** É exatamente o caso de `paused` e `closed` com solicitante escolhido.
 - **Avaliações (RB-002, RF-017) nunca dependem do estado do anúncio.** Dependem do encerramento da negociação.
 
@@ -227,11 +227,12 @@ Consequências normativas:
 | RF-008 | Novos interesses somente em `published`. |
 | RF-009, RF-010 | Novas solicitações somente em `published`; vagas reservadas e não pagas são liberadas em `closed`/`removed`. |
 | RF-013, RF-015 | Escolha e liberação indisponíveis em `removed`; efeitos de desistência e reseleção seguem OD-06. |
-| RF-016, RF-017 | Independentes do estado do anúncio; seguem OD-01 e OD-02. |
+| RF-016, RF-017 | Independentes do estado do anúncio; RF-016 segue [negotiation-lifecycle.md](negotiation-lifecycle.md) (DEC-029) e RF-017 segue OD-02. |
 | RF-019, RF-020 | Moderação usa T7 a T9; critérios seguem OD-03. |
 | RF-022 | Transições T5 a T9 são auditadas. |
 | OD-05 | Fechada posteriormente por [image-policy.md](image-policy.md) (DEC-028); nada neste documento a antecipou. |
-| OD-01, OD-02, OD-03, OD-06, OD-07, OD-08, OD-10, OD-11, OD-12 | Permanecem abertas. Nada neste documento as fecha ou antecipa. |
+| OD-01 | Fechada posteriormente por [negotiation-lifecycle.md](negotiation-lifecycle.md) (DEC-029); nada neste documento a antecipou, e DEC-029 preserva integralmente a máquina de estados do anúncio. |
+| OD-02, OD-03, OD-06, OD-07, OD-08, OD-10, OD-11, OD-12 | Permanecem abertas. Nada neste documento as fecha ou antecipa. |
 
 ## 11. Referências externas consultadas
 

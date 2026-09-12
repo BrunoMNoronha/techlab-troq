@@ -53,6 +53,7 @@ Decisões já tomadas e válidas na Fase 0. Detalhes nos ADRs indicados.
 - Regras de negócio RB-001 a RB-006 homologadas — [product/business-rules.md](product/business-rules.md).
 - Ciclo de vida do anúncio: estados `draft`, `published`, `paused`, `closed` e `removed`; somente `published` é público e aceita novos interesses e solicitações; `closed` e `removed` são terminais; `removed` é exclusivo da moderação; nenhuma transição cancela solicitação paga nem revoga liberação de contato já autorizada; sem expiração automática no MVP — [product/listing-lifecycle.md](product/listing-lifecycle.md) (DEC-027).
 - Política de imagens do anúncio: mínimo de 1 imagem processada com sucesso para publicar e máximo de 6 por anúncio; entrada restrita a JPEG, PNG e WebP estático, com no máximo 10 MB, no mínimo 320 px por lado e no máximo 50 megapixels; upload direto do cliente ao R2 autorizado server-side, sem o binário trafegar por Vercel Function; validação por conteúdo, regravação, remoção de EXIF/GPS e derivados públicos `thumb`/`medium`/`large` (320/768/1600 px) em WebP qualidade 80; sem pré-moderação automática por IA — [product/image-policy.md](product/image-policy.md) (DEC-028).
+- Ciclo de vida da negociação: estados `active` e `closed`; a negociação nasce `active` quando a escolha ocorre e a liberação de contato fica autorizada por RB-001; qualquer uma das duas partes — anunciante ou solicitante escolhido — pode encerrá-la unilateralmente, com confirmação explícita do próprio ator, de forma imediata, irreversível, autorizada server-side, idempotente e auditada; sem timeout ou autoencerramento; `closed` satisfaz a pré-condição de RB-002 e não afirma sucesso da troca; o encerramento não altera anúncio, pagamento, contato liberado nem seleção — [product/negotiation-lifecycle.md](product/negotiation-lifecycle.md) (DEC-029).
 - Escopo do MVP — [product/mvp-scope.md](product/mvp-scope.md).
 
 ## 3. Ainda não implementado
@@ -68,7 +69,7 @@ Nada de código existe. Em particular, não foram criados:
 
 ## 4. Decisões abertas
 
-Itens que **não** estão decididos e não devem ser tratados como homologados (por exemplo: gateway final, mecanismo de encerramento da negociação, regras de avaliação) estão listados em [decisions/open-decisions.md](decisions/open-decisions.md). Três questões deixaram de constar dessa lista: OD-09, fechada por [ADR-0005](adr/0005-prisma-orm-migrations.md); OD-04, fechada por [product/listing-lifecycle.md](product/listing-lifecycle.md) (DEC-027); e OD-05, fechada por [product/image-policy.md](product/image-policy.md) (DEC-028).
+Itens que **não** estão decididos e não devem ser tratados como homologados (por exemplo: gateway final, regras de avaliação, desistência e reseleção) estão listados em [decisions/open-decisions.md](decisions/open-decisions.md). Quatro questões deixaram de constar dessa lista: OD-09, fechada por [ADR-0005](adr/0005-prisma-orm-migrations.md); OD-04, fechada por [product/listing-lifecycle.md](product/listing-lifecycle.md) (DEC-027); OD-05, fechada por [product/image-policy.md](product/image-policy.md) (DEC-028); e OD-01, fechada por [product/negotiation-lifecycle.md](product/negotiation-lifecycle.md) (DEC-029).
 
 ## 5. Riscos
 

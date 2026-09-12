@@ -41,7 +41,7 @@ Critérios formais de elegibilidade (incluindo elegibilidade etária) ainda não
 10. Após o encerramento, avaliações são permitidas.
 11. Anúncios podem ser denunciados e moderados.
 
-O modo como o encerramento (passo 9) é tecnicamente confirmado **não está definido**. Ver [../decisions/open-decisions.md](../decisions/open-decisions.md).
+O modo como o encerramento (passo 9) é tecnicamente confirmado está definido em [negotiation-lifecycle.md](negotiation-lifecycle.md) (DEC-029): a negociação tem os estados `active` e `closed`, e qualquer uma das duas partes pode encerrá-la unilateralmente, de forma explícita e irreversível. As regras detalhadas das avaliações (passo 10) continuam abertas; ver [../decisions/open-decisions.md](../decisions/open-decisions.md).
 
 As regras de negócio que governam este fluxo estão em [business-rules.md](business-rules.md).
 
@@ -55,7 +55,7 @@ As regras de negócio que governam este fluxo estão em [business-rules.md](busi
 | Cobrança de R$ 0,99 via Pix | RB-004 | Gateway não decidido; depende de spike |
 | Escolha de solicitante pelo anunciante | RB-001 | — |
 | Liberação de contato somente ao escolhido, com pagamento aprovado | RB-001 | Autorização server-side e auditoria obrigatórias |
-| Encerramento da negociação | RB-002 | Mecanismo de confirmação em aberto |
+| Encerramento da negociação | RB-002 | Estados `active` e `closed`; encerramento unilateral por qualquer uma das partes, definido em [negotiation-lifecycle.md](negotiation-lifecycle.md) (DEC-029) |
 | Avaliação após encerramento | RB-002 | Regras detalhadas em aberto |
 | Denúncia e moderação de anúncios | RB-006 | Catálogo de itens proibidos em aberto |
 | Email transacional | — | Resend como provedor inicial |
@@ -75,7 +75,7 @@ Fora do núcleo inicial do MVP:
 | --- | --- |
 | Pagamentos | Spike que prove cobrança de exatamente R$ 0,99, confirmação, webhook, idempotência e tarifas; escolha do gateway (Mercado Pago é apenas primeiro candidato) |
 | Limite de 3 solicitações pagas | Design de pagamentos detalhando reserva atômica de vaga antes da cobrança, com expiração |
-| Encerramento da negociação | Definição do mecanismo de encerramento |
+| Encerramento da negociação | Mecanismo definido em [negotiation-lifecycle.md](negotiation-lifecycle.md) (DEC-029); sem dependência aberta |
 | Avaliações | Definição das regras detalhadas de avaliação |
 | Moderação | Catálogo/política de itens proibidos |
 | Upload de imagens | Definição de quantidade e regras das imagens |
