@@ -21,7 +21,7 @@ Catálogo inicial de requisitos rastreáveis do MVP. Contém **apenas** requisit
 | Anúncios | RF-004 a RF-007 | 2 | 2 | 0 |
 | Solicitações e pagamentos | RF-008 a RF-012 | 0 | 3 | 2 |
 | Escolha e contato | RF-013 a RF-015 | 2 | 1 | 0 |
-| Encerramento e avaliações | RF-016, RF-017 | 1 | 1 | 0 |
+| Encerramento e avaliações | RF-016, RF-017 | 2 | 0 | 0 |
 | Denúncia e moderação | RF-018 a RF-020 | 0 | 3 | 0 |
 | Transversais | RF-021, RF-022 | 0 | 2 | 0 |
 | Não funcionais | RNF-001 a RNF-018 | 9 | 9 | 0 |
@@ -214,9 +214,9 @@ Catálogo inicial de requisitos rastreáveis do MVP. Contém **apenas** requisit
 - **Prioridade MVP:** obrigatória.
 - **Origem:** fluxo central (passo 10); RB-002.
 - **Regra de negócio relacionada:** RB-002.
-- **Decisão aberta relacionada:** OD-02.
-- **Critério de aceite (alto nível):** nenhuma avaliação é aceita enquanto a negociação estiver `active`; uma negociação `closed` conforme [negotiation-lifecycle.md](negotiation-lifecycle.md) (DEC-029) satisfaz a pré-condição temporal de RB-002, sem garantir por si só que a avaliação será permitida; quem avalia quem, formato, prazo, visibilidade, edição, resposta e tratamento de abuso seguem OD-02.
-- **Status:** parcialmente definido. O momento está definido (RB-002 e DEC-029); as regras detalhadas permanecem bloqueadas por OD-02.
+- **Decisão aberta relacionada:** — (OD-02 foi fechada por [ratings.md](ratings.md), DEC-030).
+- **Critério de aceite (alto nível):** nenhuma avaliação é aceita enquanto a negociação estiver `active`; uma negociação `closed` conforme [negotiation-lifecycle.md](negotiation-lifecycle.md) (DEC-029) é pré-condição necessária, não suficiente; a avaliação é sobre a contraparte da negociação e somente o anunciante e o solicitante escolhido daquela negociação podem avaliar um ao outro, com autoavaliação e terceiros rejeitados; existe no máximo uma avaliação por direção e, portanto, no máximo duas por negociação; a avaliação contém exatamente uma nota inteira de 1 a 5, sem texto livre, título, imagens, subnotas, tags, resposta pública ou réplica; a submissão é válida apenas dentro de 14 dias corridos a partir da transição para `closed`, sem extensão automática; a publicação é cega e bilateral, de modo que a nota não é revelada à contraparte antes de ambas submeterem ou do fim da janela, com publicação simultânea quando a segunda submissão válida é aceita; a ausência de avaliação não gera nota automática; o autor pode substituir sua nota enquanto estiver dentro da janela e não publicada, e a avaliação publicada é imutável pelo usuário; a reputação pública é a média aritmética simples das notas publicadas e válidas recebidas, exibida com uma casa decimal, acompanhada da quantidade de avaliações válidas, somando os papéis de anunciante e solicitante, sem vincular publicamente a nota individual ao avaliador ou à negociação; a autorização é verificada server-side; a invalidação administrativa por abuso remove a avaliação integralmente da média e da contagem e é auditada (RF-022), e nota baixa ou discordância, isoladamente, não a justificam; o estado do anúncio não altera a elegibilidade.
+- **Status:** definido. Elegibilidade, formato, janela, publicação cega, edição, imutabilidade, agregação e tratamento de abuso estão em [ratings.md](ratings.md) (DEC-030).
 
 ### Denúncia e moderação
 
@@ -264,13 +264,13 @@ Catálogo inicial de requisitos rastreáveis do MVP. Contém **apenas** requisit
 
 #### RF-022 — Auditoria das operações críticas
 
-- **Descrição:** operações críticas geram registro de auditoria imutável: liberação de contato (obrigatória por decisão vigente), escolha de solicitante, aprovação de pagamento, encerramento da negociação (DEC-029) e decisões de moderação.
+- **Descrição:** operações críticas geram registro de auditoria imutável: liberação de contato (obrigatória por decisão vigente), escolha de solicitante, aprovação de pagamento, encerramento da negociação (DEC-029), invalidação administrativa de avaliação (DEC-030) e decisões de moderação.
 - **Prioridade MVP:** obrigatória.
 - **Origem:** DEC-023 (auditoria da liberação de contato); [../adr/0002-postgresql-neon.md](../adr/0002-postgresql-neon.md).
 - **Regra de negócio relacionada:** RB-001, RB-002, RB-003, RB-004, RB-006.
 - **Decisão aberta relacionada:** OD-10 (retenção das trilhas de auditoria).
-- **Critério de aceite (alto nível):** cada operação listada registra ator, alvo, instante e resultado; o encerramento da negociação registra ainda estado anterior e estado resultante (`active` -> `closed`); o registro não contém o contato em texto claro fora da própria liberação autorizada.
-- **Status:** parcialmente definido. A liberação de contato e o encerramento da negociação estão definidos; a extensão às demais operações é direcionamento derivado e a retenção da trilha depende de OD-10.
+- **Critério de aceite (alto nível):** cada operação listada registra ator, alvo, instante e resultado; o encerramento da negociação registra ainda estado anterior e estado resultante (`active` -> `closed`); a invalidação administrativa de avaliação registra ator administrativo, avaliação, negociação, instante e motivo ([ratings.md](ratings.md), DEC-030); o registro não contém o contato em texto claro fora da própria liberação autorizada.
+- **Status:** parcialmente definido. A liberação de contato, o encerramento da negociação e a invalidação administrativa de avaliação estão definidos; a extensão às demais operações é direcionamento derivado e a retenção da trilha depende de OD-10.
 
 ## Requisitos não funcionais
 
@@ -437,7 +437,7 @@ Catálogo inicial de requisitos rastreáveis do MVP. Contém **apenas** requisit
 | Decisão aberta | Requisitos afetados |
 | --- | --- |
 | OD-01 | fechada por [negotiation-lifecycle.md](negotiation-lifecycle.md) (DEC-029); define estados `active`/`closed`, atores autorizados, encerramento unilateral, irreversibilidade, ausência de timeout, idempotência e auditoria; deixa de bloquear RF-016, que passa a `definido`, e sai de RF-017 |
-| OD-02 | RF-017 |
+| OD-02 | fechada por [ratings.md](ratings.md) (DEC-030); define natureza bilateral, elegibilidade, nota 1–5 sem texto livre, janela de 14 dias corridos, publicação cega, edição antes da publicação, imutabilidade após a publicação, média simples com contagem e invalidação administrativa auditada; deixa de bloquear RF-017, que passa a `definido` |
 | OD-03 | RF-004, RF-018, RF-019, RF-020 |
 | OD-04 | fechada por [listing-lifecycle.md](listing-lifecycle.md) (DEC-027); define estados, transições, visibilidade pública e efeitos sobre interesses e solicitações; deixa de bloquear o modelo de dados do anúncio |
 | OD-05 | fechada por [image-policy.md](image-policy.md) (DEC-028); define quantidade, formatos, limites, validação, processamento, derivados e visibilidade das imagens; deixa de bloquear RF-006 e define os critérios de RNF-005 |

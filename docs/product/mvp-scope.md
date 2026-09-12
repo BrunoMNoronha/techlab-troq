@@ -41,7 +41,7 @@ Critérios formais de elegibilidade (incluindo elegibilidade etária) ainda não
 10. Após o encerramento, avaliações são permitidas.
 11. Anúncios podem ser denunciados e moderados.
 
-O modo como o encerramento (passo 9) é tecnicamente confirmado está definido em [negotiation-lifecycle.md](negotiation-lifecycle.md) (DEC-029): a negociação tem os estados `active` e `closed`, e qualquer uma das duas partes pode encerrá-la unilateralmente, de forma explícita e irreversível. As regras detalhadas das avaliações (passo 10) continuam abertas; ver [../decisions/open-decisions.md](../decisions/open-decisions.md).
+O modo como o encerramento (passo 9) é tecnicamente confirmado está definido em [negotiation-lifecycle.md](negotiation-lifecycle.md) (DEC-029): a negociação tem os estados `active` e `closed`, e qualquer uma das duas partes pode encerrá-la unilateralmente, de forma explícita e irreversível. As regras detalhadas das avaliações (passo 10) estão definidas em [ratings.md](ratings.md) (DEC-030): avaliação bilateral sobre a contraparte, no máximo uma por direção, nota inteira de 1 a 5 sem texto livre, janela de 14 dias corridos e publicação cega até que ambas avaliem ou a janela termine.
 
 As regras de negócio que governam este fluxo estão em [business-rules.md](business-rules.md).
 
@@ -76,7 +76,7 @@ Fora do núcleo inicial do MVP:
 | Pagamentos | Spike que prove cobrança de exatamente R$ 0,99, confirmação, webhook, idempotência e tarifas; escolha do gateway (Mercado Pago é apenas primeiro candidato) |
 | Limite de 3 solicitações pagas | Design de pagamentos detalhando reserva atômica de vaga antes da cobrança, com expiração |
 | Encerramento da negociação | Mecanismo definido em [negotiation-lifecycle.md](negotiation-lifecycle.md) (DEC-029); sem dependência aberta |
-| Avaliações | Definição das regras detalhadas de avaliação |
+| Avaliações | Regras definidas em [ratings.md](ratings.md) (DEC-030); sem dependência aberta |
 | Moderação | Catálogo/política de itens proibidos |
 | Upload de imagens | Definição de quantidade e regras das imagens |
 | Tratamento de dados pessoais | Política de retenção/exclusão de dados (LGPD) |

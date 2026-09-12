@@ -17,7 +17,7 @@ Ponto de partida: [project-state.md](project-state.md). Decisões vigentes: [dec
 | [product/listing-lifecycle.md](product/listing-lifecycle.md) | existente | Ciclo de vida do anúncio: estados, matriz de transições, visibilidade pública e efeitos sobre interesses e solicitações; fecha OD-04 (DEC-027) |
 | [product/image-policy.md](product/image-policy.md) | existente | Política de imagens do anúncio: quantidade, formatos, limites, upload, validação de segurança, processamento, derivados públicos, visibilidade e moderação; fecha OD-05 (DEC-028) |
 | [product/negotiation-lifecycle.md](product/negotiation-lifecycle.md) | existente | Ciclo de vida da negociação: estados `active` e `closed`, atores autorizados, encerramento unilateral, confirmação e irreversibilidade, ausência de automação, relação com anúncio, pagamento, contato e avaliações, concorrência, idempotência e auditoria; fecha OD-01 (DEC-029) |
-| product/ratings.md | futuro | Regras detalhadas de avaliação |
+| [product/ratings.md](product/ratings.md) | existente | Política de avaliações: natureza bilateral sobre a contraparte, elegibilidade, nota de 1 a 5, janela de 14 dias, publicação cega, edição e imutabilidade, reputação pública, abuso e invalidação auditada; fecha OD-02 (DEC-030) |
 
 ### decisions — decisões em aberto e registro de decisões de produto
 

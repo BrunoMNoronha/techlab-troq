@@ -6,7 +6,7 @@ Fonte oficial do ciclo mínimo e do encerramento da negociação no MVP do TROQ.
 
 Define o que é uma negociação no sistema, quais estados ela possui, quem pode encerrá-la, o que o encerramento significa e o que ele explicitamente **não** produz.
 
-Este documento **não** define regras de avaliação (OD-02), desistência ou reseleção (OD-06), exceções financeiras (OD-07), retenção de dados (OD-10) nem qualquer detalhe de implementação (schema, endpoints, telas, notificações).
+Este documento **não** define regras de avaliação, que estão em [ratings.md](ratings.md) (DEC-030), nem desistência ou reseleção (OD-06), exceções financeiras (OD-07), retenção de dados (OD-10) nem qualquer detalhe de implementação (schema, endpoints, telas, notificações).
 
 Preserva integralmente RB-001 a RB-006 e o ciclo de vida do anúncio definido em [listing-lifecycle.md](listing-lifecycle.md) (DEC-027).
 
@@ -88,7 +88,7 @@ A interface futura deve comunicar claramente que:
 
 - a negociação será encerrada;
 - a ação **não** poderá ser desfeita;
-- o encerramento poderá tornar avaliações elegíveis conforme as regras que serão definidas em OD-02.
+- o encerramento pode tornar avaliações elegíveis conforme [ratings.md](ratings.md) (DEC-030).
 
 Layout, modal específico e copy final **não** são definidos nesta etapa.
 
@@ -145,7 +145,7 @@ Esta decisão **não** cria motivo obrigatório, texto livre de justificativa, r
 
 A única afirmação normativa do evento é: **a negociação não está mais ativa**.
 
-Razões: "desistência" interfere em OD-06; sucesso/fracasso não é necessário para RB-002; texto livre adicionaria dados e superfície de moderação sem necessidade; detalhes sobre a experiência pertencem a OD-02.
+Razões: "desistência" interfere em OD-06; sucesso/fracasso não é necessário para RB-002; texto livre adicionaria dados e superfície de moderação sem necessidade; detalhes sobre a experiência pertencem às avaliações, definidas em [ratings.md](ratings.md) (DEC-030).
 
 ## 10. Relação com avaliações
 
@@ -156,7 +156,7 @@ Consequências:
 - enquanto a negociação estiver `active`, **nenhuma** avaliação pode ser registrada;
 - após `closed`, a condição temporal de RB-002 está satisfeita.
 
-`closed` é a **pré-condição obrigatória** de RB-002, não uma garantia de que uma avaliação será necessariamente permitida. OD-02 continua responsável por quem avalia quem, notas, comentários, prazo, publicação, edição, resposta, denúncias, abuso e eventuais restrições adicionais de elegibilidade.
+`closed` é a **pré-condição obrigatória** de RB-002, não uma garantia de que uma avaliação será necessariamente permitida. Uma negociação `closed` **pode** habilitar avaliações conforme [ratings.md](ratings.md) (DEC-030), que é a fonte normativa de quem avalia quem, formato, janela, publicação, edição, abuso e demais restrições de elegibilidade.
 
 ## 11. Concorrência, idempotência e auditoria
 
@@ -192,7 +192,7 @@ O log de encerramento **não** registra telefone/WhatsApp (DEC-023). A auditoria
 
 | Tema | Onde permanece |
 | --- | --- |
-| Regras de avaliação (quem avalia quem, notas, prazo, publicação, moderação) | OD-02 |
+| Regras de avaliação (quem avalia quem, notas, prazo, publicação, moderação) | [ratings.md](ratings.md) (DEC-030) |
 | Desistência e reseleção | OD-06 |
 | Chargebacks e exceções de pagamento | OD-07 |
 | Escolha do gateway | OD-08 |
@@ -218,8 +218,9 @@ O log de encerramento **não** registra telefone/WhatsApp (DEC-023). A auditoria
 | RB-002 | Preservada literalmente; `closed` satisfaz sua pré-condição temporal |
 | RB-001, RB-003, RB-004, RB-005, RB-006 | Inalteradas |
 | RF-016 | **Definido** por este documento |
-| RF-017 | Deixa de depender de OD-01; regras detalhadas seguem OD-02 |
+| RF-017 | Deixa de depender de OD-01; regras detalhadas definidas depois por [ratings.md](ratings.md) (DEC-030) |
 | RF-022 | Passa a incluir o encerramento da negociação entre as operações críticas auditadas |
 | DEC-027 / [listing-lifecycle.md](listing-lifecycle.md) | Preservada; ciclos do anúncio e da negociação permanecem independentes |
-| OD-02, OD-06, OD-07, OD-08, OD-10, OD-11, OD-12 | Permanecem abertas; nada aqui as fecha ou antecipa |
+| OD-06, OD-07, OD-08, OD-10, OD-11, OD-12 | Permanecem abertas; nada aqui as fecha ou antecipa |
+| OD-02 | Permanecia aberta nesta decisão; foi fechada depois por [ratings.md](ratings.md) (DEC-030) |
 | F0-015 | Concluído por esta entrega |

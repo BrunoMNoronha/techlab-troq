@@ -30,7 +30,7 @@ As regras de negócio homologadas (RB-001 a RB-006) estão em [docs/product/busi
 | Email transacional | Resend |
 | Pagamentos | Pix-first; gateway ainda não decidido |
 
-Decisões ainda abertas (gateway de pagamento, mecanismo de encerramento, regras de avaliação, entre outras) estão registradas em [docs/decisions/open-decisions.md](docs/decisions/open-decisions.md) e não devem ser tratadas como homologadas.
+Decisões ainda abertas (gateway de pagamento, catálogo de itens proibidos, desistência e reseleção, entre outras) estão registradas em [docs/decisions/open-decisions.md](docs/decisions/open-decisions.md) e não devem ser tratadas como homologadas.
 
 ## Documentação
 
@@ -38,5 +38,6 @@ Decisões ainda abertas (gateway de pagamento, mecanismo de encerramento, regras
 - [Estado do projeto](docs/project-state.md)
 - [Escopo do MVP](docs/product/mvp-scope.md)
 - [Regras de negócio](docs/product/business-rules.md)
+- [Avaliações](docs/product/ratings.md)
 - [Decisões abertas](docs/decisions/open-decisions.md)
 - [Riscos](docs/delivery/risks.md)

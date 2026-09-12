@@ -26,7 +26,7 @@ Fontes: [../product/mvp-scope.md](../product/mvp-scope.md), [../product/requirem
 - Público-alvo completo, requisitos rastreáveis, decision log, roadmap, backlog e workflow de agentes (esta entrega).
 - Spike do gateway Pix para exatamente R$ 0,99, com resultado registrado e decisão do gateway (OD-08, ADR-0004).
 - Fechamento das decisões que bloqueiam o modelo de dados: ORM e migrations (OD-09, fechada por [ADR-0005](../adr/0005-prisma-orm-migrations.md)), ciclo de vida do anúncio (OD-04, fechada por [../product/listing-lifecycle.md](../product/listing-lifecycle.md)), regras de imagens (OD-05, fechada por [../product/image-policy.md](../product/image-policy.md)).
-- Fechamento das decisões de produto: encerramento da negociação (OD-01, fechada por [../product/negotiation-lifecycle.md](../product/negotiation-lifecycle.md)), avaliações (OD-02), itens proibidos (OD-03), desistência/reseleção (OD-06), exceções de pagamento (OD-07), retenção/exclusão (OD-10), elegibilidade etária (OD-11), natureza da demonstração de interesse (OD-12).
+- Fechamento das decisões de produto: encerramento da negociação (OD-01, fechada por [../product/negotiation-lifecycle.md](../product/negotiation-lifecycle.md)), avaliações (OD-02, fechada por [../product/ratings.md](../product/ratings.md)), itens proibidos (OD-03), desistência/reseleção (OD-06), exceções de pagamento (OD-07), retenção/exclusão (OD-10), elegibilidade etária (OD-11), natureza da demonstração de interesse (OD-12).
 - Arquitetura de dados e de API necessária antes da implementação (`architecture/overview.md`, `architecture/data-model.md`, `architecture/payments-design.md`, `architecture/contact-release.md`). OD-12 deve estar fechada antes da arquitetura final pré-implementação, salvo adiamento formal com impacto registrado; OD-12 não é gate do spike de pagamento.
 
 **Dependências:** nenhuma externa; depende da disponibilidade de Bruno para decisões e do acesso a ambiente sandbox do gateway candidato para o spike.
@@ -113,12 +113,12 @@ Fontes: [../product/mvp-scope.md](../product/mvp-scope.md), [../product/requirem
 **Principais entregáveis:**
 
 - Mecanismo de encerramento conforme [../product/negotiation-lifecycle.md](../product/negotiation-lifecycle.md) (DEC-029, OD-01 fechada): estados `active` e `closed`, encerramento unilateral por qualquer uma das partes, irreversível e auditado (RF-016).
-- Avaliações conforme OD-02 fechada, permitidas apenas após encerramento (RF-017).
+- Avaliações conforme [../product/ratings.md](../product/ratings.md) (DEC-030), permitidas apenas após o encerramento da negociação (RF-017).
 - Denúncia de anúncios (RF-018).
 - Moderação com auditoria (RF-019).
 - Remoção de anúncios com itens proibidos conforme catálogo de OD-03 (RF-020).
 
-**Dependências:** gate da Fase 3; OD-02 e OD-03 fechadas. OD-01 já está fechada por [../product/negotiation-lifecycle.md](../product/negotiation-lifecycle.md) (DEC-029).
+**Dependências:** gate da Fase 3; OD-03 fechada. OD-01 já está fechada por [../product/negotiation-lifecycle.md](../product/negotiation-lifecycle.md) (DEC-029) e OD-02 por [../product/ratings.md](../product/ratings.md) (DEC-030).
 
 **Gate de saída:**
 
