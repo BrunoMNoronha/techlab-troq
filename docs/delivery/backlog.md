@@ -32,7 +32,7 @@ Fontes: [roadmap.md](roadmap.md), [../decisions/open-decisions.md](../decisions/
 
 ## Próximos trabalhos
 
-Ordem lógica. F0-010 está `bloqueado` por falta de credenciais de teste do gateway (bloqueio externo, ver abaixo). F0-013 foi concluído e fechou OD-04, o que desbloqueou F0-014, F0-015 e F0-018. F0-014 foi concluído e fechou OD-05 em [../product/image-policy.md](../product/image-policy.md) (DEC-028). O item `próximo` passa a ser F0-015; F0-017, F0-018, F0-020, F0-021 e F0-024 ficam `pendente`, sem bloqueio.
+Ordem lógica. F0-010 está `bloqueado` por falta de credenciais de teste do gateway (bloqueio externo, ver abaixo). F0-013 foi concluído e fechou OD-04, o que desbloqueou F0-014, F0-015 e F0-018. F0-014 foi concluído e fechou OD-05 em [../product/image-policy.md](../product/image-policy.md) (DEC-028). F0-015 foi concluído e fechou OD-01 em [../product/negotiation-lifecycle.md](../product/negotiation-lifecycle.md) (DEC-029), o que desbloqueou F0-016. O item `próximo` passa a ser F0-016; F0-017, F0-018, F0-020, F0-021 e F0-024 ficam `pendente`, sem bloqueio. F0-010 e F0-011 permanecem `bloqueados` e F0-022 permanece `bloqueado` pelas demais dependências.
 
 | ID | Título | Objetivo | Dependências | Estado |
 | --- | --- | --- | --- | --- |
@@ -41,8 +41,8 @@ Ordem lógica. F0-010 está `bloqueado` por falta de credenciais de teste do gat
 | F0-012 | Fechar ORM e estratégia de migrations | Fechar OD-09 com [ADR-0005](../adr/0005-prisma-orm-migrations.md): Prisma ORM 7.x, Prisma Migrate, política dev/staging/produção, `db push` e migrations destrutivas (DEC-026) | F0-003 | concluído |
 | F0-013 | Detalhar ciclo de vida do anúncio | Fechar OD-04 em [../product/listing-lifecycle.md](../product/listing-lifecycle.md): estados, transições, visibilidade pública e efeitos sobre interesses e solicitações (DEC-027) | F0-005 | concluído |
 | F0-014 | Definir regras de imagens | Fechar OD-05 em [../product/image-policy.md](../product/image-policy.md): quantidade, formatos, tamanho, validação, processamento, derivados e visibilidade das imagens (DEC-028); atualizar RF-004, RF-006, RF-020 e RNF-005 | F0-013 | concluído |
-| F0-015 | Definir mecanismo de encerramento | Fechar OD-01: quem aciona, confirmação, prazos e estados intermediários; atualizar RF-016 | F0-013 | próximo |
-| F0-016 | Definir avaliações | Fechar OD-02 em `product/ratings.md`; atualizar RF-017 | F0-015 | bloqueado |
+| F0-015 | Definir mecanismo de encerramento | Fechar OD-01 em [../product/negotiation-lifecycle.md](../product/negotiation-lifecycle.md): estados `active` e `closed`, encerramento unilateral por qualquer uma das partes, confirmação do próprio ator, irreversibilidade, ausência de prazos e automação, idempotência e auditoria (DEC-029); atualizar RF-016, RF-017 e RF-022 | F0-013 | concluído |
+| F0-016 | Definir avaliações | Fechar OD-02 em `product/ratings.md`; atualizar RF-017 | F0-015 | próximo |
 | F0-017 | Definir catálogo/política de itens proibidos | Fechar OD-03 em `product/prohibited-items.md`, incluindo fluxo de denúncia e prazos; atualizar RF-018 a RF-020 | F0-005 | pendente |
 | F0-018 | Definir política de desistência e reseleção | Fechar OD-06; atualizar RF-013 e RF-015 | F0-013 | pendente |
 | F0-019 | Definir tratamento de exceções de pagamento | Fechar OD-07: chargebacks, duplicidade, pagamento após expiração da reserva, falhas de confirmação; atualizar RF-009 a RF-012 | F0-011 | bloqueado |

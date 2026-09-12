@@ -14,7 +14,7 @@ Observações aparecem somente quando já confirmadas. Questões derivadas que a
 
 - **Regra:** avaliação somente após encerramento da negociação no sistema.
 - **Implicação operacional:** nenhuma avaliação pode ser registrada enquanto a negociação não estiver encerrada no sistema.
-- **Observações confirmadas:** o mecanismo pelo qual o encerramento é confirmado e as regras detalhadas de avaliação ainda não foram definidos.
+- **Observações confirmadas:** o mecanismo de encerramento da negociação está definido em [negotiation-lifecycle.md](negotiation-lifecycle.md) (DEC-029): a negociação tem os estados `active` e `closed`, e qualquer uma das duas partes pode encerrá-la unilateralmente, de forma explícita, imediata e irreversível. Uma negociação `closed` satisfaz a pré-condição temporal desta regra; ela não afirma que a troca foi bem-sucedida. As regras detalhadas de avaliação ainda não foram definidas (OD-02).
 
 ## RB-003 — Limite de solicitações pagas
 
@@ -45,7 +45,7 @@ Observações aparecem somente quando já confirmadas. Questões derivadas que a
 | Regra | Etapas do fluxo central afetadas | Ver também |
 | --- | --- | --- |
 | RB-001 | 7, 8 | [mvp-scope.md](mvp-scope.md) |
-| RB-002 | 9, 10 | [mvp-scope.md](mvp-scope.md) |
+| RB-002 | 9, 10 | [mvp-scope.md](mvp-scope.md), [negotiation-lifecycle.md](negotiation-lifecycle.md) |
 | RB-003 | 5, 6 | [../delivery/risks.md](../delivery/risks.md) |
 | RB-004 | 5 | [../delivery/risks.md](../delivery/risks.md) |
 | RB-005 | 2 | [mvp-scope.md](mvp-scope.md) |

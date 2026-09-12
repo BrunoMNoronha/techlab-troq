@@ -1,6 +1,6 @@
 # Catálogo de requisitos — TROQ
 
-Catálogo inicial de requisitos rastreáveis do MVP. Contém **apenas** requisitos derivados das decisões já vigentes na Fase 0 ([../project-state.md](../project-state.md), [business-rules.md](business-rules.md), [listing-lifecycle.md](listing-lifecycle.md), [image-policy.md](image-policy.md), ADRs em [../adr/](../adr/), [../decisions/decision-log.md](../decisions/decision-log.md)). Nenhum requisito aqui fecha uma decisão listada em [../decisions/open-decisions.md](../decisions/open-decisions.md).
+Catálogo inicial de requisitos rastreáveis do MVP. Contém **apenas** requisitos derivados das decisões já vigentes na Fase 0 ([../project-state.md](../project-state.md), [business-rules.md](business-rules.md), [listing-lifecycle.md](listing-lifecycle.md), [image-policy.md](image-policy.md), [negotiation-lifecycle.md](negotiation-lifecycle.md), ADRs em [../adr/](../adr/), [../decisions/decision-log.md](../decisions/decision-log.md)). Nenhum requisito aqui fecha uma decisão listada em [../decisions/open-decisions.md](../decisions/open-decisions.md).
 
 ## Convenções
 
@@ -21,7 +21,7 @@ Catálogo inicial de requisitos rastreáveis do MVP. Contém **apenas** requisit
 | Anúncios | RF-004 a RF-007 | 2 | 2 | 0 |
 | Solicitações e pagamentos | RF-008 a RF-012 | 0 | 3 | 2 |
 | Escolha e contato | RF-013 a RF-015 | 2 | 1 | 0 |
-| Encerramento e avaliações | RF-016, RF-017 | 0 | 1 | 1 |
+| Encerramento e avaliações | RF-016, RF-017 | 1 | 1 | 0 |
 | Denúncia e moderação | RF-018 a RF-020 | 0 | 3 | 0 |
 | Transversais | RF-021, RF-022 | 0 | 2 | 0 |
 | Não funcionais | RNF-001 a RNF-018 | 9 | 9 | 0 |
@@ -204,9 +204,9 @@ Catálogo inicial de requisitos rastreáveis do MVP. Contém **apenas** requisit
 - **Prioridade MVP:** obrigatória.
 - **Origem:** fluxo central (passo 9); RB-002.
 - **Regra de negócio relacionada:** RB-002.
-- **Decisão aberta relacionada:** OD-01.
-- **Critério de aceite (alto nível):** a definir após OD-01 (quem aciona, confirmação de uma ou ambas as partes, prazos, estados intermediários).
-- **Status:** bloqueado por decisão aberta (OD-01). Este catálogo **não** define como o encerramento é confirmado.
+- **Decisão aberta relacionada:** — (OD-01 foi fechada por [negotiation-lifecycle.md](negotiation-lifecycle.md), DEC-029).
+- **Critério de aceite (alto nível):** existe negociação `active` somente para a relação válida entre o anunciante e o solicitante escolhido daquele anúncio, criada quando a escolha ocorre e a liberação de contato fica autorizada por RB-001; qualquer um dos dois participantes pode encerrá-la; o encerramento exige confirmação explícita do próprio ator que executa a ação, sem aceite da contraparte; a transição `active -> closed` é unilateral e imediata; `closed` é terminal e irreversível, sem `closed -> active`; não existe timeout, expiração nem autoencerramento por inatividade; a autorização é verificada server-side e a tentativa de quem não participa da negociação é rejeitada; repetir a intenção sobre negociação já `closed` é idempotente e não cria nova transição de negócio; cada encerramento gera registro de auditoria (RF-022) com negociação, ator, instante, estado anterior, estado resultante e resultado, sem telefone/WhatsApp; nenhuma avaliação pode ser registrada enquanto a negociação estiver `active`.
+- **Status:** definido. Estados, atores, transição, irreversibilidade e efeitos estão em [negotiation-lifecycle.md](negotiation-lifecycle.md) (DEC-029). O encerramento **não** significa que a troca foi bem-sucedida e **não** registra motivo ou resultado.
 
 #### RF-017 — Avaliações
 
@@ -214,9 +214,9 @@ Catálogo inicial de requisitos rastreáveis do MVP. Contém **apenas** requisit
 - **Prioridade MVP:** obrigatória.
 - **Origem:** fluxo central (passo 10); RB-002.
 - **Regra de negócio relacionada:** RB-002.
-- **Decisão aberta relacionada:** OD-01, OD-02.
-- **Critério de aceite (alto nível):** nenhuma avaliação é aceita enquanto a negociação não estiver encerrada no sistema; quem avalia quem, formato, prazo e visibilidade seguem OD-02.
-- **Status:** parcialmente definido. O momento está definido (RB-002); as regras detalhadas não.
+- **Decisão aberta relacionada:** OD-02.
+- **Critério de aceite (alto nível):** nenhuma avaliação é aceita enquanto a negociação estiver `active`; uma negociação `closed` conforme [negotiation-lifecycle.md](negotiation-lifecycle.md) (DEC-029) satisfaz a pré-condição temporal de RB-002, sem garantir por si só que a avaliação será permitida; quem avalia quem, formato, prazo, visibilidade, edição, resposta e tratamento de abuso seguem OD-02.
+- **Status:** parcialmente definido. O momento está definido (RB-002 e DEC-029); as regras detalhadas permanecem bloqueadas por OD-02.
 
 ### Denúncia e moderação
 
@@ -264,13 +264,13 @@ Catálogo inicial de requisitos rastreáveis do MVP. Contém **apenas** requisit
 
 #### RF-022 — Auditoria das operações críticas
 
-- **Descrição:** operações críticas geram registro de auditoria imutável: liberação de contato (obrigatória por decisão vigente), escolha de solicitante, aprovação de pagamento e decisões de moderação.
+- **Descrição:** operações críticas geram registro de auditoria imutável: liberação de contato (obrigatória por decisão vigente), escolha de solicitante, aprovação de pagamento, encerramento da negociação (DEC-029) e decisões de moderação.
 - **Prioridade MVP:** obrigatória.
 - **Origem:** DEC-023 (auditoria da liberação de contato); [../adr/0002-postgresql-neon.md](../adr/0002-postgresql-neon.md).
-- **Regra de negócio relacionada:** RB-001, RB-003, RB-004, RB-006.
+- **Regra de negócio relacionada:** RB-001, RB-002, RB-003, RB-004, RB-006.
 - **Decisão aberta relacionada:** OD-10 (retenção das trilhas de auditoria).
-- **Critério de aceite (alto nível):** cada operação listada registra ator, alvo, instante e resultado; o registro não contém o contato em texto claro fora da própria liberação autorizada.
-- **Status:** parcialmente definido. A liberação de contato está definida; a extensão às demais operações é direcionamento derivado e sua retenção depende de OD-10.
+- **Critério de aceite (alto nível):** cada operação listada registra ator, alvo, instante e resultado; o encerramento da negociação registra ainda estado anterior e estado resultante (`active` -> `closed`); o registro não contém o contato em texto claro fora da própria liberação autorizada.
+- **Status:** parcialmente definido. A liberação de contato e o encerramento da negociação estão definidos; a extensão às demais operações é direcionamento derivado e a retenção da trilha depende de OD-10.
 
 ## Requisitos não funcionais
 
@@ -426,7 +426,7 @@ Catálogo inicial de requisitos rastreáveis do MVP. Contém **apenas** requisit
 | Regra | Requisitos |
 | --- | --- |
 | RB-001 | RF-005, RF-012, RF-013, RF-014, RF-015, RF-022, RF-023 |
-| RB-002 | RF-016, RF-017 |
+| RB-002 | RF-016, RF-017, RF-022 |
 | RB-003 | RF-008, RF-009, RF-010, RF-012, RF-013, RF-022 |
 | RB-004 | RF-009, RF-011, RF-022 |
 | RB-005 | RF-004, RF-005, RF-007, RNF-008 |
@@ -436,7 +436,7 @@ Catálogo inicial de requisitos rastreáveis do MVP. Contém **apenas** requisit
 
 | Decisão aberta | Requisitos afetados |
 | --- | --- |
-| OD-01 | RF-016, RF-017 |
+| OD-01 | fechada por [negotiation-lifecycle.md](negotiation-lifecycle.md) (DEC-029); define estados `active`/`closed`, atores autorizados, encerramento unilateral, irreversibilidade, ausência de timeout, idempotência e auditoria; deixa de bloquear RF-016, que passa a `definido`, e sai de RF-017 |
 | OD-02 | RF-017 |
 | OD-03 | RF-004, RF-018, RF-019, RF-020 |
 | OD-04 | fechada por [listing-lifecycle.md](listing-lifecycle.md) (DEC-027); define estados, transições, visibilidade pública e efeitos sobre interesses e solicitações; deixa de bloquear o modelo de dados do anúncio |
