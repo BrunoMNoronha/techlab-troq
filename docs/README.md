@@ -15,6 +15,7 @@ Ponto de partida: [project-state.md](project-state.md). Decisões vigentes: [dec
 | [product/requirements.md](product/requirements.md) | existente | Catálogo de requisitos rastreáveis RF-xxx/RNF-xxx, com rastreabilidade para RB e OD |
 | product/prohibited-items.md | futuro | Catálogo/política de itens proibidos |
 | [product/listing-lifecycle.md](product/listing-lifecycle.md) | existente | Ciclo de vida do anúncio: estados, matriz de transições, visibilidade pública e efeitos sobre interesses e solicitações; fecha OD-04 (DEC-027) |
+| [product/image-policy.md](product/image-policy.md) | existente | Política de imagens do anúncio: quantidade, formatos, limites, upload, validação de segurança, processamento, derivados públicos, visibilidade e moderação; fecha OD-05 (DEC-028) |
 | product/ratings.md | futuro | Regras detalhadas de avaliação |
 
 ### decisions — decisões em aberto e registro de decisões de produto

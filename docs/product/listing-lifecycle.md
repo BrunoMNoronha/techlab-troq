@@ -76,7 +76,7 @@ Notas normativas:
 
 - **Consulta pública.** Somente `published` aparece em listagem, detalhe público, busca, feed ou qualquer cache público. Requisição ao detalhe de um anúncio em qualquer outro estado, por usuário que não seja o anunciante, deve responder como recurso não disponível, sem revelar a existência prévia nem o estado interno do anúncio.
 - **Interesse.** A linha "aceita novo interesse" pressupõe que a demonstração de interesse exista como ação própria. Se [OD-12](../decisions/open-decisions.md) concluir que ela é apenas o início da solicitação paga, a coluna passa a ser lida como parte da coluna seguinte, sem alterar as demais definições deste documento.
-- **Edição.** Edição em `published` altera conteúdo público imediatamente e não muda o estado. Os campos editáveis e eventual reprocessamento de imagens seguem RF-004 e [OD-05](../decisions/open-decisions.md).
+- **Edição.** Edição em `published` altera conteúdo público imediatamente e não muda o estado. Os campos editáveis seguem RF-004; a adição, remoção, ordenação e o reprocessamento de imagens seguem [image-policy.md](image-policy.md), que também impede que uma edição em `published` resulte em zero imagens válidas.
 - **Verificação server-side.** Toda checagem de estado é feita no servidor. A ausência de um botão na interface nunca é o controle de acesso (RF-014, RNF-007).
 
 ## 4. Matriz de transições
@@ -143,7 +143,7 @@ Detalhamento normativo:
 - **O limite de 3 solicitações pagas (RB-003) é do anúncio e não é reiniciado por nenhuma transição.** Uma pausa seguida de reativação não devolve vagas; um anúncio que já acumulou 3 solicitações pagas continua com 3 após T3+T4.
 - **Escolha do solicitante.** O anunciante continua podendo escolher entre as solicitações pagas de um anúncio `paused` ou `closed`, porque a negociação é um ciclo distinto (seção 8) e a cobrança já foi definitiva. As regras de desistência e reseleção permanecem em [OD-06](../decisions/open-decisions.md) e não são decididas aqui.
 - **Contato já liberado.** Nenhuma transição revoga uma liberação já autorizada e auditada (RB-001, RF-015). Uma liberação **nova** exige, além do estado do anúncio, as duas condições de RB-001; ver seção 6 para o caso de remoção.
-- **Imagens.** O que acontece com os objetos de imagem de um anúncio `closed` ou `removed` (remoção imediata, retenção, expurgo) depende de [OD-05](../decisions/open-decisions.md) e [OD-10](../decisions/open-decisions.md). Enquanto essas decisões estiverem abertas, o requisito vigente é apenas que as imagens deixem de ser servidas pela superfície pública do anúncio, junto com o restante do conteúdo.
+- **Imagens.** As imagens de um anúncio `closed` ou `removed` deixam imediatamente de ser servidas pela superfície pública, junto com o restante do conteúdo, conforme [image-policy.md](image-policy.md) (DEC-028). Isso **não** implica exclusão física dos objetos: a retenção e o expurgo definitivo dos derivados persistidos continuam dependendo de [OD-10](../decisions/open-decisions.md).
 
 ## 6. Remoção por moderação
 
@@ -223,14 +223,15 @@ Consequências normativas:
 | RB-006 | Atendida pelo estado `removed` e por T7 a T9 (seção 6). |
 | RF-004 | Estado inicial `draft`; publicação por T1; edição conforme seção 3. |
 | RF-005 | Somente `published` é consultável publicamente. |
-| RF-006 | Imagens deixam de ser servidas publicamente com o anúncio; expurgo segue OD-05 e OD-10. |
+| RF-006 | Imagens deixam de ser servidas publicamente com o anúncio; regras de imagem em [image-policy.md](image-policy.md) (DEC-028); expurgo definitivo segue OD-10. |
 | RF-008 | Novos interesses somente em `published`. |
 | RF-009, RF-010 | Novas solicitações somente em `published`; vagas reservadas e não pagas são liberadas em `closed`/`removed`. |
 | RF-013, RF-015 | Escolha e liberação indisponíveis em `removed`; efeitos de desistência e reseleção seguem OD-06. |
 | RF-016, RF-017 | Independentes do estado do anúncio; seguem OD-01 e OD-02. |
 | RF-019, RF-020 | Moderação usa T7 a T9; critérios seguem OD-03. |
 | RF-022 | Transições T5 a T9 são auditadas. |
-| OD-01, OD-02, OD-03, OD-05, OD-06, OD-07, OD-08, OD-10, OD-11, OD-12 | Permanecem abertas. Nada neste documento as fecha ou antecipa. |
+| OD-05 | Fechada posteriormente por [image-policy.md](image-policy.md) (DEC-028); nada neste documento a antecipou. |
+| OD-01, OD-02, OD-03, OD-06, OD-07, OD-08, OD-10, OD-11, OD-12 | Permanecem abertas. Nada neste documento as fecha ou antecipa. |
 
 ## 11. Referências externas consultadas
 
