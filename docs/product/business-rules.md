@@ -14,7 +14,7 @@ Observações aparecem somente quando já confirmadas. Questões derivadas que a
 
 - **Regra:** avaliação somente após encerramento da negociação no sistema.
 - **Implicação operacional:** nenhuma avaliação pode ser registrada enquanto a negociação não estiver encerrada no sistema.
-- **Observações confirmadas:** o mecanismo de encerramento da negociação está definido em [negotiation-lifecycle.md](negotiation-lifecycle.md) (DEC-029): a negociação tem os estados `active` e `closed`, e qualquer uma das duas partes pode encerrá-la unilateralmente, de forma explícita, imediata e irreversível. Uma negociação `closed` satisfaz a pré-condição temporal desta regra; ela não afirma que a troca foi bem-sucedida. As regras detalhadas de avaliação ainda não foram definidas (OD-02).
+- **Observações confirmadas:** o mecanismo de encerramento da negociação está definido em [negotiation-lifecycle.md](negotiation-lifecycle.md) (DEC-029): a negociação tem os estados `active` e `closed`, e qualquer uma das duas partes pode encerrá-la unilateralmente, de forma explícita, imediata e irreversível. Uma negociação `closed` satisfaz a pré-condição temporal desta regra; ela não afirma que a troca foi bem-sucedida. As regras detalhadas de avaliação estão definidas em [ratings.md](ratings.md) (DEC-030): avaliação bilateral sobre a contraparte, no máximo uma por direção, nota inteira de 1 a 5 sem texto livre, janela de 14 dias corridos, publicação cega, imutabilidade após a publicação, média simples com contagem e invalidação administrativa auditada em caso de abuso.
 
 ## RB-003 — Limite de solicitações pagas
 

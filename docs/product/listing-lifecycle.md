@@ -189,7 +189,7 @@ Consequências normativas:
 - **`closed` não é encerramento de negociação.** Um anúncio `closed` significa apenas que a oferta saiu do ar. A negociação relacionada pode continuar existindo, e seu encerramento — que é a pré-condição das avaliações (RB-002, RF-016) — é um evento próprio, definido em [negotiation-lifecycle.md](negotiation-lifecycle.md) (DEC-029). Os dois ciclos permanecem independentes.
 - **Encerrar a negociação não encerra o anúncio.** Nada neste documento faz um anúncio mudar de estado por causa de um evento de negociação. DEC-029 confirma essa independência: sugerir ao anunciante que encerre o anúncio após o encerramento da negociação será sempre uma ação voluntária dele (T5 ou T6), nunca uma transição automática.
 - **Um anúncio pode deixar de aceitar novos interessados e ainda ter negociação viva.** É exatamente o caso de `paused` e `closed` com solicitante escolhido.
-- **Avaliações (RB-002, RF-017) nunca dependem do estado do anúncio.** Dependem do encerramento da negociação.
+- **Avaliações (RB-002, RF-017) nunca dependem do estado do anúncio.** Dependem do encerramento da negociação, conforme [ratings.md](ratings.md) (DEC-030).
 
 ## 9. Cenários de consistência
 
@@ -227,12 +227,13 @@ Consequências normativas:
 | RF-008 | Novos interesses somente em `published`. |
 | RF-009, RF-010 | Novas solicitações somente em `published`; vagas reservadas e não pagas são liberadas em `closed`/`removed`. |
 | RF-013, RF-015 | Escolha e liberação indisponíveis em `removed`; efeitos de desistência e reseleção seguem OD-06. |
-| RF-016, RF-017 | Independentes do estado do anúncio; RF-016 segue [negotiation-lifecycle.md](negotiation-lifecycle.md) (DEC-029) e RF-017 segue OD-02. |
+| RF-016, RF-017 | Independentes do estado do anúncio; RF-016 segue [negotiation-lifecycle.md](negotiation-lifecycle.md) (DEC-029) e RF-017 segue [ratings.md](ratings.md) (DEC-030). |
 | RF-019, RF-020 | Moderação usa T7 a T9; critérios seguem OD-03. |
 | RF-022 | Transições T5 a T9 são auditadas. |
 | OD-05 | Fechada posteriormente por [image-policy.md](image-policy.md) (DEC-028); nada neste documento a antecipou. |
 | OD-01 | Fechada posteriormente por [negotiation-lifecycle.md](negotiation-lifecycle.md) (DEC-029); nada neste documento a antecipou, e DEC-029 preserva integralmente a máquina de estados do anúncio. |
-| OD-02, OD-03, OD-06, OD-07, OD-08, OD-10, OD-11, OD-12 | Permanecem abertas. Nada neste documento as fecha ou antecipa. |
+| OD-03, OD-06, OD-07, OD-08, OD-10, OD-11, OD-12 | Permanecem abertas. Nada neste documento as fecha ou antecipa. |
+| OD-02 | Permanecia aberta nesta decisão; foi fechada depois por [ratings.md](ratings.md) (DEC-030), que preserva a independência entre o estado do anúncio e a elegibilidade da avaliação. |
 
 ## 11. Referências externas consultadas
 
