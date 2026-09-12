@@ -12,7 +12,7 @@ O objetivo de produto é dar sinal de confiança entre desconhecidos que negocia
 
 Este documento define a política **normativa de produto** das avaliações do MVP. Não é decisão arquitetural e **não** cria ADR.
 
-Este documento **não** define schema, migrations, endpoints, Server Actions, componentes de interface, notificações, emails nem Web Push. Também **não** define desistência ou reseleção (OD-06), exceções financeiras (OD-07), moderação de anúncios e itens proibidos (OD-03) nem retenção e expurgo de dados e trilhas de auditoria (OD-10).
+Este documento **não** define schema, migrations, endpoints, Server Actions, componentes de interface, notificações, emails nem Web Push. Também **não** define desistência ou reseleção (OD-06), exceções financeiras (OD-07), moderação de anúncios e itens proibidos, que permanecia em OD-03 e foi definida depois em [prohibited-items.md](prohibited-items.md) (DEC-031), nem retenção e expurgo de dados e trilhas de auditoria (OD-10).
 
 Preserva integralmente RB-001 a RB-006, o ciclo de vida do anúncio em [listing-lifecycle.md](listing-lifecycle.md) (DEC-027), a política de imagens em [image-policy.md](image-policy.md) (DEC-028) e o ciclo de vida da negociação em [negotiation-lifecycle.md](negotiation-lifecycle.md) (DEC-029).
 
@@ -312,7 +312,7 @@ O encerramento da negociação continua **unilateral** e sem aceite da contrapar
 | Tema | Onde permanece |
 | --- | --- |
 | Comentário em texto livre, resposta pública, réplica | Fora do MVP; eventual candidato pós-MVP |
-| Catálogo/política de itens proibidos e moderação de anúncios | OD-03 |
+| Catálogo/política de itens proibidos e moderação de anúncios | definidos depois em [prohibited-items.md](prohibited-items.md) (DEC-031), que fechou OD-03 |
 | Desistência e reseleção | OD-06 |
 | Chargebacks e exceções de pagamento | OD-07 |
 | Escolha do gateway | OD-08 |
@@ -348,5 +348,6 @@ O encerramento da negociação continua **unilateral** e sem aceite da contrapar
 | DEC-027 / [listing-lifecycle.md](listing-lifecycle.md) | Preservada; o estado do anúncio não altera a elegibilidade |
 | DEC-028 / [image-policy.md](image-policy.md) | Preservada; avaliações não possuem imagens |
 | DEC-029 / [negotiation-lifecycle.md](negotiation-lifecycle.md) | Preservada integralmente; `closed` continua terminal, irreversível e unilateral |
-| OD-03, OD-06, OD-07, OD-08, OD-10, OD-11, OD-12 | Permanecem abertas; nada aqui as fecha ou antecipa |
+| OD-06, OD-07, OD-08, OD-10, OD-11, OD-12 | Permanecem abertas; nada aqui as fecha ou antecipa |
+| OD-03 | Permanecia aberta nesta decisão; foi fechada depois por [prohibited-items.md](prohibited-items.md) (DEC-031), que preserva integralmente esta política de avaliações |
 | F0-016 | Concluído por esta entrega |

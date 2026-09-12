@@ -43,6 +43,8 @@ Critérios formais de elegibilidade (incluindo elegibilidade etária) ainda não
 
 O modo como o encerramento (passo 9) é tecnicamente confirmado está definido em [negotiation-lifecycle.md](negotiation-lifecycle.md) (DEC-029): a negociação tem os estados `active` e `closed`, e qualquer uma das duas partes pode encerrá-la unilateralmente, de forma explícita e irreversível. As regras detalhadas das avaliações (passo 10) estão definidas em [ratings.md](ratings.md) (DEC-030): avaliação bilateral sobre a contraparte, no máximo uma por direção, nota inteira de 1 a 5 sem texto livre, janela de 14 dias corridos e publicação cega até que ambas avaliem ou a janela termine.
 
+A denúncia e a moderação (passo 11) seguem [prohibited-items.md](prohibited-items.md) (DEC-031): catálogo de itens proibidos por categorias, denúncia por usuário autenticado sem alterar o estado do anúncio, moderação com decisão `procedente`, `improcedente` ou `sem_acao`, remoção definitiva por transição administrativa do anúncio, prazos de 24 horas corridas na classe crítica e 5 dias úteis na comum, reincidência progressiva e contestação administrativa.
+
 As regras de negócio que governam este fluxo estão em [business-rules.md](business-rules.md).
 
 ## Capacidades obrigatórias
@@ -50,14 +52,14 @@ As regras de negócio que governam este fluxo estão em [business-rules.md](busi
 | Capacidade | Regras relacionadas | Observação |
 | --- | --- | --- |
 | Cadastro e login por email/senha com verificação de email | — | Better Auth como solução inicial |
-| Publicação e consulta de anúncios com imagens | RB-005, RB-006 | Localização pública limitada a cidade/UF; ciclo de vida do anúncio definido em [listing-lifecycle.md](listing-lifecycle.md); quantidade e regras de imagens em aberto |
+| Publicação e consulta de anúncios com imagens | RB-005, RB-006 | Localização pública limitada a cidade/UF; ciclo de vida do anúncio definido em [listing-lifecycle.md](listing-lifecycle.md); regras de imagens em [image-policy.md](image-policy.md); publicação exige aceitação da declaração de conformidade com [prohibited-items.md](prohibited-items.md) |
 | Demonstração de interesse e solicitação de desbloqueio de contato | RB-003, RB-004 | Máximo de 3 solicitações pagas por anúncio; cobrança definitiva |
 | Cobrança de R$ 0,99 via Pix | RB-004 | Gateway não decidido; depende de spike |
 | Escolha de solicitante pelo anunciante | RB-001 | — |
 | Liberação de contato somente ao escolhido, com pagamento aprovado | RB-001 | Autorização server-side e auditoria obrigatórias |
 | Encerramento da negociação | RB-002 | Estados `active` e `closed`; encerramento unilateral por qualquer uma das partes, definido em [negotiation-lifecycle.md](negotiation-lifecycle.md) (DEC-029) |
-| Avaliação após encerramento | RB-002 | Regras detalhadas em aberto |
-| Denúncia e moderação de anúncios | RB-006 | Catálogo de itens proibidos em aberto |
+| Avaliação após encerramento | RB-002 | Regras detalhadas em [ratings.md](ratings.md) (DEC-030) |
+| Denúncia e moderação de anúncios | RB-006 | Política de itens proibidos, denúncia, moderação, remoção e prazos definida em [prohibited-items.md](prohibited-items.md) (DEC-031) |
 | Email transacional | — | Resend como provedor inicial |
 
 ## Capacidades explicitamente adiáveis
@@ -77,7 +79,7 @@ Fora do núcleo inicial do MVP:
 | Limite de 3 solicitações pagas | Design de pagamentos detalhando reserva atômica de vaga antes da cobrança, com expiração |
 | Encerramento da negociação | Mecanismo definido em [negotiation-lifecycle.md](negotiation-lifecycle.md) (DEC-029); sem dependência aberta |
 | Avaliações | Regras definidas em [ratings.md](ratings.md) (DEC-030); sem dependência aberta |
-| Moderação | Catálogo/política de itens proibidos |
-| Upload de imagens | Definição de quantidade e regras das imagens |
+| Moderação | Política definida em [prohibited-items.md](prohibited-items.md) (DEC-031); sem dependência aberta |
+| Upload de imagens | Regras definidas em [image-policy.md](image-policy.md) (DEC-028); sem dependência aberta |
 | Tratamento de dados pessoais | Política de retenção/exclusão de dados (LGPD) |
 | Cadastro | Definição formal de elegibilidade etária (OD-11) |

@@ -26,7 +26,7 @@ Fontes: [../product/mvp-scope.md](../product/mvp-scope.md), [../product/requirem
 - Público-alvo completo, requisitos rastreáveis, decision log, roadmap, backlog e workflow de agentes (esta entrega).
 - Spike do gateway Pix para exatamente R$ 0,99, com resultado registrado e decisão do gateway (OD-08, ADR-0004).
 - Fechamento das decisões que bloqueiam o modelo de dados: ORM e migrations (OD-09, fechada por [ADR-0005](../adr/0005-prisma-orm-migrations.md)), ciclo de vida do anúncio (OD-04, fechada por [../product/listing-lifecycle.md](../product/listing-lifecycle.md)), regras de imagens (OD-05, fechada por [../product/image-policy.md](../product/image-policy.md)).
-- Fechamento das decisões de produto: encerramento da negociação (OD-01, fechada por [../product/negotiation-lifecycle.md](../product/negotiation-lifecycle.md)), avaliações (OD-02, fechada por [../product/ratings.md](../product/ratings.md)), itens proibidos (OD-03), desistência/reseleção (OD-06), exceções de pagamento (OD-07), retenção/exclusão (OD-10), elegibilidade etária (OD-11), natureza da demonstração de interesse (OD-12).
+- Fechamento das decisões de produto: encerramento da negociação (OD-01, fechada por [../product/negotiation-lifecycle.md](../product/negotiation-lifecycle.md)), avaliações (OD-02, fechada por [../product/ratings.md](../product/ratings.md)), itens proibidos (OD-03, fechada por [../product/prohibited-items.md](../product/prohibited-items.md)), desistência/reseleção (OD-06), exceções de pagamento (OD-07), retenção/exclusão (OD-10), elegibilidade etária (OD-11), natureza da demonstração de interesse (OD-12).
 - Arquitetura de dados e de API necessária antes da implementação (`architecture/overview.md`, `architecture/data-model.md`, `architecture/payments-design.md`, `architecture/contact-release.md`). OD-12 deve estar fechada antes da arquitetura final pré-implementação, salvo adiamento formal com impacto registrado; OD-12 não é gate do spike de pagamento.
 
 **Dependências:** nenhuma externa; depende da disponibilidade de Bruno para decisões e do acesso a ambiente sandbox do gateway candidato para o spike.
@@ -34,7 +34,7 @@ Fontes: [../product/mvp-scope.md](../product/mvp-scope.md), [../product/requirem
 **Gate de saída:**
 
 - OD-08 e OD-09 fechadas, com ADRs correspondentes. OD-09 já está fechada por [ADR-0005](../adr/0005-prisma-orm-migrations.md); OD-08 permanece aberta.
-- OD-04 já está fechada por [../product/listing-lifecycle.md](../product/listing-lifecycle.md), OD-05 por [../product/image-policy.md](../product/image-policy.md) e OD-01 por [../product/negotiation-lifecycle.md](../product/negotiation-lifecycle.md).
+- OD-04 já está fechada por [../product/listing-lifecycle.md](../product/listing-lifecycle.md), OD-05 por [../product/image-policy.md](../product/image-policy.md), OD-01 por [../product/negotiation-lifecycle.md](../product/negotiation-lifecycle.md), OD-02 por [../product/ratings.md](../product/ratings.md) e OD-03 por [../product/prohibited-items.md](../product/prohibited-items.md).
 - Requisitos que a Fase 1 e a Fase 2 dependem com status `definido`.
 - Backlog da Fase 0 ([backlog.md](backlog.md)) sem itens `próximo` ou `bloqueado` que impeçam a Fase 1.
 
@@ -114,17 +114,17 @@ Fontes: [../product/mvp-scope.md](../product/mvp-scope.md), [../product/requirem
 
 - Mecanismo de encerramento conforme [../product/negotiation-lifecycle.md](../product/negotiation-lifecycle.md) (DEC-029, OD-01 fechada): estados `active` e `closed`, encerramento unilateral por qualquer uma das partes, irreversível e auditado (RF-016).
 - Avaliações conforme [../product/ratings.md](../product/ratings.md) (DEC-030), permitidas apenas após o encerramento da negociação (RF-017).
-- Denúncia de anúncios (RF-018).
-- Moderação com auditoria (RF-019).
-- Remoção de anúncios com itens proibidos conforme catálogo de OD-03 (RF-020).
+- Denúncia de anúncios conforme [../product/prohibited-items.md](../product/prohibited-items.md) (DEC-031, OD-03 fechada): usuário autenticado, unicidade por par (denunciante, anúncio), categoria obrigatória, estado inicial `recebida` e identidade do denunciante confidencial (RF-018).
+- Moderação com auditoria conforme a mesma fonte: decisão `procedente`, `improcedente` ou `sem_acao`, perfil único, decisão de ofício, prazos de 24 horas corridas na classe crítica e 5 dias úteis na comum, reincidência progressiva e contestação administrativa (RF-019).
+- Remoção de anúncios com itens proibidos conforme o catálogo PI-01 a PI-12 de [../product/prohibited-items.md](../product/prohibited-items.md), usando exclusivamente as transições administrativas de [../product/listing-lifecycle.md](../product/listing-lifecycle.md) (RF-020).
 
-**Dependências:** gate da Fase 3; OD-03 fechada. OD-01 já está fechada por [../product/negotiation-lifecycle.md](../product/negotiation-lifecycle.md) (DEC-029) e OD-02 por [../product/ratings.md](../product/ratings.md) (DEC-030).
+**Dependências:** gate da Fase 3. OD-01 já está fechada por [../product/negotiation-lifecycle.md](../product/negotiation-lifecycle.md) (DEC-029), OD-02 por [../product/ratings.md](../product/ratings.md) (DEC-030) e OD-03 por [../product/prohibited-items.md](../product/prohibited-items.md) (DEC-031).
 
 **Gate de saída:**
 
 - Nenhuma avaliação aceita antes do encerramento (RB-002 verificado por teste).
 - Anúncio removido por moderação deixa de ser consultável e o efeito sobre solicitações existentes segue a decisão registrada.
-- Catálogo de itens proibidos publicado (`product/prohibited-items.md`).
+- Catálogo de itens proibidos publicado em [../product/prohibited-items.md](../product/prohibited-items.md) e implementado: denúncia, moderação e remoção operando com auditoria, e prazos de decisão mensuráveis pela trilha de auditoria.
 
 ## Fase 5 — Hardening e lançamento
 

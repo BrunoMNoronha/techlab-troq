@@ -12,7 +12,7 @@ TROQ é uma plataforma de anúncios entre pessoas em que o contato (WhatsApp/tel
 4. Paga R$ 0,99. Cada anúncio aceita no máximo 3 solicitações pagas.
 5. Anunciante escolhe uma solicitação; apenas o escolhido recebe o WhatsApp/telefone.
 6. A negociação pode ser encerrada; após o encerramento, avaliações são permitidas.
-7. Anúncios podem ser denunciados e moderados.
+7. Anúncios podem ser denunciados e moderados, conforme a política de itens proibidos.
 
 As regras de negócio homologadas (RB-001 a RB-006) estão em [docs/product/business-rules.md](docs/product/business-rules.md).
 
@@ -30,7 +30,7 @@ As regras de negócio homologadas (RB-001 a RB-006) estão em [docs/product/busi
 | Email transacional | Resend |
 | Pagamentos | Pix-first; gateway ainda não decidido |
 
-Decisões ainda abertas (gateway de pagamento, catálogo de itens proibidos, desistência e reseleção, entre outras) estão registradas em [docs/decisions/open-decisions.md](docs/decisions/open-decisions.md) e não devem ser tratadas como homologadas.
+Decisões ainda abertas (gateway de pagamento, desistência e reseleção, retenção e exclusão de dados, entre outras) estão registradas em [docs/decisions/open-decisions.md](docs/decisions/open-decisions.md) e não devem ser tratadas como homologadas.
 
 ## Documentação
 
@@ -39,5 +39,6 @@ Decisões ainda abertas (gateway de pagamento, catálogo de itens proibidos, des
 - [Escopo do MVP](docs/product/mvp-scope.md)
 - [Regras de negócio](docs/product/business-rules.md)
 - [Avaliações](docs/product/ratings.md)
+- [Itens proibidos, denúncia e moderação](docs/product/prohibited-items.md)
 - [Decisões abertas](docs/decisions/open-decisions.md)
 - [Riscos](docs/delivery/risks.md)
