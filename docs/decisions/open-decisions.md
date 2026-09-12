@@ -29,11 +29,6 @@ Registro das questões que **ainda não foram decididas** na Fase 0. Nenhum item
 - **O que falta decidir:** lista de categorias proibidas, critérios de moderação, fluxo de denúncia e prazos de resposta.
 - **Bloqueia:** implementação de moderação.
 
-### OD-05 — Quantidade e regras das imagens
-
-- **O que falta decidir:** número máximo de imagens por anúncio, formatos aceitos, limites de tamanho, processamento e moderação de imagens.
-- **Bloqueia:** implementação de upload de imagens (ver [../adr/0003-object-storage-r2.md](../adr/0003-object-storage-r2.md)).
-
 ### OD-06 — Política de desistência e reseleção
 
 - **Contexto:** o anunciante escolhe uma solicitação entre até 3 pagas (RB-001, RB-003).
@@ -83,8 +78,9 @@ Itens que já constaram desta lista e foram fechados por documento próprio. O I
 | ID | Tema | Fechada por | Registro |
 | --- | --- | --- | --- |
 | OD-04 | Ciclo de vida completo do anúncio | [../product/listing-lifecycle.md](../product/listing-lifecycle.md) | DEC-027 em [decision-log.md](decision-log.md) |
+| OD-05 | Quantidade e regras das imagens | [../product/image-policy.md](../product/image-policy.md) | DEC-028 em [decision-log.md](decision-log.md) |
 | OD-09 | ORM e estratégia de migrations | [../adr/0005-prisma-orm-migrations.md](../adr/0005-prisma-orm-migrations.md) | DEC-026 em [decision-log.md](decision-log.md) |
 
 ## Itens explicitamente fora desta lista
 
-Já decididos e registrados como vigentes: arquitetura, stack, banco, deploy, autenticação inicial, armazenamento de imagens, email transacional, a recomendação de reserva atômica de vaga, o ORM/estratégia de migrations e o ciclo de vida do anúncio. Ver [../project-state.md](../project-state.md).
+Já decididos e registrados como vigentes: arquitetura, stack, banco, deploy, autenticação inicial, armazenamento de imagens, email transacional, a recomendação de reserva atômica de vaga, o ORM/estratégia de migrations, o ciclo de vida do anúncio e a política de imagens do anúncio. Ver [../project-state.md](../project-state.md).

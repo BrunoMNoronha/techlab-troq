@@ -1,6 +1,6 @@
 # Catálogo de requisitos — TROQ
 
-Catálogo inicial de requisitos rastreáveis do MVP. Contém **apenas** requisitos derivados das decisões já vigentes na Fase 0 ([../project-state.md](../project-state.md), [business-rules.md](business-rules.md), [listing-lifecycle.md](listing-lifecycle.md), ADRs em [../adr/](../adr/), [../decisions/decision-log.md](../decisions/decision-log.md)). Nenhum requisito aqui fecha uma decisão listada em [../decisions/open-decisions.md](../decisions/open-decisions.md).
+Catálogo inicial de requisitos rastreáveis do MVP. Contém **apenas** requisitos derivados das decisões já vigentes na Fase 0 ([../project-state.md](../project-state.md), [business-rules.md](business-rules.md), [listing-lifecycle.md](listing-lifecycle.md), [image-policy.md](image-policy.md), ADRs em [../adr/](../adr/), [../decisions/decision-log.md](../decisions/decision-log.md)). Nenhum requisito aqui fecha uma decisão listada em [../decisions/open-decisions.md](../decisions/open-decisions.md).
 
 ## Convenções
 
@@ -18,13 +18,13 @@ Catálogo inicial de requisitos rastreáveis do MVP. Contém **apenas** requisit
 | Grupo | IDs | Definido | Parcialmente definido | Bloqueado |
 | --- | --- | --- | --- | --- |
 | Identidade e conta | RF-001 a RF-003, RF-023 | 2 | 1 | 1 |
-| Anúncios | RF-004 a RF-007 | 2 | 1 | 1 |
+| Anúncios | RF-004 a RF-007 | 2 | 2 | 0 |
 | Solicitações e pagamentos | RF-008 a RF-012 | 0 | 3 | 2 |
 | Escolha e contato | RF-013 a RF-015 | 2 | 1 | 0 |
 | Encerramento e avaliações | RF-016, RF-017 | 0 | 1 | 1 |
 | Denúncia e moderação | RF-018 a RF-020 | 0 | 3 | 0 |
 | Transversais | RF-021, RF-022 | 0 | 2 | 0 |
-| Não funcionais | RNF-001 a RNF-018 | 8 | 10 | 0 |
+| Não funcionais | RNF-001 a RNF-018 | 9 | 9 | 0 |
 
 ## Requisitos funcionais
 
@@ -78,8 +78,8 @@ Catálogo inicial de requisitos rastreáveis do MVP. Contém **apenas** requisit
 - **Prioridade MVP:** obrigatória.
 - **Origem:** fluxo central (passo 2); capacidade obrigatória em [mvp-scope.md](mvp-scope.md).
 - **Regra de negócio relacionada:** RB-005, RB-006.
-- **Decisão aberta relacionada:** OD-05 (imagens), OD-03 (itens proibidos). OD-04 foi fechada por [listing-lifecycle.md](listing-lifecycle.md) (DEC-027).
-- **Critério de aceite (alto nível):** anúncio criado por usuário autenticado e verificado; nenhum dado de localização mais preciso que cidade/UF é armazenado ou exibido publicamente; o anúncio nasce no estado `draft` e só se torna público por publicação explícita do anunciante, conforme [listing-lifecycle.md](listing-lifecycle.md).
+- **Decisão aberta relacionada:** OD-03 (itens proibidos). OD-04 foi fechada por [listing-lifecycle.md](listing-lifecycle.md) (DEC-027) e OD-05 por [image-policy.md](image-policy.md) (DEC-028).
+- **Critério de aceite (alto nível):** anúncio criado por usuário autenticado e verificado; nenhum dado de localização mais preciso que cidade/UF é armazenado ou exibido publicamente; o anúncio nasce no estado `draft` e só se torna público por publicação explícita do anunciante, conforme [listing-lifecycle.md](listing-lifecycle.md); a publicação exige pelo menos uma imagem processada com sucesso, conforme [image-policy.md](image-policy.md).
 - **Status:** parcialmente definido. Campos além de título, descrição, imagens e cidade/UF não estão definidos.
 
 #### RF-005 — Consulta de anúncios
@@ -94,13 +94,13 @@ Catálogo inicial de requisitos rastreáveis do MVP. Contém **apenas** requisit
 
 #### RF-006 — Imagens do anúncio
 
-- **Descrição:** o anunciante envia imagens do anúncio, armazenadas no Cloudflare R2 via API S3-compatible e servidas publicamente.
+- **Descrição:** o anunciante envia imagens do anúncio, armazenadas no Cloudflare R2 via API S3-compatible; os derivados processados são servidos publicamente conforme [image-policy.md](image-policy.md).
 - **Prioridade MVP:** obrigatória.
-- **Origem:** [../adr/0003-object-storage-r2.md](../adr/0003-object-storage-r2.md) (DEC-014).
+- **Origem:** [../adr/0003-object-storage-r2.md](../adr/0003-object-storage-r2.md) (DEC-014); [image-policy.md](image-policy.md) (DEC-028).
 - **Regra de negócio relacionada:** RB-006 (remoção do anúncio implica tratamento das imagens).
-- **Decisão aberta relacionada:** OD-05 (quantidade, formatos, tamanho, processamento, moderação), OD-10 (expurgo e retenção das imagens). O efeito do estado do anúncio sobre as imagens está definido em [listing-lifecycle.md](listing-lifecycle.md): imagens deixam de ser servidas publicamente junto com o anúncio; o expurgo dos objetos segue OD-05 e OD-10.
-- **Critério de aceite (alto nível):** a definir após OD-05; imagens nunca contêm dados protegidos em objetos públicos.
-- **Status:** bloqueado por decisão aberta (OD-05). A decisão de armazenamento está vigente; as regras de imagem não.
+- **Decisão aberta relacionada:** OD-10 (expurgo e retenção dos derivados persistidos). OD-05 foi fechada por [image-policy.md](image-policy.md) (DEC-028). O efeito do estado do anúncio sobre as imagens está definido em [listing-lifecycle.md](listing-lifecycle.md): imagens deixam de ser servidas publicamente junto com o anúncio; o expurgo definitivo dos objetos segue OD-10.
+- **Critério de aceite (alto nível):** de 1 a 6 imagens por anúncio, com pelo menos uma imagem processada com sucesso para publicar e a primeira da ordenação como capa; entrada restrita a JPEG, PNG e WebP estático, com no máximo 10 MB, no mínimo 320 px por lado e no máximo 50 megapixels; upload direto ao R2 por operação S3-compatible de curta duração autorizada server-side, sem trafegar o binário por Vercel Function; validação por conteúdo com decodificação efetiva, chave gerada pela aplicação, regravação da imagem e remoção de EXIF/GPS após auto-orientação; derivados públicos `thumb` 320 px, `medium` 768 px e `large` 1600 px em WebP qualidade 80, sem ampliação; original temporário nunca público e limpo em no máximo 24 horas; imagens deixam de ser servidas publicamente quando o anúncio sai de `published`; imagens nunca contêm dados protegidos em objetos públicos.
+- **Status:** parcialmente definido. Upload, validação e processamento estão definidos por [image-policy.md](image-policy.md); apenas a retenção e o expurgo definitivo dos derivados persistidos seguem abertos (OD-10).
 
 #### RF-007 — Localização pública por cidade/UF
 
@@ -246,7 +246,7 @@ Catálogo inicial de requisitos rastreáveis do MVP. Contém **apenas** requisit
 - **Prioridade MVP:** obrigatória.
 - **Origem:** RB-006.
 - **Regra de negócio relacionada:** RB-006.
-- **Decisão aberta relacionada:** OD-03 (catálogo), OD-07 (tratamento financeiro das solicitações pagas de anúncio removido), OD-05 e OD-10 (imagens e dados do anúncio removido). Os efeitos do estado sobre as solicitações estão definidos em [listing-lifecycle.md](listing-lifecycle.md).
+- **Decisão aberta relacionada:** OD-03 (catálogo), OD-07 (tratamento financeiro das solicitações pagas de anúncio removido), OD-10 (retenção e expurgo dos dados e derivados de imagem do anúncio removido). Os efeitos do estado sobre as solicitações estão definidos em [listing-lifecycle.md](listing-lifecycle.md); os efeitos sobre as imagens estão definidos em [image-policy.md](image-policy.md) (DEC-028), que fechou OD-05.
 - **Critério de aceite (alto nível):** anúncio classificado como item proibido vai para `removed`, estado terminal, e não volta a ser público; solicitações pagas existentes são preservadas e a cobrança permanece definitiva (RB-004); o tratamento financeiro de exceção segue OD-07.
 - **Status:** parcialmente definido. A regra está vigente; o catálogo não.
 
@@ -308,12 +308,12 @@ Catálogo inicial de requisitos rastreáveis do MVP. Contém **apenas** requisit
 
 #### RNF-005 — Otimização de imagens
 
-- **Descrição:** imagens são otimizadas para entrega em smartphones e redes móveis (dimensionamento, compressão, derivados como miniaturas).
+- **Descrição:** imagens são otimizadas para entrega em smartphones e redes móveis (dimensionamento, compressão, derivados e remoção de metadados), conforme [image-policy.md](image-policy.md).
 - **Prioridade MVP:** obrigatória.
-- **Origem:** [../adr/0003-object-storage-r2.md](../adr/0003-object-storage-r2.md); R-10.
-- **Decisão aberta relacionada:** OD-05.
-- **Critério de aceite (alto nível):** a definir após OD-05.
-- **Status:** parcialmente definido.
+- **Origem:** [../adr/0003-object-storage-r2.md](../adr/0003-object-storage-r2.md); [image-policy.md](image-policy.md) (DEC-028); R-10.
+- **Decisão aberta relacionada:** — (OD-05 fechada por [image-policy.md](image-policy.md), DEC-028).
+- **Critério de aceite (alto nível):** toda imagem publicada é servida por derivados `thumb` (lado maior máximo de 320 px), `medium` (768 px) e `large` (1600 px); o formato público é WebP com qualidade 80; os derivados preservam a proporção e nunca ampliam a imagem original; EXIF e demais metadados desnecessários, incluindo GPS, são removidos; o derivado entregue corresponde ao viewport, priorizando o uso mobile; imagens não necessárias à primeira visualização permanecem sujeitas a lazy loading na implementação; os derivados expõem dimensões conhecidas, permitindo reservar espaço e evitar layout shift.
+- **Status:** definido. Metas numéricas de desempenho (LCP, bytes por página, tempo de carregamento) não pertencem a este requisito e seguem no gate de performance (RNF-003, RNF-004).
 
 #### RNF-006 — PWA
 
@@ -440,7 +440,7 @@ Catálogo inicial de requisitos rastreáveis do MVP. Contém **apenas** requisit
 | OD-02 | RF-017 |
 | OD-03 | RF-004, RF-018, RF-019, RF-020 |
 | OD-04 | fechada por [listing-lifecycle.md](listing-lifecycle.md) (DEC-027); define estados, transições, visibilidade pública e efeitos sobre interesses e solicitações; deixa de bloquear o modelo de dados do anúncio |
-| OD-05 | RF-004, RF-006, RF-020, RNF-005 |
+| OD-05 | fechada por [image-policy.md](image-policy.md) (DEC-028); define quantidade, formatos, limites, validação, processamento, derivados e visibilidade das imagens; deixa de bloquear RF-006 e define os critérios de RNF-005 |
 | OD-06 | RF-013, RF-015 |
 | OD-07 | RF-009, RF-010, RF-011, RF-012, RF-020 |
 | OD-08 | RF-009, RF-011, RF-012, RNF-014 |
