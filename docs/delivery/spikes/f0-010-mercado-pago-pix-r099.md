@@ -443,3 +443,287 @@ Permanece, fora do alcance de sandbox, a questão da tarifa efetiva sobre R$ 0,9
 ## O que esta execução não fez
 
 Nenhuma integração de pagamento foi implementada, nenhum SDK adicionado, nenhum schema ou migration criado, nenhuma aplicação registrada no Mercado Pago, nenhuma configuração de produção alterada, nenhum endpoint publicado, nenhum dinheiro movimentado, nenhum segredo gravado e nenhum gateway alternativo comparado. OD-07 e OD-08 permanecem abertas, ADR-0004 não foi criado e o Mercado Pago permanece apenas candidato, conforme DEC-017.
+
+---
+
+# Terceira execução — 2026-09-14 (primeira execução com credencial)
+
+Esta seção é acrescentada às execuções de 2026-09-07 e 2026-09-14, que permanecem acima sem alteração. É a **primeira execução com Access Token de teste disponível** e, portanto, a primeira com parte experimental realmente executada.
+
+## Classificação desta execução
+
+**INCONCLUSIVO**
+
+A classificação continua `INCONCLUSIVO`, mas por uma razão inteiramente diferente das anteriores. Oito dos dez critérios de conclusão passaram de "não comprovado" a **comprovado experimentalmente**, incluindo os dois que mais pesavam: a aceitação de exatamente R$ 0,99 e a tarifa efetiva sobre esse valor. Restam exatamente dois critérios sem prova — recebimento de webhook real e validação da assinatura contra uma notificação verdadeira —, ambos travados na mesma causa única: a configuração de webhook do Mercado Pago só existe no painel "Suas integrações", cujo acesso exige autenticação interativa com reCAPTCHA.
+
+`INCONCLUSIVO` continua não significando aprovação presumida. OD-07 e OD-08 permanecem abertas, ADR-0004 não foi criado e o Mercado Pago permanece apenas candidato, conforme DEC-017.
+
+## Baseline Git
+
+`main` = `origin/main` = `1e52f33fde1187290d531bfb0adc81f55897ae9a`, working tree limpo no início da execução. Baseline repinado deliberadamente a partir de `6d725ef`, superado, para que a execução ocorresse sob a governança e os padrões de engenharia vigentes (PRs #13, #14 e #16).
+
+## Credencial
+
+O Access Token de teste foi fornecido ao ambiente pela variável `MERCADOPAGO_ACCESS_TOKEN_TEST` e usado exclusivamente no header `Authorization: Bearer`. Nenhum valor foi exibido, registrado, gravado em arquivo do repositório ou enviado como query parameter. Nenhuma credencial anteriormente exposta foi procurada ou reutilizada. Nenhuma credencial de produção foi procurada ou utilizada.
+
+A primeira verificação de presença exibiu também o comprimento da variável, sem revelar seu conteúdo. As verificações posteriores foram limitadas a presente/ausente.
+
+### Identificação da conta e da aplicação
+
+Verificação por `GET /users/me` e `GET /applications/{id}`, sem exibir segredos:
+
+| Campo | Valor observado |
+| --- | --- |
+| `GET /users/me` | HTTP 200 |
+| `user_id` | `3689791164` |
+| `site_id` / `country_id` | `MLB` / `BR` |
+| `tags` | `["user_product_seller", "test_user", "normal"]` |
+| `application_id` | `1495841611175733` |
+| Nome da aplicação | `TestApp-8c46f65d` ("Automatic test application") |
+| `sandbox_mode` | `true` |
+| `date_created` da aplicação | `2026-09-14T10:21:48.000-04:00` |
+| `traceability_updated` | `dx-panel-api-credentials`, `RefreshOwnerAppToken`, `2026-09-14T10:21:52.875-04:00` |
+| `notifications_callback_url` | `null` |
+| `notifications_topics` | `[]` |
+
+A tag `test_user` e `sandbox_mode: true` confirmam que se trata de conta e aplicação de teste. A aplicação foi criada e teve credencial atualizada na própria data desta execução, o que é **consistente com** credencial nova/rotacionada — registrado como observação de rastreabilidade, não como prova criptográfica de rotação.
+
+O registro da aplicação **não expõe chave secreta de webhook** em nenhum campo, e `notifications_callback_url` está vazio: nenhuma notificação está configurada.
+
+## Experimento 1 — controle oficial R$ 50,00
+
+```
+2026-09-14T14:45:22Z  POST https://api.mercadopago.com/v1/orders  ->  HTTP 201
+```
+
+| Campo | Valor |
+| --- | --- |
+| `id` (order) | `ORDTST01M2G62G5WJW1BXWDRWXQBF66D` |
+| `transactions.payments[0].id` | `PAY01M2G62G69P97GP8CDAFFGB3ZP` |
+| `status` / `status_detail` | `action_required` / `waiting_transfer` |
+| `total_amount` / `total_paid_amount` | `50.00` / `50.00` |
+| `currency` | `BRL` |
+| `date_of_expiration` | `2026-09-15T14:45:23.628+00:00` |
+| `ticket_url` | presente, em `mercadopago.com.br/sandbox/payments/178955663708/ticket` |
+
+Resultado idêntico ao caso oficial documentado em G2. **Critério 1 (API autenticada) e critério 2 (criação Pix) comprovados.**
+
+## Experimento 2 — exatamente R$ 0,99
+
+```
+2026-09-14T14:45:39Z  POST https://api.mercadopago.com/v1/orders  ->  HTTP 201
+```
+
+| Campo | Valor |
+| --- | --- |
+| `id` (order) | `ORDTST01M2G630VQRHZDNFQRGK144TQE` |
+| `transactions.payments[0].id` | `PAY01M2G630W7G19741DAB2T15WJ4` |
+| `status` / `status_detail` | `action_required` / `waiting_transfer` |
+| `total_amount` / `total_paid_amount` | `0.99` / `0.99` |
+| `date_of_expiration` | `2026-09-15T14:45:40.679+00:00` |
+
+**R$ 0,99 foi aceito sem qualquer ressalva, erro, aviso ou ajuste de valor.** Não houve arredondamento do valor cobrado, não houve rejeição por mínimo e o Pix foi gerado normalmente.
+
+A classificação da origem do resultado, que nas duas execuções anteriores era `indeterminada`, passa a ser **determinada por experimento**: a API aceita o valor. **Critério 3 comprovado.**
+
+### Valor mínimo aceito
+
+Durante a varredura de tarifas, `total_amount = "0.01"` também foi aceito com `HTTP 201` e chegou a `approved`. Não foi encontrado mínimo que rejeitasse R$ 0,99; o mínimo praticável observado no sandbox é **R$ 0,01**, coerente com a ausência de Pix na tabela oficial de mínimos (G6).
+
+## Experimento 3 — idempotência
+
+Três requisições, mesmo corpo de R$ 0,99:
+
+| # | `X-Idempotency-Key` | HTTP | Order retornada | Payment retornado |
+| --- | --- | --- | --- | --- |
+| 1 | chave A | 201 | `ORDTST01M2G630VQRHZDNFQRGK144TQE` | `PAY01M2G630W7G19741DAB2T15WJ4` |
+| 2 | **chave A repetida** | 201 | `ORDTST01M2G630VQRHZDNFQRGK144TQE` | `PAY01M2G630W7G19741DAB2T15WJ4` |
+| 3 | chave B (nova) | 201 | `ORDTST01M2G63P2JTYCR4QDAHCEWMX49` | `PAY01M2G63P309E0ZHGK5627DJESV` |
+
+Verificações:
+
+- repetição com a mesma chave retornou **a mesma order, o mesmo payment e o mesmo `qr_code` byte a byte** — nenhuma cobrança duplicada foi criada;
+- chave nova com corpo idêntico criou **uma order distinta**, provando que o discriminador é a chave e não o corpo.
+
+**Critério 6 comprovado.**
+
+## Experimento 4 — status e transição
+
+Order dedicada à medição: `ORDTST01M2G6C6GWJA7TA4TXTVM5JV7T`, R$ 0,99, com polling de 1 segundo a partir do instante da requisição.
+
+```
+t+ 1.66s   action_required / waiting_transfer
+t+48.76s   processed / accredited    total_paid_amount=0.99
+```
+
+A transição documentada em G2 ("the payment status will automatically change to approved") foi **observada**, com latência de aproximadamente **49 segundos** entre a criação e a acreditação, sem qualquer transferência Pix real. As orders dos experimentos 1 e 2 também foram observadas em `processed` / `accredited`, com `total_paid_amount` igual a `50.00` e `0.99` respectivamente.
+
+**Critério 5 comprovado** no ambiente de teste. Observação importante: essa promoção automática é comportamento **do sandbox**, não prova do fluxo real de liquidação Pix em produção.
+
+Nota operacional relevante para o desenho do TROQ: após a acreditação, a resposta de `GET /v1/orders/{id}` **deixa de trazer** `qr_code`, `qr_code_base64` e `ticket_url`. O código copia e cola deve ser persistido no momento da criação, não recuperado sob demanda.
+
+## Experimento 5 — QR Code e Pix copia e cola
+
+O campo `qr_code` foi decodificado como payload EMV/BR Code e validado campo a campo, com verificação independente do CRC16-CCITT (polinômio `0x1021`, inicial `0xFFFF`):
+
+| Campo EMV | Controle R$ 50,00 | Alvo R$ 0,99 |
+| --- | --- | --- |
+| `00` formato | `01` | `01` |
+| `26.00` GUI | `br.gov.bcb.pix` | `br.gov.bcb.pix` |
+| `26.01` chave | `b76aa9c2-2ec4-4110-954e-ebfe34f05b61` | `b76aa9c2-2ec4-4110-954e-ebfe34f05b61` |
+| `53` moeda | `986` (BRL) | `986` (BRL) |
+| **`54` valor** | **`50.00`** | **`0.99`** |
+| `58` país | `BR` | `BR` |
+| `59` beneficiário | `TESTUSER63466303779677918` | `TESTUSER63466303779677918` |
+| `60` cidade | `Osasco` | `Osasco` |
+| `63` CRC informado | `8BB3` | `1280` |
+| CRC recalculado | `8BB3` — **confere** | `1280` — **confere** |
+| Tamanho do payload | 174 caracteres | 173 caracteres |
+
+O campo `qr_code_base64` decodifica para um PNG válido (assinatura `89 50 4E 47 0D 0A 1A 0A`), com 2830 bytes no controle e 2808 bytes no alvo. O `ticket_url` está presente em ambos.
+
+O valor no BR Code é **exatamente `0.99`**: o Pix gerado cobra o valor pretendido, sem arredondamento. **Critério 4 comprovado.**
+
+Nenhuma imagem de QR Code foi gravada neste repositório.
+
+## Experimento 6 — expiração
+
+Seis orders de R$ 0,99, variando `transactions.payments[0].expiration_time`:
+
+| `expiration_time` | HTTP | Janela observada | Conforme documentação? |
+| --- | --- | --- | --- |
+| omitido | 201 | **24 h 00 min** | sim, padrão documentado |
+| `PT30M` | 201 | 30 min | sim, mínimo documentado |
+| `PT29M` | 201 | **29 min** | **não — abaixo do mínimo documentado, ainda assim aceito** |
+| `P30D` | 201 | 30 dias | sim, máximo documentado |
+| `P31D` | 201 | **31 dias** | **não — acima do máximo documentado, ainda assim aceito** |
+| `PT2H` | 201 | 2 h | sim |
+
+A janela é medida como `date_of_expiration` menos `created_date`. O padrão de 24 horas foi confirmado com precisão. Os limites de 30 minutos e 30 dias, porém, **não foram aplicados pela API no ambiente de teste**: valores fora da faixa documentada foram aceitos e refletidos literalmente em `date_of_expiration`.
+
+Consequência para o TROQ: a validação da janela de reserva (RF-010) **não pode ser delegada ao gateway**. O sistema deve validar o próprio `expiration_time` antes de enviar. Não se pode presumir que produção se comporte como o sandbox aqui — em qualquer dos dois sentidos.
+
+A expiração efetiva não foi observada até o vencimento: nenhuma order foi acompanhada por 29 minutos ou mais até mudar de estado por decurso de prazo. O comportamento **no** vencimento permanece não observado.
+
+## Experimento 7 — tarifas e arredondamento
+
+Esta era, nas duas execuções anteriores, a incerteza economicamente mais relevante do spike (risco R-01), declarada indeterminável por sandbox. **Essa premissa estava errada:** o ambiente de teste reflete tarifa. `GET /v1/payments/{id}` retorna `fee_details`, `charges_details` e `transaction_details.net_received_amount`.
+
+Sete pagamentos aprovados, todos Pix:
+
+| Valor cobrado | Tarifa | Líquido | Tarifa efetiva | 0,99% nominal | half-up | teto | piso |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| R$ 0,01 | **R$ 0,00** | R$ 0,01 | 0,0000% | 0,000099 | 0,00 ok | 0,01 falha | 0,00 ok |
+| R$ 0,10 | **R$ 0,00** | R$ 0,10 | 0,0000% | 0,00099 | 0,00 ok | 0,01 falha | 0,00 ok |
+| R$ 0,50 | **R$ 0,00** | R$ 0,50 | 0,0000% | 0,00495 | 0,00 ok | 0,01 falha | 0,00 ok |
+| **R$ 0,99** | **R$ 0,01** | **R$ 0,98** | **1,0101%** | 0,0098010 | 0,01 ok | 0,01 ok | 0,00 falha |
+| R$ 1,51 | R$ 0,01 | R$ 1,50 | 0,6623% | 0,0149490 | 0,01 ok | 0,02 falha | 0,01 ok |
+| R$ 5,00 | R$ 0,05 | R$ 4,95 | 1,0000% | 0,0495 | 0,05 ok | 0,05 ok | 0,04 falha |
+| R$ 50,00 | R$ 0,50 | R$ 49,50 | 1,0000% | 0,4950 | 0,50 ok | 0,50 ok | 0,49 falha |
+
+Leitura:
+
+1. **A regra de arredondamento é meio-para-cima ao centavo.** Os sete pontos são consistentes com half-up e cada uma das hipóteses concorrentes é refutada por pelo menos um ponto: teto falha em R$ 0,01, R$ 0,10, R$ 0,50 e R$ 1,51; piso falha em R$ 0,99, R$ 5,00 e R$ 50,00. As execuções anteriores listavam "para baixo", "para cima" e "tarifa mínima" como indistinguíveis; **estão distinguidas**.
+2. **Não existe tarifa mínima.** Valores cujo nominal fica abaixo de meio centavo pagam tarifa zero. A hipótese de tarifa mínima não publicada está refutada no ambiente observado.
+3. **Para R$ 0,99 a tarifa é de R$ 0,01 e o líquido é de R$ 0,98.** A taxa efetiva sobe de 0,99% nominal para **1,0101%** por efeito do arredondamento — sobrecusto de cerca de 0,0002 real por transação, economicamente irrelevante.
+4. `fee_payer` é `collector` e `charges_details[].metadata.source_detail` é `processing_fee_charge`, com `accounts.from = "collector"` e `accounts.to = "mp"`. `money_release_date` ficou cerca de 1 segundo após a aprovação, coerente com "Na hora" (G5).
+
+**Critério 9 comprovado no ambiente de teste.**
+
+Ressalva que não pode ser omitida: esta é a tarifa aplicada a uma **conta de teste**, cuja tabela pode não coincidir com a tabela comercial de uma conta real do TROQ, que varia por acordo. Os pagamentos retornam `live_mode: true` apesar de a aplicação estar em `sandbox_mode: true`, o que torna esse campo inadequado como discriminador. O que este experimento estabelece com solidez é a **mecânica**: percentual aplicado ao valor bruto, arredondado half-up ao centavo, sem componente fixo e sem piso. O **percentual contratado** deve ser confirmado na conta real antes de decidir.
+
+## Webhook, assinatura e teste negativo — bloqueados
+
+Critérios 7 e 8 **não comprovados experimentalmente**. Ao contrário das execuções anteriores, a causa foi isolada por experimento, não presumida.
+
+### O que foi construído e provado
+
+Um receiver HTTPS descartável foi escrito **fora do repositório TROQ**, no diretório temporário da sessão, sem vínculo Git com o TROQ. Ele implementa a validação oficial de assinatura descrita em G4:
+
+- monta o manifesto `id:[data.id_url];request-id:[x-request-id_header];ts:[ts_header];`;
+- converte `data.id` para minúsculas;
+- remove do manifesto os componentes ausentes;
+- extrai `ts` e `v1` do header `x-signature` separando por `,`;
+- calcula `HMAC-SHA256` em hexadecimal e compara em tempo constante;
+- responde `HTTP 200` quando válido e `HTTP 401` quando inválido;
+- nunca registra o secret nem qualquer header de autorização.
+
+Autoteste local executado, com secret sintético gerado apenas para o teste:
+
+| # | Caso | Resultado |
+| --- | --- | --- |
+| T1 | Manifesto igual ao template oficial, com `ORD01M28P44G5FG8RJPM579EH56FV` convertido para minúsculas | PASS |
+| T2 | Omissão de `data.id` ausente do manifesto | PASS |
+| T3 | Parse de `x-signature` no formato `ts=...,v1=...` | PASS |
+| T4 | **Positivo** — assinatura correta aceita | PASS |
+| T5 | **Negativo** — último caractere do `v1` adulterado, rejeitado | PASS (`hmac_divergente`) |
+| T6 | **Negativo** — mesma assinatura com secret diferente, rejeitada | PASS (`hmac_divergente`) |
+| T7 | **Negativo** — `ts` adulterado, simulando replay, rejeitado | PASS (`hmac_divergente`) |
+
+Isso prova que **o validador está correto** contra o manifesto oficial. Não prova o critério 8, que exige validar uma notificação **real** emitida pelo Mercado Pago.
+
+O receiver local respondeu `HTTP 200` no health check em `127.0.0.1` e foi encerrado ao fim da execução. Nenhum endpoint público chegou a existir.
+
+### Por que o webhook real não foi obtido
+
+Três causas independentes, todas verificadas:
+
+1. **A URL de notificação não é configurável por requisição.** Testado diretamente: `POST /v1/orders` com `notification_url` retorna `HTTP 400`, `code: "unsupported_properties"`, `details: ["additionalProperties '$.notification_url' not allowed"]`. A notificação é configurada **no nível da aplicação**, e `notifications_callback_url` da aplicação está `null`.
+2. **O painel "Suas integrações" é inalcançável sem interação humana.** É de lá que saem a URL de notificação, a chave secreta do HMAC e o simulador oficial. O acesso exige autenticação com reCAPTCHA, ação vedada ao agente. Nenhuma tentativa de autenticação foi feita. Nenhum endpoint da API pública expõe a chave secreta: o registro completo da aplicação foi lido e não contém esse campo; `GET /applications/{id}/webhooks`, `GET /v1/webhooks` e `GET /v1/notifications/settings` retornam `404`.
+3. **Não houve endpoint HTTPS público.** A premissa da segunda execução — de que o endpoint era provisionável — **não se sustentou**. A credencial de plataforma de deploy presente no ambiente é escopada a um time onde **não tem permissão de criar projeto**: `POST /v11/projects` retorna `HTTP 403`, `{"code":"forbidden","action":"create","resource":"project"}`. O único projeto existente na conta é alheio a este spike e não foi tocado. A alternativa de expor o receiver local por túnel público foi **bloqueada pela camada de permissão do ambiente de execução** e não foi contornada.
+
+Mesmo que a causa 3 fosse resolvida, a causa 2 sozinha impediria o critério 8, porque sem a chave secreta não há HMAC positivo a validar. **A causa raiz é o acesso ao painel.**
+
+RF-012 permanece, portanto, com metade da evidência: a idempotência está comprovada, a confirmação por webhook não está.
+
+## Critérios de conclusão de F0-010 nesta execução
+
+| # | Critério | Estado | Evidência |
+| --- | --- | --- | --- |
+| 1 | API autenticada funcionando | **comprovado** | `GET /users/me` HTTP 200; orders criadas com HTTP 201 |
+| 2 | Criação Pix | **comprovado** | `ORDTST01M2G62G5WJW1BXWDRWXQBF66D` e `ORDTST01M2G630VQRHZDNFQRGK144TQE` |
+| 3 | R$ 0,99 aceito | **comprovado** | HTTP 201, `total_amount` e `total_paid_amount` iguais a `0.99`, sem ajuste |
+| 4 | QR Code ou copia e cola gerado | **comprovado** | BR Code com CRC16 conferido e campo `54` = `0.99`; `qr_code_base64` é PNG válido |
+| 5 | Confirmação/status comprovável | **comprovado no sandbox** | `action_required/waiting_transfer` para `processed/accredited` em cerca de 49 s |
+| 6 | Idempotência comprovada | **comprovado** | mesma chave devolve mesma order, mesmo payment e mesmo `qr_code`; chave nova cria order distinta |
+| 7 | Webhook HTTPS recebido | **não comprovado** | bloqueado: sem acesso ao painel e sem endpoint público |
+| 8 | Origem/assinatura validada | **não comprovado** | validador correto por autoteste T1 a T7, mas sem notificação real nem chave secreta |
+| 9 | Tarifa vigente conhecida | **comprovado no sandbox** | half-up ao centavo, sem piso; R$ 0,99 gera tarifa R$ 0,01 e líquido R$ 0,98 |
+| 10 | Nenhuma incompatibilidade conhecida com RB-004 | **mantido** | nenhuma incompatibilidade encontrada em nenhum experimento |
+
+Oito de dez critérios comprovados. Dois bloqueados pela mesma causa. F0-010 **não** pode ser marcado como concluído.
+
+## Evidência adicional necessária para concluir F0-010
+
+Exatamente uma condição de fundo, da qual os dois critérios restantes decorrem:
+
+1. **Acesso à configuração de webhook do Mercado Pago.** Na prática, uma destas alternativas:
+   - sessão autenticada no painel "Suas integrações" conduzida por Bruno, que cadastre a URL de notificação da aplicação de teste e forneça a chave secreta ao ambiente por variável de ambiente, nos mesmos termos de sigilo do Access Token; ou
+   - a chave secreta e a URL configuradas previamente por Bruno, cabendo ao agente apenas receber e validar.
+2. **Um endpoint HTTPS público**, hoje não provisionável nesta sessão. Requer uma destas: credencial de deploy com permissão de criar projeto, ou autorização explícita para expor o receiver local por túnel.
+
+Ambas são condições de ambiente, não achados sobre o Mercado Pago.
+
+## Divergências entre documentação e comportamento observado
+
+Registro explícito, porque afeta o desenho do TROQ:
+
+| Ponto | Documentação | Observado |
+| --- | --- | --- |
+| `expiration_time` mínimo 30 min e máximo 30 dias | limites declarados (G1) | `PT29M` e `P31D` aceitos e refletidos literalmente |
+| Tarifa em ambiente de teste | execuções anteriores assumiam que o sandbox não reflete tarifa | o sandbox **reflete** tarifa, com `fee_details` e `net_received_amount` |
+| Arredondamento da tarifa | não documentado publicamente | meio-para-cima ao centavo, sem piso |
+| `qr_code` após aprovação | não documentado | deixa de ser retornado por `GET /v1/orders/{id}` |
+
+## Limitações desta execução
+
+1. Webhook real e validação de assinatura contra notificação verdadeira continuam sem prova; o teste negativo de assinatura foi feito apenas contra o próprio validador, com secret sintético.
+2. Todos os experimentos ocorreram em conta de teste. Tarifa, limites de valor, validação de `expiration_time` e promoção automática a `approved` podem divergir em produção.
+3. A promoção a `approved` em cerca de 49 s é comportamento do sandbox e **não** mede o tempo real de liquidação Pix.
+4. A expiração não foi observada até o vencimento; o comportamento no vencimento permanece desconhecido.
+5. O percentual de tarifa aplicado à conta real do TROQ não foi confirmado; apenas a mecânica de cálculo foi estabelecida.
+6. Nenhum dinheiro real foi movimentado e nenhuma credencial de produção foi procurada ou utilizada.
+
+## O que esta execução não fez
+
+Nenhuma integração de pagamento foi implementada no produto, nenhum SDK do Mercado Pago foi adicionado ao TROQ, nenhum route handler de webhook, botão Pix, model, migration ou secret de Mercado Pago entrou no repositório. Nenhuma aplicação foi criada ou alterada no Mercado Pago, nenhuma configuração do painel foi modificada, nenhum endpoint público foi publicado, nenhum projeto de terceiros foi tocado e nenhum serviço público de captura de webhook foi utilizado. O receiver temporário viveu apenas em diretório de sessão e foi descartado. OD-07 e OD-08 permanecem abertas, ADR-0004 não foi criado, F0-011 permanece bloqueado e o Mercado Pago permanece apenas candidato, conforme DEC-017.
