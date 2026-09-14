@@ -6,7 +6,9 @@
 
 **Aceito** — Fase 0 (2026-09-14). Fecha [OD-08](../decisions/open-decisions.md) com base nas evidências de [F0-010](../delivery/spikes/f0-010-mercado-pago-pix-r099.md) e é a fonte oficial de DEC-036 em [../decisions/decision-log.md](../decisions/decision-log.md).
 
-Esta ADR **homologa um gateway**. Ela não implementa integração de pagamentos, não cria schema, não instala dependência, não configura secret e não define o design de pagamentos. O design detalhado é trabalho de F0-022 (`architecture/payments-design.md`), condicionado a OD-07, que **permanece aberta**.
+Esta ADR **homologa um gateway**. Ela não implementa integração de pagamentos, não cria schema, não instala dependência, não configura secret e não define o design de pagamentos.
+
+> **Atualização de 2026-09-14, posterior à aceitação desta ADR.** OD-07 foi fechada por [../product/payment-exceptions.md](../product/payment-exceptions.md) (DEC-037) e o design detalhado foi produzido por F0-022 em [../architecture/payments-design.md](../architecture/payments-design.md). As decisões desta ADR **não** foram alteradas: o desenho as aplica integralmente. O texto original abaixo é preservado como registro histórico e deve ser lido com esta atualização. Onde ele diz que OD-07 permanece aberta, isso descreve o estado da data em que a ADR foi escrita.
 
 ## Contexto
 
@@ -183,7 +185,7 @@ Negativas e trade-offs:
 - Substituir o Mercado Pago por outro gateway exige **ADR própria** que substitua esta, com justificativa factual — falha de critério, mudança comercial ou requisito novo — e plano de migração. Não se troca de provedor por preferência.
 - Adotar outra superfície de API do Mercado Pago como principal deste fluxo, a Payments API por exemplo, exige ADR própria.
 - Adicionar um segundo meio de pagamento ao fluxo de RB-004 exige decisão registrada; esta ADR autoriza apenas Pix.
-- Esta ADR deve ser revisitada quando F0-022 produzir `architecture/payments-design.md` e novamente antes do lançamento comercial, quando a tarifa contratada da conta real for conferida.
+- Esta ADR deveria ser revisitada quando F0-022 produzisse o design de pagamentos. **Isso ocorreu em 2026-09-14** ([../architecture/payments-design.md](../architecture/payments-design.md)): a revisão foi feita e **nenhuma decisão desta ADR foi alterada**. Permanece a revisão prevista para antes do lançamento comercial, quando a tarifa contratada da conta real for conferida.
 
 ## Rastreabilidade
 

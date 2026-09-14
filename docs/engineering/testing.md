@@ -50,7 +50,7 @@ Documento irmão: [conventions.md](conventions.md). O que aqui se chama "código
 - **O que:** a conformidade com o contrato de serviços externos (provedor de email, armazenamento S3-compatible, gateway de pagamento quando houver um homologado) e o comportamento da aplicação diante das respostas e eventos desse serviço.
 - **Quando:** sempre que houver integração externa cuja mudança de contrato quebre a aplicação em silêncio.
 - **Como:** o serviço externo é a fronteira legítima de substituição (seção 6). Quando o provedor oferecer ambiente de teste ou sandbox, ele é usado para validar o contrato real; testes internos validam o comportamento da aplicação diante de respostas conhecidas.
-- **Limite atual:** o gateway foi homologado em [../adr/0004-mercado-pago-pix.md](../adr/0004-mercado-pago-pix.md) (DEC-036) e as exceções de pagamento foram definidas em [../product/payment-exceptions.md](../product/payment-exceptions.md) (DEC-037), mas o contrato concreto de teste só é fixado quando o design de pagamentos (F0-022) existir. Até lá, nenhum contrato de gateway é normatizado aqui.
+- **Contrato concreto:** o gateway foi homologado em [../adr/0004-mercado-pago-pix.md](../adr/0004-mercado-pago-pix.md) (DEC-036), as exceções de pagamento foram definidas em [../product/payment-exceptions.md](../product/payment-exceptions.md) (DEC-037) e o contrato concreto de teste foi fixado por F0-022 em [../architecture/payments-design.md](../architecture/payments-design.md), seção 13 (casos T-1 a T-18), complementado por [../architecture/contact-release.md](../architecture/contact-release.md), seção 10 (casos C-1 a C-11). Esses casos são o mínimo exigido pelo gate da Fase 3.
 
 ## 3. Stack de testes
 
@@ -100,7 +100,7 @@ Os futuros testes devem provar explicitamente, entre outras invariantes, as seis
 | **RB-005** | Nenhuma superfície pública expõe localização mais precisa que cidade/UF |
 | **RB-006** | Um anúncio com item proibido, decidido conforme a política vigente ([../product/prohibited-items.md](../product/prohibited-items.md)), é removido pelas transições administrativas previstas e deixa de ser público |
 
-**Cenários de exceção de pagamento:** o comportamento esperado deixou de ser indefinido e está em [../product/payment-exceptions.md](../product/payment-exceptions.md) (DEC-037), que é a fonte das asserções. Os testes devem provar, no mínimo, que uma mesma tentativa lógica nunca gera duas cobranças; que dois pagamentos acreditados para a mesma reserva produzem uma única solicitação paga válida, consomem uma única vaga e levam o excedente a reembolso; que pagamento acreditado dentro da janela vale mesmo quando a confirmação chega atrasada; que pagamento acreditado fora da janela não cria solicitação nem consome vaga; que estado incerto ou não mapeado nunca concede direito de negócio; e que reversão posterior não devolve vaga nem revoga contato já liberado. A escolha de mecanismo — deduplicação, reconciliação, atomicidade, tempos — continua sendo design de F0-022, e nenhum teste deve presumir um mecanismo que ainda não foi desenhado. O termo `chargeback` não é usado para Pix.
+**Cenários de exceção de pagamento:** o comportamento esperado deixou de ser indefinido e está em [../product/payment-exceptions.md](../product/payment-exceptions.md) (DEC-037), que é a fonte das asserções. Os testes devem provar, no mínimo, que uma mesma tentativa lógica nunca gera duas cobranças; que dois pagamentos acreditados para a mesma reserva produzem uma única solicitação paga válida, consomem uma única vaga e levam o excedente a reembolso; que pagamento acreditado dentro da janela vale mesmo quando a confirmação chega atrasada; que pagamento acreditado fora da janela não cria solicitação nem consome vaga; que estado incerto ou não mapeado nunca concede direito de negócio; e que reversão posterior não devolve vaga nem revoga contato já liberado. A escolha de mecanismo — deduplicação, reconciliação, atomicidade, tempos — foi feita por F0-022 em [../architecture/payments-design.md](../architecture/payments-design.md), e é contra esse desenho que os testes são escritos. O termo `chargeback` não é usado para Pix.
 
 ## 6. Concorrência, idempotência e test doubles
 
@@ -116,7 +116,7 @@ Estes são requisitos de teste registrados agora e implementados quando a funcio
 - **Race conditions de seleção.** Escolhas simultâneas do anunciante não produzem duas negociações `active` originadas por escolhas sequenciais do mesmo anúncio, nem violam as pré-condições de reseleção.
 - **Autorização de liberação de contato.** Tentativas concorrentes e tentativas de ator não autorizado não liberam contato.
 
-O **que** cada evento de pagamento significa e **qual** deve ser o desfecho de cada exceção pertence ao design de pagamentos e às decisões abertas; este documento normatiza apenas que essas condições precisam ser exercidas por teste real quando o comportamento estiver definido.
+O **que** cada evento de pagamento significa está em [../product/payment-exceptions.md](../product/payment-exceptions.md) (DEC-037) e **como** ele é tratado está em [../architecture/payments-design.md](../architecture/payments-design.md); este documento normatiza que essas condições precisam ser exercidas por teste real, e o contrato concreto está na seção 13 daquele desenho.
 
 ### 6.2 Política de test doubles
 
@@ -143,4 +143,6 @@ O CI é materializado na Fase 1 e não faz parte desta tarefa. Ficam registradas
 - [../product/requirements.md](../product/requirements.md) — RF-xxx e RNF-xxx, em especial RNF-016 (consistência sob concorrência)
 - [../adr/0002-postgresql-neon.md](../adr/0002-postgresql-neon.md) — transações e restrições do PostgreSQL
 - [../adr/0005-prisma-orm-migrations.md](../adr/0005-prisma-orm-migrations.md) — migrations e validação em CI
-- [../decisions/open-decisions.md](../decisions/open-decisions.md) — decisões ainda abertas
+- [../architecture/payments-design.md](../architecture/payments-design.md) — contrato de teste de pagamentos (seção 13)
+- [../architecture/contact-release.md](../architecture/contact-release.md) — contrato de teste da liberação de contato (seção 10)
+- [../decisions/open-decisions.md](../decisions/open-decisions.md) — decisões abertas; atualmente nenhuma

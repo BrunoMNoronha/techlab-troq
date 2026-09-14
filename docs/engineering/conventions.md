@@ -42,7 +42,7 @@ Aplicação **única** Next.js, conforme [ADR-0001](../adr/0001-modular-monolith
 
 ## 2. Organização de código
 
-Esta seção define **princípios** de estrutura. Ela **não** define o conjunto de módulos de negócio: isso depende de `architecture/data-model.md`, que por sua vez depende da conclusão da frente de pagamentos. Nenhum módulo funcional é criado por este documento.
+Esta seção define **princípios** de estrutura. O conjunto de módulos de negócio foi definido depois por F0-022, em [../architecture/overview.md](../architecture/overview.md) (AR-3.3), a partir de [../architecture/data-model.md](../architecture/data-model.md); as camadas estão em AR-3.2. Nenhum módulo funcional é criado por este documento.
 
 ### 2.1 Camadas
 
@@ -130,7 +130,7 @@ Esta seção implementa, em nível de código, decisões já vigentes: RNF-007 (
 - **Tipos não são duplicados quando podem ser derivados com segurança** da fonte (schema de validação, schema de dados, retorno de caso de uso). Duplicata manual diverge silenciosamente.
 - **Ausência de dado é explícita.** `null`/`undefined` são tratados como casos reais; não se usa valor sentinela nem string vazia para representar ausência.
 - **Valores monetários nunca usam ponto flutuante em regra financeira.** Nenhum cálculo, comparação, soma ou conferência de valor devido pode depender de `number` em ponto flutuante. A representação interna deve ser exata — inteiro em unidade mínima ou tipo decimal — e a conversão para exibição é responsabilidade da camada de apresentação. Isso vale para o valor de R$ 0,99 (RB-004), que precisa ser exatamente esse valor.
-  - Este documento **não** define a representação persistida de pagamento, o nome dos campos nem o formato trocado com gateway: isso pertence ao design de pagamentos e depende de decisões ainda abertas ([../decisions/open-decisions.md](../decisions/open-decisions.md)).
+  - Este documento **não** define a representação persistida de pagamento, o nome dos campos nem o formato trocado com o gateway: isso pertence ao desenho de pagamentos, produzido depois por F0-022 em [../architecture/payments-design.md](../architecture/payments-design.md), e ao modelo de [../architecture/data-model.md](../architecture/data-model.md). Não há decisão aberta pendente.
 
 ## 5. Qualidade
 
@@ -190,4 +190,6 @@ Princípios já aprovados, aqui incorporados como norma de código. Eles não su
 - [../adr/0005-prisma-orm-migrations.md](../adr/0005-prisma-orm-migrations.md) — Prisma ORM e Prisma Migrate
 - [../product/business-rules.md](../product/business-rules.md) — RB-001 a RB-006
 - [../product/requirements.md](../product/requirements.md) — RF-xxx e RNF-xxx
-- [../decisions/open-decisions.md](../decisions/open-decisions.md) — decisões ainda abertas
+- [../architecture/overview.md](../architecture/overview.md) — camadas, módulos de domínio e fronteiras de confiança
+- [../architecture/data-model.md](../architecture/data-model.md) — entidades e invariantes
+- [../decisions/open-decisions.md](../decisions/open-decisions.md) — decisões abertas; atualmente nenhuma

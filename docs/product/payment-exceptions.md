@@ -29,7 +29,7 @@ Neste documento:
 | Tema | Onde está |
 | --- | --- |
 | Escolha do gateway, modelo de integração, manifesto HMAC, isolamento do domínio | [../adr/0004-mercado-pago-pix.md](../adr/0004-mercado-pago-pix.md) (DEC-036) |
-| Schema, migrations, endpoints, jobs, locks, transações, tempos concretos de retry e de reserva | `architecture/payments-design.md` (F0-022) |
+| Schema, migrations, endpoints, jobs, locks, transações, tempos concretos de retry e de reserva | [../architecture/payments-design.md](../architecture/payments-design.md) e [../architecture/data-model.md](../architecture/data-model.md), produzidos por F0-022 em 2026-09-14 |
 | Interface, textos de tela, emails e notificações | Fase 3 do [../delivery/roadmap.md](../delivery/roadmap.md) |
 | Valor cobrado, definitividade da cobrança e limite de três | RB-003 e RB-004, **inalteradas** |
 | Política comercial de reembolso por insatisfação | Não existe no MVP; ver seção 10.2 |
@@ -522,11 +522,13 @@ O design de pagamentos (F0-022) e a implementação (Fase 3) devem satisfazer, n
 | DEC-027, DEC-029, DEC-031, DEC-032, DEC-033, DEC-034, DEC-035 | Preservadas integralmente. Nenhuma delas gera reembolso, e nenhuma tem seu texto alterado por esta política |
 | ADR-0004 (DEC-036) | Preservada integralmente. Esta política **usa** suas decisões 7 a 12 e não altera nenhuma. A seção 4.3 registra um refinamento factual sobre o reenvio de notificações, sem efeito normativo |
 | F0-019 | Concluído por esta entrega |
-| F0-022 | Deixa de estar bloqueado |
-| R-02 | Mitigado no plano normativo: a regra de não exceder três está explícita para todas as exceções; o mecanismo atômico é F0-022 |
+| F0-022 | Deixou de estar bloqueado e foi **concluído** em 2026-09-14. O desenho correspondente está em [../architecture/payments-design.md](../architecture/payments-design.md), que rastreia CI-1 a CI-12 um a um e **não** altera nenhuma regra desta política |
+| R-02 | Mitigado no plano normativo: a regra de não exceder três está explícita para todas as exceções. O mecanismo atômico foi definido por F0-022 em [../architecture/data-model.md](../architecture/data-model.md) (DM-6) |
 | R-04 | Mitigado no plano normativo: notificação perdida, duplicada, fora de ordem e tardia têm tratamento definido, com reconciliação autoritativa |
 | R-11 | **Novo.** O reembolso técnico pode falhar por saldo insuficiente ou pelo prazo de 180 dias do provedor (MP-5) |
 
 ## 21. Revisão
 
-Este documento é revisado quando: o Mercado Pago alterar estados, endpoints, prazos ou política de notificações; o Banco Central alterar as regras de devolução ou do MED — a versão 4.4 do guia já está anunciada, com vigências em 2026-09-01 e 2026-10-26; F0-022 produzir `architecture/payments-design.md`; ou antes do lançamento comercial, junto com a conferência da tarifa contratada prevista em R-01.
+Este documento é revisado quando: o Mercado Pago alterar estados, endpoints, prazos ou política de notificações; o Banco Central alterar as regras de devolução ou do MED — a versão 4.4 do guia já está anunciada, com vigências em 2026-09-01 e 2026-10-26; ou antes do lançamento comercial, junto com a conferência da tarifa contratada prevista em R-01.
+
+A condição "F0-022 produzir `architecture/payments-design.md`" foi **satisfeita em 2026-09-14**. A revisão decorrente foi feita e o resultado é que **nada aqui mudou**: o desenho converteu esta política em mecanismo, sem alterar nenhuma regra, sem criar hipótese de reembolso e sem afrouxar nenhum invariante. As delegações a F0-022 que este documento fazia — critério de eleição do canônico (PE-3.1), duração da janela acima do piso (PE-4.4), mecanismo atômico (PE-5.4), tempos (PE-6.16) e periodicidade da reconciliação (PE-9.7) — estão atendidas em [../architecture/payments-design.md](../architecture/payments-design.md) e [../architecture/data-model.md](../architecture/data-model.md).

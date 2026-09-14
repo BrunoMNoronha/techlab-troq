@@ -35,10 +35,10 @@ Ponto de partida: [project-state.md](project-state.md). Decisões vigentes: [dec
 
 | Documento | Status | Conteúdo |
 | --- | --- | --- |
-| architecture/overview.md | futuro | Visão geral do monólito modular e seus módulos |
-| architecture/data-model.md | futuro | Modelo de dados |
-| architecture/payments-design.md | futuro | Design de pagamentos, reserva atômica de vaga, webhook e idempotência |
-| architecture/contact-release.md | futuro | Autorização server-side e auditoria da liberação de contato |
+| [architecture/overview.md](architecture/overview.md) | existente | Visão geral da arquitetura: objetivos, camadas, os nove módulos de domínio, fronteiras de confiança, jornadas, autenticação e autorização em três níveis, dados pessoais, auditoria, imagens, pagamentos em nível macro, mobile-first, desempenho, observabilidade mínima, trabalho assíncrono e política de evolução sem microserviços; produzido por F0-022 |
+| [architecture/data-model.md](architecture/data-model.md) | existente | Modelo lógico de dados: entidades, relações, cardinalidades, estados, unicidades e invariantes, com a proteção de concorrência de RB-003 por índice único parcial e alocação de vaga sob trava de transação; produzido por F0-022 |
+| [architecture/payments-design.md](architecture/payments-design.md) | existente | Desenho técnico de pagamentos: identidade e idempotência da tentativa, janela de reserva de 30 minutos, receptor de webhook, confirmação contra o estado autoritativo, eleição do pagamento canônico, reembolso técnico, reversões, reconciliação, cadências, rastreamento de CI-1 a CI-12 e contrato de teste; produzido por F0-022 |
+| [architecture/contact-release.md](architecture/contact-release.md) | existente | Desenho técnico de RB-001: a fronteira entre armazenar, autorizar e retornar o contato, pré-condições da autorização, verificação server-side a cada acesso, superfícies proibidas, proibição de cache compartilhado, quem não recebe e contrato de teste; produzido por F0-022 |
 
 ### adr — registros de decisão arquitetural
 
@@ -49,6 +49,7 @@ Ponto de partida: [project-state.md](project-state.md). Decisões vigentes: [dec
 | [adr/0003-object-storage-r2.md](adr/0003-object-storage-r2.md) | existente | Cloudflare R2 como armazenamento S3-compatible para imagens |
 | [adr/0004-mercado-pago-pix.md](adr/0004-mercado-pago-pix.md) | existente | Mercado Pago como gateway Pix inicial homologado, por Checkout Transparente via Orders API: idempotência, validação de assinatura por manifesto único, webhook no nível da aplicação, processamento idempotente e reconciliável e isolamento do domínio; fecha OD-08 (DEC-036) |
 | [adr/0005-prisma-orm-migrations.md](adr/0005-prisma-orm-migrations.md) | existente | Prisma ORM e Prisma Migrate; política de migrations em desenvolvimento, staging e produção |
+| [adr/0006-async-work-scheduling-concurrency.md](adr/0006-async-work-scheduling-concurrency.md) | existente | Trabalho assíncrono, agendamento e concorrência: PostgreSQL como fila e autoridade de trava, agendamento da própria plataforma, nenhuma invariante dependente de job, reclamação de lotes por `SKIP LOCKED`, trava de transação em vez de sessão, restrição de banco como garantia e endpoints protegidos por segredo; registra DEC-038 |
 
 ### engineering — convenções e práticas de engenharia
 

@@ -27,7 +27,7 @@ Fontes: [../product/mvp-scope.md](../product/mvp-scope.md), [../product/requirem
 - Spike do gateway Pix para exatamente R$ 0,99, com resultado registrado e decisão do gateway (OD-08, fechada por [ADR-0004](../adr/0004-mercado-pago-pix.md), DEC-036).
 - Fechamento das decisões que bloqueiam o modelo de dados: ORM e migrations (OD-09, fechada por [ADR-0005](../adr/0005-prisma-orm-migrations.md)), ciclo de vida do anúncio (OD-04, fechada por [../product/listing-lifecycle.md](../product/listing-lifecycle.md)), regras de imagens (OD-05, fechada por [../product/image-policy.md](../product/image-policy.md)).
 - Fechamento das decisões de produto: encerramento da negociação (OD-01, fechada por [../product/negotiation-lifecycle.md](../product/negotiation-lifecycle.md)), avaliações (OD-02, fechada por [../product/ratings.md](../product/ratings.md)), itens proibidos (OD-03, fechada por [../product/prohibited-items.md](../product/prohibited-items.md)), desistência/reseleção (OD-06, fechada por [../product/reselection-policy.md](../product/reselection-policy.md)), retenção/exclusão (OD-10, fechada por [../product/data-retention-policy.md](../product/data-retention-policy.md)), elegibilidade etária (OD-11, fechada por [../product/age-eligibility.md](../product/age-eligibility.md)), natureza da demonstração de interesse (OD-12, fechada por [../product/interest-flow.md](../product/interest-flow.md)) e exceções de pagamento (OD-07, fechada por [../product/payment-exceptions.md](../product/payment-exceptions.md), DEC-037; sua dependência OD-08 havia sido fechada por [ADR-0004](../adr/0004-mercado-pago-pix.md)).
-- Arquitetura de dados e de API necessária antes da implementação (`architecture/overview.md`, `architecture/data-model.md`, `architecture/payments-design.md`, `architecture/contact-release.md`). OD-12 está fechada por [../product/interest-flow.md](../product/interest-flow.md) (DEC-035), o que remove essa condição da arquitetura pré-implementação.
+- Arquitetura de dados e de API necessária antes da implementação: **concluída** por F0-022 em 2026-09-14 — [../architecture/overview.md](../architecture/overview.md), [../architecture/data-model.md](../architecture/data-model.md), [../architecture/payments-design.md](../architecture/payments-design.md) e [../architecture/contact-release.md](../architecture/contact-release.md), mais [ADR-0006](../adr/0006-async-work-scheduling-concurrency.md) (DEC-038).
 
 **Dependências:** nenhuma externa; depende da disponibilidade de Bruno para decisões e do acesso a ambiente sandbox do gateway candidato para o spike.
 
@@ -35,7 +35,7 @@ Fontes: [../product/mvp-scope.md](../product/mvp-scope.md), [../product/requirem
 
 - OD-08 e OD-09 fechadas, com ADRs correspondentes. **Ambas estão fechadas:** OD-09 por [ADR-0005](../adr/0005-prisma-orm-migrations.md) e OD-08 por [ADR-0004](../adr/0004-mercado-pago-pix.md) (DEC-036), em 2026-09-14.
 - OD-04 já está fechada por [../product/listing-lifecycle.md](../product/listing-lifecycle.md), OD-05 por [../product/image-policy.md](../product/image-policy.md), OD-01 por [../product/negotiation-lifecycle.md](../product/negotiation-lifecycle.md), OD-02 por [../product/ratings.md](../product/ratings.md), OD-03 por [../product/prohibited-items.md](../product/prohibited-items.md), OD-06 por [../product/reselection-policy.md](../product/reselection-policy.md), OD-10 por [../product/data-retention-policy.md](../product/data-retention-policy.md), OD-11 por [../product/age-eligibility.md](../product/age-eligibility.md), OD-12 por [../product/interest-flow.md](../product/interest-flow.md) e OD-07 por [../product/payment-exceptions.md](../product/payment-exceptions.md) (DEC-037).
-- **Nenhuma decisão aberta bloqueia mais este gate.** A validação real do gateway (F0-010) foi concluída em 2026-09-14, a escolha foi formalizada no mesmo dia por F0-011, que fechou OD-08 com [ADR-0004](../adr/0004-mercado-pago-pix.md) (DEC-036), e F0-019 fechou OD-07 com [../product/payment-exceptions.md](../product/payment-exceptions.md) (DEC-037). O que resta do gate é execução documental: a arquitetura pré-implementação (F0-022) e a transição (F0-023).
+- **Nenhuma decisão aberta bloqueia mais este gate.** A validação real do gateway (F0-010) foi concluída em 2026-09-14, a escolha foi formalizada no mesmo dia por F0-011, que fechou OD-08 com [ADR-0004](../adr/0004-mercado-pago-pix.md) (DEC-036), F0-019 fechou OD-07 com [../product/payment-exceptions.md](../product/payment-exceptions.md) (DEC-037) e **F0-022 concluiu a arquitetura pré-implementação** na mesma data. O que resta do gate é a transição (F0-023), que inclui a sua verificação formal.
 - Requisitos que a Fase 1 e a Fase 2 dependem com status `definido`.
 - Backlog da Fase 0 ([backlog.md](backlog.md)) sem itens `próximo` ou `bloqueado` que impeçam a Fase 1.
 
@@ -61,6 +61,7 @@ Fontes: [../product/mvp-scope.md](../product/mvp-scope.md), [../product/requirem
 - Deploy de preview funcionando na Vercel a partir de PR.
 - Migrations executáveis e reversíveis em ambiente de desenvolvimento.
 - Nenhum segredo versionado (RNF-015).
+- As invariantes que [../architecture/data-model.md](../architecture/data-model.md) atribui a **restrição de banco** (quadro da seção 12) estão materializadas no schema inicial.
 
 ## Fase 2 — Identidade e anúncios
 
@@ -103,6 +104,7 @@ Fontes: [../product/mvp-scope.md](../product/mvp-scope.md), [../product/requirem
 **Gate de saída:**
 
 - Testes de concorrência provando que nunca há mais de 3 solicitações pagas por anúncio.
+- Contrato de teste de [../architecture/payments-design.md](../architecture/payments-design.md) (seção 13) e de [../architecture/contact-release.md](../architecture/contact-release.md) (seção 10) executado, sobre banco real e com execução simultânea onde o caso exigir.
 - Testes de webhook duplicado, fora de ordem e atrasado sem inconsistência de estado, e de pagamento acreditado fora da janela de reserva sem criar vaga nem solicitação paga.
 - Liberação de contato só ocorre com as duas condições de RB-001 e gera auditoria.
 - Revisão reforçada concluída para pagamentos, autorização e dados ([../engineering/ai-agent-workflow.md](../engineering/ai-agent-workflow.md)).
