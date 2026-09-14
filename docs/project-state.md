@@ -1,12 +1,16 @@
-# Estado do projeto — baseline da Fase 0
+# Estado do projeto
 
-**Data de registro:** 2026-09-07
+**Primeiro registro:** 2026-09-07
+**Última atualização:** 2026-09-14 (F0-023)
 **Repositório:** `BrunoMNoronha/techlab-troq`, branch principal `main`
-**Fase:** 0 — baseline documental
+**Fase 0:** concluída — gate de saída verificado e **APROVADO** em [delivery/phase-1-transition.md](delivery/phase-1-transition.md)
+**Fase 1:** habilitada e não iniciada; próximo trabalho **F1-001**
 
-Este documento separa três categorias que não devem ser confundidas: o que **existe de fato** no repositório, o que **já foi decidido** e o que **ainda não foi implementado**.
+Este documento separa categorias que não devem ser confundidas: o que **existe de fato hoje** no repositório, o que **já foi decidido** e o que **ainda não foi implementado**. A seção 1 preserva a **baseline histórica** da inspeção inicial e **não** descreve o estado atual; para o estado atual, ver a seção 3.
 
-## 1. Fatos — estado encontrado no repositório
+## 1. Baseline histórica — estado encontrado na inspeção inicial
+
+**Registro histórico de 2026-09-07, preservado sem alteração.** Descreve o repositório **antes** de qualquer trabalho e **não** descreve o estado atual.
 
 Inspeção realizada em 2026-09-07 antes de qualquer alteração:
 
@@ -65,16 +69,30 @@ Decisões já tomadas e válidas na Fase 0. Detalhes nos ADRs indicados.
 - Natureza da demonstração de interesse: "Tenho interesse" é ação **gratuita** de interface que exige usuário autenticado, email verificado e anúncio `published`, apenas inicia a solicitação de desbloqueio e **não** libera contato, **não** ocupa vaga paga, **não** cria entidade `Interest`, **não** gera registro visível ao anunciante e **não** pode ser cancelada, por não existir entidade persistida; o anunciante não vê nem é notificado desses cliques e não recebe lista ou contador individualizado; admite-se apenas telemetria agregada de funil; o valor de R$ 0,99 pertence à solicitação de desbloqueio — [product/interest-flow.md](product/interest-flow.md) (DEC-035).
 - Escopo do MVP — [product/mvp-scope.md](product/mvp-scope.md).
 
-## 3. Ainda não implementado
+## 3. Estado atual do repositório — o que existe e o que falta
 
-Nada de código existe. Em particular, não foram criados:
+**Verificado em 2026-09-14 por F0-023.** Esta seção substitui, para efeito de estado corrente, o registro histórico da seção 1. A classificação detalhada, com evidência item a item, está em [delivery/phase-1-transition.md](delivery/phase-1-transition.md), seção 10.
 
-- aplicação Next.js, `package.json` ou dependências;
-- banco de dados, schema ou migrations;
-- workflows de CI/CD;
-- configuração de Vercel, Neon, R2, Resend ou gateway de pagamento;
-- autenticação, pagamentos, telas ou PWA;
-- deploy de qualquer ambiente.
+### 3.1 O que já existe
+
+Fundação técnica mínima, criada de forma antecipada e isolada, **sem nenhuma funcionalidade de produto**:
+
+- aplicação Next.js `16.3.5` com App Router e React `19.3.0`, em `src/app/` — apenas `layout.tsx`, `page.tsx` e um teste;
+- `package.json` com `engines.node` em `24.x`, lockfile versionado e os sete comandos padronizados de [engineering/conventions.md](engineering/conventions.md), seção 5.1: `format`, `format:check`, `lint`, `typecheck`, `test`, `test:ci` e `build`;
+- TypeScript em modo `strict`, ESLint, Prettier, Vitest e React Testing Library configurados;
+- CI em `.github/workflows/ci.yml`, cujo job `Validação (format, lint, typecheck, test, build)` é o required status check do ruleset `Protect main` e roda em toda PR e em todo push para `main`;
+- projeto Vercel conectado, publicando deployment de preview a partir de PR.
+
+### 3.2 O que ainda não existe
+
+- **estrutura de módulos de domínio** — os nove módulos de [architecture/overview.md](architecture/overview.md) (AR-3.3) e os dois transversais **não** foram criados; `src/` contém apenas `app/`;
+- **contrato de ambientes e segredos** — `engineering/environments.md` não existe e não há `.env.example`; é o objeto de **F1-001**;
+- **banco de dados** — nenhum Neon provisionado, nenhum `prisma/`, nenhum `schema.prisma`, nenhuma migration e nenhuma dependência do Prisma instalada;
+- **R2 e Resend** — escolhidos em ADR-0003 e DEC-015, mas **não provisionados**;
+- **autenticação, anúncios, pagamentos, jobs, PWA e observabilidade** — nenhuma implementação;
+- **deploy de produção** — nenhum.
+
+Escolha registrada em documentação **não** é provisionamento, e arquivo de configuração parcial **não** é entregável concluído.
 
 ## 4. Decisões abertas
 
@@ -82,7 +100,7 @@ Nada de código existe. Em particular, não foram criados:
 
 As doze questões foram fechadas por documento próprio: OD-01, por [product/negotiation-lifecycle.md](product/negotiation-lifecycle.md) (DEC-029); OD-02, por [product/ratings.md](product/ratings.md) (DEC-030); OD-03, por [product/prohibited-items.md](product/prohibited-items.md) (DEC-031); OD-04, por [product/listing-lifecycle.md](product/listing-lifecycle.md) (DEC-027); OD-05, por [product/image-policy.md](product/image-policy.md) (DEC-028); OD-06, por [product/reselection-policy.md](product/reselection-policy.md) (DEC-032); **OD-07, por [product/payment-exceptions.md](product/payment-exceptions.md) (DEC-037)**; OD-08, por [ADR-0004](adr/0004-mercado-pago-pix.md) (DEC-036); OD-09, por [ADR-0005](adr/0005-prisma-orm-migrations.md) (DEC-026); OD-10, por [product/data-retention-policy.md](product/data-retention-policy.md) (DEC-033); OD-11, por [product/age-eligibility.md](product/age-eligibility.md) (DEC-034); e OD-12, por [product/interest-flow.md](product/interest-flow.md) (DEC-035).
 
-Estado da Fase 0 após estas decisões: F0-017, F0-018, F0-020, F0-021, F0-024 e, desde 2026-09-14, **F0-010, F0-011 e F0-019** estão concluídos. O spike do gateway Pix para exatamente R$ 0,99 (F0-010) foi fechado na **sexta execução**, classificada como `CONCLUSIVO`, com **dez dos dez critérios comprovados**. A terceira execução já havia comprovado oito — incluindo a aceitação de exatamente R$ 0,99 e a tarifa efetiva de R$ 0,01 sobre esse valor, com líquido de R$ 0,98. A quarta fechou o recebimento de webhook, com endpoint HTTPS público provisionado em projeto Vercel temporário e isolado, sem qualquer relação com o projeto oficial `techlab-troq`. A sexta fechou o critério restante, a **validação da assinatura**: uma Order Pix nova de exatamente R$ 0,99 gerou uma notificação real do Mercado Pago cujo `application_id` corresponde à mesma aplicação de teste cuja chave secreta estava configurada, correlacionada por `data.id` e `external_reference`, com HMAC-SHA256 conferindo contra o manifesto oficial e resposta `HTTP 200`; os testes negativos devolveram `HTTP 401`. Todos os recursos temporários foram removidos, exceto a limpeza de uma aplicação de teste na conta real, que depende de login do titular.
+Estado da Fase 0 após estas decisões, na data em que foram fechadas: F0-017, F0-018, F0-020, F0-021, F0-024 e, desde 2026-09-14, **F0-010, F0-011 e F0-019** estavam concluídos. Hoje **todos** os itens `F0-xxx` estão concluídos e a Fase 0 está encerrada. O spike do gateway Pix para exatamente R$ 0,99 (F0-010) foi fechado na **sexta execução**, classificada como `CONCLUSIVO`, com **dez dos dez critérios comprovados**. A terceira execução já havia comprovado oito — incluindo a aceitação de exatamente R$ 0,99 e a tarifa efetiva de R$ 0,01 sobre esse valor, com líquido de R$ 0,98. A quarta fechou o recebimento de webhook, com endpoint HTTPS público provisionado em projeto Vercel temporário e isolado, sem qualquer relação com o projeto oficial `techlab-troq`. A sexta fechou o critério restante, a **validação da assinatura**: uma Order Pix nova de exatamente R$ 0,99 gerou uma notificação real do Mercado Pago cujo `application_id` corresponde à mesma aplicação de teste cuja chave secreta estava configurada, correlacionada por `data.id` e `external_reference`, com HMAC-SHA256 conferindo contra o manifesto oficial e resposta `HTTP 200`; os testes negativos devolveram `HTTP 401`. Todos os recursos temporários foram removidos, exceto a limpeza de uma aplicação de teste na conta real, que depende de login do titular.
 
 F0-011 foi executado em seguida, no mesmo dia, e converteu essas evidências em decisão arquitetural: [ADR-0004](adr/0004-mercado-pago-pix.md) **fecha OD-08** e registra DEC-036, homologando o Mercado Pago como gateway Pix inicial do MVP, por Checkout Transparente via Orders API. DEC-017, que mantinha o Mercado Pago como mero candidato, foi **substituída por DEC-036**; DEC-018 permanece vigente como governança e foi satisfeita por F0-010.
 
@@ -90,8 +108,14 @@ F0-019 foi executado em seguida, ainda em 2026-09-14, e fechou **OD-07** com [pr
 
 **F0-022 foi concluído em 2026-09-14** e produziu a baseline arquitetural da implementação: [architecture/overview.md](architecture/overview.md), [architecture/data-model.md](architecture/data-model.md), [architecture/payments-design.md](architecture/payments-design.md) e [architecture/contact-release.md](architecture/contact-release.md), mais [ADR-0006](adr/0006-async-work-scheduling-concurrency.md) (DEC-038), a única decisão arquitetural nova que o trabalho exigiu. Com isso, a proteção de RB-003 sob concorrência deixou de ser recomendação e passou a ter mecanismo — índice único parcial sobre a vaga, com expiração resolvida na própria transação de alocação —, os critérios CI-1 a CI-12 de DEC-037 passaram a estar rastreados em desenho, a janela de reserva foi fixada em exatamente 30 minutos e a liberação de contato ganhou a separação explícita entre armazenar, autorizar e retornar.
 
-**Não resta decisão aberta na Fase 0** e o item `próximo` do backlog passa a ser **F0-023**, a transição para a Fase 1. A Fase 0 **não** está concluída: falta a verificação do gate e a preparação da transição. **Nenhuma linha de código de produto foi escrita por F0-022:** não há SDK, route handler de webhook, schema, migration, endpoint nem secret no repositório, e nenhum provedor foi provisionado.
+**Não resta decisão aberta na Fase 0.** **Nenhuma linha de código de produto foi escrita por F0-022:** não há SDK, route handler de webhook, schema, migration, endpoint nem secret no repositório, e nenhum provedor foi provisionado.
+
+**F0-023 foi concluído em 2026-09-14** e encerrou a Fase 0. Ele verificou formalmente o gate de saída em [delivery/phase-1-transition.md](delivery/phase-1-transition.md): matriz de dez critérios (G-1 a G-10) com fonte normativa, evidência e resultado, **todos `PASS`**, e resultado formal **APROVADO**. O trabalho também verificou individualmente os doze requisitos dos quais a Fase 1 e a Fase 2 dependem, revisou os onze riscos sem encerrar nenhum e classificou factualmente os sete entregáveis da Fase 1 (ver seção 3 deste documento).
+
+**Estado da Fase 0: concluída.** Nenhum item `F0-xxx` permanece `próximo`, `pendente` ou `bloqueado`. **A Fase 1 está habilitada e não iniciada**, e o seu gate de **saída** continua integralmente por satisfazer. O próximo trabalho é **F1-001 — contrato de ambientes e segredos**, cujo prompt executor está versionado em [delivery/prompts/f1-001-environments-and-secrets.md](delivery/prompts/f1-001-environments-and-secrets.md).
 
 ## 5. Riscos
 
 Riscos conhecidos e mitigações iniciais estão em [delivery/risks.md](delivery/risks.md).
+
+Os onze riscos R-01 a R-11 foram **revisados integralmente por F0-023** em 2026-09-14, à luz do encerramento da Fase 0. Nenhum foi encerrado e nenhuma alteração factual se justificou: design definido não é implementação, e os residuais que dependem de teste, ambiente real, operação, tarifa comercial, revisão jurídica e contábil ou comportamento do fornecedor permanecem vigentes. O registro da revisão, risco a risco, está em [delivery/phase-1-transition.md](delivery/phase-1-transition.md), seção 6.

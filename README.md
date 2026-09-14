@@ -2,7 +2,7 @@
 
 TROQ é uma plataforma de anúncios entre pessoas em que o contato (WhatsApp/telefone) do anunciante só é liberado a um interessado escolhido, mediante uma solicitação paga de R$ 0,99.
 
-**Status:** Fase 0 em andamento. O repositório já contém a **fundação técnica mínima** da aplicação (scaffold Next.js e CI de validação), criada de forma antecipada e isolada. Não existe banco, migration, autenticação, integração externa nem funcionalidade de produto. O gateway de pagamento já está homologado ([ADR-0004](docs/adr/0004-mercado-pago-pix.md)) e as exceções de pagamento estão definidas ([política de exceções](docs/product/payment-exceptions.md)). A **baseline arquitetural** da implementação também já está registrada ([visão geral](docs/architecture/overview.md), [modelo de dados](docs/architecture/data-model.md), [desenho de pagamentos](docs/architecture/payments-design.md) e [liberação de contato](docs/architecture/contact-release.md)). **Não há mais decisão aberta;** o que falta para o gate da Fase 0 é a transição para a Fase 1 (F0-023).
+**Status:** **Fase 0 concluída** desde 2026-09-14; **Fase 1 habilitada e não iniciada**. O gate de saída da Fase 0 foi verificado item a item e o resultado formal foi **APROVADO** ([transição para a Fase 1](docs/delivery/phase-1-transition.md)). **Não há decisão aberta.** O repositório já contém a **fundação técnica mínima** da aplicação (scaffold Next.js e CI de validação), criada de forma antecipada e isolada. Não existe banco, migration, autenticação, integração externa nem funcionalidade de produto — e Neon, R2 e Resend estão decididos, mas **não provisionados**. O gateway de pagamento está homologado ([ADR-0004](docs/adr/0004-mercado-pago-pix.md)), as exceções de pagamento estão definidas ([política de exceções](docs/product/payment-exceptions.md)) e a **baseline arquitetural** da implementação está registrada ([visão geral](docs/architecture/overview.md), [modelo de dados](docs/architecture/data-model.md), [desenho de pagamentos](docs/architecture/payments-design.md) e [liberação de contato](docs/architecture/contact-release.md)). Próximo trabalho: **F1-001 — contrato de ambientes e segredos** ([prompt](docs/delivery/prompts/f1-001-environments-and-secrets.md)).
 
 ## Fluxo central (resumo)
 
@@ -65,6 +65,7 @@ npm run build
 
 - [Índice da documentação](docs/README.md)
 - [Estado do projeto](docs/project-state.md)
+- [Transição para a Fase 1](docs/delivery/phase-1-transition.md)
 - [Visão geral da arquitetura](docs/architecture/overview.md)
 - [Modelo de dados](docs/architecture/data-model.md)
 - [Desenho de pagamentos](docs/architecture/payments-design.md)
