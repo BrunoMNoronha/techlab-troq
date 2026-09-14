@@ -727,3 +727,261 @@ Registro explícito, porque afeta o desenho do TROQ:
 ## O que esta execução não fez
 
 Nenhuma integração de pagamento foi implementada no produto, nenhum SDK do Mercado Pago foi adicionado ao TROQ, nenhum route handler de webhook, botão Pix, model, migration ou secret de Mercado Pago entrou no repositório. Nenhuma aplicação foi criada ou alterada no Mercado Pago, nenhuma configuração do painel foi modificada, nenhum endpoint público foi publicado, nenhum projeto de terceiros foi tocado e nenhum serviço público de captura de webhook foi utilizado. O receiver temporário viveu apenas em diretório de sessão e foi descartado. OD-07 e OD-08 permanecem abertas, ADR-0004 não foi criado, F0-011 permanece bloqueado e o Mercado Pago permanece apenas candidato, conforme DEC-017.
+
+---
+
+# Quarta execução — 2026-09-14
+
+Execução dedicada exclusivamente aos dois critérios que restavam da terceira execução: recebimento de webhook real do Mercado Pago (critério 7) e validação da assinatura contra essa notificação (critério 8). Nenhum experimento das execuções anteriores foi refeito; os oito critérios já comprovados permanecem como estavam.
+
+## Classificação desta execução
+
+**INCONCLUSIVO**
+
+Nove dos dez critérios estão comprovados. O critério 7 passou de "não comprovado" a **comprovado**: o Mercado Pago entregou notificações reais a um endpoint HTTPS público isolado. O critério 8 continua **não comprovado**, agora por uma causa isolada e única: a chave secreta do HMAC só é obtenível no painel "Suas integrações", cujo acesso exige autenticação interativa. `INCONCLUSIVO` continua não significando aprovação presumida. OD-07 e OD-08 permanecem abertas, ADR-0004 não foi criado e o Mercado Pago permanece apenas candidato, conforme DEC-017.
+
+## Baseline Git
+
+`main` = `origin/main` = `bc2dd2896a993b579b1cc00af063bc481992ef26`, working tree limpo no início da execução, nenhuma PR aberta.
+
+## Credenciais
+
+| Credencial | Origem | Uso |
+| --- | --- | --- |
+| `MERCADOPAGO_ACCESS_TOKEN_TEST` | variável de ambiente já presente na sessão | header `Authorization: Bearer` |
+| Sessão OAuth da integração Vercel conectada ao agente | já autenticada | criação do projeto temporário e deploys |
+| `VERCEL_TOKEN` | variável de ambiente já presente na sessão | apenas diagnóstico de escopo; **não** utilizado para o receiver |
+
+Nenhum valor de credencial foi exibido, gravado em arquivo do repositório, enviado como query parameter ou registrado em log. Nenhuma credencial de produção foi procurada ou utilizada. Nenhuma credencial temporária precisou ser criada, porque a sessão OAuth já autenticada foi suficiente.
+
+## Diagnóstico atualizado do bloqueio Vercel
+
+A terceira execução registrou apenas que `POST /v11/projects` retornava `HTTP 403`. O diagnóstico agora é mais preciso:
+
+| Verificação | Resultado |
+| --- | --- |
+| `GET /v2/user` com `VERCEL_TOKEN` | `HTTP 404` |
+| `GET /v2/teams` com `VERCEL_TOKEN` | `HTTP 403` |
+| `GET /v9/projects?teamId=team_ICY1aaLTQI5BmxlyrSjpRTJC` | `HTTP 200`, **um único projeto visível**: `upa-do-tenis` |
+| `GET /v9/projects/techlab-troq` no mesmo escopo | `HTTP 404` |
+| `POST /v11/projects` no mesmo escopo | `HTTP 403`, `{"code":"forbidden","action":"create","resource":"project"}` |
+
+Conclusão factual: o `VERCEL_TOKEN` presente no ambiente é uma credencial de escopo estreito, que enxerga apenas `upa-do-tenis` e nem sequer enxerga o projeto oficial `techlab-troq`. O `403` anterior era propriedade **daquela credencial**, não do usuário nem do time. A hipótese de que Bruno não teria acesso está descartada.
+
+O caminho que funcionou foi o primeiro da ordem prevista: a **sessão OAuth da integração Vercel** já disponível ao agente, que opera sobre a conta pessoal `bruno-m-noronha`. Nenhum token temporário foi criado e, portanto, nenhum precisou ser revogado.
+
+## Projeto Vercel temporário
+
+| Item | Valor |
+| --- | --- |
+| Nome | `troq-f0-010-webhook-validation` |
+| Escopo | conta pessoal `bruno-m-noronha` |
+| Repositório Git conectado | **nenhum** |
+| Domínio customizado | **nenhum** |
+| Região | `gru1` |
+| URL pública de produção | `https://troq-f0-010-webhook-validation.vercel.app` |
+| Rota do webhook | `/api/webhooks/mercadopago` |
+
+O projeto oficial `techlab-troq` **não** foi usado, alterado, redeployado nem consultado como fonte. Nenhuma environment variable, integração Git, domínio ou deployment do projeto oficial foi tocado. Os projetos `upa-do-tenis` e `preconsulta-staging` também não foram tocados.
+
+### Proteção de deployment
+
+A URL de deployment (`...-bruno-m-noronha.vercel.app`) responde `HTTP 302` para `vercel.com/sso-api`, ou seja, está sob Vercel Authentication e é inalcançável externamente. A URL canônica de produção (`troq-f0-010-webhook-validation.vercel.app`) responde `HTTP 200` e é publicamente acessível. O webhook foi apontado para a URL canônica. Nenhuma configuração de proteção foi alterada.
+
+## project-dttjy
+
+Procurado em todos os escopos alcançáveis nesta sessão:
+
+| Consulta | Resultado |
+| --- | --- |
+| `GET /v9/projects/project-dttjy?teamId=team_ICY1aaLTQI5BmxlyrSjpRTJC` | `HTTP 404` |
+| `GET /v9/projects/project-dttjy` sem escopo | `HTTP 404` |
+| `GET https://project-dttjy.vercel.app/` | `HTTP 404` |
+| Listagem do escopo do time | não aparece |
+
+`project-dttjy` **não foi localizado no estado atual**. Não é possível afirmar que foi removido, nem que exista em algum escopo não alcançável por esta sessão. Nada foi excluído.
+
+## Mercado Pago — método utilizado
+
+O MCP Server oficial (`mcp.mercadopago.com`) **não** está configurado nesta sessão e a sessão é não interativa, o que impede executar o fluxo OAuth necessário para conectá-lo. O caminho utilizado foi, portanto, a **API pública** com o Access Token de teste já presente, complementada por navegação no **checkout sandbox** para disparar o evento.
+
+Nenhuma aplicação foi criada. A criação de uma aplicação exclusiva exigiria o painel "Suas integrações", que é justamente o recurso bloqueado. As aplicações `TechLab TROQ`, `Claudia e Bruno` e `upadotenis` não foram acessadas nem alteradas. Nenhum secret de aplicação existente foi procurado ou reutilizado.
+
+## Achado material — a URL de notificação é configurável por requisição
+
+A terceira execução concluiu que a URL de notificação só existia no nível da aplicação, com base em `POST /v1/orders`. Isso está correto para a Orders API, mas não é verdade para o produto todo. Esta execução estabeleceu:
+
+| API | `notification_url` por requisição | Evidência |
+| --- | --- | --- |
+| `POST /v1/orders` | **rejeitado** | `HTTP 400`, `unsupported_properties` (3ª execução) |
+| `POST /v1/payments` | indeterminado | `HTTP 401`, `"Unauthorized use of live credentials"`, com e sem `notification_url`; a credencial de teste não tem acesso a esta API |
+| `POST /checkout/preferences` | **aceito** | `HTTP 201`, com `notification_url` refletido na resposta |
+| `POST /merchant_orders` | **aceito no corpo** | `HTTP 201`, `notification_url` refletido; não gerou notificação por si só |
+
+Consequência de desenho para o TROQ: **receber webhooks do Mercado Pago não depende obrigatoriamente do painel.** A configuração por requisição, via `notification_url` da preferência, é suficiente para a entrega. O painel continua necessário apenas para a **chave secreta** que autentica a assinatura.
+
+## Achado material — Pix não está habilitado nesta conta de teste
+
+`GET /v1/payment_methods` retorna dez métodos ativos e nenhum deles é Pix: `elo`, `amex`, `master`, `visa` (crédito e pré-pago), `debelo`, `bolbradesco` e `account_money`. `POST /checkout/preferences` com `default_payment_method_id: "pix"` retorna `HTTP 400`, `"invalid default_payment_method_id. The default payment method is excluded"`, e o checkout sandbox não oferece Pix.
+
+Isso não invalida a terceira execução, que criou cobranças Pix com sucesso pela Orders API: os dois caminhos divergem. Fica registrado como divergência a reconfirmar na conta real.
+
+## Receiver
+
+Reescrito e revisado nesta execução, mantido **fora do repositório TROQ**, em diretório temporário de sessão. Função única, sem dependências além do módulo `crypto` da biblioteca padrão do Node.js.
+
+Implementa a validação oficial descrita em G4:
+
+- extrai `data.id` de `data.id`, de `id` na query string, ou de `data.id` no corpo, nessa ordem;
+- lê os headers `x-request-id` e `x-signature`;
+- separa `ts` e `v1` de `x-signature` por `,` e `=`;
+- monta o manifesto `id:{dataId};request-id:{xRequestId};ts:{ts};`, com `data.id` em minúsculas e omissão dos componentes ausentes;
+- calcula `HMAC-SHA256` em hexadecimal;
+- compara em tempo constante com `crypto.timingSafeEqual`;
+- responde `HTTP 200` quando válido e `HTTP 401` quando inválido;
+- registra evidência sanitizada: nunca o secret, nunca headers de autorização, nunca o corpo bruto.
+
+A implementação é manual, comparada linha a linha com a documentação oficial. O `WebhookSignatureValidator` do SDK foi descartado deliberadamente: introduziria uma dependência de pacote em um receiver descartável para reproduzir dez linhas de HMAC já verificáveis contra o manifesto documentado.
+
+### Chave usada na ausência do secret oficial
+
+Sem acesso ao painel não há chave secreta do Mercado Pago. O receiver usa `process.env.MP_WEBHOOK_SECRET` quando definido e, na ausência dele, uma **constante sintética publicamente conhecida**, cuja única função é exercitar o caminho HMAC de ponta a ponta sobre HTTPS público. Ela não é, e nunca foi, um segredo do Mercado Pago; não tem valor de segredo e por isso é declarada abertamente no código do receiver. Toda evidência registra `secretSource`, de modo que nenhum resultado possa ser confundido com validação contra o secret oficial.
+
+## Autoteste local — nove casos
+
+Executado com secret sintético gerado por execução, antes do deploy:
+
+| # | Caso | Esperado | Resultado |
+| --- | --- | --- | --- |
+| T1 | Positivo, `data.id` na query | 200 | PASS |
+| T2 | Positivo, `data.id` no corpo | 200 | PASS |
+| T3 | Negativo, `v1` adulterado | 401 | PASS |
+| T4 | Negativo, secret diferente | 401 | PASS |
+| T5 | Negativo, `ts` adulterado (replay) | 401 | PASS |
+| T6 | Negativo, `request-id` adulterado | 401 | PASS |
+| T7 | Negativo, `data.id` adulterado | 401 | PASS |
+| T8 | Negativo, sem `x-signature` | 401 | PASS |
+| T9 | Positivo, `data.id` maiúsculo normalizado para minúsculo | 200 | PASS |
+
+Nove de nove. Isso valida o **validador**, não o critério 8.
+
+## Endpoint HTTPS público — comprovado
+
+| Verificação | Resultado |
+| --- | --- |
+| `GET https://troq-f0-010-webhook-validation.vercel.app/api/health` | `HTTP 200` |
+| `GET .../api/webhooks/mercadopago` | `HTTP 200` |
+| TLS | terminado pela Vercel, sem aviso |
+| Autenticação Vercel bloqueando chamadas externas | **não**, na URL canônica |
+
+Pela primeira vez em quatro execuções, o critério de endpoint HTTPS público está satisfeito.
+
+## Teste HMAC externo — positivo e negativos contra o endpoint público
+
+Executados de fora, contra a URL pública, com a constante sintética. Diferente dos autotestes locais das execuções anteriores: aqui a requisição atravessa a internet, o TLS da Vercel e a função serverless.
+
+| # | Caso | HTTP | Corpo |
+| --- | --- | --- | --- |
+| EXT-1 | **Positivo** — assinatura correta | **200** | `{"ok":true,"hmac":"valid"}` |
+| EXT-2 | Negativo — `v1` adulterado | **401** | `hmac_divergente` |
+| EXT-3 | Negativo — `ts` adulterado (replay) | **401** | `hmac_divergente` |
+| EXT-4 | Negativo — `request-id` adulterado | **401** | `hmac_divergente` |
+| EXT-5 | Negativo — `data.id` adulterado | **401** | `hmac_divergente` |
+| EXT-6 | Negativo — sem `x-signature` | **401** | `v1_ausente` |
+
+Isso satisfaz o teste negativo externo exigido: adulterar qualquer componente do manifesto produz `HTTP 401`. Não satisfaz o critério 8, porque a assinatura foi produzida pelo próprio teste, não pelo Mercado Pago.
+
+## Webhook real do Mercado Pago — critério 7 comprovado
+
+Sequência executada:
+
+1. `POST /checkout/preferences` com `notification_url` apontando para o endpoint temporário, item de R$ 0,99, `external_reference: troq-f0-010` — `HTTP 201`.
+2. Checkout sandbox aberto pelo `sandbox_init_point`, pagamento como visitante com **cartão de teste oficial** do Mercado Pago (Visa de teste, titular `APRO`, CPF de teste). Nenhum cartão real, nenhuma conta real, nenhum dinheiro movimentado.
+3. O checkout criou o `merchant_order` `44469080694` e o Mercado Pago **entregou notificações ao endpoint**.
+
+Evidência das duas entregas recebidas:
+
+| Campo | Entrega 1 | Entrega 2 |
+| --- | --- | --- |
+| Horário (UTC) | `2026-09-14T15:57:21.892Z` | `2026-09-14T15:57:22.118Z` |
+| `User-Agent` | `MercadoPago Feed v2.0 merchant_order` | idem |
+| IP de origem | `35.186.182.146` | `35.245.91.34` |
+| Método e query | `POST ?id=44469080694&topic=merchant_order` | idem |
+| `x-request-id` | `266f2654-5906-4ac4-a7db-dbc2af262cb1` | `fd327395-95af-4725-9dd7-50167d5fa1d9` |
+| `x-signature` presente | **sim** | **sim** |
+| `ts` extraído | `1789401441` | `1789401442` |
+| `v1` presente | sim, prefixo `bc6650df…` | sim, prefixo `e63c648c…` |
+| `data.id` | `44469080694` | idem |
+| `resource` | `https://api.mercadolibre.com/merchant_orders/44469080694` | idem |
+| `live_mode` no corpo | **ausente** neste tópico | ausente |
+| Resultado HMAC | `hmac_divergente` (secret sintético) | idem |
+| HTTP devolvido | `401` | `401` |
+
+Correlação confirmada por API: `GET /merchant_orders/44469080694` retorna `HTTP 200`, `total_amount: 0.99`, `external_reference: troq-f0-010`, `preference_id: 3689791164-b113a4ff-0f46-4d67-ab72-99e0ef5e8122`, `site_id: MLB`, `status: opened`, `order_status: payment_required`. O pagamento com cartão não foi aprovado pelo sandbox, de modo que não houve notificação de tópico `payment` e a `merchant_order` permaneceu sem pagamento associado.
+
+**Critério 7 comprovado.** Um evento originado no fluxo oficial de teste do Mercado Pago alcançou um endpoint HTTPS público isolado, com `x-signature`, `x-request-id`, `ts` e `data.id` presentes.
+
+Dois pontos adicionais de valor, ambos observados e não presumidos:
+
+- O Mercado Pago **assina a notificação mesmo sem chave configurada no painel**. Os quatro componentes do manifesto chegam completos. Falta apenas a chave para fechar o critério 8.
+- `live_mode` **não aparece** no corpo das notificações de `merchant_order`. Qualquer lógica do TROQ que dependa desse campo precisa tratar sua ausência, ou obtê-lo pelo `resource`.
+
+## Critério 8 — por que continua bloqueado
+
+A causa foi reduzida a uma só: **não existe caminho de API que exponha ou configure a chave secreta de webhook.** Verificado nesta execução:
+
+| Requisição | Resultado |
+| --- | --- |
+| `GET /applications/1495841611175733` | `HTTP 200`, registro completo, **sem** campo de chave secreta |
+| `GET /applications/{id}/webhooks` | `HTTP 404` |
+| `GET /applications/{id}/notifications/settings` | `HTTP 404` |
+| `GET /v1/webhooks` | `HTTP 404` |
+| `GET /v1/notifications/settings` | `HTTP 404` |
+| `GET /webhooks` | `HTTP 404` |
+| `PUT /applications/{id}` com `notifications_callback_url` | `HTTP 403` |
+
+A chave só existe no painel "Suas integrações", cujo acesso exige login interativo com reCAPTCHA. Isso é um gate humano, não uma limitação técnica contornável, e o agente não tentou contorná-lo.
+
+## Critérios de conclusão de F0-010 nesta execução
+
+| # | Critério | Estado | Evidência |
+| --- | --- | --- | --- |
+| 1 | API autenticada funcionando | comprovado (3ª execução) | `GET /users/me` HTTP 200 |
+| 2 | Criação Pix | comprovado (3ª execução) | duas orders Pix |
+| 3 | R$ 0,99 aceito | comprovado (3ª execução) | `total_amount` `0.99` sem ajuste |
+| 4 | QR Code ou copia e cola gerado | comprovado (3ª execução) | BR Code com CRC16 conferido |
+| 5 | Confirmação/status comprovável | comprovado no sandbox (3ª execução) | transição até `processed/accredited` |
+| 6 | Idempotência comprovada | comprovado (3ª execução) | `X-Idempotency-Key` |
+| 7 | Webhook HTTPS recebido | **comprovado nesta execução** | duas entregas de `MercadoPago Feed v2.0`, `merchant_order` `44469080694` |
+| 8 | Origem/assinatura validada | **não comprovado** | validador correto em 9 autotestes e 6 testes externos, mas sem a chave secreta oficial |
+| 9 | Tarifa vigente conhecida | comprovado no sandbox (3ª execução) | R$ 0,01 sobre R$ 0,99 |
+| 10 | Nenhuma incompatibilidade com RB-004 | mantido | nenhuma incompatibilidade encontrada |
+
+Nove de dez comprovados. F0-010 **não** pode ser marcado como concluído.
+
+## Evidência que ainda falta
+
+Exatamente uma, e ela é humana:
+
+**A chave secreta de webhook da aplicação de teste do Mercado Pago.** Bruno precisa entrar em "Suas integrações", abrir a aplicação de teste, criar ou revelar a chave secreta de webhook e entregá-la ao ambiente por variável de ambiente, nos mesmos termos de sigilo do Access Token. Nada mais é necessário: o endpoint HTTPS público existe, é alcançável, já recebeu notificações reais do Mercado Pago e o validador já está provado contra o manifesto oficial. Com a chave em mãos, o critério 8 se fecha em uma única entrega.
+
+Opcionalmente, na mesma sessão de painel, o simulador oficial de webhooks pode ser disparado contra a mesma URL, o que produziria a evidência de simulador que esta execução não pôde produzir.
+
+## Recursos temporários — estado
+
+| Recurso | Estado | Observação |
+| --- | --- | --- |
+| Projeto Vercel `troq-f0-010-webhook-validation` | **mantido ativo** | ver justificativa abaixo |
+| Credencial Vercel temporária | não foi criada | nada a revogar |
+| Preferências de checkout de teste | mantidas | a API do Mercado Pago não oferece exclusão de preferência; expiram sozinhas e não têm efeito financeiro |
+| `merchant_orders` `44469080694` e `44469349618` | mantidas | recursos de teste, sem pagamento associado, sem efeito financeiro |
+| Aplicação Mercado Pago | nenhuma criada | nada a remover |
+| Webhook configurado no painel | nenhum | nada a remover |
+| Receiver em disco | apenas no diretório temporário da sessão | não entra no repositório |
+| Secrets temporários | nenhum criado | a constante sintética é pública por construção |
+
+O projeto Vercel temporário foi **deliberadamente mantido ativo**, contrariando a limpeza imediata prevista. A razão é que ele é exatamente a peça que destrava o único critério restante: destruí-lo agora obrigaria a reconstruir o endpoint antes que Bruno pudesse usar a chave secreta, e a URL precisa existir para ser cadastrada no painel. A remoção deve ocorrer imediatamente após o fechamento do critério 8, ou imediatamente caso se decida não prosseguir, pelo procedimento: excluir o projeto `troq-f0-010-webhook-validation` da conta pessoal `bruno-m-noronha` no painel Vercel.
+
+## O que esta execução não fez
+
+Nenhuma integração de pagamento foi implementada no produto; nenhum SDK do Mercado Pago, route handler de webhook, model, migration ou secret entrou no repositório TROQ. O projeto oficial `techlab-troq` na Vercel não foi usado, alterado nem consultado. Nenhuma aplicação do Mercado Pago foi criada ou alterada, nenhuma configuração de painel foi modificada e nenhum login foi tentado. Nenhum serviço público de captura de webhook de terceiros foi utilizado. Nenhum dinheiro real foi movimentado, nenhum cartão real foi usado e nenhuma credencial de produção foi procurada. Nenhum recurso preexistente foi excluído. OD-07 e OD-08 permanecem abertas, ADR-0004 não foi criado, F0-011 permanece bloqueado e o Mercado Pago permanece apenas candidato, conforme DEC-017.
