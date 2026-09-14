@@ -2,7 +2,7 @@
 
 TROQ é uma plataforma de anúncios entre pessoas em que o contato (WhatsApp/telefone) do anunciante só é liberado a um interessado escolhido, mediante uma solicitação paga de R$ 0,99.
 
-**Status:** Fase 0 em andamento. O repositório já contém a **fundação técnica mínima** da aplicação (scaffold Next.js e CI de validação), criada de forma antecipada e isolada. Não existe banco, migration, autenticação, integração externa nem funcionalidade de produto. O gateway de pagamento já está homologado ([ADR-0004](docs/adr/0004-mercado-pago-pix.md)); o gate formal da Fase 0 permanece dependente do tratamento das exceções de pagamento (OD-07).
+**Status:** Fase 0 em andamento. O repositório já contém a **fundação técnica mínima** da aplicação (scaffold Next.js e CI de validação), criada de forma antecipada e isolada. Não existe banco, migration, autenticação, integração externa nem funcionalidade de produto. O gateway de pagamento já está homologado ([ADR-0004](docs/adr/0004-mercado-pago-pix.md)) e as exceções de pagamento estão definidas ([política de exceções](docs/product/payment-exceptions.md)). **Não há mais decisão aberta;** o que falta para o gate da Fase 0 é a arquitetura pré-implementação (F0-022) e a transição para a Fase 1 (F0-023).
 
 ## Fluxo central (resumo)
 
@@ -30,7 +30,7 @@ As regras de negócio homologadas (RB-001 a RB-006) estão em [docs/product/busi
 | Email transacional | Resend |
 | Pagamentos | Pix-first; Mercado Pago como gateway Pix inicial homologado, por Checkout Transparente via Orders API ([ADR-0004](docs/adr/0004-mercado-pago-pix.md)) |
 
-Resta apenas uma decisão aberta — o tratamento de exceções de pagamento (OD-07): chargebacks, duplicidade, pagamento após a expiração da reserva e falhas de confirmação. Ela está registrada em [docs/decisions/open-decisions.md](docs/decisions/open-decisions.md) e não deve ser tratada como homologada. A escolha do gateway (OD-08) foi fechada em 2026-09-14 por [ADR-0004](docs/adr/0004-mercado-pago-pix.md).
+Não resta nenhuma decisão aberta. A escolha do gateway (OD-08) foi fechada em 2026-09-14 por [ADR-0004](docs/adr/0004-mercado-pago-pix.md), e o tratamento das exceções de pagamento (OD-07) — duplicidade, pagamento acreditado após a expiração da reserva, falhas de confirmação, reembolso técnico e reversões — foi fechado na mesma data por [docs/product/payment-exceptions.md](docs/product/payment-exceptions.md) (DEC-037). A lista de decisões abertas, agora vazia, continua em [docs/decisions/open-decisions.md](docs/decisions/open-decisions.md).
 
 ## Execução local
 
@@ -72,5 +72,6 @@ npm run build
 - [Retenção e exclusão de dados](docs/product/data-retention-policy.md)
 - [Elegibilidade etária](docs/product/age-eligibility.md)
 - [Demonstração de interesse](docs/product/interest-flow.md)
+- [Exceções de pagamento](docs/product/payment-exceptions.md)
 - [Decisões abertas](docs/decisions/open-decisions.md)
 - [Riscos](docs/delivery/risks.md)

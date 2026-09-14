@@ -50,7 +50,7 @@ Documento irmão: [conventions.md](conventions.md). O que aqui se chama "código
 - **O que:** a conformidade com o contrato de serviços externos (provedor de email, armazenamento S3-compatible, gateway de pagamento quando houver um homologado) e o comportamento da aplicação diante das respostas e eventos desse serviço.
 - **Quando:** sempre que houver integração externa cuja mudança de contrato quebre a aplicação em silêncio.
 - **Como:** o serviço externo é a fronteira legítima de substituição (seção 6). Quando o provedor oferecer ambiente de teste ou sandbox, ele é usado para validar o contrato real; testes internos validam o comportamento da aplicação diante de respostas conhecidas.
-- **Limite atual:** para pagamentos, o contrato só pode ser fixado após a homologação do gateway, que é decisão ainda aberta ([../decisions/open-decisions.md](../decisions/open-decisions.md)). Até lá, nenhum contrato de gateway é normatizado aqui.
+- **Limite atual:** o gateway foi homologado em [../adr/0004-mercado-pago-pix.md](../adr/0004-mercado-pago-pix.md) (DEC-036) e as exceções de pagamento foram definidas em [../product/payment-exceptions.md](../product/payment-exceptions.md) (DEC-037), mas o contrato concreto de teste só é fixado quando o design de pagamentos (F0-022) existir. Até lá, nenhum contrato de gateway é normatizado aqui.
 
 ## 3. Stack de testes
 
@@ -100,13 +100,13 @@ Os futuros testes devem provar explicitamente, entre outras invariantes, as seis
 | **RB-005** | Nenhuma superfície pública expõe localização mais precisa que cidade/UF |
 | **RB-006** | Um anúncio com item proibido, decidido conforme a política vigente ([../product/prohibited-items.md](../product/prohibited-items.md)), é removido pelas transições administrativas previstas e deixa de ser público |
 
-**Limite explícito:** cenários de exceção de pagamento — chargeback, pagamento duplicado, pagamento aprovado após expiração de reserva, falha de confirmação e afins — **não** são normatizados aqui. Eles dependem de decisão ainda aberta ([../decisions/open-decisions.md](../decisions/open-decisions.md)) e nenhum teste deve presumir um comportamento que ainda não foi decidido. Nenhum caso de teste pode ser escrito hoje afirmando qual é o tratamento correto dessas exceções.
+**Cenários de exceção de pagamento:** o comportamento esperado deixou de ser indefinido e está em [../product/payment-exceptions.md](../product/payment-exceptions.md) (DEC-037), que é a fonte das asserções. Os testes devem provar, no mínimo, que uma mesma tentativa lógica nunca gera duas cobranças; que dois pagamentos acreditados para a mesma reserva produzem uma única solicitação paga válida, consomem uma única vaga e levam o excedente a reembolso; que pagamento acreditado dentro da janela vale mesmo quando a confirmação chega atrasada; que pagamento acreditado fora da janela não cria solicitação nem consome vaga; que estado incerto ou não mapeado nunca concede direito de negócio; e que reversão posterior não devolve vaga nem revoga contato já liberado. A escolha de mecanismo — deduplicação, reconciliação, atomicidade, tempos — continua sendo design de F0-022, e nenhum teste deve presumir um mecanismo que ainda não foi desenhado. O termo `chargeback` não é usado para Pix.
 
 ## 6. Concorrência, idempotência e test doubles
 
 ### 6.1 Concorrência e idempotência — requisitos futuros de teste
 
-Estes são requisitos de teste registrados agora e implementados quando a funcionalidade correspondente existir. Nenhum deles é implementado nesta tarefa, e nenhum define comportamento funcional que dependa de decisão ainda aberta.
+Estes são requisitos de teste registrados agora e implementados quando a funcionalidade correspondente existir. Nenhum deles é implementado nesta tarefa. O comportamento funcional que eles exercem está definido em [../product/payment-exceptions.md](../product/payment-exceptions.md) (DEC-037).
 
 - **Concorrência real no banco para o limite de vagas.** O limite de RB-003 é exercido com execuções realmente simultâneas contra um banco real, provando que a invariante se sustenta sob disputa — não apenas em execução sequencial.
 - **Webhook duplicado.** O mesmo evento entregue mais de uma vez não produz efeito duplicado nem estado inconsistente.

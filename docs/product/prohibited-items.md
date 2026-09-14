@@ -229,7 +229,7 @@ O moderador pode, e apenas pode:
 5. decidir contestações, conforme a seção 11;
 6. restringir administrativamente o canal de denúncia de um usuário abusivo, conforme a seção 6.
 
-O moderador **não** pode: editar conteúdo de anúncio; alterar nota de avaliação — DEC-030 permite apenas manter ou invalidar integralmente; cancelar pagamento, gerar reembolso ou estorno — RB-004 é definitiva e exceções são [OD-07](../decisions/open-decisions.md); revogar liberação de contato já autorizada — vedado por DEC-027; restaurar anúncio removido — `removed` é terminal; acessar telefone/WhatsApp fora do previsto por DEC-023; alterar o estado da negociação, cujo encerramento é exclusivo das partes por DEC-029.
+O moderador **não** pode: editar conteúdo de anúncio; alterar nota de avaliação — DEC-030 permite apenas manter ou invalidar integralmente; cancelar pagamento, gerar reembolso ou estorno — RB-004 é definitiva e as exceções, definidas depois em [payment-exceptions.md](payment-exceptions.md) (DEC-037), são exclusivamente técnicas e não ficam ao alcance da moderação; revogar liberação de contato já autorizada — vedado por DEC-027; restaurar anúncio removido — `removed` é terminal; acessar telefone/WhatsApp fora do previsto por DEC-023; alterar o estado da negociação, cujo encerramento é exclusivo das partes por DEC-029.
 
 ### 7.3 Decisão de ofício
 
@@ -268,7 +268,7 @@ Os efeitos são exatamente os de T7, T8 e T9 de [listing-lifecycle.md](listing-l
 | Visibilidade ao anunciante | O anúncio permanece visível ao próprio anunciante como histórico |
 | Interesses existentes | Sem objeto: a demonstração de interesse não é entidade persistida ([interest-flow.md](interest-flow.md), DEC-035). Nenhuma nova é aceita, porque o anúncio deixa de ser `published` |
 | Solicitações iniciadas e não pagas | Encerradas sem cobrança; a vaga reservada é liberada |
-| Solicitações com pagamento aprovado | **Preservadas. A cobrança permanece definitiva (RB-004).** Este documento **não** cria reembolso, estorno, compensação ou crédito. O tratamento financeiro de exceção permanece em [OD-07](../decisions/open-decisions.md) |
+| Solicitações com pagamento aprovado | **Preservadas. A cobrança permanece definitiva (RB-004).** Este documento **não** cria reembolso, estorno, compensação ou crédito. O tratamento financeiro de exceção foi definido depois em [payment-exceptions.md](payment-exceptions.md) (DEC-037), que confirma a ausência de reembolso pela remoção |
 | Limite de RB-003 | Não é reiniciado nem devolvido |
 | Escolha e nova liberação de contato | Indisponíveis em anúncio `removed`, conforme a seção 6 de [listing-lifecycle.md](listing-lifecycle.md) |
 | Liberação de contato já autorizada | **Não** é revogada. É fato consumado e auditado (RB-001, RF-015) |
@@ -277,7 +277,7 @@ Os efeitos são exatamente os de T7, T8 e T9 de [listing-lifecycle.md](listing-l
 ### 8.3 Remoção antes e depois de solicitações pagas
 
 - **Remoção antes de qualquer solicitação paga:** não há efeito financeiro. Solicitações não pagas em andamento são encerradas sem cobrança e a vaga reservada é liberada.
-- **Remoção depois de uma ou mais solicitações pagas:** as solicitações pagas são preservadas e as cobranças permanecem definitivas (RB-004). O anúncio sai do ar e nenhuma nova escolha ou liberação é autorizada. **Nenhuma inferência de reembolso é autorizada por este documento.** Se o produto decidir tratar esse caso financeiramente, será por [OD-07](../decisions/open-decisions.md), em decisão própria.
+- **Remoção depois de uma ou mais solicitações pagas:** as solicitações pagas são preservadas e as cobranças permanecem definitivas (RB-004). O anúncio sai do ar e nenhuma nova escolha ou liberação é autorizada. **Nenhuma inferência de reembolso é autorizada por este documento.** O caso foi tratado depois em [payment-exceptions.md](payment-exceptions.md) (DEC-037), que igualmente **não** cria reembolso pela remoção do anúncio.
 - **Remoção depois de escolha e liberação já realizadas:** a liberação permanece válida e auditada; a negociação segue seu próprio ciclo.
 
 ### 8.4 Recriação do mesmo conteúdo
@@ -354,7 +354,7 @@ A decisão original permanece integralmente. Nada muda.
 - **A contestação não produz restauração automática.** O único resultado possível favorável é o da seção 11.2, que depende de decisão administrativa expressa.
 - A contestação **não** é disputa entre usuários. Discordância entre anunciante e solicitante sobre a negociação, o item ou a avaliação não é objeto deste canal.
 - O denunciante **não** participa da contestação, **não** é informado dela e **não** é identificado nela.
-- A contestação não alcança decisões de outra natureza, como validações preventivas, invalidação de avaliação (DEC-030) ou exceções de pagamento ([OD-07](../decisions/open-decisions.md)).
+- A contestação não alcança decisões de outra natureza, como validações preventivas, invalidação de avaliação (DEC-030) ou exceções de pagamento ([payment-exceptions.md](payment-exceptions.md), DEC-037).
 
 ## 12. Auditoria
 
@@ -405,7 +405,7 @@ Esta política **não** resolve e **não** antecipa:
 | Fora de escopo | Onde permanece |
 | --- | --- |
 | Desistência do escolhido e reseleção | Definidas depois em [reselection-policy.md](reselection-policy.md) (DEC-032) |
-| Chargebacks, duplicidade, reembolso, estorno e demais exceções de pagamento, incluindo o tratamento financeiro das solicitações pagas de anúncio removido | [OD-07](../decisions/open-decisions.md) |
+| Duplicidade, reembolso técnico, reversões e demais exceções de pagamento, incluindo o tratamento financeiro das solicitações pagas de anúncio removido | [payment-exceptions.md](payment-exceptions.md) (DEC-037) |
 | Escolha e validação do gateway para R$ 0,99 | Definidas depois em [../adr/0004-mercado-pago-pix.md](../adr/0004-mercado-pago-pix.md) (DEC-036) |
 | Prazos de retenção, exclusão de conta, anonimização e expurgo de imagens e trilhas | Definidos depois em [data-retention-policy.md](data-retention-policy.md) (DEC-033) |
 | Elegibilidade etária formal e idade mínima | Definidas depois em [age-eligibility.md](age-eligibility.md) (DEC-034); a **verificação** documental de idade continua inexistente por decisão expressa |
@@ -422,7 +422,7 @@ Também **não** definidos aqui: schema de banco, API, interface, painel adminis
 | RB-001 | Preservada. A remoção não revoga liberação já autorizada e impede nova liberação (seção 8.2). O perfil de moderação não ganha acesso ao contato (seção 13) |
 | RB-002 | Preservada. Nada aqui altera a pré-condição de avaliação |
 | RB-003 | Preservada. O limite é do anúncio e não é reiniciado nem devolvido por remoção ou sanção |
-| RB-004 | **Preservada literalmente.** Nenhuma remoção, sanção ou contestação gera reembolso, estorno ou compensação. Exceções seguem OD-07 |
+| RB-004 | **Preservada literalmente.** Nenhuma remoção, sanção ou contestação gera reembolso, estorno ou compensação. As exceções seguem [payment-exceptions.md](payment-exceptions.md) (DEC-037) e são exclusivamente técnicas |
 | RB-005 | Inalterada |
 | RB-006 | **Fonte normativa desta política.** O catálogo (seção 3), os critérios (seção 4) e a remoção (seção 8) executam a regra |
 | RF-004 | Declaração de conformidade na publicação e validações preventivas auxiliares (seção 5) |
@@ -438,7 +438,7 @@ Também **não** definidos aqui: schema de banco, API, interface, painel adminis
 | DEC-029 | **Preservada integralmente.** A remoção não altera a negociação; o encerramento segue exclusivo das partes |
 | DEC-030 | **Preservada integralmente.** A moderação de avaliação continua limitada a manter ou invalidar integralmente |
 | R-05 | **Mitigado.** O catálogo, o fluxo e os prazos existiam como lacuna; passam a existir como política verificável |
-| OD-07 | Permanece aberta. Nada aqui a fecha ou antecipa. OD-06, OD-10, OD-11, OD-12 e OD-08 foram fechadas depois por DEC-032, DEC-033, DEC-034, DEC-035 e DEC-036 |
+| OD-07 | Nada aqui a fecha ou antecipa; foi fechada depois por [payment-exceptions.md](payment-exceptions.md) (DEC-037). OD-06, OD-10, OD-11, OD-12 e OD-08 também foram fechadas depois, por DEC-032, DEC-033, DEC-034, DEC-035 e DEC-036 |
 
 ## 16. Fontes externas consultadas
 

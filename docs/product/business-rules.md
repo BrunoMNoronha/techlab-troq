@@ -20,13 +20,13 @@ Observações aparecem somente quando já confirmadas. Questões derivadas que a
 
 - **Regra:** cada anúncio aceita no máximo 3 solicitações pagas.
 - **Implicação operacional:** a quarta tentativa de solicitação paga para o mesmo anúncio deve ser recusada. O limite precisa ser garantido mesmo sob solicitações concorrentes.
-- **Observações confirmadas:** a recomendação vigente é reserva atômica de vaga antes da cobrança, com expiração, a detalhar no design de pagamentos. A demonstração de interesse é gratuita e **não** ocupa vaga ([interest-flow.md](interest-flow.md), DEC-035). A reseleção **não** cria vaga, **não** reinicia nem devolve o limite de três e **não** permite uma quarta solicitação paga; como cada solicitação paga pode ser escolhida no máximo uma vez, no máximo três pessoas são escolhidas sequencialmente no ciclo inteiro do anúncio ([reselection-policy.md](reselection-policy.md), DEC-032).
+- **Observações confirmadas:** a recomendação vigente é reserva atômica de vaga antes da cobrança, com expiração, a detalhar no design de pagamentos; a janela de reserva tem piso normativo de 30 minutos e nenhuma exceção de pagamento pode produzir uma quarta solicitação paga válida, sendo o consumo de vaga fato histórico que não é devolvido por reversão posterior ([payment-exceptions.md](payment-exceptions.md), DEC-037). A demonstração de interesse é gratuita e **não** ocupa vaga ([interest-flow.md](interest-flow.md), DEC-035). A reseleção **não** cria vaga, **não** reinicia nem devolve o limite de três e **não** permite uma quarta solicitação paga; como cada solicitação paga pode ser escolhida no máximo uma vez, no máximo três pessoas são escolhidas sequencialmente no ciclo inteiro do anúncio ([reselection-policy.md](reselection-policy.md), DEC-032).
 
 ## RB-004 — Cobrança definitiva
 
 - **Regra:** a cobrança de R$ 0,99 é definitiva, mesmo quando o solicitante não for escolhido.
 - **Implicação operacional:** não há reembolso pelo fato de o solicitante não ter sido escolhido. O valor deve ser cobrado exatamente como R$ 0,99.
-- **Observações confirmadas:** o tratamento de chargebacks, duplicidade e outras exceções de pagamento ainda não foi definido e permanece em [OD-07](../decisions/open-decisions.md). A desistência do escolhido e a reseleção **não** geram reembolso automático nem qualquer compensação ([reselection-policy.md](reselection-policy.md), DEC-032). O valor pertence à solicitação de desbloqueio, não à demonstração de interesse, que é gratuita ([interest-flow.md](interest-flow.md), DEC-035).
+- **Observações confirmadas:** o tratamento das exceções de pagamento — duplicidade, pagamento acreditado após a expiração da reserva, falhas de confirmação, reembolso técnico e reversões posteriores — está definido em [payment-exceptions.md](payment-exceptions.md) (DEC-037), que fechou OD-07. Essa política preserva RB-004 literalmente e explicita sua fronteira: a cobrança é definitiva para uma **solicitação paga válida**, e a regra **não** autoriza reter dinheiro recebido por erro técnico, como cobrança duplicada, cobrança fora de reserva válida ou cobrança criada por defeito. O termo `chargeback` pertence aos arranjos de cartão e não descreve o Pix. A desistência do escolhido e a reseleção **não** geram reembolso automático nem qualquer compensação ([reselection-policy.md](reselection-policy.md), DEC-032). O valor pertence à solicitação de desbloqueio, não à demonstração de interesse, que é gratuita ([interest-flow.md](interest-flow.md), DEC-035).
 
 ## RB-005 — Localização pública
 
@@ -46,7 +46,7 @@ Observações aparecem somente quando já confirmadas. Questões derivadas que a
 | --- | --- | --- |
 | RB-001 | 7, 8 | [mvp-scope.md](mvp-scope.md), [reselection-policy.md](reselection-policy.md), [data-retention-policy.md](data-retention-policy.md) |
 | RB-002 | 9, 10 | [mvp-scope.md](mvp-scope.md), [negotiation-lifecycle.md](negotiation-lifecycle.md) |
-| RB-003 | 5, 6 | [../delivery/risks.md](../delivery/risks.md), [reselection-policy.md](reselection-policy.md), [interest-flow.md](interest-flow.md) |
-| RB-004 | 5 | [../delivery/risks.md](../delivery/risks.md), [reselection-policy.md](reselection-policy.md), [interest-flow.md](interest-flow.md) |
+| RB-003 | 5, 6 | [../delivery/risks.md](../delivery/risks.md), [reselection-policy.md](reselection-policy.md), [interest-flow.md](interest-flow.md), [payment-exceptions.md](payment-exceptions.md) |
+| RB-004 | 5 | [../delivery/risks.md](../delivery/risks.md), [reselection-policy.md](reselection-policy.md), [interest-flow.md](interest-flow.md), [payment-exceptions.md](payment-exceptions.md) |
 | RB-005 | 2 | [mvp-scope.md](mvp-scope.md) |
 | RB-006 | 11 | [prohibited-items.md](prohibited-items.md), [listing-lifecycle.md](listing-lifecycle.md), [../delivery/risks.md](../delivery/risks.md) |

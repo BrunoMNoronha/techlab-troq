@@ -12,7 +12,7 @@ O objetivo de produto é dar sinal de confiança entre desconhecidos que negocia
 
 Este documento define a política **normativa de produto** das avaliações do MVP. Não é decisão arquitetural e **não** cria ADR.
 
-Este documento **não** define schema, migrations, endpoints, Server Actions, componentes de interface, notificações, emails nem Web Push. Também **não** define desistência ou reseleção, definidas depois em [reselection-policy.md](reselection-policy.md) (DEC-032), exceções financeiras (OD-07), moderação de anúncios e itens proibidos, que permanecia em OD-03 e foi definida depois em [prohibited-items.md](prohibited-items.md) (DEC-031), nem retenção e expurgo de dados e trilhas de auditoria, definidos depois em [data-retention-policy.md](data-retention-policy.md) (DEC-033).
+Este documento **não** define schema, migrations, endpoints, Server Actions, componentes de interface, notificações, emails nem Web Push. Também **não** define desistência ou reseleção, definidas depois em [reselection-policy.md](reselection-policy.md) (DEC-032), exceções financeiras, definidas depois em [payment-exceptions.md](payment-exceptions.md) (DEC-037), moderação de anúncios e itens proibidos, que permanecia em OD-03 e foi definida depois em [prohibited-items.md](prohibited-items.md) (DEC-031), nem retenção e expurgo de dados e trilhas de auditoria, definidos depois em [data-retention-policy.md](data-retention-policy.md) (DEC-033).
 
 Preserva integralmente RB-001 a RB-006, o ciclo de vida do anúncio em [listing-lifecycle.md](listing-lifecycle.md) (DEC-027), a política de imagens em [image-policy.md](image-policy.md) (DEC-028) e o ciclo de vida da negociação em [negotiation-lifecycle.md](negotiation-lifecycle.md) (DEC-029).
 
@@ -278,7 +278,7 @@ A avaliação é um fato posterior e independente. Registrar, substituir, public
 | --- | --- |
 | Não altera o estado da negociação | `closed` continua terminal e irreversível (DEC-029) |
 | Não altera o estado do anúncio | Ciclos independentes (DEC-027) |
-| Não gera reembolso | Exceções financeiras permanecem em OD-07 |
+| Não gera reembolso | Exceções financeiras foram definidas depois em [payment-exceptions.md](payment-exceptions.md) (DEC-037), que não cria reembolso por avaliação |
 | Não cancela pagamento | O pagamento é fato financeiro concluído |
 | Não revoga contato já liberado | A liberação é fato auditado (RB-001, RF-015) |
 | Não altera o solicitante escolhido | A escolha é fato histórico |
@@ -314,7 +314,7 @@ O encerramento da negociação continua **unilateral** e sem aceite da contrapar
 | Comentário em texto livre, resposta pública, réplica | Fora do MVP; eventual candidato pós-MVP |
 | Catálogo/política de itens proibidos e moderação de anúncios | definidos depois em [prohibited-items.md](prohibited-items.md) (DEC-031), que fechou OD-03 |
 | Desistência e reseleção | Definidas depois em [reselection-policy.md](reselection-policy.md) (DEC-032) |
-| Chargebacks e exceções de pagamento | OD-07 |
+| Exceções de pagamento, reembolso técnico e reversões | [payment-exceptions.md](payment-exceptions.md) (DEC-037) |
 | Escolha do gateway | Definida depois em [../adr/0004-mercado-pago-pix.md](../adr/0004-mercado-pago-pix.md) (DEC-036) |
 | Retenção, expurgo e exclusão de avaliações e trilhas de auditoria | Definidos depois em [data-retention-policy.md](data-retention-policy.md) (DEC-033) |
 | Elegibilidade etária formal | Definida depois em [age-eligibility.md](age-eligibility.md) (DEC-034) |
@@ -348,6 +348,6 @@ O encerramento da negociação continua **unilateral** e sem aceite da contrapar
 | DEC-027 / [listing-lifecycle.md](listing-lifecycle.md) | Preservada; o estado do anúncio não altera a elegibilidade |
 | DEC-028 / [image-policy.md](image-policy.md) | Preservada; avaliações não possuem imagens |
 | DEC-029 / [negotiation-lifecycle.md](negotiation-lifecycle.md) | Preservada integralmente; `closed` continua terminal, irreversível e unilateral |
-| OD-07 | Permanece aberta; nada aqui a fecha ou antecipa. OD-06, OD-10, OD-11, OD-12 e OD-08 foram fechadas depois por DEC-032, DEC-033, DEC-034, DEC-035 e DEC-036 |
+| OD-07 | Nada aqui a fecha ou antecipa; foi fechada depois por [payment-exceptions.md](payment-exceptions.md) (DEC-037). OD-06, OD-10, OD-11, OD-12 e OD-08 também foram fechadas depois, por DEC-032, DEC-033, DEC-034, DEC-035 e DEC-036 |
 | OD-03 | Permanecia aberta nesta decisão; foi fechada depois por [prohibited-items.md](prohibited-items.md) (DEC-031), que preserva integralmente esta política de avaliações |
 | F0-016 | Concluído por esta entrega |

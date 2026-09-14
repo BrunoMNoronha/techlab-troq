@@ -11,14 +11,13 @@ Registro das questões que **ainda não foram decididas** na Fase 0. Nenhum item
 
 ## Lista de decisões abertas
 
-Resta **uma** decisão aberta: OD-07. A validação técnica real do gateway (F0-010) foi concluída em 2026-09-14 e a escolha do gateway foi formalizada em F0-011, que fechou OD-08 com [../adr/0004-mercado-pago-pix.md](../adr/0004-mercado-pago-pix.md) (DEC-036). O tratamento das exceções de pagamento continua sem decisão e é o objeto de OD-07.
+**Nenhuma.** Não resta nenhuma decisão aberta na Fase 0.
 
-### OD-07 — Chargebacks, duplicidade e exceções de pagamento
+OD-07 era a última. Foi fechada em **2026-09-14** por [../product/payment-exceptions.md](../product/payment-exceptions.md) (DEC-037), na execução de F0-019, depois que F0-010 concluiu a validação técnica do gateway e F0-011 fechou OD-08 com [../adr/0004-mercado-pago-pix.md](../adr/0004-mercado-pago-pix.md) (DEC-036).
 
-- **Contexto:** RB-004 estabelece que a cobrança é definitiva quando o solicitante não é escolhido.
-- **O que falta decidir:** tratamento de chargebacks, pagamentos duplicados, pagamentos aprovados após expiração da reserva de vaga, falhas de confirmação e demais exceções.
-- **Bloqueia:** design de pagamentos (F0-022) e o fechamento do gate da Fase 0. **Não** bloqueia mais a escolha do gateway, já homologada.
-- **Próximo trabalho:** F0-019, agora `próximo` em [../delivery/backlog.md](../delivery/backlog.md), com o gateway já homologado como base concreta para decidir as exceções.
+Isto **não** significa que a Fase 0 esteja concluída. O que resta dela é execução documental, não decisão: a arquitetura pré-implementação (F0-022) e a transição para a Fase 1 (F0-023), em [../delivery/backlog.md](../delivery/backlog.md).
+
+Uma nova questão só entra nesta lista se for efetivamente uma decisão de produto ou de arquitetura ainda não tomada. Detalhe que apenas aguarda design — tempos, mecanismos, schema — **não** é decisão aberta e não deve ser registrado aqui.
 
 ## Decisões fechadas
 
@@ -32,6 +31,7 @@ Itens que já constaram desta lista e foram fechados por documento próprio. O I
 | OD-04 | Ciclo de vida completo do anúncio | [../product/listing-lifecycle.md](../product/listing-lifecycle.md) | DEC-027 em [decision-log.md](decision-log.md) |
 | OD-05 | Quantidade e regras das imagens | [../product/image-policy.md](../product/image-policy.md) | DEC-028 em [decision-log.md](decision-log.md) |
 | OD-06 | Política de desistência e reseleção | [../product/reselection-policy.md](../product/reselection-policy.md) | DEC-032 em [decision-log.md](decision-log.md) |
+| OD-07 | Duplicidade, pagamento após a expiração da reserva, falhas de confirmação, reembolso técnico e reversões | [../product/payment-exceptions.md](../product/payment-exceptions.md) | DEC-037 em [decision-log.md](decision-log.md) |
 | OD-08 | Validação e escolha do gateway para R$ 0,99 | [../adr/0004-mercado-pago-pix.md](../adr/0004-mercado-pago-pix.md) | DEC-036 em [decision-log.md](decision-log.md) |
 | OD-09 | ORM e estratégia de migrations | [../adr/0005-prisma-orm-migrations.md](../adr/0005-prisma-orm-migrations.md) | DEC-026 em [decision-log.md](decision-log.md) |
 | OD-10 | Retenção e exclusão de dados | [../product/data-retention-policy.md](../product/data-retention-policy.md) | DEC-033 em [decision-log.md](decision-log.md) |
@@ -40,4 +40,4 @@ Itens que já constaram desta lista e foram fechados por documento próprio. O I
 
 ## Itens explicitamente fora desta lista
 
-Já decididos e registrados como vigentes: arquitetura, stack, banco, deploy, autenticação inicial, armazenamento de imagens, email transacional, o **gateway de pagamento Pix inicial homologado** ([../adr/0004-mercado-pago-pix.md](../adr/0004-mercado-pago-pix.md), DEC-036), a recomendação de reserva atômica de vaga, o ORM/estratégia de migrations, o ciclo de vida do anúncio, a política de imagens do anúncio, o ciclo de vida e encerramento da negociação, a política de avaliações, a política de itens proibidos, denúncia, moderação e remoção, a política de desistência e reseleção, a política de retenção e exclusão de dados, a elegibilidade etária de 18 anos completos ou mais e a natureza da demonstração de interesse. Ver [../project-state.md](../project-state.md).
+Já decididos e registrados como vigentes: arquitetura, stack, banco, deploy, autenticação inicial, armazenamento de imagens, email transacional, o **gateway de pagamento Pix inicial homologado** ([../adr/0004-mercado-pago-pix.md](../adr/0004-mercado-pago-pix.md), DEC-036), a recomendação de reserva atômica de vaga, o ORM/estratégia de migrations, o ciclo de vida do anúncio, a política de imagens do anúncio, o ciclo de vida e encerramento da negociação, a política de avaliações, a política de itens proibidos, denúncia, moderação e remoção, a política de desistência e reseleção, a política de retenção e exclusão de dados, a elegibilidade etária de 18 anos completos ou mais, a natureza da demonstração de interesse e as **exceções de pagamento** ([../product/payment-exceptions.md](../product/payment-exceptions.md), DEC-037). Ver [../project-state.md](../project-state.md).

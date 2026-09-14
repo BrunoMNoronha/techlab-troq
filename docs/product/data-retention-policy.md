@@ -213,8 +213,8 @@ A reaplicação das exclusões após uma restauração é parte obrigatória do 
 | --- | --- |
 | RF-023 | Deixa de estar `bloqueado por decisão aberta` e passa a `definido`. Efeitos imediatos e prazo de 30 dias definidos na seção 3 |
 | RF-006 | Passa a `definido`. O expurgo dos derivados persistidos, única lacuna que restava, está na seção 4 |
-| RF-020 | Permanece `definido`. A retenção e o expurgo do anúncio `removed` seguem as seções 4 e 7; o tratamento financeiro de exceção continua em OD-07 |
-| RF-022 | A retenção das trilhas está definida na seção 6. O requisito permanece `parcialmente definido` porque a extensão à aprovação de pagamento continua dependendo do design de pagamentos (OD-07) |
+| RF-020 | Permanece `definido`. A retenção e o expurgo do anúncio `removed` seguem as seções 4 e 7; o tratamento financeiro de exceção foi definido depois em [payment-exceptions.md](payment-exceptions.md) (DEC-037) |
+| RF-022 | A retenção das trilhas está definida na seção 6. O requisito passou depois a `definido`, quando [payment-exceptions.md](payment-exceptions.md) (DEC-037) enumerou os eventos auditados da aprovação de pagamento e das exceções |
 | RNF-009 | Passa a `definido`. Retenção, exclusão e transparência definidas aqui; elegibilidade etária definida em [age-eligibility.md](age-eligibility.md) (DEC-034) |
 | RNF-011 | Passa a `definido`. Trilha imutável com prazo expresso de 24 meses |
 | RNF-008 | Preservado e reforçado. A minimização passa a ter prazos verificáveis |
@@ -223,4 +223,4 @@ A reaplicação das exclusões após uma restauração é parte obrigatória do 
 | RB-001 a RB-006 | Preservadas literalmente |
 | R-03, R-06 | Mitigados: contato protegido com prazo expresso; retenção e exclusão definidas antes de coletar dados reais |
 | OD-10 | **Fechada** por este documento (DEC-033) |
-| OD-07 | Permanece aberta. Nada aqui antecipa exceções financeiras. OD-08 foi fechada depois por [../adr/0004-mercado-pago-pix.md](../adr/0004-mercado-pago-pix.md) (DEC-036) |
+| OD-07 | Nada aqui antecipou exceções financeiras; foi fechada depois por [payment-exceptions.md](payment-exceptions.md) (DEC-037), que preserva sem alteração os prazos desta política, inclusive os 5 anos de metadados financeiros. OD-08 foi fechada antes dela por [../adr/0004-mercado-pago-pix.md](../adr/0004-mercado-pago-pix.md) (DEC-036) |

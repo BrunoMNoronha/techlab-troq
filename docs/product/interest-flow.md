@@ -41,7 +41,7 @@ A persistência funcional começa quando houver uma **solicitação de desbloque
 - receber webhook;
 - permitir reconciliação.
 
-Os detalhes dessa solicitação — quando exatamente a vaga é reservada, por quanto tempo, e como o pagamento e o webhook a movem — continuam condicionados ao design de pagamentos e, portanto, a [OD-07](../decisions/open-decisions.md). Este documento **não** os antecipa. O gateway deixou de ser incerteza depois deste documento: foi homologado em [../adr/0004-mercado-pago-pix.md](../adr/0004-mercado-pago-pix.md) (DEC-036).
+Os detalhes dessa solicitação — quando exatamente a vaga é reservada, por quanto tempo, e como o pagamento e o webhook a movem — não eram antecipados por este documento e foram decididos depois: o gateway foi homologado em [../adr/0004-mercado-pago-pix.md](../adr/0004-mercado-pago-pix.md) (DEC-036) e as exceções de pagamento, inclusive o piso de 30 minutos da janela de reserva e o efeito do pagamento tardio, em [payment-exceptions.md](payment-exceptions.md) (DEC-037), que fechou OD-07. O que resta é design (F0-022).
 
 ## 4. Gratuidade
 
@@ -112,11 +112,11 @@ Esta decisão:
 | Item | Efeito desta decisão |
 | --- | --- |
 | RF-008 | Passa a `definido`. A demonstração de interesse é ação gratuita de interface, sem entidade persistida, sem cancelamento e sem visibilidade ao anunciante |
-| RF-009 | Inalterado quanto à natureza; a persistência funcional começa nele. Permanece `parcialmente definido` por OD-07 |
+| RF-009 | Inalterado quanto à natureza; a persistência funcional começa nele. Passou depois a `definido` com [payment-exceptions.md](payment-exceptions.md) (DEC-037) |
 | RF-010 | Inalterado. A vaga é da solicitação, nunca do interesse |
 | RB-003 | Preservada literalmente. O clique não ocupa vaga |
 | RB-004 | Preservada literalmente. O valor pertence à solicitação |
 | DEC-027 | Preservada integralmente. A leitura da coluna de interesse é a que aquele documento já previa |
 | RNF-008 | Preservado. Menos dado pessoal persistido |
 | OD-12 | **Fechada** por este documento (DEC-035) |
-| OD-07 | Permanece aberta. O design da solicitação de desbloqueio segue condicionado a ela. OD-08 foi fechada depois por [../adr/0004-mercado-pago-pix.md](../adr/0004-mercado-pago-pix.md) (DEC-036) |
+| OD-07 | Estava aberta quando este documento foi escrito e foi fechada depois por [payment-exceptions.md](payment-exceptions.md) (DEC-037). OD-08 foi fechada antes dela por [../adr/0004-mercado-pago-pix.md](../adr/0004-mercado-pago-pix.md) (DEC-036) |
