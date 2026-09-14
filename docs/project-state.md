@@ -1,10 +1,10 @@
 # Estado do projeto
 
 **Primeiro registro:** 2026-09-07
-**Última atualização:** 2026-09-14 (F0-023)
+**Última atualização:** 2026-09-14 (F1-001)
 **Repositório:** `BrunoMNoronha/techlab-troq`, branch principal `main`
 **Fase 0:** concluída — gate de saída verificado e **APROVADO** em [delivery/phase-1-transition.md](delivery/phase-1-transition.md)
-**Fase 1:** habilitada e não iniciada; próximo trabalho **F1-001**
+**Fase 1:** **em andamento**, com **F1-001 concluído**. O gate de saída da Fase 1 continua integralmente por satisfazer
 
 Este documento separa categorias que não devem ser confundidas: o que **existe de fato hoje** no repositório, o que **já foi decidido** e o que **ainda não foi implementado**. A seção 1 preserva a **baseline histórica** da inspeção inicial e **não** descreve o estado atual; para o estado atual, ver a seção 3.
 
@@ -75,18 +75,18 @@ Decisões já tomadas e válidas na Fase 0. Detalhes nos ADRs indicados.
 
 ### 3.1 O que já existe
 
-Fundação técnica mínima, criada de forma antecipada e isolada, **sem nenhuma funcionalidade de produto**:
+Fundação técnica mínima, criada de forma antecipada e isolada, **sem nenhuma funcionalidade de produto**, mais o primeiro entregável da Fase 1:
 
 - aplicação Next.js `16.3.5` com App Router e React `19.3.0`, em `src/app/` — apenas `layout.tsx`, `page.tsx` e um teste;
 - `package.json` com `engines.node` em `24.x`, lockfile versionado e os sete comandos padronizados de [engineering/conventions.md](engineering/conventions.md), seção 5.1: `format`, `format:check`, `lint`, `typecheck`, `test`, `test:ci` e `build`;
 - TypeScript em modo `strict`, ESLint, Prettier, Vitest e React Testing Library configurados;
 - CI em `.github/workflows/ci.yml`, cujo job `Validação (format, lint, typecheck, test, build)` é o required status check do ruleset `Protect main` e roda em toda PR e em todo push para `main`;
-- projeto Vercel conectado, publicando deployment de preview a partir de PR.
+- projeto Vercel conectado, publicando deployment de preview a partir de PR;
+- **contrato de ambientes e segredos** em [engineering/environments.md](engineering/environments.md), com o espelho versionado em `.env.example` — produzido por **F1-001** em 2026-09-14. É documento e contrato: **nenhum serviço foi provisionado, nenhuma credencial existe no repositório e nenhuma variável é lida por código**, de modo que todas estão marcadas `previsto` naquele catálogo.
 
 ### 3.2 O que ainda não existe
 
 - **estrutura de módulos de domínio** — os nove módulos de [architecture/overview.md](architecture/overview.md) (AR-3.3) e os dois transversais **não** foram criados; `src/` contém apenas `app/`;
-- **contrato de ambientes e segredos** — `engineering/environments.md` não existe e não há `.env.example`; é o objeto de **F1-001**;
 - **banco de dados** — nenhum Neon provisionado, nenhum `prisma/`, nenhum `schema.prisma`, nenhuma migration e nenhuma dependência do Prisma instalada;
 - **R2 e Resend** — escolhidos em ADR-0003 e DEC-015, mas **não provisionados**;
 - **autenticação, anúncios, pagamentos, jobs, PWA e observabilidade** — nenhuma implementação;
@@ -112,7 +112,13 @@ F0-019 foi executado em seguida, ainda em 2026-09-14, e fechou **OD-07** com [pr
 
 **F0-023 foi concluído em 2026-09-14** e encerrou a Fase 0. Ele verificou formalmente o gate de saída em [delivery/phase-1-transition.md](delivery/phase-1-transition.md): matriz de dez critérios (G-1 a G-10) com fonte normativa, evidência e resultado, **todos `PASS`**, e resultado formal **APROVADO**. O trabalho também verificou individualmente os doze requisitos dos quais a Fase 1 e a Fase 2 dependem, revisou os onze riscos sem encerrar nenhum e classificou factualmente os sete entregáveis da Fase 1 (ver seção 3 deste documento).
 
-**Estado da Fase 0: concluída.** Nenhum item `F0-xxx` permanece `próximo`, `pendente` ou `bloqueado`. **A Fase 1 está habilitada e não iniciada**, e o seu gate de **saída** continua integralmente por satisfazer. O próximo trabalho é **F1-001 — contrato de ambientes e segredos**, cujo prompt executor está versionado em [delivery/prompts/f1-001-environments-and-secrets.md](delivery/prompts/f1-001-environments-and-secrets.md).
+**Estado da Fase 0: concluída.** Nenhum item `F0-xxx` permanece `próximo`, `pendente` ou `bloqueado`.
+
+**F1-001 foi concluído em 2026-09-14** e é o **primeiro trabalho da Fase 1**. Ele produziu [engineering/environments.md](engineering/environments.md), fonte normativa do contrato de ambientes e segredos, e o seu espelho versionado `.env.example`. O documento define os três ambientes — `development`, `preview` e `production` —, cada um com propósito, origem dos dados, quem acessa, classe de credencial admissível e custódia dos valores; fixa um **critério objetivo** de classificação entre variável pública e exclusivamente server-side, ancorado no fato de que o prefixo `NEXT_PUBLIC_` embute o valor no bundle de cliente, de modo que **variável pública é conteúdo público**; registra a **proibição sem exceção** de segredo em variável pública e a regra de que telefone/WhatsApp e qualquer dado pessoal real não são variável de ambiente de nenhuma classe; cataloga as variáveis das sete áreas exigidas — aplicação, PostgreSQL/Neon com a distinção entre endpoint pooled e conexão direta, Cloudflare R2 por API S3-compatible, Resend, Better Auth, Mercado Pago e segredo de agendamento —, cada uma com ambiente, classificação, obrigatoriedade, estado e origem normativa rastreável; e normatiza a adição de variável nova, a rotação, a revogação e a resposta a suspeita de vazamento. Registra ainda que a URL de webhook do Mercado Pago **não** é variável de ambiente, por ser configurada no nível da aplicação, e que a observabilidade ainda não tem variável porque a ferramenta concreta não foi escolhida (AR-14.1).
+
+O que F1-001 **não** fez: nenhum serviço provisionado ou acessado — Neon, R2, Resend, Mercado Pago e Vercel seguem exatamente como estavam —, nenhuma credencial real usada ou gerada, nenhuma variável configurada em painel de provedor, nenhuma dependência instalada, nenhum `schema.prisma`, nenhuma migration, nenhum módulo de domínio, nenhuma funcionalidade de produto, nenhum parser ou validador de variáveis em código e nenhuma alteração de regra de negócio, requisito, ADR ou decisão vigente. **Nenhuma variável do catálogo é lida por código:** todas estão `previsto`.
+
+**A Fase 1 está em andamento** e o seu gate de **saída** continua integralmente por satisfazer: dos sete entregáveis classificados por F0-023, apenas o contrato de ambientes (E-4) saiu de `não iniciado`. Permanecem pendentes a estrutura de módulos de AR-3.3, o banco com Prisma e schema inicial, o provisionamento de R2 e Resend e a observabilidade.
 
 ## 5. Riscos
 

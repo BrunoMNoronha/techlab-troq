@@ -1,16 +1,18 @@
-# Backlog da Fase 0 — TROQ
+# Backlog — TROQ
 
-Backlog de **alto nível** da Fase 0 (Descoberta e definição) e do caminho de execução até a transição para a Fase 1. Este documento **não** é o backlog técnico da aplicação: tarefas de implementação das fases seguintes são detalhadas no backlog da fase correspondente ([roadmap.md](roadmap.md)).
+Backlog de **alto nível** por fase. Este documento **não** é o backlog técnico da aplicação: ele registra os trabalhos delimitados de cada fase, com objetivo, dependências e estado ([roadmap.md](roadmap.md)).
 
-**A Fase 0 está concluída desde 2026-09-14.** Todos os itens abaixo estão `concluído`; o último foi F0-023, que verificou o gate de saída em [phase-1-transition.md](phase-1-transition.md). Este backlog passa a ser registro histórico da fase.
+**A Fase 0 está concluída desde 2026-09-14.** Todos os itens `F0-xxx` estão `concluído`; o último foi F0-023, que verificou o gate de saída em [phase-1-transition.md](phase-1-transition.md). Essa parte do documento passa a ser registro histórico da fase.
+
+**A Fase 1 está em andamento.** A sua numeração `F1-xxx` foi aberta por F1-001, o primeiro trabalho da fase, conforme previsto pela seção "Fase 1" deste documento. O gate de saída da Fase 1 continua integralmente por satisfazer.
 
 Fontes: [roadmap.md](roadmap.md), [../decisions/open-decisions.md](../decisions/open-decisions.md), [../decisions/decision-log.md](../decisions/decision-log.md), [../product/requirements.md](../product/requirements.md), [risks.md](risks.md).
 
 ## Convenções
 
-- IDs `F0-xxx`, sequenciais, nunca reutilizados.
+- IDs por fase — `F0-xxx` na Fase 0, `F1-xxx` na Fase 1 —, sequenciais dentro da fase e nunca reutilizados.
 - **Estados:** `concluído`, `próximo` (o próximo trabalho a executar), `pendente` (pode ser executado assim que houver capacidade, sem bloqueio) e `bloqueado` (depende de outro item ainda não concluído).
-- Cada item resulta em documento versionado ou em decisão registrada em [../decisions/decision-log.md](../decisions/decision-log.md) e no fechamento da OD correspondente em [../decisions/open-decisions.md](../decisions/open-decisions.md).
+- Cada item resulta em documento versionado, em código versionado ou em decisão registrada em [../decisions/decision-log.md](../decisions/decision-log.md) e, quando houver, no fechamento da OD correspondente em [../decisions/open-decisions.md](../decisions/open-decisions.md).
 - Ordem de execução segue a hierarquia de dependências; itens `pendente` sem dependência entre si podem correr em paralelo.
 
 ## Concluído
@@ -115,13 +117,27 @@ O que F0-023 **não** fez: nenhuma linha de código, nenhuma alteração de regr
 
 ## Fase 1
 
-A Fase 0 está encerrada e a Fase 1 está **habilitada e não iniciada**. Este documento continua sendo o backlog da **Fase 0** e não recebe itens de outras fases.
+A Fase 0 está encerrada e a Fase 1 está **em andamento**. A numeração `F1-xxx` foi aberta por **F1-001**, o primeiro trabalho da fase, como esta seção previa.
 
-O estado factual dos sete entregáveis da Fase 1 — o que já existe, o que é parcial e o que não foi iniciado — está em [phase-1-transition.md](phase-1-transition.md), seção 10. O próximo trabalho é **F1-001 — contrato de ambientes e segredos**, cujo prompt executor está versionado em [prompts/f1-001-environments-and-secrets.md](prompts/f1-001-environments-and-secrets.md). O backlog da Fase 1, com a sua própria numeração `F1-xxx`, é aberto pelo primeiro trabalho daquela fase.
+O estado factual dos sete entregáveis da Fase 1 — o que já existe, o que é parcial e o que não foi iniciado — está em [phase-1-transition.md](phase-1-transition.md), seção 10. Dos sete, **apenas o contrato de ambientes (E-4) saiu de `não iniciado`**, por F1-001. O scaffold e os comandos de qualidade **não** são recriados, e o CI e o seu job **não** são renomeados.
+
+| ID | Título | Objetivo | Dependências | Estado |
+| --- | --- | --- | --- | --- |
+| F1-001 | Contrato de ambientes e segredos | Criar [../engineering/environments.md](../engineering/environments.md) como fonte normativa dos três ambientes `development`, `preview` e `production`, com critério objetivo de classificação entre variável pública e exclusivamente server-side, proibição sem exceção de segredo em variável pública, catálogo das variáveis por área — aplicação, PostgreSQL/Neon com endpoint pooled e direto, Cloudflare R2, Resend, Better Auth, Mercado Pago e segredo de agendamento — e regras operacionais de custódia, adição, rotação e vazamento; criar `.env.example` apenas com nomes e placeholders seguros; preservar a proteção de `.env` reais no `.gitignore`. **Sem provisionar serviço externo, sem credencial real e sem iniciar o schema de domínio** | Gate da Fase 0 (F0-023) | concluído |
+
+### Conclusão de F1-001
+
+F1-001 foi executado em **2026-09-14**, a partir do prompt versionado em [prompts/f1-001-environments-and-secrets.md](prompts/f1-001-environments-and-secrets.md), e é o primeiro trabalho da Fase 1. Ele produziu [../engineering/environments.md](../engineering/environments.md) e o seu espelho versionado `.env.example`, e marcou `engineering/environments.md` como **existente** no índice de [../README.md](../README.md).
+
+A decisão estruturante do documento é o **critério objetivo de classificação**: a classe de uma variável é determinada por uma única pergunta verificável — o valor precisa ser lido por código que executa no navegador? —, cuja resposta afirmativa exige o prefixo `NEXT_PUBLIC_` e, com ele, o embutimento do valor no bundle de cliente. Daí decorre, sem depender de julgamento, que **variável pública é conteúdo público** e que nenhum segredo pode ocupá-la. O documento também separa `server-side` de `segredo`, para que a classificação não confunda configuração discreta com credencial, e registra que telefone/WhatsApp e qualquer dado pessoal real não são variável de ambiente de classe nenhuma.
+
+Cada variável do catálogo é rastreável a uma fonte normativa: `DATABASE_URL` e `DIRECT_URL` à exigência de conexão pooled e direta de [../adr/0005-prisma-orm-migrations.md](../adr/0005-prisma-orm-migrations.md), decisão 10, reforçada pelo fato de que o endpoint pooled do Neon não suporta recursos de sessão ([../adr/0006-async-work-scheduling-concurrency.md](../adr/0006-async-work-scheduling-concurrency.md)); as variáveis do R2 à API S3-compatible de [../adr/0003-object-storage-r2.md](../adr/0003-object-storage-r2.md) e aos derivados públicos de [../product/image-policy.md](../product/image-policy.md); o Access Token e a chave de webhook à decisão 6 de [../adr/0004-mercado-pago-pix.md](../adr/0004-mercado-pago-pix.md); e `CRON_SECRET` à decisão 9 de ADR-0006. Ficou registrado que a URL de webhook do Mercado Pago **não** é variável de ambiente, por ser configurada no nível da aplicação, e que enviar `notification_url` em `POST /v1/orders` continua proibido.
+
+O que F1-001 **não** fez: nenhum serviço provisionado, criado, configurado ou acessado — Neon, Cloudflare R2, Resend, Mercado Pago e Vercel seguem exatamente como estavam —, nenhuma credencial real usada ou gerada, nenhuma variável definida em painel de provedor, nenhuma dependência instalada, nenhum `prisma/`, `schema.prisma` ou migration, nenhum módulo de domínio, nenhuma funcionalidade de produto, nenhum parser ou validador de variáveis em código, nenhuma alteração no CI ou no ruleset e nenhuma alteração de regra de negócio, requisito, ADR ou decisão vigente. **Nenhuma variável do catálogo é lida por código:** todas estão `previsto`. A Fase 1 **não** foi declarada concluída.
 
 ## Fora deste backlog
 
-- Tarefas de implementação da Fase 1 em diante (estrutura de módulos, schema, provisionamento, telas, integrações): detalhadas no backlog da própria fase, não aqui. O scaffold e o CI que o roadmap lista como entregáveis da Fase 1 **já existem** e não devem ser recriados ([phase-1-transition.md](phase-1-transition.md), seção 10).
+- Tarefas de implementação da Fase 2 em diante (telas, fluxos, integrações de produto): detalhadas no backlog da própria fase, não aqui. O scaffold e o CI que o roadmap lista como entregáveis da Fase 1 **já existem** e não devem ser recriados ([phase-1-transition.md](phase-1-transition.md), seção 10).
 - Candidatos pós-MVP listados em [roadmap.md](roadmap.md).
 
 ## Revisão

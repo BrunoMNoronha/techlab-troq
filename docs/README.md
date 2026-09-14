@@ -1,8 +1,8 @@
 # Documentação — TechLab+ TROQ
 
-Índice da documentação do projeto. Documentos marcados como **existente** fazem parte do baseline da Fase 0. Documentos marcados como **futuro** ainda não existem e serão criados progressivamente nas fases seguintes; os nomes são indicativos e podem mudar.
+Índice da documentação do projeto. Documentos marcados como **existente** estão versionados e vigentes — a maior parte vem do baseline da Fase 0; [engineering/environments.md](engineering/environments.md) foi produzido já na Fase 1, por F1-001. Documentos marcados como **futuro** ainda não existem e serão criados progressivamente nas fases seguintes; os nomes são indicativos e podem mudar.
 
-Ponto de partida: [project-state.md](project-state.md). Decisões vigentes: [decisions/decision-log.md](decisions/decision-log.md). Backlog da Fase 0, encerrado: [delivery/backlog.md](delivery/backlog.md). Transição para a Fase 1 e próximo trabalho: [delivery/phase-1-transition.md](delivery/phase-1-transition.md). Modo operacional com agentes: [engineering/ai-agent-workflow.md](engineering/ai-agent-workflow.md).
+Ponto de partida: [project-state.md](project-state.md). Decisões vigentes: [decisions/decision-log.md](decisions/decision-log.md). Backlog, com a Fase 0 encerrada e a Fase 1 em andamento: [delivery/backlog.md](delivery/backlog.md). Transição para a Fase 1: [delivery/phase-1-transition.md](delivery/phase-1-transition.md). Modo operacional com agentes: [engineering/ai-agent-workflow.md](engineering/ai-agent-workflow.md).
 
 ## Grupos
 
@@ -57,7 +57,7 @@ Ponto de partida: [project-state.md](project-state.md). Decisões vigentes: [dec
 | --- | --- | --- |
 | [engineering/ai-agent-workflow.md](engineering/ai-agent-workflow.md) | existente | Papéis, hierarquia de verdade, ciclo operacional, prompts, relatório obrigatório, Git e revisão para Bruno, ChatGPT, Claude Code e Antigravity |
 | [engineering/conventions.md](engineering/conventions.md) | existente | Convenções de engenharia: runtime Node.js 24.x LTS, Next.js 16.3.x Active LTS, TypeScript `strict`, App Router, pinning e lockfile, política de dependências, organização de código e fronteiras de módulo, fronteira servidor/cliente, dados protegidos, autorização server-side, validação de entrada, TypeScript, comandos padronizados de qualidade e princípios de segurança |
-| engineering/environments.md | futuro | Ambientes, variáveis e segredos. Será criado por **F1-001** ([delivery/prompts/f1-001-environments-and-secrets.md](delivery/prompts/f1-001-environments-and-secrets.md)) |
+| [engineering/environments.md](engineering/environments.md) | existente | Contrato de ambientes e segredos: os três ambientes `development`, `preview` e `production`, com propósito, origem dos dados, quem acessa e classe de credencial admissível; critério objetivo de classificação entre variável **pública** e **exclusivamente server-side**, com a proibição sem exceção de segredo em variável pública e a regra de que dado protegido não é variável de ambiente; convenção de nomes; catálogo por área — aplicação, PostgreSQL/Neon com a distinção entre endpoint pooled e direto, Cloudflare R2, Resend, Better Auth, Mercado Pago e segredo de agendamento —, cada variável com ambiente, classificação, obrigatoriedade, estado e origem normativa; e regras operacionais de custódia, adição, rotação, revogação e resposta a vazamento. Produzido por **F1-001** ([delivery/prompts/f1-001-environments-and-secrets.md](delivery/prompts/f1-001-environments-and-secrets.md)); espelhado em [`.env.example`](../.env.example). **Nenhum serviço foi provisionado e nenhuma variável é lida por código:** todas estão `previsto` |
 | [engineering/testing.md](engineering/testing.md) | existente | Estratégia de testes: níveis (unitário, integração, componentes, E2E, contrato), Vitest 5.x e React Testing Library, Playwright previsto para E2E futuro, prioridade por risco, invariantes a provar para RB-001 a RB-006, requisitos futuros de concorrência e idempotência e política de test doubles |
 
 ### delivery — entrega, riscos e planejamento
@@ -66,15 +66,15 @@ Ponto de partida: [project-state.md](project-state.md). Decisões vigentes: [dec
 | --- | --- | --- |
 | [delivery/risks.md](delivery/risks.md) | existente | Riscos conhecidos, impacto e mitigação inicial |
 | [delivery/roadmap.md](delivery/roadmap.md) | existente | Roadmap macro por fases: objetivo, entregáveis, dependências e gate de saída, sem datas |
-| [delivery/backlog.md](delivery/backlog.md) | existente | Backlog de alto nível da Fase 0 (F0-xxx). Todos os itens estão concluídos; a fase foi encerrada em 2026-09-14 |
+| [delivery/backlog.md](delivery/backlog.md) | existente | Backlog de alto nível por fase. Todos os itens `F0-xxx` estão concluídos e a Fase 0 foi encerrada em 2026-09-14; a numeração `F1-xxx` foi aberta por F1-001, o primeiro trabalho da Fase 1 |
 | [delivery/phase-1-transition.md](delivery/phase-1-transition.md) | existente | Verificação formal do gate de saída da Fase 0 e transição para a Fase 1: baseline auditado, matriz de dez critérios com fonte, evidência e resultado (todos `PASS`), verificação dos requisitos dos quais a Fase 1 e a Fase 2 dependem, revisão dos riscos R-01 a R-11, resultado **APROVADO**, condições de entrada da Fase 1 e classificação factual dos seus sete entregáveis entre `já existente`, `parcial` e `não iniciado`; produzido por F0-023 |
-| [delivery/prompts/f1-001-environments-and-secrets.md](delivery/prompts/f1-001-environments-and-secrets.md) | existente | Prompt executor de **F1-001**, o primeiro trabalho da Fase 1: contrato de ambientes e segredos, sem provisionar serviço externo e sem iniciar o schema de domínio. É um prompt, não uma implementação; produzido por F0-023 |
+| [delivery/prompts/f1-001-environments-and-secrets.md](delivery/prompts/f1-001-environments-and-secrets.md) | existente | Prompt executor de **F1-001**, o primeiro trabalho da Fase 1: contrato de ambientes e segredos, sem provisionar serviço externo e sem iniciar o schema de domínio. É um prompt, não uma implementação; produzido por F0-023. **Executado em 2026-09-14**, com resultado em [engineering/environments.md](engineering/environments.md) e [`.env.example`](../.env.example) |
 | [delivery/spikes/f0-010-mercado-pago-pix-r099.md](delivery/spikes/f0-010-mercado-pago-pix-r099.md) | existente | Evidências das seis execuções do spike F0-010 do gateway Pix para exatamente R$ 0,99 (Mercado Pago); a sexta é `CONCLUSIVO`, com 10 de 10 critérios comprovados, e encerra o spike; a homologação decorrente está em [adr/0004-mercado-pago-pix.md](adr/0004-mercado-pago-pix.md) |
 | delivery/release-checklist.md | futuro | Checklist de release |
 
 ## Convenções
 
 - Regras de negócio usam o prefixo `RB-` e não têm sua semântica alterada sem decisão registrada.
-- Requisitos usam `RF-` (funcionais) e `RNF-` (não funcionais); decisões vigentes usam `DEC-`; decisões abertas usam `OD-`; riscos usam `R-`; itens do backlog da Fase 0 usam `F0-`. IDs nunca são reutilizados.
+- Requisitos usam `RF-` (funcionais) e `RNF-` (não funcionais); decisões vigentes usam `DEC-`; decisões abertas usam `OD-`; riscos usam `R-`; itens do backlog usam o prefixo da sua fase — `F0-` na Fase 0 e `F1-` na Fase 1. IDs nunca são reutilizados.
 - ADRs seguem a estrutura: Status, Contexto, Decisão, Consequências, Alternativas consideradas.
 - Toda decisão listada em [decisions/open-decisions.md](decisions/open-decisions.md) permanece aberta até ser fechada por documento próprio (ADR ou documento de produto).
