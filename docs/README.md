@@ -27,7 +27,7 @@ Ponto de partida: [project-state.md](project-state.md). Decisões vigentes: [dec
 
 | Documento | Status | Conteúdo |
 | --- | --- | --- |
-| [decisions/open-decisions.md](decisions/open-decisions.md) | existente | Questões ainda não decididas, separadas das decisões vigentes. Restam OD-07 e OD-08, ambas dependentes da validação do gateway |
+| [decisions/open-decisions.md](decisions/open-decisions.md) | existente | Questões ainda não decididas, separadas das decisões vigentes. Resta apenas OD-07, o tratamento das exceções de pagamento |
 | [decisions/decision-log.md](decisions/decision-log.md) | existente | Registro conciso das decisões vigentes DEC-xxx, com fonte oficial e impacto |
 
 ### architecture — visão de arquitetura e design técnico
@@ -46,7 +46,7 @@ Ponto de partida: [project-state.md](project-state.md). Decisões vigentes: [dec
 | [adr/0001-modular-monolith-nextjs.md](adr/0001-modular-monolith-nextjs.md) | existente | Monólito modular com Next.js + TypeScript (App Router) |
 | [adr/0002-postgresql-neon.md](adr/0002-postgresql-neon.md) | existente | PostgreSQL com Neon como provedor preferencial |
 | [adr/0003-object-storage-r2.md](adr/0003-object-storage-r2.md) | existente | Cloudflare R2 como armazenamento S3-compatible para imagens |
-| adr/0004-… | futuro | Gateway de pagamento (somente após spike de R$ 0,99; OD-08 aberta) |
+| [adr/0004-mercado-pago-pix.md](adr/0004-mercado-pago-pix.md) | existente | Mercado Pago como gateway Pix inicial homologado, por Checkout Transparente via Orders API: idempotência, validação de assinatura por manifesto único, webhook no nível da aplicação, processamento idempotente e reconciliável e isolamento do domínio; fecha OD-08 (DEC-036) |
 | [adr/0005-prisma-orm-migrations.md](adr/0005-prisma-orm-migrations.md) | existente | Prisma ORM e Prisma Migrate; política de migrations em desenvolvimento, staging e produção |
 
 ### engineering — convenções e práticas de engenharia
@@ -65,7 +65,7 @@ Ponto de partida: [project-state.md](project-state.md). Decisões vigentes: [dec
 | [delivery/risks.md](delivery/risks.md) | existente | Riscos conhecidos, impacto e mitigação inicial |
 | [delivery/roadmap.md](delivery/roadmap.md) | existente | Roadmap macro por fases: objetivo, entregáveis, dependências e gate de saída, sem datas |
 | [delivery/backlog.md](delivery/backlog.md) | existente | Backlog de alto nível da Fase 0 (F0-xxx) e próximos trabalhos |
-| [delivery/spikes/f0-010-mercado-pago-pix-r099.md](delivery/spikes/f0-010-mercado-pago-pix-r099.md) | existente | Evidências das seis execuções do spike F0-010 do gateway Pix para exatamente R$ 0,99 (Mercado Pago); a sexta é `CONCLUSIVO`, com 10 de 10 critérios comprovados, e encerra o spike; OD-08 continua aberta até F0-011 |
+| [delivery/spikes/f0-010-mercado-pago-pix-r099.md](delivery/spikes/f0-010-mercado-pago-pix-r099.md) | existente | Evidências das seis execuções do spike F0-010 do gateway Pix para exatamente R$ 0,99 (Mercado Pago); a sexta é `CONCLUSIVO`, com 10 de 10 critérios comprovados, e encerra o spike; a homologação decorrente está em [adr/0004-mercado-pago-pix.md](adr/0004-mercado-pago-pix.md) |
 | delivery/release-checklist.md | futuro | Checklist de release |
 
 ## Convenções

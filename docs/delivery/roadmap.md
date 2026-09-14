@@ -24,18 +24,18 @@ Fontes: [../product/mvp-scope.md](../product/mvp-scope.md), [../product/requirem
 
 - Baseline documental: escopo do MVP, regras RB-001 a RB-006, decisões abertas, riscos, ADRs 0001 a 0003 (concluído).
 - Público-alvo completo, requisitos rastreáveis, decision log, roadmap, backlog e workflow de agentes (esta entrega).
-- Spike do gateway Pix para exatamente R$ 0,99, com resultado registrado e decisão do gateway (OD-08, ADR-0004).
+- Spike do gateway Pix para exatamente R$ 0,99, com resultado registrado e decisão do gateway (OD-08, fechada por [ADR-0004](../adr/0004-mercado-pago-pix.md), DEC-036).
 - Fechamento das decisões que bloqueiam o modelo de dados: ORM e migrations (OD-09, fechada por [ADR-0005](../adr/0005-prisma-orm-migrations.md)), ciclo de vida do anúncio (OD-04, fechada por [../product/listing-lifecycle.md](../product/listing-lifecycle.md)), regras de imagens (OD-05, fechada por [../product/image-policy.md](../product/image-policy.md)).
-- Fechamento das decisões de produto: encerramento da negociação (OD-01, fechada por [../product/negotiation-lifecycle.md](../product/negotiation-lifecycle.md)), avaliações (OD-02, fechada por [../product/ratings.md](../product/ratings.md)), itens proibidos (OD-03, fechada por [../product/prohibited-items.md](../product/prohibited-items.md)), desistência/reseleção (OD-06, fechada por [../product/reselection-policy.md](../product/reselection-policy.md)), retenção/exclusão (OD-10, fechada por [../product/data-retention-policy.md](../product/data-retention-policy.md)), elegibilidade etária (OD-11, fechada por [../product/age-eligibility.md](../product/age-eligibility.md)), natureza da demonstração de interesse (OD-12, fechada por [../product/interest-flow.md](../product/interest-flow.md)) e exceções de pagamento (OD-07, **ainda aberta**, dependente de OD-08).
+- Fechamento das decisões de produto: encerramento da negociação (OD-01, fechada por [../product/negotiation-lifecycle.md](../product/negotiation-lifecycle.md)), avaliações (OD-02, fechada por [../product/ratings.md](../product/ratings.md)), itens proibidos (OD-03, fechada por [../product/prohibited-items.md](../product/prohibited-items.md)), desistência/reseleção (OD-06, fechada por [../product/reselection-policy.md](../product/reselection-policy.md)), retenção/exclusão (OD-10, fechada por [../product/data-retention-policy.md](../product/data-retention-policy.md)), elegibilidade etária (OD-11, fechada por [../product/age-eligibility.md](../product/age-eligibility.md)), natureza da demonstração de interesse (OD-12, fechada por [../product/interest-flow.md](../product/interest-flow.md)) e exceções de pagamento (OD-07, **ainda aberta**; sua dependência OD-08 foi fechada por [ADR-0004](../adr/0004-mercado-pago-pix.md)).
 - Arquitetura de dados e de API necessária antes da implementação (`architecture/overview.md`, `architecture/data-model.md`, `architecture/payments-design.md`, `architecture/contact-release.md`). OD-12 está fechada por [../product/interest-flow.md](../product/interest-flow.md) (DEC-035), o que remove essa condição da arquitetura pré-implementação.
 
 **Dependências:** nenhuma externa; depende da disponibilidade de Bruno para decisões e do acesso a ambiente sandbox do gateway candidato para o spike.
 
 **Gate de saída:**
 
-- OD-08 e OD-09 fechadas, com ADRs correspondentes. OD-09 já está fechada por [ADR-0005](../adr/0005-prisma-orm-migrations.md); OD-08 permanece aberta.
+- OD-08 e OD-09 fechadas, com ADRs correspondentes. **Ambas estão fechadas:** OD-09 por [ADR-0005](../adr/0005-prisma-orm-migrations.md) e OD-08 por [ADR-0004](../adr/0004-mercado-pago-pix.md) (DEC-036), em 2026-09-14.
 - OD-04 já está fechada por [../product/listing-lifecycle.md](../product/listing-lifecycle.md), OD-05 por [../product/image-policy.md](../product/image-policy.md), OD-01 por [../product/negotiation-lifecycle.md](../product/negotiation-lifecycle.md), OD-02 por [../product/ratings.md](../product/ratings.md), OD-03 por [../product/prohibited-items.md](../product/prohibited-items.md), OD-06 por [../product/reselection-policy.md](../product/reselection-policy.md), OD-10 por [../product/data-retention-policy.md](../product/data-retention-policy.md), OD-11 por [../product/age-eligibility.md](../product/age-eligibility.md) e OD-12 por [../product/interest-flow.md](../product/interest-flow.md).
-- OD-07 e OD-08 continuam abertas e são as **únicas** que ainda bloqueiam este gate. A validação real do gateway (F0-010) foi **concluída** em 2026-09-14; o que resta é registrar o resultado e decidir, em F0-011, de onde saem ADR-0004 e, na sequência, o tratamento de exceções de pagamento (F0-019, OD-07).
+- **OD-07 é a única decisão aberta que ainda bloqueia este gate.** A validação real do gateway (F0-010) foi concluída em 2026-09-14 e a escolha foi formalizada no mesmo dia por F0-011, que fechou OD-08 com [ADR-0004](../adr/0004-mercado-pago-pix.md) (DEC-036). O que resta é o tratamento de exceções de pagamento (F0-019, OD-07) e, em seguida, a arquitetura pré-implementação (F0-022).
 - Requisitos que a Fase 1 e a Fase 2 dependem com status `definido`.
 - Backlog da Fase 0 ([backlog.md](backlog.md)) sem itens `próximo` ou `bloqueado` que impeçam a Fase 1.
 
@@ -98,7 +98,7 @@ Fontes: [../product/mvp-scope.md](../product/mvp-scope.md), [../product/requirem
 - Autorização server-side e liberação de contato ao escolhido com pagamento aprovado, com auditoria (RF-014, RF-015, RF-022).
 - Design de pagamentos e de liberação de contato implementados conforme `architecture/payments-design.md` e `architecture/contact-release.md`.
 
-**Dependências:** gate da Fase 2; OD-07 e OD-08 fechadas e ADR-0004 (gateway) aceito. OD-06 já está fechada por [../product/reselection-policy.md](../product/reselection-policy.md) e OD-12 por [../product/interest-flow.md](../product/interest-flow.md).
+**Dependências:** gate da Fase 2; OD-07 e OD-08 fechadas e ADR-0004 (gateway) aceito. OD-08 já está fechada e [ADR-0004](../adr/0004-mercado-pago-pix.md) aceito (DEC-036); OD-06 já está fechada por [../product/reselection-policy.md](../product/reselection-policy.md) e OD-12 por [../product/interest-flow.md](../product/interest-flow.md). Resta OD-07.
 
 **Gate de saída:**
 

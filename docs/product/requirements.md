@@ -19,14 +19,14 @@ Catálogo inicial de requisitos rastreáveis do MVP. Contém **apenas** requisit
 | --- | --- | --- | --- | --- |
 | Identidade e conta | RF-001 a RF-003, RF-023 | 4 | 0 | 0 |
 | Anúncios | RF-004 a RF-007 | 3 | 1 | 0 |
-| Solicitações e pagamentos | RF-008 a RF-012 | 1 | 2 | 2 |
+| Solicitações e pagamentos | RF-008 a RF-012 | 1 | 4 | 0 |
 | Escolha e contato | RF-013 a RF-015 | 3 | 0 | 0 |
 | Encerramento e avaliações | RF-016, RF-017 | 2 | 0 | 0 |
 | Denúncia e moderação | RF-018 a RF-020 | 3 | 0 | 0 |
 | Transversais | RF-021, RF-022 | 0 | 2 | 0 |
 | Não funcionais | RNF-001 a RNF-018 | 11 | 7 | 0 |
 
-Os requisitos que permanecem `parcialmente definido` ou `bloqueado` dependem, direta ou indiretamente, do design de pagamentos e, portanto, de OD-07 e OD-08 — as duas únicas decisões ainda abertas —, salvo RF-004 (campos do anúncio), RF-021 (catálogo de emails) e os não funcionais cuja métrica objetiva será fixada no gate correspondente.
+Nenhum requisito permanece `bloqueado`. OD-08 foi fechada por [../adr/0004-mercado-pago-pix.md](../adr/0004-mercado-pago-pix.md) (DEC-036), que homologou o gateway Pix e desbloqueou RF-011 e RF-012. Os requisitos que permanecem `parcialmente definido` dependem, direta ou indiretamente, do design de pagamentos e, portanto, de **OD-07 — a única decisão ainda aberta** —, salvo RF-004 (campos do anúncio), RF-021 (catálogo de emails) e os não funcionais cuja métrica objetiva será fixada no gate correspondente.
 
 ## Requisitos funcionais
 
@@ -132,7 +132,7 @@ Os requisitos que permanecem `parcialmente definido` ou `bloqueado` dependem, di
 - **Prioridade MVP:** obrigatória.
 - **Origem:** fluxo central (passos 4 e 5); capacidade obrigatória em [mvp-scope.md](mvp-scope.md).
 - **Regra de negócio relacionada:** RB-003, RB-004.
-- **Decisão aberta relacionada:** OD-07, OD-08.
+- **Decisão aberta relacionada:** OD-07. OD-08 foi fechada por [../adr/0004-mercado-pago-pix.md](../adr/0004-mercado-pago-pix.md) (DEC-036).
 - **Critério de aceite (alto nível):** o solicitante só é elegível à escolha (RF-013) com pagamento aprovado; a solicitação não paga ou expirada não ocupa vaga.
 - **Status:** parcialmente definido.
 
@@ -150,21 +150,21 @@ Os requisitos que permanecem `parcialmente definido` ou `bloqueado` dependem, di
 
 - **Descrição:** a solicitação paga é cobrada em exatamente R$ 0,99 via Pix. A cobrança é definitiva mesmo se o solicitante não for escolhido.
 - **Prioridade MVP:** obrigatória.
-- **Origem:** RB-004; DEC-016 (Pix-first); DEC-017 e DEC-018 (Mercado Pago apenas candidato; spike obrigatório).
+- **Origem:** RB-004; DEC-016 (Pix-first); DEC-018 (spike obrigatório, satisfeito por F0-010); DEC-036 e [../adr/0004-mercado-pago-pix.md](../adr/0004-mercado-pago-pix.md) (gateway homologado).
 - **Regra de negócio relacionada:** RB-004.
-- **Decisão aberta relacionada:** OD-08 (gateway), OD-07 (exceções).
-- **Critério de aceite (alto nível):** valor cobrado é exatamente R$ 0,99; não há reembolso por não escolha; o gateway usado é o homologado após o spike.
-- **Status:** bloqueado por decisão aberta (OD-08). O spike do gateway é o próximo trabalho crítico ([../delivery/backlog.md](../delivery/backlog.md), F0-010).
+- **Decisão aberta relacionada:** OD-07 (exceções). OD-08 foi fechada por [../adr/0004-mercado-pago-pix.md](../adr/0004-mercado-pago-pix.md) (DEC-036).
+- **Critério de aceite (alto nível):** o valor cobrado é exatamente R$ 0,99, sem ajuste; não há reembolso por não escolha; a cobrança é criada no Mercado Pago por Checkout Transparente via Orders API, com Pix, credenciais apenas server-side e `X-Idempotency-Key`.
+- **Status:** definido quanto ao gateway e ao meio de pagamento. **Parcialmente definido** no conjunto: o que fazer quando a cobrança falha, duplica, é paga após a expiração da reserva ou é contestada continua dependendo de OD-07.
 
 #### RF-012 — Confirmação de pagamento, webhook e idempotência
 
 - **Descrição:** o sistema recebe a confirmação de pagamento do gateway (webhook) e atualiza o estado da solicitação de forma idempotente e reconciliável.
 - **Prioridade MVP:** obrigatória.
-- **Origem:** DEC-018 (spike deve provar confirmação, webhook e idempotência); R-04 em [../delivery/risks.md](../delivery/risks.md).
+- **Origem:** DEC-018 (spike deve provar confirmação, webhook e idempotência), satisfeita por F0-010; DEC-036 e [../adr/0004-mercado-pago-pix.md](../adr/0004-mercado-pago-pix.md); R-04 em [../delivery/risks.md](../delivery/risks.md).
 - **Regra de negócio relacionada:** RB-001 (pagamento aprovado é pré-condição da liberação), RB-003.
-- **Decisão aberta relacionada:** OD-08, OD-07.
-- **Critério de aceite (alto nível):** webhook duplicado, fora de ordem ou perdido não gera estado inconsistente; contato nunca é liberado sem pagamento aprovado registrado.
-- **Status:** bloqueado por decisão aberta (OD-08).
+- **Decisão aberta relacionada:** OD-07. OD-08 foi fechada por [../adr/0004-mercado-pago-pix.md](../adr/0004-mercado-pago-pix.md) (DEC-036).
+- **Critério de aceite (alto nível):** a notificação do tópico `order` tem autenticidade validada **antes** de qualquer processamento, por uma única regra oficial de manifesto HMAC, sem fallback entre variantes e sem remontar o manifesto a partir do corpo; webhook duplicado, fora de ordem ou perdido não gera estado inconsistente; o estado é reconciliável contra o provedor por consulta à order; contato nunca é liberado sem pagamento aprovado registrado.
+- **Status:** definido quanto ao mecanismo de confirmação, à validação de assinatura e à exigência de idempotência e reconciliação. **Parcialmente definido** no conjunto: o comportamento diante de pagamento duplicado, pagamento após a expiração da reserva, falha de confirmação e chargeback continua dependendo de OD-07.
 
 ### Escolha e contato
 
@@ -270,9 +270,9 @@ Os requisitos que permanecem `parcialmente definido` ou `bloqueado` dependem, di
 - **Prioridade MVP:** obrigatória.
 - **Origem:** DEC-023 (auditoria da liberação de contato); [../adr/0002-postgresql-neon.md](../adr/0002-postgresql-neon.md).
 - **Regra de negócio relacionada:** RB-001, RB-002, RB-003, RB-004, RB-006.
-- **Decisão aberta relacionada:** OD-07 e OD-08, quanto à extensão da trilha à aprovação de pagamento, que depende do design de pagamentos. A retenção das trilhas foi definida por [data-retention-policy.md](data-retention-policy.md) (DEC-033).
+- **Decisão aberta relacionada:** OD-07, quanto à extensão da trilha à aprovação de pagamento, que depende do design de pagamentos. OD-08 foi fechada por [../adr/0004-mercado-pago-pix.md](../adr/0004-mercado-pago-pix.md) (DEC-036). A retenção das trilhas foi definida por [data-retention-policy.md](data-retention-policy.md) (DEC-033).
 - **Critério de aceite (alto nível):** cada operação listada registra ator, alvo, instante e resultado; o encerramento da negociação registra ainda estado anterior e estado resultante (`active` -> `closed`); a invalidação administrativa de avaliação registra ator administrativo, avaliação, negociação, instante e motivo ([ratings.md](ratings.md), DEC-030); cada evento administrativo de itens proibidos registra ator, alvo, instante, ação, motivo/categoria e resultado, com indicação expressa quando a decisão se der por dúvida material em categoria de alto risco ([prohibited-items.md](prohibited-items.md), DEC-031); cada escolha e cada reseleção são auditadas independentemente ([reselection-policy.md](reselection-policy.md), DEC-032); o registro não contém o contato em texto claro fora da própria liberação autorizada; a trilha é retida por 24 meses a partir do evento e, após a exclusão da conta, não conserva telefone/WhatsApp em texto puro ([data-retention-policy.md](data-retention-policy.md), DEC-033).
-- **Status:** parcialmente definido. A liberação de contato, a escolha e a reseleção, o encerramento da negociação, a invalidação administrativa de avaliação, os eventos administrativos de denúncia, moderação, sanção e contestação e a retenção das trilhas estão definidos; a extensão à aprovação de pagamento continua dependendo do design de pagamentos (OD-07, OD-08).
+- **Status:** parcialmente definido. A liberação de contato, a escolha e a reseleção, o encerramento da negociação, a invalidação administrativa de avaliação, os eventos administrativos de denúncia, moderação, sanção e contestação e a retenção das trilhas estão definidos; a extensão à aprovação de pagamento continua dependendo do design de pagamentos (OD-07).
 
 ## Requisitos não funcionais
 
@@ -388,7 +388,7 @@ Os requisitos que permanecem `parcialmente definido` ou `bloqueado` dependem, di
 - **Descrição:** toda entrada externa (formulários, rotas, webhooks) é validada no servidor antes de uso.
 - **Prioridade MVP:** obrigatória.
 - **Origem:** RNF-007; R-04.
-- **Critério de aceite (alto nível):** entradas inválidas são rejeitadas com erro controlado; webhooks validam origem e assinatura conforme o gateway homologado (OD-08).
+- **Critério de aceite (alto nível):** entradas inválidas são rejeitadas com erro controlado; webhooks validam origem e assinatura conforme o gateway homologado em [../adr/0004-mercado-pago-pix.md](../adr/0004-mercado-pago-pix.md) (DEC-036), por uma única regra oficial de manifesto HMAC, sem fallback entre variantes.
 - **Status:** definido.
 
 #### RNF-015 — Proteção de segredos
@@ -444,8 +444,8 @@ Os requisitos que permanecem `parcialmente definido` ou `bloqueado` dependem, di
 | OD-04 | fechada por [listing-lifecycle.md](listing-lifecycle.md) (DEC-027); define estados, transições, visibilidade pública e efeitos sobre interesses e solicitações; deixa de bloquear o modelo de dados do anúncio |
 | OD-05 | fechada por [image-policy.md](image-policy.md) (DEC-028); define quantidade, formatos, limites, validação, processamento, derivados e visibilidade das imagens; deixa de bloquear RF-006 e define os critérios de RNF-005 |
 | OD-06 | fechada por [reselection-policy.md](reselection-policy.md) (DEC-032); define as cinco pré-condições da reseleção, a confirmação explícita do anunciante, a imutabilidade da escolha anterior e da liberação já concedida, a criação de nova negociação e nova autorização auditada, a exclusividade da negociação `active`, a preservação literal de RB-003 e o tratamento da desistência; deixa de bloquear RF-013, que passa a `definido`, e sai de RF-015 |
-| OD-07 | **aberta.** RF-009, RF-010, RF-011, RF-012, RF-020, RF-022 |
-| OD-08 | **aberta.** RF-009, RF-011, RF-012, RF-022, RNF-014 |
+| OD-07 | **aberta; a única restante.** RF-009, RF-010, RF-011, RF-012, RF-020, RF-022 |
+| OD-08 | fechada por [../adr/0004-mercado-pago-pix.md](../adr/0004-mercado-pago-pix.md) (DEC-036); homologa o Mercado Pago como gateway Pix inicial do MVP, por Checkout Transparente via Orders API, com Pix, cobrança de exatamente R$ 0,99, credenciais apenas server-side, `X-Idempotency-Key` na criação, validação de autenticidade antes do processamento por uma única regra oficial de manifesto HMAC, webhook configurado no nível da aplicação e processamento idempotente e reconciliável; deixa de bloquear RF-011 e RF-012, que passam a `parcialmente definido` por OD-07, e sai de RF-009, RF-022 e RNF-014 |
 | OD-09 | fechada por [../adr/0005-prisma-orm-migrations.md](../adr/0005-prisma-orm-migrations.md) (DEC-026); nenhum requisito funcional direto; deixa de bloquear schema e migrations |
 | OD-10 | fechada por [data-retention-policy.md](data-retention-policy.md) (DEC-033); define retenção por categoria, exclusão de conta com efeito imediato e prazo de 30 dias, expurgo de imagens, 6 meses de log de acesso, 24 meses de auditoria e de registros de moderação e abuso, 5 anos de metadados financeiros, backups limitados ao ciclo normal com máximo de 30 dias adicionais e legal hold registrado; deixa de bloquear RF-023 e RF-006, que passam a `definido`, leva RNF-009 e RNF-011 a `definido` e sai de RF-020 e de RF-022 |
 | OD-11 | fechada por [age-eligibility.md](age-eligibility.md) (DEC-034); define 18 anos completos ou mais como decisão de escopo do produto, declaração explícita registrada no cadastro, ausência de coleta documental ou biométrica para comprovação etária e bloqueio cautelar diante de evidência razoável de menoridade; deixa de bloquear RF-001, que passa a `definido`, e sai de RNF-009 |

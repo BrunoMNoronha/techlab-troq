@@ -232,7 +232,7 @@ Consequências normativas:
 | RF-022 | Transições T5 a T9 são auditadas. |
 | OD-05 | Fechada posteriormente por [image-policy.md](image-policy.md) (DEC-028); nada neste documento a antecipou. |
 | OD-01 | Fechada posteriormente por [negotiation-lifecycle.md](negotiation-lifecycle.md) (DEC-029); nada neste documento a antecipou, e DEC-029 preserva integralmente a máquina de estados do anúncio. |
-| OD-07, OD-08 | Permanecem abertas. Nada neste documento as fecha ou antecipa. OD-06, OD-10, OD-11 e OD-12 foram fechadas depois por [reselection-policy.md](reselection-policy.md) (DEC-032), [data-retention-policy.md](data-retention-policy.md) (DEC-033), [age-eligibility.md](age-eligibility.md) (DEC-034) e [interest-flow.md](interest-flow.md) (DEC-035). |
+| OD-07 | Permanece aberta. Nada neste documento a fecha ou antecipa. OD-06, OD-10, OD-11, OD-12 e OD-08 foram fechadas depois por [reselection-policy.md](reselection-policy.md) (DEC-032), [data-retention-policy.md](data-retention-policy.md) (DEC-033), [age-eligibility.md](age-eligibility.md) (DEC-034), [interest-flow.md](interest-flow.md) (DEC-035) e [../adr/0004-mercado-pago-pix.md](../adr/0004-mercado-pago-pix.md) (DEC-036). |
 | OD-03 | Permanecia aberta nesta decisão; foi fechada depois por [prohibited-items.md](prohibited-items.md) (DEC-031), que preserva integralmente os estados, a matriz de transições e os efeitos definidos aqui. |
 | OD-02 | Permanecia aberta nesta decisão; foi fechada depois por [ratings.md](ratings.md) (DEC-030), que preserva a independência entre o estado do anúncio e a elegibilidade da avaliação. |
 

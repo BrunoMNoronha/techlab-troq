@@ -104,4 +104,4 @@ Se a conta bloqueada for excluída, a exclusão segue integralmente [data-retent
 | DEC-031 | Preservada integralmente. A ausência de verificação de idade que aquele documento registrava passa a ter uma decisão correspondente: a elegibilidade é declaratória, e as categorias que exigiriam controle etário continuam proibidas |
 | RB-001 a RB-006 | Preservadas literalmente |
 | OD-11 | **Fechada** por este documento (DEC-034) |
-| OD-07, OD-08 | Permanecem abertas. Nada aqui as antecipa |
+| OD-07 | Permanece aberta. Nada aqui a antecipa. OD-08 foi fechada depois por [../adr/0004-mercado-pago-pix.md](../adr/0004-mercado-pago-pix.md) (DEC-036) |

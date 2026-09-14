@@ -315,7 +315,7 @@ O encerramento da negociação continua **unilateral** e sem aceite da contrapar
 | Catálogo/política de itens proibidos e moderação de anúncios | definidos depois em [prohibited-items.md](prohibited-items.md) (DEC-031), que fechou OD-03 |
 | Desistência e reseleção | Definidas depois em [reselection-policy.md](reselection-policy.md) (DEC-032) |
 | Chargebacks e exceções de pagamento | OD-07 |
-| Escolha do gateway | OD-08 |
+| Escolha do gateway | Definida depois em [../adr/0004-mercado-pago-pix.md](../adr/0004-mercado-pago-pix.md) (DEC-036) |
 | Retenção, expurgo e exclusão de avaliações e trilhas de auditoria | Definidos depois em [data-retention-policy.md](data-retention-policy.md) (DEC-033) |
 | Elegibilidade etária formal | Definida depois em [age-eligibility.md](age-eligibility.md) (DEC-034) |
 | Natureza da demonstração de interesse | Definida depois em [interest-flow.md](interest-flow.md) (DEC-035) |
@@ -348,6 +348,6 @@ O encerramento da negociação continua **unilateral** e sem aceite da contrapar
 | DEC-027 / [listing-lifecycle.md](listing-lifecycle.md) | Preservada; o estado do anúncio não altera a elegibilidade |
 | DEC-028 / [image-policy.md](image-policy.md) | Preservada; avaliações não possuem imagens |
 | DEC-029 / [negotiation-lifecycle.md](negotiation-lifecycle.md) | Preservada integralmente; `closed` continua terminal, irreversível e unilateral |
-| OD-07, OD-08 | Permanecem abertas; nada aqui as fecha ou antecipa. OD-06, OD-10, OD-11 e OD-12 foram fechadas depois por DEC-032, DEC-033, DEC-034 e DEC-035 |
+| OD-07 | Permanece aberta; nada aqui a fecha ou antecipa. OD-06, OD-10, OD-11, OD-12 e OD-08 foram fechadas depois por DEC-032, DEC-033, DEC-034, DEC-035 e DEC-036 |
 | OD-03 | Permanecia aberta nesta decisão; foi fechada depois por [prohibited-items.md](prohibited-items.md) (DEC-031), que preserva integralmente esta política de avaliações |
 | F0-016 | Concluído por esta entrega |
