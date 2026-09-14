@@ -28,7 +28,7 @@ Negativas e restrições:
 
 - Dependência de serviço externo (R-08); termos e custos devem ser acompanhados.
 - Quantidade de imagens por anúncio, formatos aceitos, limites de tamanho, validação, processamento e derivados públicos são definidos em [../product/image-policy.md](../product/image-policy.md) (DEC-028), que complementa este ADR sem alterá-lo. Em particular, o upload é feito **diretamente do cliente ao R2** por operação S3-compatible de curta duração autorizada server-side, e somente derivados processados são servidos publicamente; o objeto original permanece em área não pública e temporária.
-- Política de remoção de imagens quando um anúncio é removido (RB-006) ou quando dados são excluídos (OD-10) depende do ciclo de vida do anúncio (definido em [../product/listing-lifecycle.md](../product/listing-lifecycle.md): as imagens deixam de ser servidas publicamente junto com o anúncio) e da política de retenção (OD-10, ainda aberta).
+- Política de remoção de imagens quando um anúncio é removido (RB-006) ou quando dados são excluídos depende do ciclo de vida do anúncio (definido em [../product/listing-lifecycle.md](../product/listing-lifecycle.md): as imagens deixam de ser servidas publicamente junto com o anúncio) e da política de retenção, definida depois em [../product/data-retention-policy.md](../product/data-retention-policy.md) (DEC-033): as imagens deixam de ser públicas imediatamente e os objetos persistentes são removidos em até 30 dias, quando não houver retenção legitimamente necessária, preservado o prazo de 24 horas do original temporário.
 - Nenhuma configuração de bucket, credencial ou integração existe na Fase 0.
 
 ## Alternativas consideradas

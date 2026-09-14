@@ -18,12 +18,16 @@ Ponto de partida: [project-state.md](project-state.md). Decisões vigentes: [dec
 | [product/image-policy.md](product/image-policy.md) | existente | Política de imagens do anúncio: quantidade, formatos, limites, upload, validação de segurança, processamento, derivados públicos, visibilidade e moderação; fecha OD-05 (DEC-028) |
 | [product/negotiation-lifecycle.md](product/negotiation-lifecycle.md) | existente | Ciclo de vida da negociação: estados `active` e `closed`, atores autorizados, encerramento unilateral, confirmação e irreversibilidade, ausência de automação, relação com anúncio, pagamento, contato e avaliações, concorrência, idempotência e auditoria; fecha OD-01 (DEC-029) |
 | [product/ratings.md](product/ratings.md) | existente | Política de avaliações: natureza bilateral sobre a contraparte, elegibilidade, nota de 1 a 5, janela de 14 dias, publicação cega, edição e imutabilidade, reputação pública, abuso e invalidação auditada; fecha OD-02 (DEC-030) |
+| [product/reselection-policy.md](product/reselection-policy.md) | existente | Política de desistência e reseleção: pré-condições da reseleção, confirmação explícita, imutabilidade da escolha e da liberação anteriores, nova negociação e nova autorização auditada, exclusividade da negociação `active`, preservação literal de RB-003 e tratamento da desistência; fecha OD-06 (DEC-032) |
+| [product/data-retention-policy.md](product/data-retention-policy.md) | existente | Política de retenção e exclusão de dados: categorias, exclusão de conta com efeito imediato e prazo de 30 dias, expurgo de imagens, logs de acesso, auditoria, moderação e abuso, metadados financeiros, backups e legal hold; fecha OD-10 (DEC-033) |
+| [product/age-eligibility.md](product/age-eligibility.md) | existente | Elegibilidade etária: 18 anos completos ou mais por declaração explícita no cadastro, sem coleta documental ou biométrica e sem verificação externa, com bloqueio cautelar diante de evidência razoável de menoridade; fecha OD-11 (DEC-034) |
+| [product/interest-flow.md](product/interest-flow.md) | existente | Natureza da demonstração de interesse: ação gratuita de interface, sem entidade persistida, sem cancelamento e sem visibilidade ao anunciante, com telemetria apenas agregada; fecha OD-12 (DEC-035) |
 
 ### decisions — decisões em aberto e registro de decisões de produto
 
 | Documento | Status | Conteúdo |
 | --- | --- | --- |
-| [decisions/open-decisions.md](decisions/open-decisions.md) | existente | Questões ainda não decididas, separadas das decisões vigentes |
+| [decisions/open-decisions.md](decisions/open-decisions.md) | existente | Questões ainda não decididas, separadas das decisões vigentes. Restam OD-07 e OD-08, ambas dependentes da validação do gateway |
 | [decisions/decision-log.md](decisions/decision-log.md) | existente | Registro conciso das decisões vigentes DEC-xxx, com fonte oficial e impacto |
 
 ### architecture — visão de arquitetura e design técnico
@@ -42,7 +46,7 @@ Ponto de partida: [project-state.md](project-state.md). Decisões vigentes: [dec
 | [adr/0001-modular-monolith-nextjs.md](adr/0001-modular-monolith-nextjs.md) | existente | Monólito modular com Next.js + TypeScript (App Router) |
 | [adr/0002-postgresql-neon.md](adr/0002-postgresql-neon.md) | existente | PostgreSQL com Neon como provedor preferencial |
 | [adr/0003-object-storage-r2.md](adr/0003-object-storage-r2.md) | existente | Cloudflare R2 como armazenamento S3-compatible para imagens |
-| adr/0004-… | futuro | Gateway de pagamento (somente após spike de R$ 0,99) |
+| adr/0004-… | futuro | Gateway de pagamento (somente após spike de R$ 0,99; OD-08 aberta) |
 | [adr/0005-prisma-orm-migrations.md](adr/0005-prisma-orm-migrations.md) | existente | Prisma ORM e Prisma Migrate; política de migrations em desenvolvimento, staging e produção |
 
 ### engineering — convenções e práticas de engenharia

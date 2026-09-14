@@ -48,7 +48,7 @@ Modelar `removed` como um sinalizador sobre `closed` misturaria decisão do usu�
 | `under_review` / em análise | `under_review` do Mercado Livre | **Fora do MVP** | Exigiria definir gatilhos, critérios e prazos de análise, que eram OD-03; [prohibited-items.md](prohibited-items.md) (DEC-031) os definiu **sem** criar estado intermediário de anúncio, confirmando esta rejeição. Uma denúncia é uma entidade própria (RF-018) e não precisa alterar o estado do anúncio para existir. Um anúncio permanece `published` até que a moderação decida removê-lo. |
 | `inactive` / inativo | `inactive` do Mercado Livre | **Fora do MVP** | É consequência de `under_review` no modelo de origem; sem `under_review`, não tem função. Não acrescenta nada a `paused`. |
 | `out_of_stock` / esgotado | `OUT_OF_STOCK` do eBay | **Fora do MVP** | Pressupõe estoque e quantidade. O TROQ não é comércio de estoque: o anúncio é uma oferta única de contato controlado. `paused` cobre o caso de indisponibilidade temporária. |
-| `deleted` / excluído | `sub_status: deleted` do Mercado Livre | **Fora do MVP** | Exclusão de dados é assunto de retenção e LGPD ([OD-10](../decisions/open-decisions.md)), não de ciclo de vida da oferta. Introduzir esse estado agora anteciparia OD-10. |
+| `deleted` / excluído | `sub_status: deleted` do Mercado Livre | **Fora do MVP** | Exclusão de dados é assunto de retenção e LGPD, definido depois em [data-retention-policy.md](data-retention-policy.md) (DEC-033), não de ciclo de vida da oferta. A decisão de não criar esse estado permanece: a exclusão opera sobre dados e exposição, não sobre o estado da oferta. |
 | `negotiating` / em negociação | Direcionamento interno | **Rejeitado** | Confundiria anúncio com negociação. Ver seção 8. |
 | `fulfilled` / concluído | Direcionamento interno | **Rejeitado** | O desfecho da negociação pertence ao ciclo próprio da negociação ([negotiation-lifecycle.md](negotiation-lifecycle.md), DEC-029). Um anúncio cuja negociação terminou é encerrado pelo anunciante via `closed`, se ele assim decidir. |
 
@@ -75,7 +75,7 @@ Registrados como atributos do anúncio, não como estados:
 Notas normativas:
 
 - **Consulta pública.** Somente `published` aparece em listagem, detalhe público, busca, feed ou qualquer cache público. Requisição ao detalhe de um anúncio em qualquer outro estado, por usuário que não seja o anunciante, deve responder como recurso não disponível, sem revelar a existência prévia nem o estado interno do anúncio.
-- **Interesse.** A linha "aceita novo interesse" pressupõe que a demonstração de interesse exista como ação própria. Se [OD-12](../decisions/open-decisions.md) concluir que ela é apenas o início da solicitação paga, a coluna passa a ser lida como parte da coluna seguinte, sem alterar as demais definições deste documento.
+- **Interesse.** A linha "aceita novo interesse" pressupunha que a demonstração de interesse existisse como ação própria. [interest-flow.md](interest-flow.md) (DEC-035) concluiu que ela é apenas o início da solicitação paga, sem entidade persistida: a coluna passa a ser lida como parte da coluna seguinte, **sem alterar as demais definições deste documento**, exatamente como aqui previsto. Onde este documento fala em interesses "preservados como histórico", a menção perde objeto — não há interesse persistido a preservar —, o que não altera nenhum outro efeito das transições.
 - **Edição.** Edição em `published` altera conteúdo público imediatamente e não muda o estado. Os campos editáveis seguem RF-004; a adição, remoção, ordenação e o reprocessamento de imagens seguem [image-policy.md](image-policy.md), que também impede que uma edição em `published` resulte em zero imagens válidas.
 - **Verificação server-side.** Toda checagem de estado é feita no servidor. A ausência de um botão na interface nunca é o controle de acesso (RF-014, RNF-007).
 
@@ -141,9 +141,9 @@ Detalhamento normativo:
 - **Solicitações pagas nunca são canceladas pelo estado do anúncio.** Nem `paused`, nem `closed`, nem `removed` invalidam uma solicitação paga. RB-004 é preservada literalmente: a cobrança de R$ 0,99 é definitiva. Este documento **não** cria política de reembolso, estorno, chargeback ou compensação; qualquer exceção pertence a [OD-07](../decisions/open-decisions.md) e a [OD-08](../decisions/open-decisions.md).
 - **Solicitações não pagas não ocupam vaga** (RF-009, RF-010): encerrá-las junto com o anúncio não afeta RB-003.
 - **O limite de 3 solicitações pagas (RB-003) é do anúncio e não é reiniciado por nenhuma transição.** Uma pausa seguida de reativação não devolve vagas; um anúncio que já acumulou 3 solicitações pagas continua com 3 após T3+T4.
-- **Escolha do solicitante.** O anunciante continua podendo escolher entre as solicitações pagas de um anúncio `paused` ou `closed`, porque a negociação é um ciclo distinto (seção 8) e a cobrança já foi definitiva. As regras de desistência e reseleção permanecem em [OD-06](../decisions/open-decisions.md) e não são decididas aqui.
+- **Escolha do solicitante.** O anunciante continua podendo escolher entre as solicitações pagas de um anúncio `paused` ou `closed`, porque a negociação é um ciclo distinto (seção 8) e a cobrança já foi definitiva. As regras de desistência e reseleção foram definidas depois em [reselection-policy.md](reselection-policy.md) (DEC-032), que preserva esta regra para a **primeira** escolha e exige adicionalmente anúncio `published` para a **reseleção** (seção 6.1 daquele documento).
 - **Contato já liberado.** Nenhuma transição revoga uma liberação já autorizada e auditada (RB-001, RF-015). Uma liberação **nova** exige, além do estado do anúncio, as duas condições de RB-001; ver seção 6 para o caso de remoção.
-- **Imagens.** As imagens de um anúncio `closed` ou `removed` deixam imediatamente de ser servidas pela superfície pública, junto com o restante do conteúdo, conforme [image-policy.md](image-policy.md) (DEC-028). Isso **não** implica exclusão física dos objetos: a retenção e o expurgo definitivo dos derivados persistidos continuam dependendo de [OD-10](../decisions/open-decisions.md).
+- **Imagens.** As imagens de um anúncio `closed` ou `removed` deixam imediatamente de ser servidas pela superfície pública, junto com o restante do conteúdo, conforme [image-policy.md](image-policy.md) (DEC-028). Isso **não** implica exclusão física dos objetos: a retenção e o expurgo definitivo dos derivados persistidos estão definidos em [data-retention-policy.md](data-retention-policy.md) (DEC-033).
 
 ## 6. Remoção por moderação
 
@@ -223,16 +223,16 @@ Consequências normativas:
 | RB-006 | Atendida pelo estado `removed` e por T7 a T9 (seção 6). |
 | RF-004 | Estado inicial `draft`; publicação por T1; edição conforme seção 3. |
 | RF-005 | Somente `published` é consultável publicamente. |
-| RF-006 | Imagens deixam de ser servidas publicamente com o anúncio; regras de imagem em [image-policy.md](image-policy.md) (DEC-028); expurgo definitivo segue OD-10. |
+| RF-006 | Imagens deixam de ser servidas publicamente com o anúncio; regras de imagem em [image-policy.md](image-policy.md) (DEC-028); expurgo definitivo em [data-retention-policy.md](data-retention-policy.md) (DEC-033). |
 | RF-008 | Novos interesses somente em `published`. |
 | RF-009, RF-010 | Novas solicitações somente em `published`; vagas reservadas e não pagas são liberadas em `closed`/`removed`. |
-| RF-013, RF-015 | Escolha e liberação indisponíveis em `removed`; efeitos de desistência e reseleção seguem OD-06. |
+| RF-013, RF-015 | Escolha e liberação indisponíveis em `removed`; efeitos de desistência e reseleção definidos em [reselection-policy.md](reselection-policy.md) (DEC-032). |
 | RF-016, RF-017 | Independentes do estado do anúncio; RF-016 segue [negotiation-lifecycle.md](negotiation-lifecycle.md) (DEC-029) e RF-017 segue [ratings.md](ratings.md) (DEC-030). |
 | RF-019, RF-020 | Moderação usa T7 a T9; os critérios estão em [prohibited-items.md](prohibited-items.md) (DEC-031). |
 | RF-022 | Transições T5 a T9 são auditadas. |
 | OD-05 | Fechada posteriormente por [image-policy.md](image-policy.md) (DEC-028); nada neste documento a antecipou. |
 | OD-01 | Fechada posteriormente por [negotiation-lifecycle.md](negotiation-lifecycle.md) (DEC-029); nada neste documento a antecipou, e DEC-029 preserva integralmente a máquina de estados do anúncio. |
-| OD-06, OD-07, OD-08, OD-10, OD-11, OD-12 | Permanecem abertas. Nada neste documento as fecha ou antecipa. |
+| OD-07, OD-08 | Permanecem abertas. Nada neste documento as fecha ou antecipa. OD-06, OD-10, OD-11 e OD-12 foram fechadas depois por [reselection-policy.md](reselection-policy.md) (DEC-032), [data-retention-policy.md](data-retention-policy.md) (DEC-033), [age-eligibility.md](age-eligibility.md) (DEC-034) e [interest-flow.md](interest-flow.md) (DEC-035). |
 | OD-03 | Permanecia aberta nesta decisão; foi fechada depois por [prohibited-items.md](prohibited-items.md) (DEC-031), que preserva integralmente os estados, a matriz de transições e os efeitos definidos aqui. |
 | OD-02 | Permanecia aberta nesta decisão; foi fechada depois por [ratings.md](ratings.md) (DEC-030), que preserva a independência entre o estado do anúncio e a elegibilidade da avaliação. |
 
