@@ -2,7 +2,7 @@
 
 TROQ é uma plataforma de anúncios entre pessoas em que o contato (WhatsApp/telefone) do anunciante só é liberado a um interessado escolhido, mediante uma solicitação paga de R$ 0,99.
 
-**Status:** Fase 0 em andamento. O repositório já contém a **fundação técnica mínima** da aplicação (scaffold Next.js e CI de validação), criada de forma antecipada e isolada. Não existe banco, migration, autenticação, integração externa nem funcionalidade de produto. O gateway de pagamento já está homologado ([ADR-0004](docs/adr/0004-mercado-pago-pix.md)) e as exceções de pagamento estão definidas ([política de exceções](docs/product/payment-exceptions.md)). **Não há mais decisão aberta;** o que falta para o gate da Fase 0 é a arquitetura pré-implementação (F0-022) e a transição para a Fase 1 (F0-023).
+**Status:** Fase 0 em andamento. O repositório já contém a **fundação técnica mínima** da aplicação (scaffold Next.js e CI de validação), criada de forma antecipada e isolada. Não existe banco, migration, autenticação, integração externa nem funcionalidade de produto. O gateway de pagamento já está homologado ([ADR-0004](docs/adr/0004-mercado-pago-pix.md)) e as exceções de pagamento estão definidas ([política de exceções](docs/product/payment-exceptions.md)). A **baseline arquitetural** da implementação também já está registrada ([visão geral](docs/architecture/overview.md), [modelo de dados](docs/architecture/data-model.md), [desenho de pagamentos](docs/architecture/payments-design.md) e [liberação de contato](docs/architecture/contact-release.md)). **Não há mais decisão aberta;** o que falta para o gate da Fase 0 é a transição para a Fase 1 (F0-023).
 
 ## Fluxo central (resumo)
 
@@ -29,6 +29,7 @@ As regras de negócio homologadas (RB-001 a RB-006) estão em [docs/product/busi
 | Armazenamento de imagens | Cloudflare R2, S3-compatible ([ADR-0003](docs/adr/0003-object-storage-r2.md)) |
 | Email transacional | Resend |
 | Pagamentos | Pix-first; Mercado Pago como gateway Pix inicial homologado, por Checkout Transparente via Orders API ([ADR-0004](docs/adr/0004-mercado-pago-pix.md)) |
+| Trabalho assíncrono e agendamento | PostgreSQL como fila e autoridade de trava; agendamento da própria plataforma, sem broker nem Redis ([ADR-0006](docs/adr/0006-async-work-scheduling-concurrency.md)) |
 
 Não resta nenhuma decisão aberta. A escolha do gateway (OD-08) foi fechada em 2026-09-14 por [ADR-0004](docs/adr/0004-mercado-pago-pix.md), e o tratamento das exceções de pagamento (OD-07) — duplicidade, pagamento acreditado após a expiração da reserva, falhas de confirmação, reembolso técnico e reversões — foi fechado na mesma data por [docs/product/payment-exceptions.md](docs/product/payment-exceptions.md) (DEC-037). A lista de decisões abertas, agora vazia, continua em [docs/decisions/open-decisions.md](docs/decisions/open-decisions.md).
 
@@ -64,6 +65,10 @@ npm run build
 
 - [Índice da documentação](docs/README.md)
 - [Estado do projeto](docs/project-state.md)
+- [Visão geral da arquitetura](docs/architecture/overview.md)
+- [Modelo de dados](docs/architecture/data-model.md)
+- [Desenho de pagamentos](docs/architecture/payments-design.md)
+- [Liberação de contato](docs/architecture/contact-release.md)
 - [Escopo do MVP](docs/product/mvp-scope.md)
 - [Regras de negócio](docs/product/business-rules.md)
 - [Avaliações](docs/product/ratings.md)

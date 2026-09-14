@@ -41,7 +41,7 @@ A persistência funcional começa quando houver uma **solicitação de desbloque
 - receber webhook;
 - permitir reconciliação.
 
-Os detalhes dessa solicitação — quando exatamente a vaga é reservada, por quanto tempo, e como o pagamento e o webhook a movem — não eram antecipados por este documento e foram decididos depois: o gateway foi homologado em [../adr/0004-mercado-pago-pix.md](../adr/0004-mercado-pago-pix.md) (DEC-036) e as exceções de pagamento, inclusive o piso de 30 minutos da janela de reserva e o efeito do pagamento tardio, em [payment-exceptions.md](payment-exceptions.md) (DEC-037), que fechou OD-07. O que resta é design (F0-022).
+Os detalhes dessa solicitação — quando exatamente a vaga é reservada, por quanto tempo, e como o pagamento e o webhook a movem — não eram antecipados por este documento e foram decididos depois: o gateway foi homologado em [../adr/0004-mercado-pago-pix.md](../adr/0004-mercado-pago-pix.md) (DEC-036) e as exceções de pagamento, inclusive o piso de 30 minutos da janela de reserva e o efeito do pagamento tardio, em [payment-exceptions.md](payment-exceptions.md) (DEC-037), que fechou OD-07. O design foi concluído depois por F0-022, em [../architecture/data-model.md](../architecture/data-model.md) (DM-6) e [../architecture/payments-design.md](../architecture/payments-design.md).
 
 ## 4. Gratuidade
 

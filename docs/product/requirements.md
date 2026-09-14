@@ -144,7 +144,7 @@ Nenhum requisito permanece `bloqueado` e **não há mais decisão aberta**. OD-0
 - **Regra de negócio relacionada:** RB-003.
 - **Decisão aberta relacionada:** — (OD-07 foi fechada por [payment-exceptions.md](payment-exceptions.md), DEC-037).
 - **Critério de aceite (alto nível):** a quarta tentativa de solicitação paga é recusada; solicitações concorrentes nunca resultam em mais de 3 pagas; vaga reservada e não paga expira e é liberada; a janela de reserva tem duração mínima de 30 minutos e o `expiration_time` da cobrança no gateway não a excede; a validação da tempestividade não é delegada ao gateway; não há prorrogação automática da janela, inclusive em indisponibilidade do provedor; vaga consumida por solicitação paga válida é fato histórico e não é devolvida por reversão posterior ([payment-exceptions.md](payment-exceptions.md), DEC-037).
-- **Status:** definido. A duração concreta da janela acima do piso de 30 minutos e o mecanismo atômico de reserva são trabalho de design em F0-022, não decisão aberta.
+- **Status:** definido. O trabalho de design foi concluído por F0-022: a janela de reserva é de **exatamente 30 minutos** ([../architecture/payments-design.md](../architecture/payments-design.md), PD-3.1) e o mecanismo atômico é o **índice único parcial** sobre a vaga do anúncio, com alocação sob trava de escopo de transação e expiração resolvida na própria transação que aloca ([../architecture/data-model.md](../architecture/data-model.md), DM-6).
 
 #### RF-011 — Cobrança de R$ 0,99 via Pix
 

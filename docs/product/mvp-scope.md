@@ -79,8 +79,8 @@ Fora do núcleo inicial do MVP:
 
 | Implementação | Dependência prévia |
 | --- | --- |
-| Pagamentos | Spike concluído (F0-010) e gateway homologado: Mercado Pago, por Checkout Transparente via Orders API — [../adr/0004-mercado-pago-pix.md](../adr/0004-mercado-pago-pix.md) (DEC-036). As exceções de pagamento estão definidas em [payment-exceptions.md](payment-exceptions.md) (DEC-036 e DEC-037); sem dependência aberta. Resta o design de pagamentos (F0-022) |
-| Limite de 3 solicitações pagas | Design de pagamentos detalhando reserva atômica de vaga antes da cobrança, com expiração; as regras de borda sob exceção estão em [payment-exceptions.md](payment-exceptions.md) (DEC-037) |
+| Pagamentos | Spike concluído (F0-010) e gateway homologado: Mercado Pago, por Checkout Transparente via Orders API — [../adr/0004-mercado-pago-pix.md](../adr/0004-mercado-pago-pix.md) (DEC-036). As exceções de pagamento estão definidas em [payment-exceptions.md](payment-exceptions.md) (DEC-036 e DEC-037) e o desenho técnico foi concluído por F0-022 em [../architecture/payments-design.md](../architecture/payments-design.md); sem dependência aberta |
+| Limite de 3 solicitações pagas | Mecanismo definido em [../architecture/data-model.md](../architecture/data-model.md) (DM-6): reserva atômica de vaga antes da cobrança, protegida por índice único parcial, com expiração resolvida na própria transação que aloca; as regras de borda sob exceção estão em [payment-exceptions.md](payment-exceptions.md) (DEC-037); sem dependência aberta |
 | Encerramento da negociação | Mecanismo definido em [negotiation-lifecycle.md](negotiation-lifecycle.md) (DEC-029); sem dependência aberta |
 | Avaliações | Regras definidas em [ratings.md](ratings.md) (DEC-030); sem dependência aberta |
 | Moderação | Política definida em [prohibited-items.md](prohibited-items.md) (DEC-031); sem dependência aberta |
