@@ -81,6 +81,9 @@ next-env.d.ts
 .next
 out
 
+# Prisma Client gerado (artefato de build; ver docs/engineering/database.md)
+src/generated/prisma/
+
 # Nuxt.js build / generate output
 .nuxt
 dist

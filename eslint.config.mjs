@@ -5,7 +5,7 @@ import prettierConfig from 'eslint-config-prettier/flat';
 /** @type {import('eslint').Linter.Config[]} */
 const config = [
   {
-    ignores: ['.next/**', 'node_modules/**', 'next-env.d.ts'],
+    ignores: ['.next/**', 'node_modules/**', 'next-env.d.ts', 'src/generated/prisma/**'],
   },
   ...nextCoreWebVitals,
   ...nextTypeScript,
