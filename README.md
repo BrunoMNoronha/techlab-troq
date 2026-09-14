@@ -2,7 +2,7 @@
 
 TROQ é uma plataforma de anúncios entre pessoas em que o contato (WhatsApp/telefone) do anunciante só é liberado a um interessado escolhido, mediante uma solicitação paga de R$ 0,99.
 
-**Status:** Fase 0 — baseline documental. Não existe código, aplicação, banco ou pipeline neste repositório ainda.
+**Status:** Fase 0 em andamento. O repositório já contém a **fundação técnica mínima** da aplicação (scaffold Next.js e CI de validação), criada de forma antecipada e isolada. Não existe banco, migration, autenticação, integração externa nem funcionalidade de produto. O gate formal da Fase 0 permanece dependente da validação do gateway de pagamento (OD-08).
 
 ## Fluxo central (resumo)
 
@@ -31,6 +31,34 @@ As regras de negócio homologadas (RB-001 a RB-006) estão em [docs/product/busi
 | Pagamentos | Pix-first; gateway ainda não decidido |
 
 Restam apenas duas decisões abertas — a escolha do gateway de pagamento (OD-08) e o tratamento de exceções de pagamento (OD-07), que depende dela. Ambas estão registradas em [docs/decisions/open-decisions.md](docs/decisions/open-decisions.md) e não devem ser tratadas como homologadas.
+
+## Execução local
+
+Pré-requisito: **Node.js 24.x** (a linha está declarada em `engines` e em `.nvmrc`).
+
+Instalação determinística das dependências:
+
+```bash
+npm ci
+```
+
+Servidor de desenvolvimento:
+
+```bash
+npm run dev
+```
+
+Validação completa, a mesma executada no CI:
+
+```bash
+npm run format:check
+npm run lint
+npm run typecheck
+npm run test:ci
+npm run build
+```
+
+`npm run format` aplica a formatação e `npm run test` executa a suíte em modo de desenvolvimento. Os contratos normativos desses comandos estão em [docs/engineering/conventions.md](docs/engineering/conventions.md) e a estratégia de testes em [docs/engineering/testing.md](docs/engineering/testing.md).
 
 ## Documentação
 
