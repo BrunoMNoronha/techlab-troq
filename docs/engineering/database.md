@@ -70,7 +70,7 @@ src/persistence/
 vitest.integration.config.mts                 config da suite de integracao (fora de test:ci)
 ```
 
-- `src/generated/prisma/` está em `.gitignore`, `.prettierignore` e nos `ignores` do ESLint. Ele é recriado por `npx prisma generate` e **não** entra em commit.
+- `src/generated/prisma/` está em `.gitignore`, `.prettierignore` e nos `ignores` do ESLint. Ele é recriado por `npx prisma generate` e **não** entra em commit. Desde F1-003, o script `postinstall` do `package.json` executa `prisma generate` ao fim de `npm ci`/`npm install`: como a fronteira de runtime (seção 13) importa o client gerado, `typecheck`, `test:ci` e `build` passaram a depender dele, e o CI e a Vercel instalam a partir de um checkout sem o artefato. `prisma generate` não toca o banco e não exige `DATABASE_URL` nem `DIRECT_URL` (seção 4.1); é exatamente o uso que [ADR-0005](../adr/0005-prisma-orm-migrations.md) admite no build/`postinstall`, enquanto `migrate deploy` continua fora dele.
 - O `datasource` do schema declara apenas `provider = "postgresql"`; a URL vive exclusivamente em `prisma.config.ts` (regra da linha 7).
 - Migrations são **imutáveis depois de aplicadas em ambiente compartilhado** (ADR-0005, decisão 5). Como nenhuma foi aplicada fora de banco descartável, a inicial ainda poderia ser reescrita em PR própria; a partir do primeiro `migrate deploy` em `preview` ou `production`, corrigir significa **nova** migration.
 
@@ -184,7 +184,7 @@ Pré-requisito: `DIRECT_URL` apontando para um PostgreSQL **local ou descartáve
 | --- | --- | --- |
 | `npx prisma format` / `npx prisma format --check` | Não | Formatar o schema; `--check` falha se houver divergência (adequado a CI) |
 | `npx prisma validate` | Não | Validar o schema |
-| `npx prisma generate` | Não | Regenerar `src/generated/prisma/` |
+| `npx prisma generate` | Não | Regenerar `src/generated/prisma/`. Também executado automaticamente pelo `postinstall` (seção 5) |
 | `npx prisma migrate status` | Sim (leitura) | Comparar o histórico versionado com `_prisma_migrations` |
 | `npx prisma migrate dev --create-only --name <nome>` | Sim (shadow database) | Gerar uma migration **sem aplicar**, para revisão e customização |
 | `npx prisma migrate dev` | Sim | Aplicar migrations pendentes ao banco descartável (e gerar o client) |
