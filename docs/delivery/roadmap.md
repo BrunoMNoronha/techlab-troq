@@ -9,14 +9,14 @@ Fontes: [../product/mvp-scope.md](../product/mvp-scope.md), [../product/requirem
 | Fase | Nome | Estado |
 | --- | --- | --- |
 | 0 | Descoberta e definição | concluída |
-| 1 | Fundação técnica | não iniciada |
+| 1 | Fundação técnica | em andamento |
 | 2 | Identidade e anúncios | não iniciada |
 | 3 | Solicitações, pagamentos e contato | não iniciada |
 | 4 | Encerramento, avaliações e moderação | não iniciada |
 | 5 | Hardening e lançamento | não iniciada |
 | — | Pós-MVP (candidatos) | não planejado |
 
-**Estado em 2026-09-14.** A **Fase 0 está concluída**: o seu gate de saída foi verificado item a item por F0-023, com matriz de critério, fonte, evidência e resultado em [phase-1-transition.md](phase-1-transition.md), e o resultado formal foi **APROVADO**. A **Fase 1 permanece `não iniciada`** — o estado da tabela é sobre execução, não sobre habilitação —, mas o seu **gate de entrada está satisfeito** e ela é a próxima fase habilitada. Parte do que a Fase 1 lista como entregável já existe no repositório, criada de forma antecipada e isolada; a classificação factual de cada entregável, entre `já existente`, `parcial` e `não iniciado`, está na seção 10 daquele documento. O gate de **saída** da Fase 1 continua integralmente por satisfazer.
+**Estado em 2026-09-14.** A **Fase 0 está concluída**: o seu gate de saída foi verificado item a item por F0-023, com matriz de critério, fonte, evidência e resultado em [phase-1-transition.md](phase-1-transition.md), e o resultado formal foi **APROVADO**. A **Fase 1 está `em andamento`** desde 2026-09-14, quando **F1-001 — contrato de ambientes e segredos** foi concluído; o seu gate de entrada estava satisfeito. Parte do que a Fase 1 lista como entregável já existia no repositório antes disso, criada de forma antecipada e isolada; a classificação factual de cada entregável, entre `já existente`, `parcial` e `não iniciado`, está na seção 10 daquele documento, com a nota de atualização de F1-001. O gate de **saída** da Fase 1 continua **integralmente por satisfazer**.
 
 ## Fase 0 — Descoberta e definição
 
@@ -59,7 +59,7 @@ Fontes: [../product/mvp-scope.md](../product/mvp-scope.md), [../product/requirem
 
 **Dependências:** gate da Fase 0 — **satisfeito e verificado** em 2026-09-14 ([phase-1-transition.md](phase-1-transition.md)); em particular [ADR-0005](../adr/0005-prisma-orm-migrations.md) (ORM/migrations, OD-09 fechada) e modelo de dados.
 
-**Estado dos entregáveis.** Parte desta lista já existe no repositório, criada de forma antecipada e isolada, e **não deve ser recriada**: os padrões de projeto e o CI estão `já existente`; o scaffold e a infraestrutura mínima estão `parcial`; o contrato de ambientes, o banco com Prisma e schema inicial, e a observabilidade estão `não iniciado`. A classificação item a item, com evidência, está em [phase-1-transition.md](phase-1-transition.md), seção 10. **Nenhum critério do gate de saída abaixo foi verificado.** O primeiro trabalho da fase é F1-001, cujo prompt está em [prompts/f1-001-environments-and-secrets.md](prompts/f1-001-environments-and-secrets.md).
+**Estado dos entregáveis.** Parte desta lista já existe no repositório, criada de forma antecipada e isolada, e **não deve ser recriada**: os padrões de projeto e o CI estão `já existente`; o scaffold e a infraestrutura mínima estão `parcial`; o banco com Prisma e schema inicial e a observabilidade estão `não iniciado`. O **contrato de ambientes** foi **concluído em 2026-09-14 por F1-001**, o primeiro trabalho da fase ([prompts/f1-001-environments-and-secrets.md](prompts/f1-001-environments-and-secrets.md)), em [../engineering/environments.md](../engineering/environments.md). A classificação item a item, com a evidência da auditoria de F0-023 e a nota de atualização, está em [phase-1-transition.md](phase-1-transition.md), seção 10. **Nenhum critério do gate de saída abaixo foi verificado**, e a conclusão de F1-001 não altera isso: o contrato de ambientes é documento, e Neon, R2 e Resend continuam **não provisionados**.
 
 **Gate de saída:**
 
