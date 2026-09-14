@@ -1,6 +1,6 @@
 # Catálogo de requisitos — TROQ
 
-Catálogo inicial de requisitos rastreáveis do MVP. Contém **apenas** requisitos derivados das decisões já vigentes na Fase 0 ([../project-state.md](../project-state.md), [business-rules.md](business-rules.md), [listing-lifecycle.md](listing-lifecycle.md), [image-policy.md](image-policy.md), [negotiation-lifecycle.md](negotiation-lifecycle.md), [ratings.md](ratings.md), [prohibited-items.md](prohibited-items.md), ADRs em [../adr/](../adr/), [../decisions/decision-log.md](../decisions/decision-log.md)). Nenhum requisito aqui fecha uma decisão listada em [../decisions/open-decisions.md](../decisions/open-decisions.md).
+Catálogo inicial de requisitos rastreáveis do MVP. Contém **apenas** requisitos derivados das decisões já vigentes na Fase 0 ([../project-state.md](../project-state.md), [business-rules.md](business-rules.md), [listing-lifecycle.md](listing-lifecycle.md), [image-policy.md](image-policy.md), [negotiation-lifecycle.md](negotiation-lifecycle.md), [ratings.md](ratings.md), [prohibited-items.md](prohibited-items.md), [reselection-policy.md](reselection-policy.md), [data-retention-policy.md](data-retention-policy.md), [age-eligibility.md](age-eligibility.md), [interest-flow.md](interest-flow.md), ADRs em [../adr/](../adr/), [../decisions/decision-log.md](../decisions/decision-log.md)). Nenhum requisito aqui fecha uma decisão listada em [../decisions/open-decisions.md](../decisions/open-decisions.md).
 
 ## Convenções
 
@@ -17,14 +17,16 @@ Catálogo inicial de requisitos rastreáveis do MVP. Contém **apenas** requisit
 
 | Grupo | IDs | Definido | Parcialmente definido | Bloqueado |
 | --- | --- | --- | --- | --- |
-| Identidade e conta | RF-001 a RF-003, RF-023 | 2 | 1 | 1 |
-| Anúncios | RF-004 a RF-007 | 2 | 2 | 0 |
-| Solicitações e pagamentos | RF-008 a RF-012 | 0 | 3 | 2 |
-| Escolha e contato | RF-013 a RF-015 | 2 | 1 | 0 |
+| Identidade e conta | RF-001 a RF-003, RF-023 | 4 | 0 | 0 |
+| Anúncios | RF-004 a RF-007 | 3 | 1 | 0 |
+| Solicitações e pagamentos | RF-008 a RF-012 | 1 | 2 | 2 |
+| Escolha e contato | RF-013 a RF-015 | 3 | 0 | 0 |
 | Encerramento e avaliações | RF-016, RF-017 | 2 | 0 | 0 |
 | Denúncia e moderação | RF-018 a RF-020 | 3 | 0 | 0 |
 | Transversais | RF-021, RF-022 | 0 | 2 | 0 |
-| Não funcionais | RNF-001 a RNF-018 | 9 | 9 | 0 |
+| Não funcionais | RNF-001 a RNF-018 | 11 | 7 | 0 |
+
+Os requisitos que permanecem `parcialmente definido` ou `bloqueado` dependem, direta ou indiretamente, do design de pagamentos e, portanto, de OD-07 e OD-08 — as duas únicas decisões ainda abertas —, salvo RF-004 (campos do anúncio), RF-021 (catálogo de emails) e os não funcionais cuja métrica objetiva será fixada no gate correspondente.
 
 ## Requisitos funcionais
 
@@ -36,9 +38,9 @@ Catálogo inicial de requisitos rastreáveis do MVP. Contém **apenas** requisit
 - **Prioridade MVP:** obrigatória.
 - **Origem:** fluxo central (passo 1) em [mvp-scope.md](mvp-scope.md); decisão Better Auth com email/senha ([../project-state.md](../project-state.md), DEC-012 e DEC-013).
 - **Regra de negócio relacionada:** —
-- **Decisão aberta relacionada:** OD-11 (elegibilidade etária formal e forma de declaração/verificação).
-- **Critério de aceite (alto nível):** conta criada com email e senha; a conta só é considerada ativa após verificação de email (RF-002); nenhuma regra de idade é aplicada no cadastro até que OD-11 seja fechada.
-- **Status:** parcialmente definido. O público-alvo de 18 a 50 anos **não** é regra de cadastro; critérios de elegibilidade dependem de OD-11.
+- **Decisão aberta relacionada:** — (OD-11 foi fechada por [age-eligibility.md](age-eligibility.md), DEC-034).
+- **Critério de aceite (alto nível):** conta criada com email e senha; a conta só é considerada ativa após verificação de email (RF-002); o cadastro exige declaração explícita do usuário de que tem 18 anos completos ou mais, registrada com aceitação, instante e versão dos termos aplicáveis, conforme [age-eligibility.md](age-eligibility.md) (DEC-034); nenhum documento, data de nascimento, selfie, biometria ou serviço externo de verificação etária é usado para essa comprovação.
+- **Status:** definido. O público-alvo de 18 a 50 anos **não** é regra de cadastro: a única regra é o piso de 18 anos completos, declaratório, fixado em [age-eligibility.md](age-eligibility.md).
 
 #### RF-002 — Verificação de email
 
@@ -66,9 +68,9 @@ Catálogo inicial de requisitos rastreáveis do MVP. Contém **apenas** requisit
 - **Prioridade MVP:** obrigatória (adequação à LGPD, ver RNF-009).
 - **Origem:** OD-10 e R-06 em [../delivery/risks.md](../delivery/risks.md).
 - **Regra de negócio relacionada:** RB-001 (trilha de auditoria da liberação de contato pode ter retenção própria).
-- **Decisão aberta relacionada:** OD-10.
-- **Critério de aceite (alto nível):** a definir após OD-10 (prazos, anonimização, retenção de auditoria).
-- **Status:** bloqueado por decisão aberta (OD-10).
+- **Decisão aberta relacionada:** — (OD-10 foi fechada por [data-retention-policy.md](data-retention-policy.md), DEC-033).
+- **Critério de aceite (alto nível):** a solicitação de exclusão produz efeito imediato — novos logins impedidos, sessões invalidadas quando tecnicamente aplicável, perfil e conteúdo fora da exposição pública, novas operações de produto impedidas e anúncios indisponíveis publicamente; em até 30 dias corridos, nome, email, telefone/WhatsApp, informações de perfil, conteúdo pessoal desnecessário, anúncios, derivados de imagens e dados operacionais sem finalidade são eliminados ou anonimizados, ressalvados os fatos necessários a obrigação legal, prevenção ou investigação de abuso, segurança, defesa de direitos, auditoria e registros financeiros mínimos, conservados no conjunto mínimo e pseudonimizados quando o identificador interno bastar; a auditoria de liberação de contato não conserva telefone/WhatsApp em texto puro após a exclusão.
+- **Status:** definido. Prazos, categorias, anonimização, backups e legal hold estão em [data-retention-policy.md](data-retention-policy.md) (DEC-033).
 
 ### Anúncios
 
@@ -98,9 +100,9 @@ Catálogo inicial de requisitos rastreáveis do MVP. Contém **apenas** requisit
 - **Prioridade MVP:** obrigatória.
 - **Origem:** [../adr/0003-object-storage-r2.md](../adr/0003-object-storage-r2.md) (DEC-014); [image-policy.md](image-policy.md) (DEC-028).
 - **Regra de negócio relacionada:** RB-006 (remoção do anúncio implica tratamento das imagens; critérios de remoção em [prohibited-items.md](prohibited-items.md), DEC-031).
-- **Decisão aberta relacionada:** OD-10 (expurgo e retenção dos derivados persistidos). OD-05 foi fechada por [image-policy.md](image-policy.md) (DEC-028). O efeito do estado do anúncio sobre as imagens está definido em [listing-lifecycle.md](listing-lifecycle.md): imagens deixam de ser servidas publicamente junto com o anúncio; o expurgo definitivo dos objetos segue OD-10.
-- **Critério de aceite (alto nível):** de 1 a 6 imagens por anúncio, com pelo menos uma imagem processada com sucesso para publicar e a primeira da ordenação como capa; entrada restrita a JPEG, PNG e WebP estático, com no máximo 10 MB, no mínimo 320 px por lado e no máximo 50 megapixels; upload direto ao R2 por operação S3-compatible de curta duração autorizada server-side, sem trafegar o binário por Vercel Function; validação por conteúdo com decodificação efetiva, chave gerada pela aplicação, regravação da imagem e remoção de EXIF/GPS após auto-orientação; derivados públicos `thumb` 320 px, `medium` 768 px e `large` 1600 px em WebP qualidade 80, sem ampliação; original temporário nunca público e limpo em no máximo 24 horas; imagens deixam de ser servidas publicamente quando o anúncio sai de `published`; imagens nunca contêm dados protegidos em objetos públicos.
-- **Status:** parcialmente definido. Upload, validação e processamento estão definidos por [image-policy.md](image-policy.md); apenas a retenção e o expurgo definitivo dos derivados persistidos seguem abertos (OD-10).
+- **Decisão aberta relacionada:** — (OD-05 foi fechada por [image-policy.md](image-policy.md), DEC-028, e OD-10 por [data-retention-policy.md](data-retention-policy.md), DEC-033). O efeito do estado do anúncio sobre as imagens está definido em [listing-lifecycle.md](listing-lifecycle.md): imagens deixam de ser servidas publicamente junto com o anúncio; o expurgo definitivo dos objetos está definido em [data-retention-policy.md](data-retention-policy.md) (DEC-033).
+- **Critério de aceite (alto nível):** de 1 a 6 imagens por anúncio, com pelo menos uma imagem processada com sucesso para publicar e a primeira da ordenação como capa; entrada restrita a JPEG, PNG e WebP estático, com no máximo 10 MB, no mínimo 320 px por lado e no máximo 50 megapixels; upload direto ao R2 por operação S3-compatible de curta duração autorizada server-side, sem trafegar o binário por Vercel Function; validação por conteúdo com decodificação efetiva, chave gerada pela aplicação, regravação da imagem e remoção de EXIF/GPS após auto-orientação; derivados públicos `thumb` 320 px, `medium` 768 px e `large` 1600 px em WebP qualidade 80, sem ampliação; original temporário nunca público e limpo em no máximo 24 horas; imagens deixam de ser servidas publicamente quando o anúncio sai de `published`; após a exclusão da conta ou o expurgo definitivo do anúncio, as imagens deixam de ser públicas imediatamente e os objetos persistentes são removidos em até 30 dias, quando não houver retenção legitimamente necessária ([data-retention-policy.md](data-retention-policy.md), DEC-033); imagens nunca contêm dados protegidos em objetos públicos.
+- **Status:** definido. Upload, validação e processamento estão em [image-policy.md](image-policy.md) (DEC-028); a retenção e o expurgo definitivo dos derivados persistidos estão em [data-retention-policy.md](data-retention-policy.md) (DEC-033).
 
 #### RF-007 — Localização pública por cidade/UF
 
@@ -116,13 +118,13 @@ Catálogo inicial de requisitos rastreáveis do MVP. Contém **apenas** requisit
 
 #### RF-008 — Demonstração de interesse
 
-- **Descrição:** o interessado indica interesse em um anúncio como passo anterior à solicitação paga de desbloqueio.
+- **Descrição:** o interessado indica interesse em um anúncio; a ação é gratuita, de interface, e inicia o fluxo da solicitação paga de desbloqueio, sem constituir entidade persistida independente ([interest-flow.md](interest-flow.md), DEC-035).
 - **Prioridade MVP:** obrigatória.
 - **Origem:** fluxo central (passo 3).
 - **Regra de negócio relacionada:** RB-003.
-- **Decisão aberta relacionada:** OD-12 (natureza da demonstração de interesse: ação própria, persistência, gratuidade, cancelamento, visibilidade ao anunciante ou apenas início da solicitação paga). OD-04 foi fechada: o efeito do estado do anúncio sobre o interesse está em [listing-lifecycle.md](listing-lifecycle.md).
-- **Critério de aceite (alto nível):** interesse só pode ser registrado por usuário autenticado e verificado, em anúncio no estado `published`; interesses já registrados são preservados quando o anúncio é pausado, encerrado ou removido; a demonstração de interesse não libera contato.
-- **Status:** parcialmente definido. Este requisito **não** determina se a demonstração de interesse existe como entidade persistida nem se é uma ação gratuita e distinta da solicitação paga; essas questões estão em OD-12 e não devem ser inferidas deste catálogo.
+- **Decisão aberta relacionada:** — (OD-12 foi fechada por [interest-flow.md](interest-flow.md), DEC-035; OD-04 por [listing-lifecycle.md](listing-lifecycle.md), DEC-027).
+- **Critério de aceite (alto nível):** a ação exige usuário autenticado, com email verificado, em anúncio no estado `published`, e é rejeitada no servidor em qualquer outro estado sem revelar existência nem estado anterior do anúncio; a ação é gratuita, não libera contato, não ocupa uma das três vagas pagas (RB-003), não cria entidade `Interest` e não cria registro funcional visível ao anunciante; não existe cancelamento de interesse, pois não há entidade persistida — o usuário apenas abandona o fluxo; o anunciante não vê quem apenas demonstrou interesse, não é notificado desse evento e não recebe lista nem contador individualizado; admite-se telemetria agregada de funil, desde que não constitua entidade funcional nem exponha identidade desnecessariamente.
+- **Status:** definido. A natureza, a gratuidade, a ausência de persistência e de cancelamento e a invisibilidade ao anunciante estão em [interest-flow.md](interest-flow.md) (DEC-035). A persistência funcional começa na solicitação de desbloqueio (RF-009).
 
 #### RF-009 — Solicitação paga de desbloqueio de contato
 
@@ -172,9 +174,9 @@ Catálogo inicial de requisitos rastreáveis do MVP. Contém **apenas** requisit
 - **Prioridade MVP:** obrigatória.
 - **Origem:** fluxo central (passo 7); capacidade obrigatória em [mvp-scope.md](mvp-scope.md).
 - **Regra de negócio relacionada:** RB-001, RB-003.
-- **Decisão aberta relacionada:** OD-06 (desistência e reseleção).
-- **Critério de aceite (alto nível):** apenas o anunciante do anúncio pode escolher; só solicitações com pagamento aprovado são elegíveis; a escolha é registrada em auditoria (RF-022).
-- **Status:** parcialmente definido. Reseleção e desistência dependem de OD-06.
+- **Decisão aberta relacionada:** — (OD-06 foi fechada por [reselection-policy.md](reselection-policy.md), DEC-032).
+- **Critério de aceite (alto nível):** apenas o anunciante do anúncio pode escolher; só solicitações com pagamento aprovado são elegíveis; a escolha é registrada em auditoria (RF-022); a reseleção é permitida e exige simultaneamente escolha anterior existente, negociação anterior `closed`, anúncio atualmente `published`, candidato com pagamento aprovado e candidato ainda não selecionado antes nesse anúncio, além de confirmação explícita do anunciante, sem reseleção automática; cada solicitação paga pode ser escolhida no máximo uma vez, de modo que no máximo três pessoas são escolhidas sequencialmente no ciclo do anúncio, sem criar vaga, sem reiniciar o limite de RB-003 e sem permitir uma quarta solicitação paga; nunca há mais de uma negociação `active` originada por escolhas sequenciais do mesmo anúncio ao mesmo tempo; a escolha anterior e a liberação já concedida permanecem imutáveis.
+- **Status:** definido. Pré-condições, limites, efeitos e tratamento da desistência estão em [reselection-policy.md](reselection-policy.md) (DEC-032).
 
 #### RF-014 — Proteção do contato do anunciante
 
@@ -192,8 +194,8 @@ Catálogo inicial de requisitos rastreáveis do MVP. Contém **apenas** requisit
 - **Prioridade MVP:** obrigatória.
 - **Origem:** RB-001; DEC-023.
 - **Regra de negócio relacionada:** RB-001.
-- **Decisão aberta relacionada:** OD-06 (efeito de desistência/reseleção sobre liberações já feitas).
-- **Critério de aceite (alto nível):** a liberação exige as duas condições simultâneas (escolhido e pagamento aprovado) verificadas no servidor; cada liberação gera registro de auditoria com quem, quando e para qual solicitação.
+- **Decisão aberta relacionada:** — (OD-06 foi fechada por [reselection-policy.md](reselection-policy.md), DEC-032).
+- **Critério de aceite (alto nível):** a liberação exige as duas condições simultâneas (escolhido e pagamento aprovado) verificadas no servidor; cada liberação gera registro de auditoria com quem, quando e para qual solicitação; uma liberação já concedida nunca é revogada, apagada ou revertida, inclusive em caso de desistência e reseleção, e cada nova escolha gera uma nova autorização independente, igualmente sujeita a RB-001 e auditada ([reselection-policy.md](reselection-policy.md), DEC-032); a retenção da trilha é de 24 meses a partir da liberação ([data-retention-policy.md](data-retention-policy.md), DEC-033).
 - **Status:** definido. A forma de apresentação do contato ao escolhido é detalhe de implementação.
 
 ### Encerramento e avaliações
@@ -246,9 +248,9 @@ Catálogo inicial de requisitos rastreáveis do MVP. Contém **apenas** requisit
 - **Prioridade MVP:** obrigatória.
 - **Origem:** RB-006.
 - **Regra de negócio relacionada:** RB-006.
-- **Decisão aberta relacionada:** OD-07 (tratamento financeiro das solicitações pagas de anúncio removido), OD-10 (retenção e expurgo dos dados e derivados de imagem do anúncio removido). OD-03 foi fechada por [prohibited-items.md](prohibited-items.md) (DEC-031), que define o catálogo e os critérios. Os efeitos do estado sobre as solicitações estão definidos em [listing-lifecycle.md](listing-lifecycle.md); os efeitos sobre as imagens estão definidos em [image-policy.md](image-policy.md) (DEC-028), que fechou OD-05.
-- **Critério de aceite (alto nível):** a remoção ocorre quando, e somente quando, uma denúncia é decidida como `procedente`, a moderação conclui de ofício que o anúncio viola [prohibited-items.md](prohibited-items.md), ou há dúvida material razoável em categoria de alto risco; nota baixa, discordância entre usuários, negociação malsucedida, denúncia improcedente, denúncia não analisada, suspeita fraca fora de alto risco e bloqueio preventivo na publicação não geram remoção; a classificação usa o catálogo por categorias PI-01 a PI-12, com distinção registrada entre item ilegal, item externamente regulado e item proibido por decisão de produto, e a ausência de um item na lista não o torna permitido; o anúncio vai para `removed`, estado terminal, e não volta a ser público, deixando imediatamente de ser servido em qualquer superfície pública, inclusive caches, junto com suas imagens conforme [image-policy.md](image-policy.md); os dados do anúncio, o motivo, o moderador e o instante são preservados para auditoria e para o direito de contestação; interesses existentes são preservados como histórico e solicitações não pagas são encerradas sem cobrança com liberação da vaga reservada; solicitações pagas existentes são preservadas e a cobrança permanece definitiva (RB-004), sem qualquer reembolso, estorno, crédito ou compensação criado por esta remoção, e o tratamento financeiro de exceção segue OD-07; o limite de RB-003 não é reiniciado nem devolvido; a liberação de contato já autorizada não é revogada e nenhuma nova escolha ou liberação é autorizada; a negociação existente permanece inalterada e seu encerramento continua exclusivo das partes (DEC-029); republicar conteúdo substancialmente equivalente ao removido é nova violação, salvo autorização expressa decorrente de contestação `revista`; a remoção é auditada com ator, alvo, instante, ação, motivo/categoria e resultado (RF-022).
-- **Status:** definido. Os critérios e o catálogo estão em [prohibited-items.md](prohibited-items.md); apenas o tratamento financeiro de exceção (OD-07) e a retenção/expurgo (OD-10) seguem abertos e não são pré-condição da remoção.
+- **Decisão aberta relacionada:** OD-07 (tratamento financeiro das solicitações pagas de anúncio removido). OD-10 foi fechada por [data-retention-policy.md](data-retention-policy.md) (DEC-033), que define a retenção e o expurgo dos dados e derivados de imagem do anúncio removido. OD-03 foi fechada por [prohibited-items.md](prohibited-items.md) (DEC-031), que define o catálogo e os critérios. Os efeitos do estado sobre as solicitações estão definidos em [listing-lifecycle.md](listing-lifecycle.md); os efeitos sobre as imagens estão definidos em [image-policy.md](image-policy.md) (DEC-028), que fechou OD-05.
+- **Critério de aceite (alto nível):** a remoção ocorre quando, e somente quando, uma denúncia é decidida como `procedente`, a moderação conclui de ofício que o anúncio viola [prohibited-items.md](prohibited-items.md), ou há dúvida material razoável em categoria de alto risco; nota baixa, discordância entre usuários, negociação malsucedida, denúncia improcedente, denúncia não analisada, suspeita fraca fora de alto risco e bloqueio preventivo na publicação não geram remoção; a classificação usa o catálogo por categorias PI-01 a PI-12, com distinção registrada entre item ilegal, item externamente regulado e item proibido por decisão de produto, e a ausência de um item na lista não o torna permitido; o anúncio vai para `removed`, estado terminal, e não volta a ser público, deixando imediatamente de ser servido em qualquer superfície pública, inclusive caches, junto com suas imagens conforme [image-policy.md](image-policy.md); os dados do anúncio, o motivo, o moderador e o instante são preservados para auditoria e para o direito de contestação; não há interesse persistido a preservar, por não ser entidade ([interest-flow.md](interest-flow.md), DEC-035), e solicitações não pagas são encerradas sem cobrança com liberação da vaga reservada; solicitações pagas existentes são preservadas e a cobrança permanece definitiva (RB-004), sem qualquer reembolso, estorno, crédito ou compensação criado por esta remoção, e o tratamento financeiro de exceção segue OD-07; o limite de RB-003 não é reiniciado nem devolvido; a liberação de contato já autorizada não é revogada e nenhuma nova escolha ou liberação é autorizada; a negociação existente permanece inalterada e seu encerramento continua exclusivo das partes (DEC-029); republicar conteúdo substancialmente equivalente ao removido é nova violação, salvo autorização expressa decorrente de contestação `revista`; a remoção é auditada com ator, alvo, instante, ação, motivo/categoria e resultado (RF-022).
+- **Status:** definido. Os critérios e o catálogo estão em [prohibited-items.md](prohibited-items.md) e a retenção/expurgo em [data-retention-policy.md](data-retention-policy.md) (DEC-033); apenas o tratamento financeiro de exceção (OD-07) segue aberto e não é pré-condição da remoção.
 
 ### Transversais
 
@@ -268,9 +270,9 @@ Catálogo inicial de requisitos rastreáveis do MVP. Contém **apenas** requisit
 - **Prioridade MVP:** obrigatória.
 - **Origem:** DEC-023 (auditoria da liberação de contato); [../adr/0002-postgresql-neon.md](../adr/0002-postgresql-neon.md).
 - **Regra de negócio relacionada:** RB-001, RB-002, RB-003, RB-004, RB-006.
-- **Decisão aberta relacionada:** OD-10 (retenção das trilhas de auditoria).
-- **Critério de aceite (alto nível):** cada operação listada registra ator, alvo, instante e resultado; o encerramento da negociação registra ainda estado anterior e estado resultante (`active` -> `closed`); a invalidação administrativa de avaliação registra ator administrativo, avaliação, negociação, instante e motivo ([ratings.md](ratings.md), DEC-030); cada evento administrativo de itens proibidos registra ator, alvo, instante, ação, motivo/categoria e resultado, com indicação expressa quando a decisão se der por dúvida material em categoria de alto risco ([prohibited-items.md](prohibited-items.md), DEC-031); o registro não contém o contato em texto claro fora da própria liberação autorizada.
-- **Status:** parcialmente definido. A liberação de contato, o encerramento da negociação, a invalidação administrativa de avaliação e os eventos administrativos de denúncia, moderação, sanção e contestação estão definidos; a extensão às demais operações é direcionamento derivado e a retenção da trilha depende de OD-10.
+- **Decisão aberta relacionada:** OD-07 e OD-08, quanto à extensão da trilha à aprovação de pagamento, que depende do design de pagamentos. A retenção das trilhas foi definida por [data-retention-policy.md](data-retention-policy.md) (DEC-033).
+- **Critério de aceite (alto nível):** cada operação listada registra ator, alvo, instante e resultado; o encerramento da negociação registra ainda estado anterior e estado resultante (`active` -> `closed`); a invalidação administrativa de avaliação registra ator administrativo, avaliação, negociação, instante e motivo ([ratings.md](ratings.md), DEC-030); cada evento administrativo de itens proibidos registra ator, alvo, instante, ação, motivo/categoria e resultado, com indicação expressa quando a decisão se der por dúvida material em categoria de alto risco ([prohibited-items.md](prohibited-items.md), DEC-031); cada escolha e cada reseleção são auditadas independentemente ([reselection-policy.md](reselection-policy.md), DEC-032); o registro não contém o contato em texto claro fora da própria liberação autorizada; a trilha é retida por 24 meses a partir do evento e, após a exclusão da conta, não conserva telefone/WhatsApp em texto puro ([data-retention-policy.md](data-retention-policy.md), DEC-033).
+- **Status:** parcialmente definido. A liberação de contato, a escolha e a reseleção, o encerramento da negociação, a invalidação administrativa de avaliação, os eventos administrativos de denúncia, moderação, sanção e contestação e a retenção das trilhas estão definidos; a extensão à aprovação de pagamento continua dependendo do design de pagamentos (OD-07, OD-08).
 
 ## Requisitos não funcionais
 
@@ -344,9 +346,9 @@ Catálogo inicial de requisitos rastreáveis do MVP. Contém **apenas** requisit
 - **Descrição:** o tratamento de dados pessoais segue a LGPD, incluindo base legal, retenção, exclusão e transparência.
 - **Prioridade MVP:** obrigatória.
 - **Origem:** R-06; OD-10.
-- **Decisão aberta relacionada:** OD-10, OD-11.
-- **Critério de aceite (alto nível):** política de retenção/exclusão definida e implementada antes de coletar dados reais; exclusão de conta disponível (RF-023).
-- **Status:** parcialmente definido.
+- **Decisão aberta relacionada:** — (OD-10 foi fechada por [data-retention-policy.md](data-retention-policy.md), DEC-033, e OD-11 por [age-eligibility.md](age-eligibility.md), DEC-034).
+- **Critério de aceite (alto nível):** a política de retenção e exclusão de [data-retention-policy.md](data-retention-policy.md) está definida e deve estar implementada antes de coletar dados reais, com prazos expressos por categoria e sem retenção indefinida genérica; exclusão de conta disponível com efeito imediato e eliminação ou anonimização em até 30 dias (RF-023); elegibilidade de 18 anos completos ou mais por declaração contratual, sem coleta de documento ou biometria para essa finalidade ([age-eligibility.md](age-eligibility.md), DEC-034).
+- **Status:** definido. O período e o conjunto mínimo de registros financeiros ainda deverão ser revisados por responsável jurídico e contábil antes da produção comercial, conforme registrado em [data-retention-policy.md](data-retention-policy.md); essa revisão não é decisão aberta deste catálogo.
 
 #### RNF-010 — Acessibilidade
 
@@ -361,9 +363,9 @@ Catálogo inicial de requisitos rastreáveis do MVP. Contém **apenas** requisit
 - **Descrição:** operações críticas produzem trilha de auditoria consultável e não editável (ver RF-022).
 - **Prioridade MVP:** obrigatória.
 - **Origem:** DEC-023.
-- **Decisão aberta relacionada:** OD-10.
-- **Critério de aceite (alto nível):** liberação de contato sempre auditada; retenção conforme OD-10.
-- **Status:** parcialmente definido. A auditoria da liberação de contato está definida; a retenção da trilha depende de OD-10.
+- **Decisão aberta relacionada:** — (OD-10 foi fechada por [data-retention-policy.md](data-retention-policy.md), DEC-033).
+- **Critério de aceite (alto nível):** liberação de contato sempre auditada; a trilha é imutável e não editável, retida por 24 meses a partir do evento e, ao fim do prazo, eliminada ou pseudonimizada de forma registrada, nunca editada ([data-retention-policy.md](data-retention-policy.md), DEC-033).
+- **Status:** definido.
 
 #### RNF-012 — Disponibilidade
 
@@ -441,10 +443,10 @@ Catálogo inicial de requisitos rastreáveis do MVP. Contém **apenas** requisit
 | OD-03 | fechada por [prohibited-items.md](prohibited-items.md) (DEC-031); define o catálogo por categorias PI-01 a PI-12 com distinção entre item ilegal, regulado e proibido por decisão de produto, a ausência de fluxo de autorização documental no MVP, a regra de casos ambíguos, a declaração de conformidade na publicação, o fluxo de denúncia, o fluxo de moderação, os critérios e efeitos da remoção, os prazos de decisão, a reincidência, a contestação, a auditoria e a privacidade do denunciante; deixa de bloquear RF-018, RF-019 e RF-020, que passam a `definido`, sai de RF-004 e estende RF-022 |
 | OD-04 | fechada por [listing-lifecycle.md](listing-lifecycle.md) (DEC-027); define estados, transições, visibilidade pública e efeitos sobre interesses e solicitações; deixa de bloquear o modelo de dados do anúncio |
 | OD-05 | fechada por [image-policy.md](image-policy.md) (DEC-028); define quantidade, formatos, limites, validação, processamento, derivados e visibilidade das imagens; deixa de bloquear RF-006 e define os critérios de RNF-005 |
-| OD-06 | RF-013, RF-015 |
-| OD-07 | RF-009, RF-010, RF-011, RF-012, RF-020 |
-| OD-08 | RF-009, RF-011, RF-012, RNF-014 |
+| OD-06 | fechada por [reselection-policy.md](reselection-policy.md) (DEC-032); define as cinco pré-condições da reseleção, a confirmação explícita do anunciante, a imutabilidade da escolha anterior e da liberação já concedida, a criação de nova negociação e nova autorização auditada, a exclusividade da negociação `active`, a preservação literal de RB-003 e o tratamento da desistência; deixa de bloquear RF-013, que passa a `definido`, e sai de RF-015 |
+| OD-07 | **aberta.** RF-009, RF-010, RF-011, RF-012, RF-020, RF-022 |
+| OD-08 | **aberta.** RF-009, RF-011, RF-012, RF-022, RNF-014 |
 | OD-09 | fechada por [../adr/0005-prisma-orm-migrations.md](../adr/0005-prisma-orm-migrations.md) (DEC-026); nenhum requisito funcional direto; deixa de bloquear schema e migrations |
-| OD-10 | RF-006, RF-020, RF-022, RF-023, RNF-009, RNF-011 |
-| OD-11 | RF-001, RNF-009 |
-| OD-12 | RF-008 |
+| OD-10 | fechada por [data-retention-policy.md](data-retention-policy.md) (DEC-033); define retenção por categoria, exclusão de conta com efeito imediato e prazo de 30 dias, expurgo de imagens, 6 meses de log de acesso, 24 meses de auditoria e de registros de moderação e abuso, 5 anos de metadados financeiros, backups limitados ao ciclo normal com máximo de 30 dias adicionais e legal hold registrado; deixa de bloquear RF-023 e RF-006, que passam a `definido`, leva RNF-009 e RNF-011 a `definido` e sai de RF-020 e de RF-022 |
+| OD-11 | fechada por [age-eligibility.md](age-eligibility.md) (DEC-034); define 18 anos completos ou mais como decisão de escopo do produto, declaração explícita registrada no cadastro, ausência de coleta documental ou biométrica para comprovação etária e bloqueio cautelar diante de evidência razoável de menoridade; deixa de bloquear RF-001, que passa a `definido`, e sai de RNF-009 |
+| OD-12 | fechada por [interest-flow.md](interest-flow.md) (DEC-035); define a demonstração de interesse como ação gratuita de interface, sem entidade persistida, sem cancelamento e sem visibilidade ao anunciante, admitindo apenas telemetria agregada de funil; deixa de bloquear RF-008, que passa a `definido` |

@@ -12,7 +12,7 @@ O objetivo de produto é dar sinal de confiança entre desconhecidos que negocia
 
 Este documento define a política **normativa de produto** das avaliações do MVP. Não é decisão arquitetural e **não** cria ADR.
 
-Este documento **não** define schema, migrations, endpoints, Server Actions, componentes de interface, notificações, emails nem Web Push. Também **não** define desistência ou reseleção (OD-06), exceções financeiras (OD-07), moderação de anúncios e itens proibidos, que permanecia em OD-03 e foi definida depois em [prohibited-items.md](prohibited-items.md) (DEC-031), nem retenção e expurgo de dados e trilhas de auditoria (OD-10).
+Este documento **não** define schema, migrations, endpoints, Server Actions, componentes de interface, notificações, emails nem Web Push. Também **não** define desistência ou reseleção, definidas depois em [reselection-policy.md](reselection-policy.md) (DEC-032), exceções financeiras (OD-07), moderação de anúncios e itens proibidos, que permanecia em OD-03 e foi definida depois em [prohibited-items.md](prohibited-items.md) (DEC-031), nem retenção e expurgo de dados e trilhas de auditoria, definidos depois em [data-retention-policy.md](data-retention-policy.md) (DEC-033).
 
 Preserva integralmente RB-001 a RB-006, o ciclo de vida do anúncio em [listing-lifecycle.md](listing-lifecycle.md) (DEC-027), a política de imagens em [image-policy.md](image-policy.md) (DEC-028) e o ciclo de vida da negociação em [negotiation-lifecycle.md](negotiation-lifecycle.md) (DEC-029).
 
@@ -268,7 +268,7 @@ Toda decisão de invalidação administrativa gera registro de auditoria contend
 
 Essa auditoria integra RF-022. O registro **não** contém telefone/WhatsApp (DEC-023).
 
-Este documento **não** define prazo de retenção nem expurgo dessas trilhas: isso permanece subordinado a **OD-10**.
+Este documento **não** define prazo de retenção nem expurgo dessas trilhas: isso foi definido depois em [data-retention-policy.md](data-retention-policy.md) (DEC-033), que fixa 24 meses a partir do evento.
 
 ## 15. Interações com anúncio, negociação, pagamento e contato
 
@@ -283,7 +283,7 @@ A avaliação é um fato posterior e independente. Registrar, substituir, public
 | Não revoga contato já liberado | A liberação é fato auditado (RB-001, RF-015) |
 | Não altera o solicitante escolhido | A escolha é fato histórico |
 | Não devolve vaga | RB-003 e RB-004 permanecem inalteradas |
-| Não autoriza reseleção | Reseleção permanece em OD-06 |
+| Não autoriza reseleção | Reseleção definida depois em [reselection-policy.md](reselection-policy.md) (DEC-032), como ato novo e explícito do anunciante |
 
 O encerramento da negociação continua **unilateral** e sem aceite da contraparte. A existência ou ausência de avaliação não condiciona o encerramento.
 
@@ -313,12 +313,12 @@ O encerramento da negociação continua **unilateral** e sem aceite da contrapar
 | --- | --- |
 | Comentário em texto livre, resposta pública, réplica | Fora do MVP; eventual candidato pós-MVP |
 | Catálogo/política de itens proibidos e moderação de anúncios | definidos depois em [prohibited-items.md](prohibited-items.md) (DEC-031), que fechou OD-03 |
-| Desistência e reseleção | OD-06 |
+| Desistência e reseleção | Definidas depois em [reselection-policy.md](reselection-policy.md) (DEC-032) |
 | Chargebacks e exceções de pagamento | OD-07 |
 | Escolha do gateway | OD-08 |
-| Retenção, expurgo e exclusão de avaliações e trilhas de auditoria | OD-10 |
-| Elegibilidade etária formal | OD-11 |
-| Natureza da demonstração de interesse | OD-12 |
+| Retenção, expurgo e exclusão de avaliações e trilhas de auditoria | Definidos depois em [data-retention-policy.md](data-retention-policy.md) (DEC-033) |
+| Elegibilidade etária formal | Definida depois em [age-eligibility.md](age-eligibility.md) (DEC-034) |
+| Natureza da demonstração de interesse | Definida depois em [interest-flow.md](interest-flow.md) (DEC-035) |
 | Schema, migrations, API, telas, notificações, emails e Web Push | Fases posteriores |
 
 ## 18. Alternativas rejeitadas
@@ -348,6 +348,6 @@ O encerramento da negociação continua **unilateral** e sem aceite da contrapar
 | DEC-027 / [listing-lifecycle.md](listing-lifecycle.md) | Preservada; o estado do anúncio não altera a elegibilidade |
 | DEC-028 / [image-policy.md](image-policy.md) | Preservada; avaliações não possuem imagens |
 | DEC-029 / [negotiation-lifecycle.md](negotiation-lifecycle.md) | Preservada integralmente; `closed` continua terminal, irreversível e unilateral |
-| OD-06, OD-07, OD-08, OD-10, OD-11, OD-12 | Permanecem abertas; nada aqui as fecha ou antecipa |
+| OD-07, OD-08 | Permanecem abertas; nada aqui as fecha ou antecipa. OD-06, OD-10, OD-11 e OD-12 foram fechadas depois por DEC-032, DEC-033, DEC-034 e DEC-035 |
 | OD-03 | Permanecia aberta nesta decisão; foi fechada depois por [prohibited-items.md](prohibited-items.md) (DEC-031), que preserva integralmente esta política de avaliações |
 | F0-016 | Concluído por esta entrega |

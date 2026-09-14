@@ -13,7 +13,7 @@ Está **fora** deste escopo e **não** é decidido aqui:
 - implementação de upload, código, bibliotecas concretas de processamento, filas, jobs ou workers;
 - schema de banco, migrations, contratos de API e telas;
 - catálogo de conteúdo proibido, critérios, prazos e contestação de moderação, que permaneciam em OD-03 nesta decisão e foram definidos depois em [prohibited-items.md](prohibited-items.md) (DEC-031);
-- prazos de retenção e expurgo definitivo dos objetos após encerramento, remoção ou exclusão de conta, que permanecem em [OD-10](../decisions/open-decisions.md);
+- prazos de retenção e expurgo definitivo dos objetos após encerramento, remoção ou exclusão de conta, definidos depois em [data-retention-policy.md](data-retention-policy.md) (DEC-033);
 - metas numéricas de desempenho (LCP, bytes por página, tempo de carregamento), que pertencem ao gate de performance das fases seguintes.
 
 O armazenamento continua sendo Cloudflare R2 via API S3-compatible, conforme [ADR-0003](../adr/0003-object-storage-r2.md) (DEC-014). Este documento **complementa** o ADR-0003; não o substitui nem o altera.
@@ -24,7 +24,7 @@ O armazenamento continua sendo Cloudflare R2 via API S3-compatible, conforme [AD
 | --- | --- |
 | RB-006 | Imagens fazem parte do conteúdo do anúncio e podem ser evidência de moderação; a remoção do anúncio retira as imagens da superfície pública. Os critérios de conteúdo proibido foram definidos depois em [prohibited-items.md](prohibited-items.md) (DEC-031). |
 | RF-004 | A publicação exige pelo menos uma imagem processada com sucesso (seção 3). |
-| RF-006 | Requisito diretamente definido por este documento, exceto expurgo/retenção, que segue OD-10. |
+| RF-006 | Requisito diretamente definido por este documento, exceto expurgo/retenção, definidos depois em [data-retention-policy.md](data-retention-policy.md) (DEC-033). |
 | RF-020 | Anúncio `removed` deixa de expor imagens publicamente e de forma imediata; nenhum expurgo físico é decidido aqui. |
 | RNF-005 | Critérios objetivos de otimização passam a ser os derivados e o formato público da seção 7. |
 | R-10 | Mitigado por derivados dimensionados, formato normalizado e dimensões conhecidas para reserva de espaço. |
@@ -124,7 +124,7 @@ Sobre o original temporário:
 - deve ser **descartado** após processamento bem-sucedido;
 - uploads abandonados ou com falha devem possuir **limpeza automática** e permanecer **no máximo 24 horas** na área temporária.
 
-Esses prazos valem para a área temporária. A retenção e o expurgo dos **derivados persistidos** após encerramento, remoção ou exclusão de conta continuam dependendo de [OD-10](../decisions/open-decisions.md), que permanece aberta.
+Esses prazos valem para a área temporária e permanecem inalterados. A retenção e o expurgo dos **derivados persistidos** após encerramento, remoção ou exclusão de conta foram definidos depois em [data-retention-policy.md](data-retention-policy.md) (DEC-033): as imagens deixam de ser públicas imediatamente e os objetos persistentes são removidos em até 30 dias, quando não houver retenção legitimamente necessária.
 
 ## 8. Publicação, visibilidade e ciclo de vida
 
@@ -134,7 +134,7 @@ Conforme [listing-lifecycle.md](listing-lifecycle.md), preservado integralmente:
 - ao sair de `published`, as imagens do anúncio **também deixam de ser servidas publicamente**, de forma imediata e em qualquer superfície pública, incluindo caches;
 - `paused`, `closed` e `removed` **não** expõem as imagens ao público;
 - isso **não** implica necessariamente exclusão física imediata dos objetos;
-- o expurgo definitivo continua condicionado a OD-10.
+- o expurgo definitivo está definido em [data-retention-policy.md](data-retention-policy.md) (DEC-033).
 
 ## 9. Moderação
 
@@ -157,8 +157,8 @@ Para o MVP:
 ## 10. Retenção e limites de escopo
 
 - Área temporária: limpeza automática, no máximo 24 horas (seção 7).
-- Derivados persistidos: retenção e expurgo definitivo seguem OD-10, que permanece **aberta**.
-- Nada neste documento fecha OD-10 ou qualquer outra decisão aberta além de OD-05; OD-03 permanecia aberta nesta decisão e foi fechada depois por [prohibited-items.md](prohibited-items.md) (DEC-031).
+- Derivados persistidos: retenção e expurgo definitivo definidos depois em [data-retention-policy.md](data-retention-policy.md) (DEC-033).
+- Nada neste documento fechou decisão aberta além de OD-05; OD-03 permanecia aberta nesta decisão e foi fechada depois por [prohibited-items.md](prohibited-items.md) (DEC-031), e OD-10 por [data-retention-policy.md](data-retention-policy.md) (DEC-033).
 
 ## 11. Decisões rejeitadas ou adiadas
 
@@ -204,11 +204,11 @@ Para o MVP:
 | DEC-027, listing-lifecycle.md | Preservado integralmente; a visibilidade das imagens segue o estado do anúncio. |
 | RB-005, RB-006 | Preservadas. |
 | RF-004 | Publicação exige ao menos uma imagem processada com sucesso. |
-| RF-006 | Definido por este documento, exceto expurgo/retenção (OD-10). |
-| RF-020 | Anúncio `removed` deixa de expor imagens; expurgo segue OD-10. |
+| RF-006 | Definido por este documento, exceto expurgo/retenção, definidos em [data-retention-policy.md](data-retention-policy.md) (DEC-033). |
+| RF-020 | Anúncio `removed` deixa de expor imagens; expurgo definido em [data-retention-policy.md](data-retention-policy.md) (DEC-033). |
 | RNF-005 | Critérios objetivos passam a ser os da seção 7. |
 | OD-03 | Permanecia **aberta** nesta decisão; nada aqui a fechou ou antecipou. Foi fechada depois por [prohibited-items.md](prohibited-items.md) (DEC-031), que preserva integralmente esta política de imagens. |
-| OD-10 | Permanece **aberta**; retenção e expurgo definitivo dos derivados persistidos seguem nela. |
+| OD-10 | **Fechada** depois por [data-retention-policy.md](data-retention-policy.md) (DEC-033), que define a retenção e o expurgo definitivo dos derivados persistidos e preserva sem alteração o prazo de 24 horas da área temporária definido aqui. |
 | Demais decisões abertas | Inalteradas. Nenhuma outra decisão aberta é fechada por este documento. |
 
 ## 14. Referências externas consultadas

@@ -6,7 +6,7 @@ Fonte oficial do ciclo mínimo e do encerramento da negociação no MVP do TROQ.
 
 Define o que é uma negociação no sistema, quais estados ela possui, quem pode encerrá-la, o que o encerramento significa e o que ele explicitamente **não** produz.
 
-Este documento **não** define regras de avaliação, que estão em [ratings.md](ratings.md) (DEC-030), nem desistência ou reseleção (OD-06), exceções financeiras (OD-07), retenção de dados (OD-10) nem qualquer detalhe de implementação (schema, endpoints, telas, notificações).
+Este documento **não** define regras de avaliação, que estão em [ratings.md](ratings.md) (DEC-030), nem desistência ou reseleção, definidas depois em [reselection-policy.md](reselection-policy.md) (DEC-032), exceções financeiras (OD-07), retenção de dados, definida depois em [data-retention-policy.md](data-retention-policy.md) (DEC-033), nem qualquer detalhe de implementação (schema, endpoints, telas, notificações).
 
 Preserva integralmente RB-001 a RB-006 e o ciclo de vida do anúncio definido em [listing-lifecycle.md](listing-lifecycle.md) (DEC-027).
 
@@ -29,7 +29,7 @@ Ela é uma entidade conceitual distinta de:
 
 Uma negociação **passa a existir conceitualmente** quando uma solicitação paga é escolhida e a liberação de contato fica autorizada conforme RB-001 (solicitante escolhido **e** pagamento aprovado).
 
-Cada eventual nova escolha futura, caso OD-06 venha a permitir reseleção, corresponderá a uma **relação de negociação distinta**. Este documento **não** define se ou quando a reseleção é permitida.
+Cada nova escolha futura corresponde a uma **relação de negociação distinta**. Este documento **não** define se ou quando a reseleção é permitida: isso foi definido depois em [reselection-policy.md](reselection-policy.md) (DEC-032), que exige justamente que a negociação anterior esteja `closed`.
 
 ## 3. Estados
 
@@ -137,7 +137,7 @@ O encerramento da negociação **não**:
 - apaga dados;
 - define sucesso ou fracasso da troca.
 
-OD-06 continua sendo a única decisão aberta responsável por desistência e reseleção. OD-07 continua responsável por exceções financeiras. OD-10 continua responsável por retenção e exclusão de dados.
+Desistência e reseleção foram definidas depois em [reselection-policy.md](reselection-policy.md) (DEC-032), sem alterar nada deste documento: o encerramento continua não autorizando reseleção por si só; a reseleção é ato novo e explícito do anunciante, que tem `closed` como pré-condição. OD-07 continua responsável por exceções financeiras. A retenção e a exclusão de dados foram definidas depois em [data-retention-policy.md](data-retention-policy.md) (DEC-033).
 
 ### 9.3 Sem motivo e sem resultado de encerramento
 
@@ -186,17 +186,17 @@ O encerramento gera registro de auditoria contendo, no mínimo conceitualmente:
 | Estado resultante | `closed` |
 | Resultado | Sucesso ou rejeição da operação |
 
-O log de encerramento **não** registra telefone/WhatsApp (DEC-023). A auditoria do encerramento integra RF-022; sua retenção permanece em OD-10.
+O log de encerramento **não** registra telefone/WhatsApp (DEC-023). A auditoria do encerramento integra RF-022; sua retenção foi definida depois em [data-retention-policy.md](data-retention-policy.md) (DEC-033): 24 meses a partir do evento.
 
 ## 12. Decisões explicitamente fora do escopo
 
 | Tema | Onde permanece |
 | --- | --- |
 | Regras de avaliação (quem avalia quem, notas, prazo, publicação, moderação) | [ratings.md](ratings.md) (DEC-030) |
-| Desistência e reseleção | OD-06 |
+| Desistência e reseleção | Definidas depois em [reselection-policy.md](reselection-policy.md) (DEC-032) |
 | Chargebacks e exceções de pagamento | OD-07 |
 | Escolha do gateway | OD-08 |
-| Retenção e exclusão de dados e trilhas de auditoria | OD-10 |
+| Retenção e exclusão de dados e trilhas de auditoria | Definidas depois em [data-retention-policy.md](data-retention-policy.md) (DEC-033) |
 | Schema, migrations, API, telas, notificações e emails | Fases posteriores |
 
 ## 13. Alternativas rejeitadas
@@ -206,7 +206,7 @@ O log de encerramento **não** registra telefone/WhatsApp (DEC-023). A auditoria
 | Confirmação bilateral do encerramento | **Rejeitada** no MVP | Permite *deadlock* permanente se uma das partes abandonar a plataforma ou não responder |
 | Encerramento automático por tempo (*timeout*, expiração, job) | **Rejeitado** | O TROQ não observa a negociação realizada por WhatsApp/telefone e não possui sinal confiável para concluir que ela terminou |
 | Estados de sucesso/falha (`completed`, `failed`, `cancelled`) | **Rejeitados** nesta etapa | Misturam encerramento da relação com resultado da troca e antecipariam regras de desistência, avaliação ou pós-negociação |
-| Reabertura de negociação encerrada | **Rejeitada** | Uma negociação encerrada é fato histórico imutável; qualquer relação futura será nova negociação, se as regras de reseleção permitirem |
+| Reabertura de negociação encerrada | **Rejeitada** | Uma negociação encerrada é fato histórico imutável; qualquer relação futura será nova negociação, nos termos de [reselection-policy.md](reselection-policy.md) (DEC-032) |
 | Motivo ou resultado obrigatório no encerramento | **Rejeitados** | Ver seção 9.3 |
 
 ## 14. Rastreabilidade
@@ -221,6 +221,6 @@ O log de encerramento **não** registra telefone/WhatsApp (DEC-023). A auditoria
 | RF-017 | Deixa de depender de OD-01; regras detalhadas definidas depois por [ratings.md](ratings.md) (DEC-030) |
 | RF-022 | Passa a incluir o encerramento da negociação entre as operações críticas auditadas |
 | DEC-027 / [listing-lifecycle.md](listing-lifecycle.md) | Preservada; ciclos do anúncio e da negociação permanecem independentes |
-| OD-06, OD-07, OD-08, OD-10, OD-11, OD-12 | Permanecem abertas; nada aqui as fecha ou antecipa |
+| OD-07, OD-08 | Permanecem abertas; nada aqui as fecha ou antecipa. OD-06, OD-10, OD-11 e OD-12 foram fechadas depois por DEC-032, DEC-033, DEC-034 e DEC-035 |
 | OD-02 | Permanecia aberta nesta decisão; foi fechada depois por [ratings.md](ratings.md) (DEC-030) |
 | F0-015 | Concluído por esta entrega |

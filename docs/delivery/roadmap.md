@@ -26,15 +26,16 @@ Fontes: [../product/mvp-scope.md](../product/mvp-scope.md), [../product/requirem
 - Público-alvo completo, requisitos rastreáveis, decision log, roadmap, backlog e workflow de agentes (esta entrega).
 - Spike do gateway Pix para exatamente R$ 0,99, com resultado registrado e decisão do gateway (OD-08, ADR-0004).
 - Fechamento das decisões que bloqueiam o modelo de dados: ORM e migrations (OD-09, fechada por [ADR-0005](../adr/0005-prisma-orm-migrations.md)), ciclo de vida do anúncio (OD-04, fechada por [../product/listing-lifecycle.md](../product/listing-lifecycle.md)), regras de imagens (OD-05, fechada por [../product/image-policy.md](../product/image-policy.md)).
-- Fechamento das decisões de produto: encerramento da negociação (OD-01, fechada por [../product/negotiation-lifecycle.md](../product/negotiation-lifecycle.md)), avaliações (OD-02, fechada por [../product/ratings.md](../product/ratings.md)), itens proibidos (OD-03, fechada por [../product/prohibited-items.md](../product/prohibited-items.md)), desistência/reseleção (OD-06), exceções de pagamento (OD-07), retenção/exclusão (OD-10), elegibilidade etária (OD-11), natureza da demonstração de interesse (OD-12).
-- Arquitetura de dados e de API necessária antes da implementação (`architecture/overview.md`, `architecture/data-model.md`, `architecture/payments-design.md`, `architecture/contact-release.md`). OD-12 deve estar fechada antes da arquitetura final pré-implementação, salvo adiamento formal com impacto registrado; OD-12 não é gate do spike de pagamento.
+- Fechamento das decisões de produto: encerramento da negociação (OD-01, fechada por [../product/negotiation-lifecycle.md](../product/negotiation-lifecycle.md)), avaliações (OD-02, fechada por [../product/ratings.md](../product/ratings.md)), itens proibidos (OD-03, fechada por [../product/prohibited-items.md](../product/prohibited-items.md)), desistência/reseleção (OD-06, fechada por [../product/reselection-policy.md](../product/reselection-policy.md)), retenção/exclusão (OD-10, fechada por [../product/data-retention-policy.md](../product/data-retention-policy.md)), elegibilidade etária (OD-11, fechada por [../product/age-eligibility.md](../product/age-eligibility.md)), natureza da demonstração de interesse (OD-12, fechada por [../product/interest-flow.md](../product/interest-flow.md)) e exceções de pagamento (OD-07, **ainda aberta**, dependente de OD-08).
+- Arquitetura de dados e de API necessária antes da implementação (`architecture/overview.md`, `architecture/data-model.md`, `architecture/payments-design.md`, `architecture/contact-release.md`). OD-12 está fechada por [../product/interest-flow.md](../product/interest-flow.md) (DEC-035), o que remove essa condição da arquitetura pré-implementação.
 
 **Dependências:** nenhuma externa; depende da disponibilidade de Bruno para decisões e do acesso a ambiente sandbox do gateway candidato para o spike.
 
 **Gate de saída:**
 
 - OD-08 e OD-09 fechadas, com ADRs correspondentes. OD-09 já está fechada por [ADR-0005](../adr/0005-prisma-orm-migrations.md); OD-08 permanece aberta.
-- OD-04 já está fechada por [../product/listing-lifecycle.md](../product/listing-lifecycle.md), OD-05 por [../product/image-policy.md](../product/image-policy.md), OD-01 por [../product/negotiation-lifecycle.md](../product/negotiation-lifecycle.md), OD-02 por [../product/ratings.md](../product/ratings.md) e OD-03 por [../product/prohibited-items.md](../product/prohibited-items.md).
+- OD-04 já está fechada por [../product/listing-lifecycle.md](../product/listing-lifecycle.md), OD-05 por [../product/image-policy.md](../product/image-policy.md), OD-01 por [../product/negotiation-lifecycle.md](../product/negotiation-lifecycle.md), OD-02 por [../product/ratings.md](../product/ratings.md), OD-03 por [../product/prohibited-items.md](../product/prohibited-items.md), OD-06 por [../product/reselection-policy.md](../product/reselection-policy.md), OD-10 por [../product/data-retention-policy.md](../product/data-retention-policy.md), OD-11 por [../product/age-eligibility.md](../product/age-eligibility.md) e OD-12 por [../product/interest-flow.md](../product/interest-flow.md).
+- OD-07 e OD-08 continuam abertas e são as **únicas** que ainda bloqueiam este gate; ambas dependem da validação real do gateway (F0-010).
 - Requisitos que a Fase 1 e a Fase 2 dependem com status `definido`.
 - Backlog da Fase 0 ([backlog.md](backlog.md)) sem itens `próximo` ou `bloqueado` que impeçam a Fase 1.
 
@@ -75,7 +76,7 @@ Fontes: [../product/mvp-scope.md](../product/mvp-scope.md), [../product/requirem
 - Consulta de anúncios: listagem e detalhe sem contato (RF-005).
 - Email transacional de verificação via Resend (RF-021).
 
-**Dependências:** gate da Fase 1; OD-04 e OD-05 fechadas; OD-11 fechada ou adiada com registro.
+**Dependências:** gate da Fase 1; OD-04, OD-05 e OD-11 fechadas.
 
 **Gate de saída:**
 
@@ -89,15 +90,15 @@ Fontes: [../product/mvp-scope.md](../product/mvp-scope.md), [../product/requirem
 
 **Principais entregáveis:**
 
-- Demonstração de interesse e solicitação de desbloqueio (RF-008, RF-009); a implementação de RF-008 depende de OD-12 fechada.
+- Demonstração de interesse e solicitação de desbloqueio (RF-008, RF-009), conforme [../product/interest-flow.md](../product/interest-flow.md) (DEC-035): o interesse é ação gratuita de interface, sem entidade persistida, e a persistência funcional começa na solicitação.
 - Reserva atômica de vaga com expiração e limite de 3 solicitações pagas (RF-010, RNF-016).
 - Cobrança de exatamente R$ 0,99 via Pix no gateway homologado (RF-011).
 - Webhooks com idempotência e reconciliação (RF-012).
-- Escolha do solicitante pelo anunciante (RF-013).
+- Escolha do solicitante pelo anunciante, incluindo desistência e reseleção conforme [../product/reselection-policy.md](../product/reselection-policy.md) (DEC-032) (RF-013).
 - Autorização server-side e liberação de contato ao escolhido com pagamento aprovado, com auditoria (RF-014, RF-015, RF-022).
 - Design de pagamentos e de liberação de contato implementados conforme `architecture/payments-design.md` e `architecture/contact-release.md`.
 
-**Dependências:** gate da Fase 2; OD-06, OD-07, OD-08 e OD-12 fechadas; ADR-0004 (gateway) aceito.
+**Dependências:** gate da Fase 2; OD-07 e OD-08 fechadas e ADR-0004 (gateway) aceito. OD-06 já está fechada por [../product/reselection-policy.md](../product/reselection-policy.md) e OD-12 por [../product/interest-flow.md](../product/interest-flow.md).
 
 **Gate de saída:**
 
@@ -133,7 +134,7 @@ Fontes: [../product/mvp-scope.md](../product/mvp-scope.md), [../product/requirem
 **Principais entregáveis:**
 
 - Segurança: revisão de autenticação, autorização, validação de entradas, proteção de segredos (RNF-007, RNF-014, RNF-015).
-- Privacidade/LGPD: retenção e exclusão conforme OD-10, exclusão de conta (RF-023, RNF-008, RNF-009), política de privacidade e termos de uso (incluindo elegibilidade etária conforme OD-11).
+- Privacidade/LGPD: retenção e exclusão conforme [../product/data-retention-policy.md](../product/data-retention-policy.md) (DEC-033), exclusão de conta (RF-023, RNF-008, RNF-009), política de privacidade e termos de uso, incluindo a elegibilidade etária de [../product/age-eligibility.md](../product/age-eligibility.md) (DEC-034) e a revisão jurídica e contábil do período e do conjunto mínimo de registros financeiros antes da produção comercial.
 - Performance em smartphones e redes 3G/4G, com métricas objetivas definidas neste gate (RNF-003, RNF-004).
 - Acessibilidade com nível de conformidade definido neste gate (RNF-010).
 - PWA com capacidades mínimas definidas (RNF-006).
@@ -141,7 +142,7 @@ Fontes: [../product/mvp-scope.md](../product/mvp-scope.md), [../product/requirem
 - Preparação operacional: checklist de release (`delivery/release-checklist.md`), plano Vercel pago para produção, monitoramento de custos dos provedores (R-08, R-09).
 - Deploy de produção.
 
-**Dependências:** gate da Fase 4; OD-10 e OD-11 fechadas.
+**Dependências:** gate da Fase 4. OD-10 e OD-11 já estão fechadas por [../product/data-retention-policy.md](../product/data-retention-policy.md) e [../product/age-eligibility.md](../product/age-eligibility.md).
 
 **Gate de saída:**
 

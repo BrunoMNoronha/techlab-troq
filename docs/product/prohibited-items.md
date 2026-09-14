@@ -36,7 +36,7 @@ Consequência direta: **se a legalidade da oferta depender de licença, autoriza
 
 Fundamentação:
 
-- O TROQ é um marketplace C2C simples entre pessoas. Não há cadastro de pessoa jurídica, não há verificação de licença, não há verificação de idade — a elegibilidade etária formal permanece aberta em [OD-11](../decisions/open-decisions.md) — e não há verificação de procedência.
+- O TROQ é um marketplace C2C simples entre pessoas. Não há cadastro de pessoa jurídica, não há verificação de licença, não há verificação de idade — a elegibilidade etária foi definida depois em [age-eligibility.md](age-eligibility.md) (DEC-034) como declaração contratual de 18 anos completos ou mais, **sem** verificação documental ou biométrica — e não há verificação de procedência.
 - A pesquisa externa (seção 16) mostra que várias categorias reguladas só são lícitas quando o **vendedor** é um estabelecimento autorizado: medicamentos só podem ser dispensados a distância por farmácia ou drogaria licenciada e com farmacêutico presente; fauna silvestre só pode ser comercializada por criadouro ou empreendimento licenciado, com marcação individual e documentação de origem; armas, munições e produtos controlados dependem de autorização e registro. Nenhuma dessas condições pode ser verificada pelo TROQ no MVP.
 - Construir um fluxo de compliance documental exigiria coleta e guarda de documentos, verificação de autenticidade e decisão sobre validade — atividade de risco alto, custo alto e fora do escopo das fases previstas no [roadmap](../delivery/roadmap.md).
 - Proibir a categoria é reversível: se o produto amadurecer e ganhar capacidade de verificação, uma permissão condicionada pode ser criada por decisão nova e registrada. O inverso — permitir e não conseguir verificar — não é reversível quanto ao dano já causado.
@@ -106,7 +106,7 @@ Os exemplos são **não exaustivos** e ilustram a categoria; não constituem a d
 - **Definição:** bebidas alcoólicas e qualquer item cuja oferta lícita dependa de verificação de idade do adquirente.
 - **Fundamento:** `regulado`, combinado com a decisão da seção 2.
 - **Exemplos não exaustivos:** destilados, vinhos, cervejas, coleções de bebidas fechadas, fogos de artifício, bilhetes de loteria e equivalentes.
-- **Casos limítrofes:** a vedação de venda desses itens a menores é legal e expressa. O TROQ **não possui** verificação de idade no MVP — [OD-11](../decisions/open-decisions.md) segue aberta — e, portanto, não pode cumprir o controle. A proibição é da categoria, **não** uma afirmação de que a venda entre adultos seja ilegal. Garrafa vazia de valor decorativo, sem conteúdo alcoólico, não pertence a PI-07.
+- **Casos limítrofes:** a vedação de venda desses itens a menores é legal e expressa. O TROQ **não possui** verificação de idade no MVP: [age-eligibility.md](age-eligibility.md) (DEC-034) fixou a elegibilidade de 18 anos completos ou mais por declaração contratual, sem verificação documental, e uma declaração não cumpre o controle exigido por essas categorias. A proibição é da categoria, **não** uma afirmação de que a venda entre adultos seja ilegal. Garrafa vazia de valor decorativo, sem conteúdo alcoólico, não pertence a PI-07.
 
 #### PI-08 — Fauna, flora, partes de animais e produtos de origem biológica controlada
 
@@ -134,7 +134,7 @@ Os exemplos são **não exaustivos** e ilustram a categoria; não constituem a d
 - **Definição:** ofertas que não são um bem físico pessoal transferível: serviços, empregos, empréstimos e crédito, investimentos, criptoativos, valores mobiliários, jogos de azar e apostas, ingressos revendidos acima do valor, cotas, rifas e sorteios, arrecadação de valores e conteúdo adulto.
 - **Fundamento:** `política`, com componente `regulado` nas linhas financeiras e de apostas.
 - **Exemplos não exaustivos:** "faço bicos", "empresto dinheiro", "invista comigo", venda de criptoativo, rifa de eletrônico, conteúdo íntimo.
-- **Casos limítrofes:** o TROQ é uma plataforma de anúncios de itens entre pessoas com liberação controlada de contato. Categorias financeiras e de apostas possuem regulação própria e são vetor conhecido de fraude; conteúdo adulto exigiria controle etário inexistente ([OD-11](../decisions/open-decisions.md)). Nenhuma dessas linhas é afirmada como ilegal por este documento.
+- **Casos limítrofes:** o TROQ é uma plataforma de anúncios de itens entre pessoas com liberação controlada de contato. Categorias financeiras e de apostas possuem regulação própria e são vetor conhecido de fraude; conteúdo adulto exigiria controle etário inexistente — a declaração de 18 anos de [age-eligibility.md](age-eligibility.md) (DEC-034) não é controle de idade. Nenhuma dessas linhas é afirmada como ilegal por este documento.
 
 #### PI-12 — Conteúdo e conduta do anúncio
 
@@ -263,10 +263,10 @@ Os efeitos são exatamente os de T7, T8 e T9 de [listing-lifecycle.md](listing-l
 | --- | --- |
 | Exposição pública | Imediata e integral saída de listagem, busca, detalhe, feed e qualquer cache público. O detalhe responde ao público como recurso não disponível, sem revelar existência prévia nem estado interno |
 | Reversibilidade | Nenhuma. `removed` é terminal |
-| Imagens | Deixam imediatamente de ser servidas pela superfície pública, junto com o restante do conteúdo, conforme [image-policy.md](image-policy.md). Isso **não** implica exclusão física dos objetos; retenção e expurgo definitivo seguem [OD-10](../decisions/open-decisions.md) |
+| Imagens | Deixam imediatamente de ser servidas pela superfície pública, junto com o restante do conteúdo, conforme [image-policy.md](image-policy.md). Isso **não** implica exclusão física dos objetos; retenção e expurgo definitivo definidos depois em [data-retention-policy.md](data-retention-policy.md) (DEC-033) |
 | Dados de auditoria | Preservados. O anúncio, seu conteúdo, o motivo, o moderador e o instante são conservados como base da trilha de auditoria (seção 12) e do direito de contestação (seção 11) |
 | Visibilidade ao anunciante | O anúncio permanece visível ao próprio anunciante como histórico |
-| Interesses existentes | Preservados como histórico; nenhum novo é aceito |
+| Interesses existentes | Sem objeto: a demonstração de interesse não é entidade persistida ([interest-flow.md](interest-flow.md), DEC-035). Nenhuma nova é aceita, porque o anúncio deixa de ser `published` |
 | Solicitações iniciadas e não pagas | Encerradas sem cobrança; a vaga reservada é liberada |
 | Solicitações com pagamento aprovado | **Preservadas. A cobrança permanece definitiva (RB-004).** Este documento **não** cria reembolso, estorno, compensação ou crédito. O tratamento financeiro de exceção permanece em [OD-07](../decisions/open-decisions.md) |
 | Limite de RB-003 | Não é reiniciado nem devolvido |
@@ -317,7 +317,7 @@ Regras:
 
 - **Casos graves justificam bloqueio imediato,** sem progressão: linhas criminais de PI-12, PI-04, PI-03 e reincidência em PI-02. A gravidade é registrada no motivo.
 - **Efeito da restrição e do bloqueio.** Ambos impedem **publicar novos anúncios** e republicar conteúdo equivalente ao removido. Nenhum deles apaga anúncios existentes, cancela pagamento, gera reembolso, revoga liberação de contato já autorizada, encerra negociação em curso, invalida avaliações nem altera reputação pública — avaliações seguem [ratings.md](ratings.md) (DEC-030) e só podem ser invalidadas pelos motivos lá previstos.
-- **Exclusão de conta e de dados** não é sanção deste documento. Permanece em RF-023 e [OD-10](../decisions/open-decisions.md).
+- **Exclusão de conta e de dados** não é sanção deste documento. Permanece em RF-023 e está definida em [data-retention-policy.md](data-retention-policy.md) (DEC-033).
 - **A contagem não expira no MVP.** Criar prescrição de reincidência exigiria decidir janela, critério e efeito, sem regra vigente que os sustente. Se necessário, será decisão nova e registrada.
 - **Advertência, restrição e bloqueio são auditados** (seção 12) e comunicados ao usuário afetado, sem identificar denunciante.
 - **O MVP não constrói sistema de trust & safety.** Não há score de risco, reputação interna de moderação, análise de rede de contas nem sanção automática por volume de denúncias.
@@ -358,7 +358,7 @@ A decisão original permanece integralmente. Nada muda.
 
 ## 12. Auditoria
 
-Alinhado a RF-022, que já exige trilha imutável para operações críticas, e a RNF-011. Este documento **estende** RF-022 aos eventos administrativos abaixo e **não** define prazo de retenção — retenção e expurgo permanecem em [OD-10](../decisions/open-decisions.md).
+Alinhado a RF-022, que já exige trilha imutável para operações críticas, e a RNF-011. Este documento **estende** RF-022 aos eventos administrativos abaixo e **não** define prazo de retenção — retenção e expurgo foram definidos depois em [data-retention-policy.md](data-retention-policy.md) (DEC-033): 24 meses após o encerramento do caso para registros de moderação, segurança e abuso.
 
 Eventos que geram registro de auditoria:
 
@@ -390,13 +390,13 @@ Restrições:
 
 ## 13. Privacidade
 
-Definido aqui apenas o necessário para OD-03. Retenção, exclusão e anonimização permanecem em [OD-10](../decisions/open-decisions.md).
+Definido aqui apenas o necessário para OD-03. Retenção, exclusão e anonimização foram definidas depois em [data-retention-policy.md](data-retention-policy.md) (DEC-033).
 
 1. **Identidade do denunciante.** Não é pública, não é revelada ao anunciante, não aparece em nenhuma comunicação ao anunciante, não aparece em payload público nem em cache público, e não é exposta no fluxo de contestação. É acessível apenas à moderação, para analisar a denúncia e aplicar as regras antiabuso da seção 6.
 2. **Dados administrativos de moderação** — denúncias, categorias, motivos, decisões, sanções, contestações e trilha de auditoria — **não** integram nenhum payload público e não são expostos a outros usuários.
 3. **Privilégio mínimo.** O acesso administrativo é restrito ao perfil de moderação e limitado ao necessário para as decisões deste documento. O perfil de moderação **não** recebe, por ser moderação, acesso a telefone/WhatsApp; DEC-023 continua governando esse dado.
 4. **Minimização.** A denúncia e a contestação coletam apenas os campos previstos nas seções 6 e 11 (RNF-008).
-5. **Cooperação com autoridades.** O TROQ preserva a trilha de auditoria e o conteúdo removido para permitir resposta a requisição de autoridade competente. Este documento **não** define procedimento de atendimento a requisições, prazo, autoridade legitimada nem canal formal: isso depende de retenção ([OD-10](../decisions/open-decisions.md)) e de termos de uso e política de privacidade completos, que estão fora deste escopo.
+5. **Cooperação com autoridades.** O TROQ preserva a trilha de auditoria e o conteúdo removido para permitir resposta a requisição de autoridade competente. Este documento **não** define procedimento de atendimento a requisições, prazo, autoridade legitimada nem canal formal: isso depende de retenção, definida depois em [data-retention-policy.md](data-retention-policy.md) (DEC-033), incluindo o legal hold, e de termos de uso e política de privacidade completos, que estão fora deste escopo.
 
 ## 14. Limites explícitos desta política
 
@@ -404,12 +404,12 @@ Esta política **não** resolve e **não** antecipa:
 
 | Fora de escopo | Onde permanece |
 | --- | --- |
-| Desistência do escolhido e reseleção | [OD-06](../decisions/open-decisions.md) |
+| Desistência do escolhido e reseleção | Definidas depois em [reselection-policy.md](reselection-policy.md) (DEC-032) |
 | Chargebacks, duplicidade, reembolso, estorno e demais exceções de pagamento, incluindo o tratamento financeiro das solicitações pagas de anúncio removido | [OD-07](../decisions/open-decisions.md) |
 | Escolha e validação do gateway para R$ 0,99 | [OD-08](../decisions/open-decisions.md) |
-| Prazos de retenção, exclusão de conta, anonimização e expurgo de imagens e trilhas | [OD-10](../decisions/open-decisions.md) |
-| Elegibilidade etária formal, idade mínima e verificação de idade | [OD-11](../decisions/open-decisions.md) |
-| Natureza da demonstração de interesse | [OD-12](../decisions/open-decisions.md) |
+| Prazos de retenção, exclusão de conta, anonimização e expurgo de imagens e trilhas | Definidos depois em [data-retention-policy.md](data-retention-policy.md) (DEC-033) |
+| Elegibilidade etária formal e idade mínima | Definidas depois em [age-eligibility.md](age-eligibility.md) (DEC-034); a **verificação** documental de idade continua inexistente por decisão expressa |
+| Natureza da demonstração de interesse | Definida depois em [interest-flow.md](interest-flow.md) (DEC-035) |
 
 Também **não** definidos aqui: schema de banco, API, interface, painel administrativo, autenticação, moderação automática, fornecedor de IA, termos de uso completos, política de privacidade completa e parecer jurídico. A implementação pertence à Fase 4 do [roadmap](../delivery/roadmap.md).
 
@@ -431,14 +431,14 @@ Também **não** definidos aqui: schema de banco, API, interface, painel adminis
 | RF-019 | Fluxo e poderes de moderação definidos na seção 7; prazos na seção 9; reincidência na seção 10; contestação na seção 11 |
 | RF-020 | Critérios e efeitos de remoção definidos na seção 8, sobre T7 a T9 de [listing-lifecycle.md](listing-lifecycle.md) |
 | RF-021 | Comunicações de decisão seguem o email transacional e nunca contêm dado protegido (seção 7.4) |
-| RF-022 | **Estendido** aos eventos administrativos da seção 12. Retenção segue OD-10 |
+| RF-022 | **Estendido** aos eventos administrativos da seção 12. Retenção definida em [data-retention-policy.md](data-retention-policy.md) (DEC-033) |
 | RNF-007, RNF-008, RNF-011, RNF-014 | Autorização server-side, minimização, trilha imutável e validação das entradas de denúncia e contestação |
 | DEC-027 | **Preservada integralmente.** Nenhum estado novo de anúncio; `removed` terminal; remoção por T7 a T9 |
 | DEC-028 | **Preservada integralmente.** Sem pré-moderação automática por IA e sem estado de moderação por imagem |
 | DEC-029 | **Preservada integralmente.** A remoção não altera a negociação; o encerramento segue exclusivo das partes |
 | DEC-030 | **Preservada integralmente.** A moderação de avaliação continua limitada a manter ou invalidar integralmente |
 | R-05 | **Mitigado.** O catálogo, o fluxo e os prazos existiam como lacuna; passam a existir como política verificável |
-| OD-06, OD-07, OD-08, OD-10, OD-11, OD-12 | Permanecem abertas. Nada aqui as fecha ou antecipa |
+| OD-07, OD-08 | Permanecem abertas. Nada aqui as fecha ou antecipa. OD-06, OD-10, OD-11 e OD-12 foram fechadas depois por DEC-032, DEC-033, DEC-034 e DEC-035 |
 
 ## 16. Fontes externas consultadas
 

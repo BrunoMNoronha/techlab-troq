@@ -33,7 +33,7 @@ Negativas e restrições:
 - Dependência de serviço externo (ver [../delivery/risks.md](../delivery/risks.md), R-08); termos e custos do Neon devem ser acompanhados.
 - Conexões a partir de ambiente serverless exigem atenção a limites de conexão e latência; a abordagem específica será definida na implementação.
 - ORM e estratégia de migrations não são objeto desta ADR. Foram decididos posteriormente em [ADR-0005](0005-prisma-orm-migrations.md) (Prisma ORM e Prisma Migrate), que fechou OD-09. Nenhum schema ou migration existe na Fase 0.
-- Retenção e exclusão de dados pessoais permanecem em aberto (OD-10).
+- Retenção e exclusão de dados pessoais foram definidas depois em [../product/data-retention-policy.md](../product/data-retention-policy.md) (DEC-033), com prazos expressos por categoria; o banco deve permitir eliminar ou anonimizar dados pessoais nesses prazos sem romper a imutabilidade das trilhas de auditoria.
 
 ## Alternativas consideradas
 

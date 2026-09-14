@@ -8,9 +8,9 @@ TROQ é uma plataforma de anúncios entre pessoas em que o contato (WhatsApp/tel
 
 1. Usuário cria conta.
 2. Publica ou consulta anúncios.
-3. Interessado demonstra interesse e solicita desbloqueio de contato.
+3. Interessado demonstra interesse — ação gratuita, sem entidade persistida — e solicita desbloqueio de contato.
 4. Paga R$ 0,99. Cada anúncio aceita no máximo 3 solicitações pagas.
-5. Anunciante escolhe uma solicitação; apenas o escolhido recebe o WhatsApp/telefone.
+5. Anunciante escolhe uma solicitação; apenas o escolhido recebe o WhatsApp/telefone. Encerrada a negociação, o anunciante pode escolher outro solicitante pago, sem criar vaga nova e sem revogar o contato já liberado.
 6. A negociação pode ser encerrada; após o encerramento, avaliações são permitidas.
 7. Anúncios podem ser denunciados e moderados, conforme a política de itens proibidos.
 
@@ -30,7 +30,7 @@ As regras de negócio homologadas (RB-001 a RB-006) estão em [docs/product/busi
 | Email transacional | Resend |
 | Pagamentos | Pix-first; gateway ainda não decidido |
 
-Decisões ainda abertas (gateway de pagamento, desistência e reseleção, retenção e exclusão de dados, entre outras) estão registradas em [docs/decisions/open-decisions.md](docs/decisions/open-decisions.md) e não devem ser tratadas como homologadas.
+Restam apenas duas decisões abertas — a escolha do gateway de pagamento (OD-08) e o tratamento de exceções de pagamento (OD-07), que depende dela. Ambas estão registradas em [docs/decisions/open-decisions.md](docs/decisions/open-decisions.md) e não devem ser tratadas como homologadas.
 
 ## Documentação
 
@@ -40,5 +40,9 @@ Decisões ainda abertas (gateway de pagamento, desistência e reseleção, reten
 - [Regras de negócio](docs/product/business-rules.md)
 - [Avaliações](docs/product/ratings.md)
 - [Itens proibidos, denúncia e moderação](docs/product/prohibited-items.md)
+- [Desistência e reseleção](docs/product/reselection-policy.md)
+- [Retenção e exclusão de dados](docs/product/data-retention-policy.md)
+- [Elegibilidade etária](docs/product/age-eligibility.md)
+- [Demonstração de interesse](docs/product/interest-flow.md)
 - [Decisões abertas](docs/decisions/open-decisions.md)
 - [Riscos](docs/delivery/risks.md)
