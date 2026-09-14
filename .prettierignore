@@ -1,0 +1,8 @@
+.next/
+node_modules/
+package-lock.json
+
+# A documentação normativa em Markdown é mantida à mão e não é reformatada
+# por ferramenta: reformatação em massa de docs é mudança própria, não efeito
+# colateral do scaffold (docs/engineering/conventions.md, seção 5.4).
+**/*.md
