@@ -1,10 +1,10 @@
 # Estado do projeto
 
 **Primeiro registro:** 2026-09-07
-**Última atualização:** 2026-09-14 (F1-001)
+**Última atualização:** 2026-09-14 (F1-002)
 **Repositório:** `BrunoMNoronha/techlab-troq`, branch principal `main`
 **Fase 0:** concluída — gate de saída verificado e **APROVADO** em [delivery/phase-1-transition.md](delivery/phase-1-transition.md)
-**Fase 1:** **em andamento**, com **F1-001 concluído**. O gate de saída da Fase 1 continua integralmente por satisfazer
+**Fase 1:** **em andamento**, com **F1-001 e F1-002 concluídos**. O gate de saída da Fase 1 continua por satisfazer
 
 Este documento separa categorias que não devem ser confundidas: o que **existe de fato hoje** no repositório, o que **já foi decidido** e o que **ainda não foi implementado**. A seção 1 preserva a **baseline histórica** da inspeção inicial e **não** descreve o estado atual; para o estado atual, ver a seção 3.
 
@@ -82,12 +82,13 @@ Fundação técnica mínima, criada de forma antecipada e isolada, **sem nenhuma
 - TypeScript em modo `strict`, ESLint, Prettier, Vitest e React Testing Library configurados;
 - CI em `.github/workflows/ci.yml`, cujo job `Validação (format, lint, typecheck, test, build)` é o required status check do ruleset `Protect main` e roda em toda PR e em todo push para `main`;
 - projeto Vercel conectado, publicando deployment de preview a partir de PR;
-- **contrato de ambientes e segredos** em [engineering/environments.md](engineering/environments.md), com o espelho versionado em `.env.example` — produzido por **F1-001** em 2026-09-14. É documento e contrato: **nenhum serviço foi provisionado, nenhuma credencial existe no repositório e nenhuma variável é lida por código**, de modo que todas estão marcadas `previsto` naquele catálogo.
+- **contrato de ambientes e segredos** em [engineering/environments.md](engineering/environments.md), com o espelho versionado em `.env.example` — produzido por **F1-001** em 2026-09-14. É documento e contrato: **nenhum serviço foi provisionado e nenhuma credencial existe no repositório**; desde F1-002, `DIRECT_URL` é a única variável do catálogo consumida por código (pelo Prisma CLI), e todas as demais continuam `previsto`;
+- **fundação Prisma e schema físico inicial** — produzidos por **F1-002** em 2026-09-14: `prisma@7.10.0` e `@prisma/client@7.10.0` pinados em versão exata; `prisma.config.ts` lendo `DIRECT_URL` para operações de schema; `prisma/schema.prisma` com os **24 models e 18 enums** de [architecture/data-model.md](architecture/data-model.md), **sem entidade `Interest`**; e a migration inicial versionada, com as invariantes **I-1, I-2, I-5, I-6 e I-8** materializadas como garantias reais de banco (índices únicos parciais, `CHECK`s e triggers por SQL customizado, sem Preview feature) e provadas por casos negativos sobre PostgreSQL real e descartável. Documentado em [engineering/database.md](engineering/database.md). **Nenhum banco Neon foi provisionado, nenhum runtime do Prisma Client existe e nenhum job de `migrate deploy` foi criado.**
 
 ### 3.2 O que ainda não existe
 
 - **estrutura de módulos de domínio** — os nove módulos de [architecture/overview.md](architecture/overview.md) (AR-3.3) e os dois transversais **não** foram criados; `src/` contém apenas `app/`;
-- **banco de dados** — nenhum Neon provisionado, nenhum `prisma/`, nenhum `schema.prisma`, nenhuma migration e nenhuma dependência do Prisma instalada;
+- **banco de dados provisionado e operável** — nenhum Neon provisionado, nenhuma credencial de banco, nenhum runtime do Prisma Client (nenhum singleton, nenhum driver adapter, `DATABASE_URL` sem consumidor), nenhum job de CI/CD de `prisma migrate deploy` e nenhuma validação de migration em CI; o que existe é o schema e a migration inicial, validados apenas em banco local descartável (E-5 **parcial**);
 - **R2 e Resend** — escolhidos em ADR-0003 e DEC-015, mas **não provisionados**;
 - **autenticação, anúncios, pagamentos, jobs, PWA e observabilidade** — nenhuma implementação;
 - **deploy de produção** — nenhum.
@@ -118,7 +119,11 @@ F0-019 foi executado em seguida, ainda em 2026-09-14, e fechou **OD-07** com [pr
 
 O que F1-001 **não** fez: nenhum serviço provisionado ou acessado — Neon, R2, Resend, Mercado Pago e Vercel seguem exatamente como estavam —, nenhuma credencial real usada ou gerada, nenhuma variável configurada em painel de provedor, nenhuma dependência instalada, nenhum `schema.prisma`, nenhuma migration, nenhum módulo de domínio, nenhuma funcionalidade de produto, nenhum parser ou validador de variáveis em código e nenhuma alteração de regra de negócio, requisito, ADR ou decisão vigente. **Nenhuma variável do catálogo é lida por código:** todas estão `previsto`.
 
-**A Fase 1 está em andamento** e o seu gate de **saída** continua integralmente por satisfazer: dos sete entregáveis classificados por F0-023, apenas o contrato de ambientes (E-4) saiu de `não iniciado`. Permanecem pendentes a estrutura de módulos de AR-3.3, o banco com Prisma e schema inicial, o provisionamento de R2 e Resend e a observabilidade.
+**F1-002 foi concluído em 2026-09-14** e é o segundo trabalho da Fase 1: a primeira parte do entregável E-5. Ele instalou o Prisma ORM **7.10.0** pinado em versão exata — a versão estável mais recente da linha 7, conferida no registro npm, onde `prisma@latest` ainda resolve para um release candidate da linha 8 —, criou `prisma.config.ts` com `DIRECT_URL` como conexão direta do CLI e `DATABASE_URL` reservada ao runtime futuro, materializou `prisma/schema.prisma` a partir de [architecture/data-model.md](architecture/data-model.md) com 24 models e 18 enums nativos, gerou a migration inicial por `--create-only`, complementou-a com o SQL que o schema declarativo não expressa — índice único parcial de `(listing_id, slot_index)` sobre `reserved`/`paid` para I-1, índice único parcial de negociação `active` por anúncio para I-5, trigger que impede qualquer saída de `paid` para I-8, `CHECK`s de faixa para slot, posição de imagem e nota, guarda da matriz T1..T9 do anúncio e demais unicidades — e provou cada garantia por caso negativo contra PostgreSQL 17 real em contêiner descartável, inclusive `migrate deploy` em banco vazio e reaplicação após recriação do banco de desenvolvimento. As decisões físicas estão em [engineering/database.md](engineering/database.md); o contrato de ambientes foi atualizado apenas para registrar `DIRECT_URL` como consumida.
+
+O que F1-002 **não** fez: nenhum Neon provisionado ou acessado, nenhuma credencial real, nenhuma variável em painel, nenhum uso de banco `preview` ou `production`, nenhum `db push`, nenhuma Preview feature do Prisma, nenhum singleton ou adaptador de runtime, nenhum job de `migrate deploy`, nenhuma alteração de CI ou de ruleset, nenhum módulo de domínio, nenhuma integração (Better Auth, R2, Resend, Mercado Pago), nenhuma funcionalidade de produto e nenhuma alteração de regra, requisito, ADR ou decisão.
+
+**A Fase 1 está em andamento** e o seu gate de **saída** continua por satisfazer: dos sete entregáveis classificados por F0-023, o contrato de ambientes (E-4) está concluído e o banco com Prisma e schema inicial (E-5) passou a **parcial**. Permanecem pendentes a estrutura de módulos de AR-3.3, o provisionamento do Neon e o job controlado de `migrate deploy`, o provisionamento de R2 e Resend e a observabilidade.
 
 ## 5. Riscos
 
