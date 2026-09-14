@@ -11,21 +11,14 @@ Registro das questões que **ainda não foram decididas** na Fase 0. Nenhum item
 
 ## Lista de decisões abertas
 
-Restam **duas** decisões abertas, ambas relacionadas a pagamentos. A validação técnica real do gateway (F0-010) foi concluída em 2026-09-14, mas nenhuma das duas decisões se fecha automaticamente por isso: ambas dependem de F0-011.
+Resta **uma** decisão aberta: OD-07. A validação técnica real do gateway (F0-010) foi concluída em 2026-09-14 e a escolha do gateway foi formalizada em F0-011, que fechou OD-08 com [../adr/0004-mercado-pago-pix.md](../adr/0004-mercado-pago-pix.md) (DEC-036). O tratamento das exceções de pagamento continua sem decisão e é o objeto de OD-07.
 
 ### OD-07 — Chargebacks, duplicidade e exceções de pagamento
 
 - **Contexto:** RB-004 estabelece que a cobrança é definitiva quando o solicitante não é escolhido.
 - **O que falta decidir:** tratamento de chargebacks, pagamentos duplicados, pagamentos aprovados após expiração da reserva de vaga, falhas de confirmação e demais exceções.
-- **Bloqueia:** design de pagamentos.
-
-### OD-08 — Validação do gateway para R$ 0,99
-
-- **Contexto:** pagamentos são Pix-first. Mercado Pago é apenas o primeiro candidato de gateway, **não** decisão final.
-- **O que falta decidir:** escolha do gateway, condicionada a um spike que prove cobrança de exatamente R$ 0,99, confirmação, webhook, idempotência e tarifas.
-- **Estado do spike:** **concluído** na sexta execução de F0-010, em 2026-09-14, com 10 dos 10 critérios comprovados, registrada em [../delivery/spikes/f0-010-mercado-pago-pix-r099.md](../delivery/spikes/f0-010-mercado-pago-pix-r099.md). O último critério pendente, a validação da assinatura HMAC de uma notificação real, foi fechado com uma notificação do Mercado Pago decorrente de uma Order Pix nova de exatamente R$ 0,99, assinada pela mesma aplicação cuja chave estava configurada, com HMAC válido contra o manifesto oficial e testes negativos devolvendo `HTTP 401`.
-- **Por que continua aberta:** o spike prova **viabilidade técnica**, não homologa gateway. A escolha se fecha em F0-011, com ADR-0004, que ainda não foi executado. Até lá, Mercado Pago permanece apenas candidato (DEC-017).
-- **Bloqueia:** implementação de pagamentos e criação de ADR de pagamento.
+- **Bloqueia:** design de pagamentos (F0-022) e o fechamento do gate da Fase 0. **Não** bloqueia mais a escolha do gateway, já homologada.
+- **Próximo trabalho:** F0-019, agora `próximo` em [../delivery/backlog.md](../delivery/backlog.md), com o gateway já homologado como base concreta para decidir as exceções.
 
 ## Decisões fechadas
 
@@ -39,6 +32,7 @@ Itens que já constaram desta lista e foram fechados por documento próprio. O I
 | OD-04 | Ciclo de vida completo do anúncio | [../product/listing-lifecycle.md](../product/listing-lifecycle.md) | DEC-027 em [decision-log.md](decision-log.md) |
 | OD-05 | Quantidade e regras das imagens | [../product/image-policy.md](../product/image-policy.md) | DEC-028 em [decision-log.md](decision-log.md) |
 | OD-06 | Política de desistência e reseleção | [../product/reselection-policy.md](../product/reselection-policy.md) | DEC-032 em [decision-log.md](decision-log.md) |
+| OD-08 | Validação e escolha do gateway para R$ 0,99 | [../adr/0004-mercado-pago-pix.md](../adr/0004-mercado-pago-pix.md) | DEC-036 em [decision-log.md](decision-log.md) |
 | OD-09 | ORM e estratégia de migrations | [../adr/0005-prisma-orm-migrations.md](../adr/0005-prisma-orm-migrations.md) | DEC-026 em [decision-log.md](decision-log.md) |
 | OD-10 | Retenção e exclusão de dados | [../product/data-retention-policy.md](../product/data-retention-policy.md) | DEC-033 em [decision-log.md](decision-log.md) |
 | OD-11 | Elegibilidade etária formal | [../product/age-eligibility.md](../product/age-eligibility.md) | DEC-034 em [decision-log.md](decision-log.md) |
@@ -46,4 +40,4 @@ Itens que já constaram desta lista e foram fechados por documento próprio. O I
 
 ## Itens explicitamente fora desta lista
 
-Já decididos e registrados como vigentes: arquitetura, stack, banco, deploy, autenticação inicial, armazenamento de imagens, email transacional, a recomendação de reserva atômica de vaga, o ORM/estratégia de migrations, o ciclo de vida do anúncio, a política de imagens do anúncio, o ciclo de vida e encerramento da negociação, a política de avaliações, a política de itens proibidos, denúncia, moderação e remoção, a política de desistência e reseleção, a política de retenção e exclusão de dados, a elegibilidade etária de 18 anos completos ou mais e a natureza da demonstração de interesse. Ver [../project-state.md](../project-state.md).
+Já decididos e registrados como vigentes: arquitetura, stack, banco, deploy, autenticação inicial, armazenamento de imagens, email transacional, o **gateway de pagamento Pix inicial homologado** ([../adr/0004-mercado-pago-pix.md](../adr/0004-mercado-pago-pix.md), DEC-036), a recomendação de reserva atômica de vaga, o ORM/estratégia de migrations, o ciclo de vida do anúncio, a política de imagens do anúncio, o ciclo de vida e encerramento da negociação, a política de avaliações, a política de itens proibidos, denúncia, moderação e remoção, a política de desistência e reseleção, a política de retenção e exclusão de dados, a elegibilidade etária de 18 anos completos ou mais e a natureza da demonstração de interesse. Ver [../project-state.md](../project-state.md).

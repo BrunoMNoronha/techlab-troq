@@ -17,7 +17,7 @@ Este documento **não** define:
 | Assunto | Onde permanece |
 | --- | --- |
 | Chargeback, duplicidade, pagamento tardio, reembolso e demais exceções financeiras | [OD-07](../decisions/open-decisions.md) |
-| Escolha e homologação do gateway de pagamento | [OD-08](../decisions/open-decisions.md) |
+| Escolha e homologação do gateway de pagamento | Definidas depois em [../adr/0004-mercado-pago-pix.md](../adr/0004-mercado-pago-pix.md) (DEC-036) |
 | Schema, migrations, endpoints, Server Actions, telas, notificações e emails | Fases 1 a 3 do [roadmap](../delivery/roadmap.md) |
 | Motivo, culpado ou resultado do encerramento da negociação | Rejeitado por DEC-029, seção 9.3 |
 
@@ -168,4 +168,4 @@ Nada neste documento cria reembolso, estorno, crédito, compensação, devoluç�
 | DEC-029 | Preservada integralmente. `closed` unilateral e irreversível é a pré-condição RS-2 |
 | DEC-030 | Preservada. Cada negociação origina no máximo duas avaliações; negociações sequenciais são independentes para efeito de avaliação |
 | OD-06 | **Fechada** por este documento (DEC-032) |
-| OD-07, OD-08, OD-10, OD-11, OD-12 | Não são tratadas aqui. OD-07 e OD-08 permanecem abertas; OD-10, OD-11 e OD-12 foram fechadas na mesma entrega por DEC-033, DEC-034 e DEC-035 |
+| OD-07, OD-08, OD-10, OD-11, OD-12 | Não são tratadas aqui. OD-07 permanece aberta; OD-10, OD-11 e OD-12 foram fechadas na mesma entrega por DEC-033, DEC-034 e DEC-035, e OD-08 depois por DEC-036 |

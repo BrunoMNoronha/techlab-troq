@@ -2,7 +2,7 @@
 
 TROQ é uma plataforma de anúncios entre pessoas em que o contato (WhatsApp/telefone) do anunciante só é liberado a um interessado escolhido, mediante uma solicitação paga de R$ 0,99.
 
-**Status:** Fase 0 em andamento. O repositório já contém a **fundação técnica mínima** da aplicação (scaffold Next.js e CI de validação), criada de forma antecipada e isolada. Não existe banco, migration, autenticação, integração externa nem funcionalidade de produto. O gate formal da Fase 0 permanece dependente da validação do gateway de pagamento (OD-08).
+**Status:** Fase 0 em andamento. O repositório já contém a **fundação técnica mínima** da aplicação (scaffold Next.js e CI de validação), criada de forma antecipada e isolada. Não existe banco, migration, autenticação, integração externa nem funcionalidade de produto. O gateway de pagamento já está homologado ([ADR-0004](docs/adr/0004-mercado-pago-pix.md)); o gate formal da Fase 0 permanece dependente do tratamento das exceções de pagamento (OD-07).
 
 ## Fluxo central (resumo)
 
@@ -28,9 +28,9 @@ As regras de negócio homologadas (RB-001 a RB-006) estão em [docs/product/busi
 | Autenticação | Better Auth, email/senha com verificação de email |
 | Armazenamento de imagens | Cloudflare R2, S3-compatible ([ADR-0003](docs/adr/0003-object-storage-r2.md)) |
 | Email transacional | Resend |
-| Pagamentos | Pix-first; gateway ainda não decidido |
+| Pagamentos | Pix-first; Mercado Pago como gateway Pix inicial homologado, por Checkout Transparente via Orders API ([ADR-0004](docs/adr/0004-mercado-pago-pix.md)) |
 
-Restam apenas duas decisões abertas — a escolha do gateway de pagamento (OD-08) e o tratamento de exceções de pagamento (OD-07), que depende dela. Ambas estão registradas em [docs/decisions/open-decisions.md](docs/decisions/open-decisions.md) e não devem ser tratadas como homologadas.
+Resta apenas uma decisão aberta — o tratamento de exceções de pagamento (OD-07): chargebacks, duplicidade, pagamento após a expiração da reserva e falhas de confirmação. Ela está registrada em [docs/decisions/open-decisions.md](docs/decisions/open-decisions.md) e não deve ser tratada como homologada. A escolha do gateway (OD-08) foi fechada em 2026-09-14 por [ADR-0004](docs/adr/0004-mercado-pago-pix.md).
 
 ## Execução local
 

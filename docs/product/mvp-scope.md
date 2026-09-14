@@ -58,7 +58,7 @@ As regras de negócio que governam este fluxo estão em [business-rules.md](busi
 | Cadastro e login por email/senha com verificação de email | — | Better Auth como solução inicial |
 | Publicação e consulta de anúncios com imagens | RB-005, RB-006 | Localização pública limitada a cidade/UF; ciclo de vida do anúncio definido em [listing-lifecycle.md](listing-lifecycle.md); regras de imagens em [image-policy.md](image-policy.md); publicação exige aceitação da declaração de conformidade com [prohibited-items.md](prohibited-items.md) |
 | Demonstração de interesse e solicitação de desbloqueio de contato | RB-003, RB-004 | Demonstração de interesse gratuita e sem entidade persistida, definida em [interest-flow.md](interest-flow.md) (DEC-035); máximo de 3 solicitações pagas por anúncio; cobrança definitiva |
-| Cobrança de R$ 0,99 via Pix | RB-004 | Gateway não decidido; depende de spike |
+| Cobrança de R$ 0,99 via Pix | RB-004 | Gateway homologado: Mercado Pago, por Checkout Transparente via Orders API — [../adr/0004-mercado-pago-pix.md](../adr/0004-mercado-pago-pix.md) (DEC-036) |
 | Escolha de solicitante pelo anunciante | RB-001 | Desistência e reseleção definidas em [reselection-policy.md](reselection-policy.md) (DEC-032) |
 | Liberação de contato somente ao escolhido, com pagamento aprovado | RB-001 | Autorização server-side e auditoria obrigatórias |
 | Encerramento da negociação | RB-002 | Estados `active` e `closed`; encerramento unilateral por qualquer uma das partes, definido em [negotiation-lifecycle.md](negotiation-lifecycle.md) (DEC-029) |
@@ -79,7 +79,7 @@ Fora do núcleo inicial do MVP:
 
 | Implementação | Dependência prévia |
 | --- | --- |
-| Pagamentos | Spike que prove cobrança de exatamente R$ 0,99, confirmação, webhook, idempotência e tarifas; escolha do gateway (Mercado Pago é apenas primeiro candidato) |
+| Pagamentos | Spike concluído (F0-010) e gateway homologado: Mercado Pago, por Checkout Transparente via Orders API — [../adr/0004-mercado-pago-pix.md](../adr/0004-mercado-pago-pix.md) (DEC-036). Resta o tratamento das exceções de pagamento ([OD-07](../decisions/open-decisions.md)) |
 | Limite de 3 solicitações pagas | Design de pagamentos detalhando reserva atômica de vaga antes da cobrança, com expiração |
 | Encerramento da negociação | Mecanismo definido em [negotiation-lifecycle.md](negotiation-lifecycle.md) (DEC-029); sem dependência aberta |
 | Avaliações | Regras definidas em [ratings.md](ratings.md) (DEC-030); sem dependência aberta |

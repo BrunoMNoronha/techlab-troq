@@ -406,7 +406,7 @@ Esta política **não** resolve e **não** antecipa:
 | --- | --- |
 | Desistência do escolhido e reseleção | Definidas depois em [reselection-policy.md](reselection-policy.md) (DEC-032) |
 | Chargebacks, duplicidade, reembolso, estorno e demais exceções de pagamento, incluindo o tratamento financeiro das solicitações pagas de anúncio removido | [OD-07](../decisions/open-decisions.md) |
-| Escolha e validação do gateway para R$ 0,99 | [OD-08](../decisions/open-decisions.md) |
+| Escolha e validação do gateway para R$ 0,99 | Definidas depois em [../adr/0004-mercado-pago-pix.md](../adr/0004-mercado-pago-pix.md) (DEC-036) |
 | Prazos de retenção, exclusão de conta, anonimização e expurgo de imagens e trilhas | Definidos depois em [data-retention-policy.md](data-retention-policy.md) (DEC-033) |
 | Elegibilidade etária formal e idade mínima | Definidas depois em [age-eligibility.md](age-eligibility.md) (DEC-034); a **verificação** documental de idade continua inexistente por decisão expressa |
 | Natureza da demonstração de interesse | Definida depois em [interest-flow.md](interest-flow.md) (DEC-035) |
@@ -438,7 +438,7 @@ Também **não** definidos aqui: schema de banco, API, interface, painel adminis
 | DEC-029 | **Preservada integralmente.** A remoção não altera a negociação; o encerramento segue exclusivo das partes |
 | DEC-030 | **Preservada integralmente.** A moderação de avaliação continua limitada a manter ou invalidar integralmente |
 | R-05 | **Mitigado.** O catálogo, o fluxo e os prazos existiam como lacuna; passam a existir como política verificável |
-| OD-07, OD-08 | Permanecem abertas. Nada aqui as fecha ou antecipa. OD-06, OD-10, OD-11 e OD-12 foram fechadas depois por DEC-032, DEC-033, DEC-034 e DEC-035 |
+| OD-07 | Permanece aberta. Nada aqui a fecha ou antecipa. OD-06, OD-10, OD-11, OD-12 e OD-08 foram fechadas depois por DEC-032, DEC-033, DEC-034, DEC-035 e DEC-036 |
 
 ## 16. Fontes externas consultadas
 

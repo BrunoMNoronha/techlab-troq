@@ -195,7 +195,7 @@ O log de encerramento **não** registra telefone/WhatsApp (DEC-023). A auditoria
 | Regras de avaliação (quem avalia quem, notas, prazo, publicação, moderação) | [ratings.md](ratings.md) (DEC-030) |
 | Desistência e reseleção | Definidas depois em [reselection-policy.md](reselection-policy.md) (DEC-032) |
 | Chargebacks e exceções de pagamento | OD-07 |
-| Escolha do gateway | OD-08 |
+| Escolha do gateway | Definida depois em [../adr/0004-mercado-pago-pix.md](../adr/0004-mercado-pago-pix.md) (DEC-036) |
 | Retenção e exclusão de dados e trilhas de auditoria | Definidas depois em [data-retention-policy.md](data-retention-policy.md) (DEC-033) |
 | Schema, migrations, API, telas, notificações e emails | Fases posteriores |
 
@@ -221,6 +221,6 @@ O log de encerramento **não** registra telefone/WhatsApp (DEC-023). A auditoria
 | RF-017 | Deixa de depender de OD-01; regras detalhadas definidas depois por [ratings.md](ratings.md) (DEC-030) |
 | RF-022 | Passa a incluir o encerramento da negociação entre as operações críticas auditadas |
 | DEC-027 / [listing-lifecycle.md](listing-lifecycle.md) | Preservada; ciclos do anúncio e da negociação permanecem independentes |
-| OD-07, OD-08 | Permanecem abertas; nada aqui as fecha ou antecipa. OD-06, OD-10, OD-11 e OD-12 foram fechadas depois por DEC-032, DEC-033, DEC-034 e DEC-035 |
+| OD-07 | Permanece aberta; nada aqui a fecha ou antecipa. OD-06, OD-10, OD-11, OD-12 e OD-08 foram fechadas depois por DEC-032, DEC-033, DEC-034, DEC-035 e DEC-036 |
 | OD-02 | Permanecia aberta nesta decisão; foi fechada depois por [ratings.md](ratings.md) (DEC-030) |
 | F0-015 | Concluído por esta entrega |

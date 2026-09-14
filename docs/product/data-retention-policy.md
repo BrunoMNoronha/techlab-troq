@@ -147,7 +147,7 @@ Essa retenção **não** justifica conservar desnecessariamente:
 
 O período e o conjunto mínimo de registros financeiros **deverão ser revisados por responsável jurídico e contábil antes da produção comercial**. Esta política fixa um baseline operacional para o MVP, não um parecer jurídico.
 
-Os dados mantidos pelo próprio gateway seguem também as obrigações e políticas do controlador ou operador correspondente. Como o gateway ainda não está decidido ([OD-08](../decisions/open-decisions.md)), nada aqui pressupõe o comportamento de um provedor específico.
+Os dados mantidos pelo próprio gateway seguem também as obrigações e políticas do controlador ou operador correspondente. Este documento **não** pressupõe o comportamento de um provedor específico, nem antes nem depois da homologação do gateway em [../adr/0004-mercado-pago-pix.md](../adr/0004-mercado-pago-pix.md) (DEC-036): a retenção definida aqui é do TROQ, e o que o gateway retém por conta própria segue a política dele.
 
 ## 9. Legal hold
 
@@ -214,7 +214,7 @@ A reaplicação das exclusões após uma restauração é parte obrigatória do 
 | RF-023 | Deixa de estar `bloqueado por decisão aberta` e passa a `definido`. Efeitos imediatos e prazo de 30 dias definidos na seção 3 |
 | RF-006 | Passa a `definido`. O expurgo dos derivados persistidos, única lacuna que restava, está na seção 4 |
 | RF-020 | Permanece `definido`. A retenção e o expurgo do anúncio `removed` seguem as seções 4 e 7; o tratamento financeiro de exceção continua em OD-07 |
-| RF-022 | A retenção das trilhas está definida na seção 6. O requisito permanece `parcialmente definido` porque a extensão à aprovação de pagamento continua dependendo do design de pagamentos (OD-07, OD-08) |
+| RF-022 | A retenção das trilhas está definida na seção 6. O requisito permanece `parcialmente definido` porque a extensão à aprovação de pagamento continua dependendo do design de pagamentos (OD-07) |
 | RNF-009 | Passa a `definido`. Retenção, exclusão e transparência definidas aqui; elegibilidade etária definida em [age-eligibility.md](age-eligibility.md) (DEC-034) |
 | RNF-011 | Passa a `definido`. Trilha imutável com prazo expresso de 24 meses |
 | RNF-008 | Preservado e reforçado. A minimização passa a ter prazos verificáveis |
@@ -223,4 +223,4 @@ A reaplicação das exclusões após uma restauração é parte obrigatória do 
 | RB-001 a RB-006 | Preservadas literalmente |
 | R-03, R-06 | Mitigados: contato protegido com prazo expresso; retenção e exclusão definidas antes de coletar dados reais |
 | OD-10 | **Fechada** por este documento (DEC-033) |
-| OD-07, OD-08 | Permanecem abertas. Nada aqui antecipa exceções financeiras nem escolha de gateway |
+| OD-07 | Permanece aberta. Nada aqui antecipa exceções financeiras. OD-08 foi fechada depois por [../adr/0004-mercado-pago-pix.md](../adr/0004-mercado-pago-pix.md) (DEC-036) |
