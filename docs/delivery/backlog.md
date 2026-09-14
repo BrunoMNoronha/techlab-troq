@@ -56,7 +56,7 @@ Não resta item `pendente` nem `próximo` neste backlog: **todo o trabalho resta
 
 ### Bloqueio externo de F0-010
 
-As quatro execuções de F0-010 estão registradas em [spikes/f0-010-mercado-pago-pix-r099.md](spikes/f0-010-mercado-pago-pix-r099.md), todas classificadas como `INCONCLUSIVO`, mas por causas sucessivamente menores.
+As cinco execuções de F0-010 estão registradas em [spikes/f0-010-mercado-pago-pix-r099.md](spikes/f0-010-mercado-pago-pix-r099.md), todas classificadas como `INCONCLUSIVO`, mas por causas sucessivamente menores.
 
 As duas primeiras, em 2026-09-07 e 2026-09-14, não executaram nenhum experimento autenticado, por ausência de credencial de teste do Mercado Pago.
 
@@ -64,7 +64,7 @@ A terceira, em 2026-09-14, foi a **primeira com Access Token de teste** e execut
 
 A quarta, também em 2026-09-14, atacou apenas os dois critérios de webhook que restavam e **fechou um deles**. Um endpoint HTTPS público foi provisionado em projeto Vercel temporário e isolado, sem qualquer relação com o projeto oficial `techlab-troq`, e o Mercado Pago **entregou notificações reais a esse endpoint**, com `x-signature`, `x-request-id`, `ts` e `data.id` presentes, correlacionadas à `merchant_order` `44469080694` de R$ 0,99. O critério 7 passou a comprovado. Nessa execução também se descobriu que a URL de notificação **é** configurável por requisição via `notification_url` de `POST /checkout/preferences`, o que corrige a conclusão anterior de que o painel seria indispensável para receber notificações.
 
-Resta **um único critério**: validar a assinatura de uma notificação real. Ele depende de um único insumo, que é a **chave secreta de webhook** da aplicação de teste. Nenhum endpoint público da API a expõe ou permite configurá-la: `GET /applications/{id}` não traz o campo, `GET /applications/{id}/webhooks`, `GET /v1/webhooks`, `GET /v1/notifications/settings` e `GET /webhooks` retornam `HTTP 404`, e `PUT /applications/{id}` retorna `HTTP 403`. A chave só existe no painel “Suas integrações”, cujo acesso exige login interativo com reCAPTCHA — um gate humano.
+Resta **um único critério**: validar a assinatura de uma notificação real. Ele depende de um único insumo, que é a **chave secreta de webhook** da aplicação de teste. Nenhum endpoint público da API a expõe ou permite configurá-la: `GET /applications/{id}` não traz o campo, `GET /applications/{id}/webhooks`, `GET /v1/webhooks`, `GET /v1/notifications/settings` e `GET /webhooks` retornam `HTTP 404`, e `PUT /applications/{id}` retorna `HTTP 403`. A chave só existe no painel “Suas integrações”. A quinta execução, também em 2026-09-14, refinou esse diagnóstico: o painel é **legível** com a sessão de navegador do próprio Bruno, sem login e sem reCAPTCHA; o que bloqueia é a **escrita** — criar a aplicação do spike exige reautenticação por **TOTP** no aplicativo do Mercado Pago. Essa execução também capturou o manifesto e o `v1` completos de uma reentrega real (`merchant_order` `44469080694`), o que permite fechar o critério 8 **offline** assim que a chave existir.
 
 O item **não** está concluído e se fecha em uma única entrega assim que a chave secreta estiver disponível ao ambiente por variável de ambiente. Enquanto isso, OD-08 permanece aberta, nenhuma decisão de gateway pode ser inferida e F0-011 permanece `bloqueado`. Esse continua sendo o **único bloqueio real** da Fase 0: todas as decisões de produto que não dependiam de pagamento já foram fechadas (OD-01 a OD-06 e OD-09 a OD-12).
 

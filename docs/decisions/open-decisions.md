@@ -23,7 +23,7 @@ Restam **duas** decisões abertas, ambas relacionadas a pagamentos e ambas depen
 
 - **Contexto:** pagamentos são Pix-first. Mercado Pago é apenas o primeiro candidato de gateway, **não** decisão final.
 - **O que falta decidir:** escolha do gateway, condicionada a um spike que prove cobrança de exatamente R$ 0,99, confirmação, webhook, idempotência e tarifas.
-- **Estado do spike:** 9 dos 10 critérios comprovados após a quarta execução de F0-010 em 2026-09-14, registrada em [../delivery/spikes/f0-010-mercado-pago-pix-r099.md](../delivery/spikes/f0-010-mercado-pago-pix-r099.md). Falta apenas validar a assinatura HMAC de uma notificação real, o que depende da chave secreta de webhook obtenível somente no painel do gateway.
+- **Estado do spike:** 9 dos 10 critérios comprovados após as execuções de F0-010 em 2026-09-14, registrada em [../delivery/spikes/f0-010-mercado-pago-pix-r099.md](../delivery/spikes/f0-010-mercado-pago-pix-r099.md). Falta apenas validar a assinatura HMAC de uma notificação real, o que depende da chave secreta de webhook obtenível somente no painel do gateway.
 - **Bloqueia:** implementação de pagamentos e criação de ADR de pagamento.
 
 ## Decisões fechadas

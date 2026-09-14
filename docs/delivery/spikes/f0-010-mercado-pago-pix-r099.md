@@ -985,3 +985,74 @@ O projeto Vercel temporário foi **deliberadamente mantido ativo**, contrariando
 ## O que esta execução não fez
 
 Nenhuma integração de pagamento foi implementada no produto; nenhum SDK do Mercado Pago, route handler de webhook, model, migration ou secret entrou no repositório TROQ. O projeto oficial `techlab-troq` na Vercel não foi usado, alterado nem consultado. Nenhuma aplicação do Mercado Pago foi criada ou alterada, nenhuma configuração de painel foi modificada e nenhum login foi tentado. Nenhum serviço público de captura de webhook de terceiros foi utilizado. Nenhum dinheiro real foi movimentado, nenhum cartão real foi usado e nenhuma credencial de produção foi procurada. Nenhum recurso preexistente foi excluído. OD-07 e OD-08 permanecem abertas, ADR-0004 não foi criado, F0-011 permanece bloqueado e o Mercado Pago permanece apenas candidato, conforme DEC-017.
+
+---
+
+# Quinta execução — 2026-09-14 (continuação)
+
+Retomada imediatamente após a quarta execução, com um único objetivo: fechar o critério 8. Nenhum experimento anterior foi refeito. Esta execução **não** fechou o critério 8, mas reduziu o bloqueio de "painel inacessível" para "uma aprovação TOTP", e produziu um artefato que permite fechar o critério 8 **offline**, sem precisar disparar novo evento.
+
+## Classificação desta execução
+
+**INCONCLUSIVO** — nove de dez critérios comprovados, sem alteração no placar. O que mudou foi a natureza do bloqueio restante.
+
+## Baseline Git
+
+`main` = `origin/main` = `c14825d84951d8ed51ae4eb80c9673107cf4ce8d`, working tree limpo, nenhuma PR aberta, branch `spike/f0-010-webhook-validation` já removida após o merge da PR #18.
+
+## Terceira entrega real do Mercado Pago — manifesto completo capturado
+
+O Mercado Pago reentregou a notificação da `merchant_order` `44469080694` às `2026-09-14T16:18:11.495Z`, após as duas entregas da quarta execução terem recebido `HTTP 401`. A reentrega alcançou a versão mais recente do receiver, que registra o manifesto e o `v1` integrais.
+
+| Campo | Valor |
+| --- | --- |
+| Horário (UTC) | `2026-09-14T16:18:11.495Z` |
+| `User-Agent` | `MercadoPago Feed v2.0 merchant_order` |
+| IP de origem | `35.245.91.34` |
+| Query | `?id=44469080694&topic=merchant_order` |
+| `x-request-id` | `ba63c7f9-eae1-45ca-874e-c96304bddb5c` |
+| `ts` | `1789402691` |
+| `v1` | `67cf5726ed1eb10b6bc3a3af02c44940bbe24e9ec574941f54e6c938fccb4ee4` |
+| **Manifesto reconstruído** | `id:44469080694;request-id:ba63c7f9-eae1-45ca-874e-c96304bddb5c;ts:1789402691;` |
+| Campos do corpo | apenas `resource` e `topic` |
+| `live_mode` | **ausente** |
+| Resultado HMAC | `hmac_divergente` (constante sintética) |
+| HTTP devolvido | `401` |
+
+Nem o manifesto nem o `v1` são segredos: o primeiro é o texto assinado, o segundo é o MAC. Registrá-los é seguro e tem uma consequência prática relevante.
+
+**Consequência:** o critério 8 pode ser fechado **offline**. Com a chave secreta em mãos, basta calcular `HMAC-SHA256` sobre o manifesto acima e comparar com o `v1` acima. Se conferir, uma notificação real do Mercado Pago terá sido validada, e isso vale mesmo depois que o projeto Vercel temporário for removido. Não é mais necessário manter o endpoint vivo para fechar o critério.
+
+Confirmação adicional, agora com o corpo inteiro observado: as notificações de tópico `merchant_order` carregam **somente** `resource` e `topic`. A ausência de `live_mode` deixa de ser inferência e passa a ser fato observado.
+
+## Painel do Mercado Pago — bloqueio reclassificado
+
+A quarta execução registrou o painel como inalcançável por exigir "login interativo com reCAPTCHA". Isso estava correto para as condições daquela sessão, mas **não é mais o diagnóstico atual** e precisa ser corrigido.
+
+Com um navegador do próprio Bruno conectado ao agente, `https://www.mercadopago.com.br/developers/panel/app` abriu **diretamente, com a sessão já autenticada**: sem login, sem senha e sem reCAPTCHA. O painel "Suas integrações" listou as três aplicações existentes (`TechLab TROQ`, `Claudia e Bruno`, `upadotenis`), todas apenas lidas, nenhuma aberta ou alterada.
+
+O bloqueio real apareceu um passo adiante. Ao acionar **Criar aplicação**, o Mercado Pago exigiu reautenticação por **TOTP**, exibindo um QR Code a ser escaneado no aplicativo do Mercado Pago: "Escaneie o QR para aprovar essa operação de forma segura". Há a alternativa "Usar outro método", que também recai em verificação humana.
+
+Reclassificação, portanto:
+
+| Aspecto | Quarta execução | Estado atual |
+| --- | --- | --- |
+| Leitura do painel | inalcançável | **acessível**, sessão existente |
+| Escrita no painel (criar aplicação, configurar webhook, gerar chave) | inalcançável | bloqueada por **TOTP** |
+| Natureza do bloqueio | acesso inexistente | aprovação humana pontual |
+
+Nenhuma tentativa de contornar o TOTP foi feita. Nenhuma senha foi digitada. A tela foi deixada exatamente no ponto da verificação.
+
+## Caminho da environment variable — desbloqueado
+
+A quarta execução não conseguiu definir `MP_WEBHOOK_SECRET` como variável de ambiente, porque o `VERCEL_TOKEN` do ambiente não alcança a conta pessoal e o MCP não expõe gestão de env vars. Verificado nesta execução: a página de Environment Variables do projeto temporário, em `vercel.com/bruno-m-noronha/troq-f0-010-webhook-validation/settings/environment-variables`, **abre normalmente** com a sessão do navegador do Bruno e está vazia.
+
+Ou seja, o insumo que falta é um só. Assim que a chave secreta existir, ela pode ser transferida do painel do Mercado Pago para a environment variable protegida da Vercel **sem nunca ser exibida**, por cópia direta entre as duas páginas, seguida de redeploy.
+
+## O que falta, em uma frase
+
+Uma aprovação TOTP de Bruno no aplicativo do Mercado Pago. Tudo o mais está pronto e verificado.
+
+## O que esta execução não fez
+
+Nenhuma aplicação foi criada — a criação é exatamente o que o TOTP bloqueia. Nenhuma aplicação existente foi aberta, alterada ou teve secret lido ou reutilizado. Nenhuma configuração de painel foi modificada. Nenhum login foi tentado e nenhuma senha foi digitada. Nenhum TOTP, MFA ou CAPTCHA foi contornado. Nenhum código entrou no repositório TROQ, nenhum dinheiro foi movimentado e nenhuma credencial de produção foi utilizada. OD-07 e OD-08 permanecem abertas, ADR-0004 não foi criado, F0-011 permanece bloqueado e o Mercado Pago permanece apenas candidato, conforme DEC-017.
