@@ -1,16 +1,16 @@
 # Banco de dados — Prisma, schema físico e migrations — TROQ
 
-Fonte de engenharia da **materialização física** do banco de dados. Produzido por **F1-002**, o segundo trabalho da Fase 1, como a primeira parte do entregável E-5 de [../delivery/phase-1-transition.md](../delivery/phase-1-transition.md), seção 10.
+Fonte de engenharia da **materialização física** do banco de dados e do **runtime do Prisma Client**. Produzido por **F1-002**, o segundo trabalho da Fase 1, como a primeira parte do entregável E-5 de [../delivery/phase-1-transition.md](../delivery/phase-1-transition.md), seção 10, e atualizado por **F1-003**, que acrescentou a seção 13 (runtime).
 
 Este documento **não duplica** o modelo lógico: entidades, relações, cardinalidades, estados e invariantes estão em [../architecture/data-model.md](../architecture/data-model.md), e a política de migrations está em [../adr/0005-prisma-orm-migrations.md](../adr/0005-prisma-orm-migrations.md). Aqui ficam apenas as decisões **físicas** — o que foi escolhido para representar o modelo no PostgreSQL —, o que o Prisma Schema consegue expressar e o que exigiu SQL customizado, e o procedimento de validação. Em caso de conflito com ADR, decisão registrada ou documento de arquitetura, **prevalece a fonte de nível superior** ([ai-agent-workflow.md](ai-agent-workflow.md), seção 2) e este documento deve ser corrigido.
 
 ## 1. Escopo
 
-**Faz:** registra o Prisma adotado e a versão efetivamente instalada, a estrutura dos arquivos, a separação entre conexão pooled e direta, as convenções físicas (nomes, identificadores, instantes, dinheiro, tipos de texto, ações referenciais), como a migration inicial materializa as invariantes de restrição de banco, quais garantias vivem no Prisma Schema e quais exigem SQL customizado, os comandos permitidos em desenvolvimento e o procedimento de validação sobre banco descartável.
+**Faz:** registra o Prisma adotado e a versão efetivamente instalada, a estrutura dos arquivos, a separação entre conexão pooled e direta, as convenções físicas (nomes, identificadores, instantes, dinheiro, tipos de texto, ações referenciais), como a migration inicial materializa as invariantes de restrição de banco, quais garantias vivem no Prisma Schema e quais exigem SQL customizado, os comandos permitidos em desenvolvimento, o procedimento de validação sobre banco descartável e, desde F1-003, a **fronteira de runtime** que instancia o Prisma Client com driver adapter (seção 13).
 
-**Não faz:** não provisiona Neon nem cria credencial; não cria singleton de Prisma Client, adaptador de runtime nem qualquer leitura de `DATABASE_URL` por código; não cria o job de CI/CD de `prisma migrate deploy`; não integra Better Auth, R2, Resend ou Mercado Pago; não cria os módulos de domínio de AR-3.3; não implementa funcionalidade de produto; não altera regra de negócio, requisito, ADR ou decisão vigente.
+**Não faz:** não provisiona Neon nem cria credencial; não cria repositórios de domínio nem o job de CI/CD de `prisma migrate deploy`; não integra Better Auth, R2, Resend ou Mercado Pago; não cria os módulos de domínio de AR-3.3; não implementa funcionalidade de produto; não altera regra de negócio, requisito, ADR ou decisão vigente.
 
-**Estado factual na data desta versão (2026-09-14).** O repositório contém `prisma.config.ts`, `prisma/schema.prisma` e a migration inicial versionada. A migration foi validada **apenas contra PostgreSQL local e descartável** (seção 12). **Nenhum banco Neon foi provisionado**, nenhuma migration foi aplicada em ambiente compartilhado e nenhum código de runtime abre conexão com banco. E-5 permanece **parcial**.
+**Estado factual na data desta versão (2026-09-14, após F1-003).** O repositório contém `prisma.config.ts`, `prisma/schema.prisma`, a migration inicial versionada e, desde F1-003, a fronteira de runtime `src/persistence/prisma.ts`, que instancia o Prisma Client com `@prisma/adapter-pg` a partir de `DATABASE_URL` (seção 13). Migration e runtime foram validados **apenas contra PostgreSQL local e descartável** (seção 12). **Nenhum banco Neon foi provisionado**, nenhuma migration foi aplicada em ambiente compartilhado e nenhum job de `migrate deploy` existe. E-5 permanece **parcial**.
 
 ## 2. Prisma adotado
 
@@ -22,7 +22,8 @@ Este documento **não duplica** o modelo lógico: entidades, relações, cardina
 | Verificação na instalação (2026-09-14) | No registro npm, `prisma@latest` resolvia para `8.0.0-rc.15` (release candidate) e `prev` para `7.10.0`; `@prisma/client@latest` resolvia para `7.10.0`. **Não existe 7.x posterior a 7.10.0.** A linha 8 não foi adotada, conforme a política de evolução de ADR-0005 |
 | Generator | `provider = "prisma-client"` — o generator da linha 7 —, com `output = "../src/generated/prisma"` explícito |
 | Preview features | **Nenhuma.** Em particular, `partialIndexes` **não** está habilitada, embora exista em Preview na 7.10: o projeto prioriza superfície estável e materializa índices parciais por SQL na migration (seção 8) |
-| Motor | Prisma 7 usa Query Compiler (sem engine Rust em runtime); o CLI traz o Schema Engine próprio. Nenhum driver adapter foi instalado, porque **não há runtime** nesta entrega e o CLI **não** exige adapter para operações de schema |
+| Motor | Prisma 7 usa Query Compiler (sem engine Rust em runtime); o CLI traz o Schema Engine próprio e **não** exige adapter para operações de schema |
+| Driver adapter de runtime | `@prisma/adapter-pg@7.10.0` sobre `pg@8.23.0`, ambos em `dependencies`, pinados em versão exata — instalados por **F1-003** (seção 13). `@types/pg` **não** é dependência direta: vem transitivamente do adapter e o código da aplicação não importa `pg` |
 
 Atualizações de minor e patch dentro de 7.x seguem a política de ADR-0005: atualização do pin e do lockfile em PR própria, sem ADR. Adoção da linha 8 exige **nova ADR**.
 
@@ -38,8 +39,8 @@ A separação é a de [ADR-0005](../adr/0005-prisma-orm-migrations.md), decisão
 
 | Variável | Quem consome hoje | Para quê |
 | --- | --- | --- |
-| `DIRECT_URL` | **`prisma.config.ts`**, lida pelo Prisma CLI (`migrate dev`, `migrate deploy`, `migrate status`, `migrate reset`, `migrate diff`) | Conexão **direta, não pooled**, para operações de schema. É o **único consumidor real** de variável de ambiente criado por F1-002 |
-| `DATABASE_URL` | **Ninguém, ainda.** Continua `previsto` | Conexão **pooled** do runtime da aplicação, quando o Prisma Client for instanciado com driver adapter em trabalho futuro |
+| `DIRECT_URL` | **`prisma.config.ts`**, lida pelo Prisma CLI (`migrate dev`, `migrate deploy`, `migrate status`, `migrate reset`, `migrate diff`) | Conexão **direta, não pooled**, para operações de schema. **Nunca** é lida pelo runtime |
+| `DATABASE_URL` | **`src/persistence/prisma.ts`**, a fronteira de runtime criada por F1-003 (seção 13). **Consumida** | Conexão **pooled** do runtime da aplicação, passada ao `PrismaPg` que o Prisma Client usa. **Nunca** é lida pelo CLI |
 
 Por que o CLI não pode usar a pooled: o endpoint pooled do Neon usa PgBouncer em modo transação e não suporta os recursos de sessão de que as operações de schema dependem ([ADR-0006](../adr/0006-async-work-scheduling-concurrency.md), fato N-1). Em `development` contra banco local, as duas URLs podem apontar para o mesmo servidor; a distinção de nomes é preservada mesmo assim, para que o contrato não mude ao conectar o Neon.
 
@@ -62,9 +63,14 @@ prisma/
     20260914210926_initial_schema/
       migration.sql                           migration inicial: SQL gerado + bloco customizado (secao 8)
 src/generated/prisma/                         Prisma Client gerado — artefato de build, NAO versionado
+src/persistence/
+  prisma.ts                                   fronteira de runtime: PrismaClient + PrismaPg (secao 13)
+  prisma.test.ts                              unitario: carregamento, erro sem DATABASE_URL, reuso
+  prisma.integration.test.ts                  integracao contra PostgreSQL real (npm run test:integration)
+vitest.integration.config.mts                 config da suite de integracao (fora de test:ci)
 ```
 
-- `src/generated/prisma/` está em `.gitignore`, `.prettierignore` e nos `ignores` do ESLint. Ele é recriado por `npx prisma generate` e **não** entra em commit.
+- `src/generated/prisma/` está em `.gitignore`, `.prettierignore` e nos `ignores` do ESLint. Ele é recriado por `npx prisma generate` e **não** entra em commit. Desde F1-003, o script `postinstall` do `package.json` executa `prisma generate` ao fim de `npm ci`/`npm install`: como a fronteira de runtime (seção 13) importa o client gerado, `typecheck`, `test:ci` e `build` passaram a depender dele, e o CI e a Vercel instalam a partir de um checkout sem o artefato. `prisma generate` não toca o banco e não exige `DATABASE_URL` nem `DIRECT_URL` (seção 4.1); é exatamente o uso que [ADR-0005](../adr/0005-prisma-orm-migrations.md) admite no build/`postinstall`, enquanto `migrate deploy` continua fora dele.
 - O `datasource` do schema declara apenas `provider = "postgresql"`; a URL vive exclusivamente em `prisma.config.ts` (regra da linha 7).
 - Migrations são **imutáveis depois de aplicadas em ambiente compartilhado** (ADR-0005, decisão 5). Como nenhuma foi aplicada fora de banco descartável, a inicial ainda poderia ser reescrita em PR própria; a partir do primeiro `migrate deploy` em `preview` ou `production`, corrigir significa **nova** migration.
 
@@ -178,7 +184,7 @@ Pré-requisito: `DIRECT_URL` apontando para um PostgreSQL **local ou descartáve
 | --- | --- | --- |
 | `npx prisma format` / `npx prisma format --check` | Não | Formatar o schema; `--check` falha se houver divergência (adequado a CI) |
 | `npx prisma validate` | Não | Validar o schema |
-| `npx prisma generate` | Não | Regenerar `src/generated/prisma/` |
+| `npx prisma generate` | Não | Regenerar `src/generated/prisma/`. Também executado automaticamente pelo `postinstall` (seção 5) |
 | `npx prisma migrate status` | Sim (leitura) | Comparar o histórico versionado com `_prisma_migrations` |
 | `npx prisma migrate dev --create-only --name <nome>` | Sim (shadow database) | Gerar uma migration **sem aplicar**, para revisão e customização |
 | `npx prisma migrate dev` | Sim | Aplicar migrations pendentes ao banco descartável (e gerar o client) |
@@ -192,11 +198,11 @@ Pré-requisito: `DIRECT_URL` apontando para um PostgreSQL **local ou descartáve
 | --- | --- | --- |
 | Provisionamento do Neon (projeto, branches `development`/`preview`/`production`, credenciais) | **não iniciado** | Trabalho próprio da Fase 1; F1-002 não acessou nem provisionou o Neon |
 | Configuração de `DATABASE_URL`/`DIRECT_URL` em painel (Vercel, segredo de CI/CD) | **não iniciado** | Depende do provisionamento |
-| Runtime: instância do Prisma Client com driver adapter (`@prisma/adapter-pg` ou equivalente), singleton, leitura de `DATABASE_URL` | **não iniciado** | Trabalho próprio; hoje `DATABASE_URL` não tem consumidor |
+| Runtime: instância do Prisma Client com driver adapter, singleton, leitura de `DATABASE_URL` | **concluído por F1-003** | `src/persistence/prisma.ts` (seção 13). Provado apenas contra banco descartável |
 | Job controlado de CI/CD executando `prisma migrate deploy`, serializado, com aprovação para produção | **não iniciado** | ADR-0005, decisão 7 |
-| Validação de migration em CI de PR contra banco efêmero | **não iniciado** | [testing.md](testing.md), seção 7 |
+| Validação de migration e execução de `npm run test:integration` em CI de PR contra banco efêmero | **não iniciado** | [testing.md](testing.md), seção 7. A suíte de integração já existe (seção 13.7); falta o job que sobe o banco efêmero e a executa |
 | Integrações: Better Auth (e suas tabelas), R2, Resend, Mercado Pago | **não iniciado** | Fases 2 e 3 |
-| Módulos de domínio de AR-3.3 e camada de persistência | **não iniciado** | Fase 1, E-1 |
+| Módulos de domínio de AR-3.3 e repositórios da camada de persistência | **não iniciado** | Fase 1, E-1. O que existe da camada de persistência é apenas a fronteira de obtenção do client (seção 13) |
 
 Consequência: **E-5 permanece parcial** e a **Fase 1 permanece em andamento**.
 
@@ -231,24 +237,94 @@ Executado integralmente em 2026-09-14 por F1-002 e reexecutável por qualquer pe
    | Denúncia repetida por (denunciante, anúncio); contestação repetida por decisão; decisão de ofício sem origem; segunda liberação para a mesma negociação | falha | `reports_reporter_id_listing_id_key`; `appeals_moderation_decision_id_key`; `moderation_decisions_origin_check`; `contact_releases_negotiation_id_key` |
 
 5. **Reprodutibilidade:** criar um segundo banco vazio no mesmo contêiner e executar `npx prisma migrate deploy` contra ele com `DIRECT_URL` apontando para o novo banco; `migrate status` deve reportar o histórico aplicado. Em seguida recriar o banco de desenvolvimento (`DROP DATABASE`/`CREATE DATABASE` no contêiner, ou `prisma migrate reset --force` com consentimento humano) e reaplicar com `migrate dev`. Nesta entrega os dois caminhos terminaram com 24 tabelas, 18 enums, 4 índices únicos parciais, 10 `CHECK`s e 3 triggers, e a prova do item 4 foi reexecutada com o mesmo resultado no banco recriado.
-6. **Encerrar e remover** o contêiner e seu volume ao final. Nada da validação é versionado além deste registro.
+6. **Runtime (desde F1-003):** com `DATABASE_URL` apontando para o **mesmo** banco descartável já migrado, executar `npm run test:integration`. A suíte abre conexão pela fronteira da seção 13, executa `SELECT 1`, confere em `_prisma_migrations` que a migration inicial está aplicada e faz `count()` em tabelas do schema, sem escrever nada. Sem `DATABASE_URL` a suíte **falha** (não é pulada). Resultado em 2026-09-14: 5 de 5 casos aprovados sobre PostgreSQL 17.11, depois de `migrate deploy` em banco vazio.
+7. **Encerrar e remover** o contêiner e seu volume ao final. Nada da validação é versionado além deste registro.
 
 Prisma Migrate não possui migration `down` como fluxo oficial do projeto; **nenhum rollback produtivo foi implementado**. Reverter uma mudança em ambiente compartilhado é uma **nova** migration, por expand/contract (ADR-0005, decisão 9).
 
-## 13. Rastreabilidade
+## 13. Runtime do Prisma Client — a fronteira de persistência
+
+Produzido por **F1-003**, terceiro trabalho da Fase 1 e segunda parte de E-5. É a **fronteira mínima** entre a aplicação e o PostgreSQL: o único ponto que instancia o Prisma Client, conforme a camada de persistência de [../architecture/overview.md](../architecture/overview.md), AR-3.2 ("único lugar que fala Prisma/SQL"). Repositórios de domínio, transações e casos de uso **não** existem ainda; eles serão consumidores desta fronteira.
+
+### 13.1 Localização e superfície pública
+
+| Item | Valor |
+| --- | --- |
+| Arquivo | `src/persistence/prisma.ts` |
+| Exporta | `getPrismaClient(): PrismaClient` e o tipo `PrismaClient` (re-export do client gerado) |
+| Importa o Prisma Client de | `src/generated/prisma/client` — exclusivamente; nenhum outro arquivo da aplicação importa o client gerado |
+| Diretório | `src/persistence/` recebe o nome da camada de AR-3.2. Não é módulo de AR-3.3 e não cria a estrutura desses módulos |
+
+A superfície é deliberadamente mínima. Um módulo de domínio futuro obtém o client por `getPrismaClient()`; nenhum Route Handler, Server Action ou componente monta consulta direta ([conventions.md](conventions.md), seção 2.1).
+
+### 13.2 Driver adapter e versões
+
+Fatos apurados em **2026-09-14** na documentação oficial do Prisma ORM 7 (guia de upgrade para a versão 7, página de PostgreSQL, página de driver adapters, guia de conexões em serverless e página de pool de conexões) e do Neon (connection pooling, guia de Prisma, serverless driver):
+
+1. **Prisma 7 exige driver adapter** para toda instância de `PrismaClient` ("the way to create a new Prisma Client has changed to require a driver adapter for all databases"). O CLI não exige.
+2. O adapter PostgreSQL oficial sobre TCP é **`@prisma/adapter-pg`**, que usa o driver `pg` (node-postgres). Construção: `new PrismaPg({ connectionString })`, passado em `new PrismaClient({ adapter })`.
+3. **O pool de conexões pertence ao driver**, não ao Prisma: com adapter, "connection pooling defaults (and configuration) now come from the driver itself". Para `pg`, `max` padrão é **10**.
+4. Em serverless (Vercel), a instância deve ser criada **fora do handler** para ser reutilizada, e **não** se chama `$disconnect()` ao fim da invocação, porque o contêiner pode ser reaproveitado.
+5. A URL **pooled** é para o runtime e a **direta** para o CLI — "Use separate URLs for CLI (direct) and runtime (pooled)".
+6. O endpoint pooled do Neon é **PgBouncer em modo transação** e não suporta recursos de sessão (`SET`, `LISTEN/NOTIFY`, `PREPARE` em SQL, cursores `WITH HOLD`); conexão direta é para migrations e administração ([ADR-0006](../adr/0006-async-work-scheduling-concurrency.md), N-1). Transações do Prisma continuam válidas porque cada transação ocupa uma única conexão de servidor do início ao fim. O adapter 7.10.0 não nomeia prepared statements por padrão (a opção `statementNameGenerator` é opcional e ausente), o que evita o cache de statements entre conexões que o modo transação não suporta.
+
+| Pacote | Versão | Tipo | Motivo |
+| --- | --- | --- | --- |
+| `@prisma/adapter-pg` | `7.10.0` (exata; `latest` no npm em 2026-09-14) | runtime | Driver adapter exigido pelo Prisma 7; mesma versão do `@prisma/client` |
+| `pg` | `8.23.0` (exata; `latest`; dentro do intervalo `^8.16.3` exigido pelo adapter) | runtime | Driver PostgreSQL efetivamente usado. Declarado diretamente para ficar pinado e visível, e não apenas transitivo |
+
+**Por que `@prisma/adapter-pg` e não `@prisma/adapter-neon`.** O guia do Neon para Prisma recomenda `@prisma/adapter-neon`, que "routes queries over WebSockets for compatibility with serverless environments"; a documentação do Prisma lista os dois como adapters oficiais. A escolha do TROQ é o `pg` por três razões, nenhuma delas contrariada por fato oficial: (a) o Neon é **provedor, não vocabulário** da camada de persistência ([ADR-0002](../adr/0002-postgresql-neon.md); RNF-017) — o `pg` fala com qualquer PostgreSQL, inclusive o descartável da seção 12, sem trocar de adapter; (b) as funções da Vercel usadas pelo TROQ rodam no runtime **Node.js**, onde TCP está disponível, e o driver WebSocket do Neon existe para runtimes de edge, que o projeto não usa; (c) [ADR-0005](../adr/0005-prisma-orm-migrations.md), decisão 10, já fixa a combinação "pooled no runtime, direta no CLI", que o `pg` atende sem SDK do provedor. Trocar para o adapter do Neon, se algum dia houver razão medida, custa a reescrita desta fronteira e nova decisão registrada — não do domínio.
+
+### 13.3 Variáveis lidas
+
+| Variável | Lida por esta fronteira? | Observação |
+| --- | --- | --- |
+| `DATABASE_URL` | **Sim** — única variável lida | Passada integralmente ao `PrismaPg` como `connectionString`. Nenhum valor ou host está no código |
+| `DIRECT_URL` | **Não** | Exclusiva do CLI, via `prisma.config.ts` (seção 4.1) |
+
+A fronteira **não** carrega `.env*`: em `development`, o próprio Next.js carrega `.env.local` para `next dev`/`next build`/`next start`; em `preview` e `production`, o valor vem do ambiente da plataforma ([environments.md](environments.md), seção 6.1). Os testes definem a variável explicitamente. Parâmetros de conexão que o Neon recomenda na **URL** (por exemplo `sslmode=require` e `connect_timeout` para o cold start do compute) são conteúdo do valor da variável, definidos quando o Neon for provisionado, e não configuração de código.
+
+### 13.4 Inicialização lazy e comportamento sem `DATABASE_URL`
+
+- **Importar o módulo não exige a variável e não toca o banco.** `npm run build`, `lint`, `typecheck`, `test:ci` e `prisma generate` rodam sem `DATABASE_URL` (comprovado na validação de F1-003). Isso não é um parser geral de variáveis de ambiente, que continua fora de escopo.
+- **A variável só é lida quando um client é pedido.** `getPrismaClient()` sem `DATABASE_URL` lança `Error` cuja mensagem **nomeia a variável e nunca o valor** ("`DATABASE_URL` nao definida: o runtime nao pode abrir conexao com o PostgreSQL ..."). Nenhuma connection string atravessa erro ou log ([environments.md](environments.md), seção 6.5).
+- **Chamar `getPrismaClient()` não abre conexão.** O `PrismaPg` só cria o `pg.Pool` no primeiro `connect()` interno do Prisma, e a primeira conexão TCP só é aberta na primeira consulta — fato conferido no código do adapter 7.10.0.
+
+### 13.5 Instância única e reuso
+
+- A instância vive em **`globalThis`**, sob a chave `__troqPrismaClient`, e é criada na primeira chamada. Chamadas seguintes devolvem a mesma instância — e o mesmo pool.
+- **Desenvolvimento:** o hot reload do Next.js reavalia módulos, mas não o objeto global; guardar a instância nele é o mecanismo recomendado pela documentação do Prisma para não multiplicar clients a cada recarga. O teste unitário prova que uma reavaliação do módulo devolve a mesma instância.
+- **Produção (Vercel, Node.js):** cada instância de função cria um client na primeira requisição e o reutiliza enquanto viver. Não há `$disconnect()` por request. O tamanho do pool é o padrão do `pg` (`max = 10`), porque o runtime fala com o **pooler** do Neon, que absorve muitas conexões curtas; reduzi-lo é ajuste por medição, não decisão desta entrega. A função `attachDatabasePool` do pacote `@vercel/functions`, que a documentação do Prisma cita para o Fluid compute da Vercel, **não** foi adotada: é dependência do provedor de deploy e fica registrada como pendência a avaliar quando houver ambiente hospedado com banco.
+- **Trava consultiva:** nada nesta fronteira usa `pg_advisory_lock` de sessão, proibido por ADR-0006, decisão 6. A regra continua valendo para todo consumidor futuro.
+
+### 13.6 Exclusivamente server-side
+
+O módulo lê um segredo e abre TCP; ele **não pode** ser importado por Client Component ([conventions.md](conventions.md), seção 3.2). Isso é verificado pelo próprio build, e não só por disciplina: em 2026-09-14 um Client Component temporário que importava `src/persistence/prisma.ts` fez `next build` falhar com sete erros `Module not found: Can't resolve 'dns' | 'fs' | 'net' | 'tls' | 'util/types'` no bundle de cliente, porque o `pg` depende de módulos do Node. O arquivo temporário foi removido e não está versionado. Nenhum código de produto importa a fronteira ainda: `src/app/page.tsx` continua estático.
+
+### 13.7 Testes
+
+| Arquivo | Nível | Roda em | O que prova |
+| --- | --- | --- | --- |
+| `src/persistence/prisma.test.ts` | unitário, sem banco | `npm run test:ci` | importar sem `DATABASE_URL` não lança; pedir o client sem a variável falha com erro controlado que não contém connection string; duas chamadas devolvem a mesma instância; a instância sobrevive à reavaliação do módulo |
+| `src/persistence/prisma.integration.test.ts` | integração, PostgreSQL real | `npm run test:integration`, com `DATABASE_URL` para banco descartável migrado | conexão real, `SELECT 1`, migration inicial em `_prisma_migrations`, `count()` em `users`, `listings` e `contact_requests` sem escrever, reuso entre consultas |
+
+`npm run test:integration` usa `vitest.integration.config.mts` (ambiente `node`, sem jsdom, arquivos em série). A suíte de integração fica **fora** de `test:ci` para que o CI atual continue determinístico sem banco ([testing.md](testing.md), seção 7); quando o job de banco efêmero existir (seção 11), é esse comando que ele executará. Sem `DATABASE_URL`, a suíte de integração **falha explicitamente** — não é pulada.
+
+## 14. Rastreabilidade
 
 | Item | Efeito deste documento |
 | --- | --- |
 | F1-002 | Entrega: Prisma 7.10.0 pinado, `prisma.config.ts`, `schema.prisma`, migration inicial, este documento |
-| E-5 ([../delivery/phase-1-transition.md](../delivery/phase-1-transition.md), seção 10) | Passa de `não iniciado` a **parcial**: schema e migration existem; Neon e job de `migrate deploy` não |
+| F1-003 | Entrega: `@prisma/adapter-pg` e `pg` pinados, fronteira `src/persistence/prisma.ts`, testes unitários e de integração, `npm run test:integration`, seção 13 deste documento |
+| E-5 ([../delivery/phase-1-transition.md](../delivery/phase-1-transition.md), seção 10) | **Parcial**: schema, migration e runtime do Prisma Client existem (F1-002 e F1-003); Neon e job de `migrate deploy` não |
 | [../architecture/data-model.md](../architecture/data-model.md) | Materializado; I-1, I-2, I-5, I-6 e I-8 como garantias reais de banco (seção 7.1); nenhuma entidade `Interest` |
 | [ADR-0005](../adr/0005-prisma-orm-migrations.md) | Executado na prática pela primeira vez: pin exato, `--create-only` + SQL editado, `migrate dev` só em descartável, `migrate deploy` provado em banco vazio. A revisão prevista na sua política de evolução ("revisitada quando a Fase 1 criar o primeiro schema") está registrada aqui: a política mostrou-se executável |
 | [ADR-0002](../adr/0002-postgresql-neon.md) | Preservado: PostgreSQL padrão, sem extensão e sem recurso do provedor |
 | [ADR-0006](../adr/0006-async-work-scheduling-concurrency.md), decisão 7 | Aplicada: restrição de banco é a garantia; trava é comportamento da futura transação |
-| [environments.md](environments.md) | `DIRECT_URL` ganha consumidor real; `DATABASE_URL` continua `previsto` |
+| [environments.md](environments.md) | `DIRECT_URL` (F1-002) e `DATABASE_URL` (F1-003) têm consumidor real; as demais variáveis continuam `previsto` |
 | R-07 | Passa de teórico a exercitável: existe histórico versionado a proteger |
 | Gate da Fase 1 | O critério "invariantes atribuídas a restrição de banco materializadas no schema inicial" tem evidência; os demais critérios continuam por verificar |
 
-## 14. Revisão
+## 15. Revisão
 
-Revisado a cada migration nova, quando o Neon for provisionado, quando o runtime do Prisma Client for criado, quando o job de `migrate deploy` existir, ou quando [../architecture/data-model.md](../architecture/data-model.md) mudar.
+Revisado a cada migration nova, quando o Neon for provisionado, quando o job de `migrate deploy` existir, quando a fronteira de runtime mudar de adapter ou de estratégia de reuso, ou quando [../architecture/data-model.md](../architecture/data-model.md) mudar.

@@ -14,8 +14,8 @@ for (const file of ['.env.local', '.env']) {
 
 // Operacoes de schema e de migration usam a conexao DIRETA (nao pooled),
 // conforme ADR-0005, decisao 10, e docs/engineering/environments.md, secao 5.2.
-// `DATABASE_URL` (pooled) fica reservada ao runtime da aplicacao, que ainda
-// nao existe.
+// `DATABASE_URL` (pooled) e lida exclusivamente pelo runtime da aplicacao, em
+// src/persistence/prisma.ts; o CLI nunca a usa.
 //
 // O datasource so e declarado quando a variavel existe: `prisma generate`,
 // `prisma validate` e `prisma format` nao tocam o banco e precisam funcionar

@@ -146,6 +146,7 @@ O scaffold deve implementar exatamente estes comandos. Eles são o contrato entr
 | `npm run typecheck` | Verificação de tipos sem emitir artefato. Falha em qualquer erro de tipo |
 | `npm run test` | Suíte de testes em modo de desenvolvimento |
 | `npm run test:ci` | Suíte de testes em modo não interativo e determinístico, adequado a CI |
+| `npm run test:integration` | Testes de integração contra PostgreSQL real e descartável, fora de `test:ci`; exige `DATABASE_URL` para um banco efêmero já migrado ([database.md](database.md), seção 13.7). Adicionado por F1-003 |
 | `npm run build` | Build de produção da aplicação |
 
 ### 5.2 Divisão de responsabilidade entre Prettier e ESLint
