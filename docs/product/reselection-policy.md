@@ -16,7 +16,7 @@ Este documento **não** define:
 
 | Assunto | Onde permanece |
 | --- | --- |
-| Chargeback, duplicidade, pagamento tardio, reembolso e demais exceções financeiras | [OD-07](../decisions/open-decisions.md) |
+| Duplicidade, pagamento tardio, reembolso técnico, reversões e demais exceções financeiras | [payment-exceptions.md](payment-exceptions.md) (DEC-037) |
 | Escolha e homologação do gateway de pagamento | Definidas depois em [../adr/0004-mercado-pago-pix.md](../adr/0004-mercado-pago-pix.md) (DEC-036) |
 | Schema, migrations, endpoints, Server Actions, telas, notificações e emails | Fases 1 a 3 do [roadmap](../delivery/roadmap.md) |
 | Motivo, culpado ou resultado do encerramento da negociação | Rejeitado por DEC-029, seção 9.3 |
@@ -122,7 +122,7 @@ A desistência **não** é um estado, um evento, um motivo registrado nem um cam
 
 A cobrança de R$ 0,99 é definitiva, mesmo quando o solicitante não for escolhido — e igualmente quando for escolhido e a negociação for encerrada, com ou sem desistência.
 
-Nada neste documento cria reembolso, estorno, crédito, compensação, devolução de vaga ou qualquer inferência nesse sentido. Exceções financeiras continuam pertencendo **exclusivamente** a [OD-07](../decisions/open-decisions.md).
+Nada neste documento cria reembolso, estorno, crédito, compensação, devolução de vaga ou qualquer inferência nesse sentido. As exceções financeiras foram definidas depois, **exclusivamente**, em [payment-exceptions.md](payment-exceptions.md) (DEC-037), que confirma que desistência e reseleção não geram reembolso e que a vaga consumida não é devolvida.
 
 ## 8. Cenários de consistência
 
@@ -151,7 +151,7 @@ Nada neste documento cria reembolso, estorno, crédito, compensação, devoluç�
 | Reseleção automática ao encerrar a negociação | **Rejeitada** | Transformaria o encerramento em decisão de escolha; DEC-029 é explícita em que o encerramento **não** autoriza reseleção |
 | Permitir uma quarta solicitação paga para repor o desistente | **Rejeitada** | Violaria RB-003, que é preservada literalmente |
 | Registrar "desistência" como estado ou motivo | **Rejeitada** | DEC-029, seção 9.3, já rejeitou motivo, culpado e resultado; reintroduzi-los criaria superfície de disputa e de moderação sem necessidade |
-| Reembolso ou crédito ao anunciante ou ao desistente | **Rejeitada** | Violaria RB-004; exceções financeiras são exclusivas de OD-07 |
+| Reembolso ou crédito ao anunciante ou ao desistente | **Rejeitada** | Violaria RB-004; as exceções financeiras são exclusivas de [payment-exceptions.md](payment-exceptions.md) (DEC-037), que também não cria essa hipótese |
 | Permitir reseleção com anúncio `paused` | **Rejeitada** | A oferta fora do ar não deve originar nova relação; o anunciante tem o caminho explícito de reativar (T4) |
 
 ## 10. Rastreabilidade
@@ -168,4 +168,4 @@ Nada neste documento cria reembolso, estorno, crédito, compensação, devoluç�
 | DEC-029 | Preservada integralmente. `closed` unilateral e irreversível é a pré-condição RS-2 |
 | DEC-030 | Preservada. Cada negociação origina no máximo duas avaliações; negociações sequenciais são independentes para efeito de avaliação |
 | OD-06 | **Fechada** por este documento (DEC-032) |
-| OD-07, OD-08, OD-10, OD-11, OD-12 | Não são tratadas aqui. OD-07 permanece aberta; OD-10, OD-11 e OD-12 foram fechadas na mesma entrega por DEC-033, DEC-034 e DEC-035, e OD-08 depois por DEC-036 |
+| OD-07, OD-08, OD-10, OD-11, OD-12 | Não são tratadas aqui. OD-10, OD-11 e OD-12 foram fechadas na mesma entrega por DEC-033, DEC-034 e DEC-035; OD-08 depois por DEC-036 e OD-07 depois por [payment-exceptions.md](payment-exceptions.md) (DEC-037) |

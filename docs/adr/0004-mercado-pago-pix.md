@@ -1,5 +1,7 @@
 # ADR-0004 — Mercado Pago como gateway Pix inicial homologado, via Checkout Transparente pela Orders API
 
+> **Atualização posterior (2026-09-14).** Esta ADR foi escrita enquanto **OD-07 ainda estava aberta**, e o texto abaixo é preservado como aceito, sem reescrita. OD-07 foi fechada no mesmo dia, logo depois, por [../product/payment-exceptions.md](../product/payment-exceptions.md) (DEC-037), na execução de F0-019. Portanto, toda menção a OD-07 como aberta reflete o estado na data de aceite desta ADR e **não** descreve o estado atual do projeto. Nenhuma decisão desta ADR foi alterada por DEC-037, que a usa como base; a única observação factual acrescentada lá é que a documentação de notificações detalha o reenvio como sendo a cada 15 minutos nas três primeiras tentativas e, depois, com prazo estendido.
+
 ## Status
 
 **Aceito** — Fase 0 (2026-09-14). Fecha [OD-08](../decisions/open-decisions.md) com base nas evidências de [F0-010](../delivery/spikes/f0-010-mercado-pago-pix-r099.md) e é a fonte oficial de DEC-036 em [../decisions/decision-log.md](../decisions/decision-log.md).

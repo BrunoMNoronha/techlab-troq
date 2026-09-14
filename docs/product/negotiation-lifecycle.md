@@ -6,7 +6,7 @@ Fonte oficial do ciclo mínimo e do encerramento da negociação no MVP do TROQ.
 
 Define o que é uma negociação no sistema, quais estados ela possui, quem pode encerrá-la, o que o encerramento significa e o que ele explicitamente **não** produz.
 
-Este documento **não** define regras de avaliação, que estão em [ratings.md](ratings.md) (DEC-030), nem desistência ou reseleção, definidas depois em [reselection-policy.md](reselection-policy.md) (DEC-032), exceções financeiras (OD-07), retenção de dados, definida depois em [data-retention-policy.md](data-retention-policy.md) (DEC-033), nem qualquer detalhe de implementação (schema, endpoints, telas, notificações).
+Este documento **não** define regras de avaliação, que estão em [ratings.md](ratings.md) (DEC-030), nem desistência ou reseleção, definidas depois em [reselection-policy.md](reselection-policy.md) (DEC-032), exceções financeiras, definidas depois em [payment-exceptions.md](payment-exceptions.md) (DEC-037), retenção de dados, definida depois em [data-retention-policy.md](data-retention-policy.md) (DEC-033), nem qualquer detalhe de implementação (schema, endpoints, telas, notificações).
 
 Preserva integralmente RB-001 a RB-006 e o ciclo de vida do anúncio definido em [listing-lifecycle.md](listing-lifecycle.md) (DEC-027).
 
@@ -137,7 +137,7 @@ O encerramento da negociação **não**:
 - apaga dados;
 - define sucesso ou fracasso da troca.
 
-Desistência e reseleção foram definidas depois em [reselection-policy.md](reselection-policy.md) (DEC-032), sem alterar nada deste documento: o encerramento continua não autorizando reseleção por si só; a reseleção é ato novo e explícito do anunciante, que tem `closed` como pré-condição. OD-07 continua responsável por exceções financeiras. A retenção e a exclusão de dados foram definidas depois em [data-retention-policy.md](data-retention-policy.md) (DEC-033).
+Desistência e reseleção foram definidas depois em [reselection-policy.md](reselection-policy.md) (DEC-032), sem alterar nada deste documento: o encerramento continua não autorizando reseleção por si só; a reseleção é ato novo e explícito do anunciante, que tem `closed` como pré-condição. As exceções financeiras foram definidas depois em [payment-exceptions.md](payment-exceptions.md) (DEC-037), que confirma que o encerramento não gera reembolso. A retenção e a exclusão de dados foram definidas depois em [data-retention-policy.md](data-retention-policy.md) (DEC-033).
 
 ### 9.3 Sem motivo e sem resultado de encerramento
 
@@ -194,7 +194,7 @@ O log de encerramento **não** registra telefone/WhatsApp (DEC-023). A auditoria
 | --- | --- |
 | Regras de avaliação (quem avalia quem, notas, prazo, publicação, moderação) | [ratings.md](ratings.md) (DEC-030) |
 | Desistência e reseleção | Definidas depois em [reselection-policy.md](reselection-policy.md) (DEC-032) |
-| Chargebacks e exceções de pagamento | OD-07 |
+| Exceções de pagamento, reembolso técnico e reversões | [payment-exceptions.md](payment-exceptions.md) (DEC-037) |
 | Escolha do gateway | Definida depois em [../adr/0004-mercado-pago-pix.md](../adr/0004-mercado-pago-pix.md) (DEC-036) |
 | Retenção e exclusão de dados e trilhas de auditoria | Definidas depois em [data-retention-policy.md](data-retention-policy.md) (DEC-033) |
 | Schema, migrations, API, telas, notificações e emails | Fases posteriores |
@@ -221,6 +221,6 @@ O log de encerramento **não** registra telefone/WhatsApp (DEC-023). A auditoria
 | RF-017 | Deixa de depender de OD-01; regras detalhadas definidas depois por [ratings.md](ratings.md) (DEC-030) |
 | RF-022 | Passa a incluir o encerramento da negociação entre as operações críticas auditadas |
 | DEC-027 / [listing-lifecycle.md](listing-lifecycle.md) | Preservada; ciclos do anúncio e da negociação permanecem independentes |
-| OD-07 | Permanece aberta; nada aqui a fecha ou antecipa. OD-06, OD-10, OD-11, OD-12 e OD-08 foram fechadas depois por DEC-032, DEC-033, DEC-034, DEC-035 e DEC-036 |
+| OD-07 | Nada aqui a fecha ou antecipa; foi fechada depois por [payment-exceptions.md](payment-exceptions.md) (DEC-037). OD-06, OD-10, OD-11, OD-12 e OD-08 também foram fechadas depois, por DEC-032, DEC-033, DEC-034, DEC-035 e DEC-036 |
 | OD-02 | Permanecia aberta nesta decisão; foi fechada depois por [ratings.md](ratings.md) (DEC-030) |
 | F0-015 | Concluído por esta entrega |

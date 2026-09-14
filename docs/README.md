@@ -22,12 +22,13 @@ Ponto de partida: [project-state.md](project-state.md). Decisões vigentes: [dec
 | [product/data-retention-policy.md](product/data-retention-policy.md) | existente | Política de retenção e exclusão de dados: categorias, exclusão de conta com efeito imediato e prazo de 30 dias, expurgo de imagens, logs de acesso, auditoria, moderação e abuso, metadados financeiros, backups e legal hold; fecha OD-10 (DEC-033) |
 | [product/age-eligibility.md](product/age-eligibility.md) | existente | Elegibilidade etária: 18 anos completos ou mais por declaração explícita no cadastro, sem coleta documental ou biométrica e sem verificação externa, com bloqueio cautelar diante de evidência razoável de menoridade; fecha OD-11 (DEC-034) |
 | [product/interest-flow.md](product/interest-flow.md) | existente | Natureza da demonstração de interesse: ação gratuita de interface, sem entidade persistida, sem cancelamento e sem visibilidade ao anunciante, com telemetria apenas agregada; fecha OD-12 (DEC-035) |
+| [product/payment-exceptions.md](product/payment-exceptions.md) | existente | Exceções de pagamento: fonte de verdade do pagamento, identidade e idempotência da tentativa, duplicidade técnica, instante de acreditação como critério de tempestividade, piso de 30 minutos da janela de reserva, preservação de RB-003 sob concorrência, falhas de confirmação e de webhook, reembolso técnico, distinção entre reembolso técnico, devolução Pix, MED e chargeback de cartão, efeitos das reversões, reconciliação, auditoria e segurança, com matriz de cenários; fecha OD-07 (DEC-037) |
 
 ### decisions — decisões em aberto e registro de decisões de produto
 
 | Documento | Status | Conteúdo |
 | --- | --- | --- |
-| [decisions/open-decisions.md](decisions/open-decisions.md) | existente | Questões ainda não decididas, separadas das decisões vigentes. Resta apenas OD-07, o tratamento das exceções de pagamento |
+| [decisions/open-decisions.md](decisions/open-decisions.md) | existente | Questões ainda não decididas, separadas das decisões vigentes. **Nenhuma resta:** OD-07, a última, foi fechada por [product/payment-exceptions.md](product/payment-exceptions.md) (DEC-037) |
 | [decisions/decision-log.md](decisions/decision-log.md) | existente | Registro conciso das decisões vigentes DEC-xxx, com fonte oficial e impacto |
 
 ### architecture — visão de arquitetura e design técnico

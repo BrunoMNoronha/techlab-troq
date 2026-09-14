@@ -75,7 +75,7 @@ O bloqueio desta seção é **preventivo e cautelar**, distinto das sanções de
 O bloqueio preventivo é olhando para a frente. Ele **não**:
 
 - revoga liberação de contato já autorizada e auditada;
-- cria reembolso, estorno ou compensação — RB-004 permanece integralmente válida, e exceções financeiras continuam em [OD-07](../decisions/open-decisions.md);
+- cria reembolso, estorno ou compensação — RB-004 permanece integralmente válida, e as exceções financeiras foram definidas depois em [payment-exceptions.md](payment-exceptions.md) (DEC-037), que também **não** cria reembolso por bloqueio cautelar etário;
 - altera o estado do anúncio por si só; a remoção, se cabível, usa exclusivamente as transições administrativas de [listing-lifecycle.md](listing-lifecycle.md);
 - encerra negociação por conta própria — o encerramento continua exclusivo das partes (DEC-029).
 
@@ -104,4 +104,4 @@ Se a conta bloqueada for excluída, a exclusão segue integralmente [data-retent
 | DEC-031 | Preservada integralmente. A ausência de verificação de idade que aquele documento registrava passa a ter uma decisão correspondente: a elegibilidade é declaratória, e as categorias que exigiriam controle etário continuam proibidas |
 | RB-001 a RB-006 | Preservadas literalmente |
 | OD-11 | **Fechada** por este documento (DEC-034) |
-| OD-07 | Permanece aberta. Nada aqui a antecipa. OD-08 foi fechada depois por [../adr/0004-mercado-pago-pix.md](../adr/0004-mercado-pago-pix.md) (DEC-036) |
+| OD-07 | Nada aqui a antecipou; foi fechada depois por [payment-exceptions.md](payment-exceptions.md) (DEC-037). OD-08 foi fechada antes dela por [../adr/0004-mercado-pago-pix.md](../adr/0004-mercado-pago-pix.md) (DEC-036) |
