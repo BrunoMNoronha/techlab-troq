@@ -54,9 +54,9 @@ Ponto de partida: [project-state.md](project-state.md). Decisões vigentes: [dec
 | Documento | Status | Conteúdo |
 | --- | --- | --- |
 | [engineering/ai-agent-workflow.md](engineering/ai-agent-workflow.md) | existente | Papéis, hierarquia de verdade, ciclo operacional, prompts, relatório obrigatório, Git e revisão para Bruno, ChatGPT, Claude Code e Antigravity |
-| engineering/conventions.md | futuro | Convenções de código, estrutura de módulos e revisão |
+| [engineering/conventions.md](engineering/conventions.md) | existente | Convenções de engenharia: runtime Node.js 24.x LTS, Next.js 16.3.x Active LTS, TypeScript `strict`, App Router, pinning e lockfile, política de dependências, organização de código e fronteiras de módulo, fronteira servidor/cliente, dados protegidos, autorização server-side, validação de entrada, TypeScript, comandos padronizados de qualidade e princípios de segurança |
 | engineering/environments.md | futuro | Ambientes, variáveis e segredos |
-| engineering/testing.md | futuro | Estratégia de testes |
+| [engineering/testing.md](engineering/testing.md) | existente | Estratégia de testes: níveis (unitário, integração, componentes, E2E, contrato), Vitest 5.x e React Testing Library, Playwright previsto para E2E futuro, prioridade por risco, invariantes a provar para RB-001 a RB-006, requisitos futuros de concorrência e idempotência e política de test doubles |
 
 ### delivery — entrega, riscos e planejamento
 
