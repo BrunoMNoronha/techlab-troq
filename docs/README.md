@@ -2,7 +2,7 @@
 
 Índice da documentação do projeto. Documentos marcados como **existente** fazem parte do baseline da Fase 0. Documentos marcados como **futuro** ainda não existem e serão criados progressivamente nas fases seguintes; os nomes são indicativos e podem mudar.
 
-Ponto de partida: [project-state.md](project-state.md). Decisões vigentes: [decisions/decision-log.md](decisions/decision-log.md). Próximos trabalhos: [delivery/backlog.md](delivery/backlog.md). Modo operacional com agentes: [engineering/ai-agent-workflow.md](engineering/ai-agent-workflow.md).
+Ponto de partida: [project-state.md](project-state.md). Decisões vigentes: [decisions/decision-log.md](decisions/decision-log.md). Backlog da Fase 0, encerrado: [delivery/backlog.md](delivery/backlog.md). Transição para a Fase 1 e próximo trabalho: [delivery/phase-1-transition.md](delivery/phase-1-transition.md). Modo operacional com agentes: [engineering/ai-agent-workflow.md](engineering/ai-agent-workflow.md).
 
 ## Grupos
 
@@ -57,7 +57,7 @@ Ponto de partida: [project-state.md](project-state.md). Decisões vigentes: [dec
 | --- | --- | --- |
 | [engineering/ai-agent-workflow.md](engineering/ai-agent-workflow.md) | existente | Papéis, hierarquia de verdade, ciclo operacional, prompts, relatório obrigatório, Git e revisão para Bruno, ChatGPT, Claude Code e Antigravity |
 | [engineering/conventions.md](engineering/conventions.md) | existente | Convenções de engenharia: runtime Node.js 24.x LTS, Next.js 16.3.x Active LTS, TypeScript `strict`, App Router, pinning e lockfile, política de dependências, organização de código e fronteiras de módulo, fronteira servidor/cliente, dados protegidos, autorização server-side, validação de entrada, TypeScript, comandos padronizados de qualidade e princípios de segurança |
-| engineering/environments.md | futuro | Ambientes, variáveis e segredos |
+| engineering/environments.md | futuro | Ambientes, variáveis e segredos. Será criado por **F1-001** ([delivery/prompts/f1-001-environments-and-secrets.md](delivery/prompts/f1-001-environments-and-secrets.md)) |
 | [engineering/testing.md](engineering/testing.md) | existente | Estratégia de testes: níveis (unitário, integração, componentes, E2E, contrato), Vitest 5.x e React Testing Library, Playwright previsto para E2E futuro, prioridade por risco, invariantes a provar para RB-001 a RB-006, requisitos futuros de concorrência e idempotência e política de test doubles |
 
 ### delivery — entrega, riscos e planejamento
@@ -66,7 +66,9 @@ Ponto de partida: [project-state.md](project-state.md). Decisões vigentes: [dec
 | --- | --- | --- |
 | [delivery/risks.md](delivery/risks.md) | existente | Riscos conhecidos, impacto e mitigação inicial |
 | [delivery/roadmap.md](delivery/roadmap.md) | existente | Roadmap macro por fases: objetivo, entregáveis, dependências e gate de saída, sem datas |
-| [delivery/backlog.md](delivery/backlog.md) | existente | Backlog de alto nível da Fase 0 (F0-xxx) e próximos trabalhos |
+| [delivery/backlog.md](delivery/backlog.md) | existente | Backlog de alto nível da Fase 0 (F0-xxx). Todos os itens estão concluídos; a fase foi encerrada em 2026-09-14 |
+| [delivery/phase-1-transition.md](delivery/phase-1-transition.md) | existente | Verificação formal do gate de saída da Fase 0 e transição para a Fase 1: baseline auditado, matriz de dez critérios com fonte, evidência e resultado (todos `PASS`), verificação dos requisitos dos quais a Fase 1 e a Fase 2 dependem, revisão dos riscos R-01 a R-11, resultado **APROVADO**, condições de entrada da Fase 1 e classificação factual dos seus sete entregáveis entre `já existente`, `parcial` e `não iniciado`; produzido por F0-023 |
+| [delivery/prompts/f1-001-environments-and-secrets.md](delivery/prompts/f1-001-environments-and-secrets.md) | existente | Prompt executor de **F1-001**, o primeiro trabalho da Fase 1: contrato de ambientes e segredos, sem provisionar serviço externo e sem iniciar o schema de domínio. É um prompt, não uma implementação; produzido por F0-023 |
 | [delivery/spikes/f0-010-mercado-pago-pix-r099.md](delivery/spikes/f0-010-mercado-pago-pix-r099.md) | existente | Evidências das seis execuções do spike F0-010 do gateway Pix para exatamente R$ 0,99 (Mercado Pago); a sexta é `CONCLUSIVO`, com 10 de 10 critérios comprovados, e encerra o spike; a homologação decorrente está em [adr/0004-mercado-pago-pix.md](adr/0004-mercado-pago-pix.md) |
 | delivery/release-checklist.md | futuro | Checklist de release |
 

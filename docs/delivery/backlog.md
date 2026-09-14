@@ -1,6 +1,8 @@
 # Backlog da Fase 0 — TROQ
 
-Backlog de **alto nível** da Fase 0 (Descoberta e definição) e do caminho de execução até a transição para a Fase 1. Este documento **não** é o backlog técnico da aplicação: tarefas de implementação das fases seguintes serão detalhadas quando cada fase for aberta ([roadmap.md](roadmap.md)).
+Backlog de **alto nível** da Fase 0 (Descoberta e definição) e do caminho de execução até a transição para a Fase 1. Este documento **não** é o backlog técnico da aplicação: tarefas de implementação das fases seguintes são detalhadas no backlog da fase correspondente ([roadmap.md](roadmap.md)).
+
+**A Fase 0 está concluída desde 2026-09-14.** Todos os itens abaixo estão `concluído`; o último foi F0-023, que verificou o gate de saída em [phase-1-transition.md](phase-1-transition.md). Este backlog passa a ser registro histórico da fase.
 
 Fontes: [roadmap.md](roadmap.md), [../decisions/open-decisions.md](../decisions/open-decisions.md), [../decisions/decision-log.md](../decisions/decision-log.md), [../product/requirements.md](../product/requirements.md), [risks.md](risks.md).
 
@@ -34,7 +36,7 @@ Fontes: [roadmap.md](roadmap.md), [../decisions/open-decisions.md](../decisions/
 
 Ordem lógica. F0-010 foi **concluído** na sexta execução do spike, em 2026-09-14, com dez dos dez critérios comprovados (ver abaixo), o que desbloqueou F0-011. F0-013 foi concluído e fechou OD-04, o que desbloqueou F0-014, F0-015 e F0-018. F0-014 foi concluído e fechou OD-05 em [../product/image-policy.md](../product/image-policy.md) (DEC-028). F0-015 foi concluído e fechou OD-01 em [../product/negotiation-lifecycle.md](../product/negotiation-lifecycle.md) (DEC-029), o que desbloqueou F0-016. F0-016 foi concluído e fechou OD-02 em [../product/ratings.md](../product/ratings.md) (DEC-030), com RF-017 passando a `definido`. F0-017 foi concluído e fechou OD-03 em [../product/prohibited-items.md](../product/prohibited-items.md) (DEC-031), com RF-018, RF-019 e RF-020 passando a `definido`. F0-018, F0-020, F0-021 e F0-024 foram concluídos na mesma entrega e fecharam, respectivamente, OD-06 em [../product/reselection-policy.md](../product/reselection-policy.md) (DEC-032), OD-10 em [../product/data-retention-policy.md](../product/data-retention-policy.md) (DEC-033), OD-11 em [../product/age-eligibility.md](../product/age-eligibility.md) (DEC-034) e OD-12 em [../product/interest-flow.md](../product/interest-flow.md) (DEC-035); com isso RF-001, RF-006, RF-008, RF-013 e RF-023 passaram a `definido`, assim como RNF-009 e RNF-011.
 
-F0-011 foi **concluído** em 2026-09-14 e fechou OD-08 com [ADR-0004](../adr/0004-mercado-pago-pix.md) (DEC-036): o Mercado Pago deixou de ser candidato e passou a ser o **gateway Pix inicial homologado** do MVP, por Checkout Transparente via Orders API. **F0-019 foi concluído no mesmo dia** e fechou **OD-07**, a última decisão aberta da Fase 0, com [../product/payment-exceptions.md](../product/payment-exceptions.md) (DEC-037). **F0-022 foi concluído em seguida, na mesma data**, e produziu a baseline arquitetural da implementação, mais [ADR-0006](../adr/0006-async-work-scheduling-concurrency.md) (DEC-038). Com isso, o item `próximo` passa a ser **F0-023**, cuja única dependência está satisfeita. **Não há mais decisão aberta na Fase 0**; o que resta é a verificação do gate e a transição.
+F0-011 foi **concluído** em 2026-09-14 e fechou OD-08 com [ADR-0004](../adr/0004-mercado-pago-pix.md) (DEC-036): o Mercado Pago deixou de ser candidato e passou a ser o **gateway Pix inicial homologado** do MVP, por Checkout Transparente via Orders API. **F0-019 foi concluído no mesmo dia** e fechou **OD-07**, a última decisão aberta da Fase 0, com [../product/payment-exceptions.md](../product/payment-exceptions.md) (DEC-037). **F0-022 foi concluído em seguida, na mesma data**, e produziu a baseline arquitetural da implementação, mais [ADR-0006](../adr/0006-async-work-scheduling-concurrency.md) (DEC-038). **F0-023 foi concluído por último, ainda em 2026-09-14**, e verificou formalmente o gate de saída da Fase 0 em [phase-1-transition.md](phase-1-transition.md). **Não há mais decisão aberta nem item pendente na Fase 0:** todos os itens `F0-xxx` estão `concluído` e a Fase 0 está encerrada.
 
 | ID | Título | Objetivo | Dependências | Estado |
 | --- | --- | --- | --- | --- |
@@ -51,7 +53,7 @@ F0-011 foi **concluído** em 2026-09-14 e fechou OD-08 com [ADR-0004](../adr/000
 | F0-020 | Definir retenção e exclusão de dados | Fechar OD-10 em [../product/data-retention-policy.md](../product/data-retention-policy.md): minimização por categoria, exclusão de conta com efeito imediato e prazo de 30 dias, expurgo de imagens, 6 meses de log de acesso, 24 meses de auditoria e de registros de moderação e abuso, 5 anos de metadados financeiros, backups até o ciclo normal com máximo de 30 dias adicionais e legal hold registrado (DEC-033); atualizar RF-006, RF-020, RF-022, RF-023, RNF-009 e RNF-011 | F0-005 | concluído |
 | F0-021 | Definir elegibilidade etária formal | Fechar OD-11 em [../product/age-eligibility.md](../product/age-eligibility.md): 18 anos completos ou mais como decisão conservadora de escopo do produto, declaração explícita registrada no cadastro, ausência de coleta documental ou biométrica e de serviço externo de verificação, e bloqueio cautelar diante de evidência razoável de menoridade (DEC-034); atualizar RF-001 e RNF-009. O público-alvo de 18 a 50 anos não determinou esta decisão | F0-005 | concluído |
 | F0-022 | Produzir arquitetura de dados e API pré-implementação | [../architecture/overview.md](../architecture/overview.md), [../architecture/data-model.md](../architecture/data-model.md), [../architecture/payments-design.md](../architecture/payments-design.md) e [../architecture/contact-release.md](../architecture/contact-release.md), com base nas decisões fechadas; produziu também [ADR-0006](../adr/0006-async-work-scheduling-concurrency.md) (DEC-038) | F0-011, F0-012, F0-013, F0-014, F0-015, F0-018, F0-019, F0-020, F0-024 | concluído |
-| F0-023 | Preparar transição para a Fase 1 | Verificar o gate de saída da Fase 0 em [roadmap.md](roadmap.md), revisar riscos e produzir o prompt inicial da Fase 1 | F0-022 | próximo |
+| F0-023 | Preparar transição para a Fase 1 | Verificar o gate de saída da Fase 0 em [roadmap.md](roadmap.md), revisar riscos e produzir o prompt inicial da Fase 1 | F0-022 | concluído |
 | F0-024 | Definir natureza da demonstração de interesse | Fechar OD-12 em [../product/interest-flow.md](../product/interest-flow.md): ação gratuita de interface, sem entidade persistida, sem ocupar vaga paga, sem cancelamento e sem visibilidade ao anunciante, admitida apenas telemetria agregada de funil (DEC-035); atualizar RF-008 | F0-005 | concluído |
 
 ### Histórico e conclusão de F0-010
@@ -99,11 +101,27 @@ As decisões de desenho mais relevantes: a proteção de RB-003 passa a ser **í
 
 F0-022 exigiu **uma** decisão arquitetural nova e duradoura, registrada em [ADR-0006](../adr/0006-async-work-scheduling-concurrency.md) (DEC-038): trabalho assíncrono, agendamento e concorrência. A pesquisa externa que a sustenta apurou que a entrega do agendamento da Vercel é *best effort*, que falhas não são retentadas, que execuções podem se sobrepor, que o plano Hobby limita o agendamento a uma execução diária e que o endpoint pooled do Neon **não** suporta trava consultiva de sessão. O primeiro conjunto de fatos transformou "nenhuma invariante depende de um job" de boa prática em requisito; o último tornou incorreta — e não apenas subótima — a trava de sessão. Nenhuma tecnologia nova foi adotada.
 
-O que F0-022 **não** fez: nenhuma linha de código de produto, nenhum endpoint, nenhum componente, nenhum schema Prisma, nenhuma migration, nenhum secret, nenhuma integração real com o Mercado Pago, nenhum provisionamento e nenhum deploy. Com F0-022 concluído, **F0-023** passa a `próximo`.
+O que F0-022 **não** fez: nenhuma linha de código de produto, nenhum endpoint, nenhum componente, nenhum schema Prisma, nenhuma migration, nenhum secret, nenhuma integração real com o Mercado Pago, nenhum provisionamento e nenhum deploy. Com F0-022 concluído, **F0-023** passou a `próximo` e foi executado em seguida.
+
+### Conclusão de F0-023
+
+F0-023 foi executado em **2026-09-14**, logo depois de F0-022, e é o **último item da Fase 0**. Ele produziu [phase-1-transition.md](phase-1-transition.md), que audita o gate de saída da Fase 0 em matriz explícita de critério → fonte normativa → evidência → resultado. Os dez critérios (G-1 a G-10) resultaram `PASS` e o gate foi declarado **APROVADO**.
+
+O trabalho também verificou individualmente os **12 requisitos** dos quais [roadmap.md](roadmap.md) diz que a Fase 1 e a Fase 2 dependem — 9 em `definido`, 3 em `parcialmente definido` (RF-004, RF-021 e RNF-018), nenhum `bloqueado`, nenhum sem fonte —, revisou os **onze riscos** R-01 a R-11 sem encerrar nenhum e sem alterar texto artificialmente, e classificou factualmente os **sete entregáveis** da Fase 1: `já existente` os padrões de projeto e o CI; `parcial` o scaffold (faltam os módulos de AR-3.3) e a infraestrutura mínima (o projeto Vercel existe; R2 e Resend não); `não iniciado` o contrato de ambientes, o banco/Prisma/schema e a observabilidade.
+
+O item da Fase 1 escolhido como próximo trabalho é **F1-001 — contrato de ambientes e segredos**, cujo prompt executor foi versionado em [prompts/f1-001-environments-and-secrets.md](prompts/f1-001-environments-and-secrets.md). A escolha é deliberada: scaffold, comandos de qualidade e CI já existem e não devem ser recriados, enquanto o contrato de ambientes é o único entregável `não iniciado` que é pré-requisito seguro para conectar Neon, Prisma, R2, Resend, autenticação e pagamentos.
+
+O que F0-023 **não** fez: nenhuma linha de código, nenhuma alteração de regra de negócio, de requisito, de ADR ou de decisão vigente, nenhuma decisão nova, nenhum provisionamento, nenhum segredo e nenhuma implementação da Fase 1. Nenhum item `F0-xxx` novo foi criado para trabalho de Fase 1: a Fase 1 usa a sua própria numeração.
+
+## Fase 1
+
+A Fase 0 está encerrada e a Fase 1 está **habilitada e não iniciada**. Este documento continua sendo o backlog da **Fase 0** e não recebe itens de outras fases.
+
+O estado factual dos sete entregáveis da Fase 1 — o que já existe, o que é parcial e o que não foi iniciado — está em [phase-1-transition.md](phase-1-transition.md), seção 10. O próximo trabalho é **F1-001 — contrato de ambientes e segredos**, cujo prompt executor está versionado em [prompts/f1-001-environments-and-secrets.md](prompts/f1-001-environments-and-secrets.md). O backlog da Fase 1, com a sua própria numeração `F1-xxx`, é aberto pelo primeiro trabalho daquela fase.
 
 ## Fora deste backlog
 
-- Tarefas de implementação da Fase 1 em diante (scaffold, CI, schema, telas, integrações): detalhadas somente quando a respectiva fase for aberta.
+- Tarefas de implementação da Fase 1 em diante (estrutura de módulos, schema, provisionamento, telas, integrações): detalhadas no backlog da própria fase, não aqui. O scaffold e o CI que o roadmap lista como entregáveis da Fase 1 **já existem** e não devem ser recriados ([phase-1-transition.md](phase-1-transition.md), seção 10).
 - Candidatos pós-MVP listados em [roadmap.md](roadmap.md).
 
 ## Revisão

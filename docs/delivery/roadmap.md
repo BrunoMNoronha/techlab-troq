@@ -8,13 +8,15 @@ Fontes: [../product/mvp-scope.md](../product/mvp-scope.md), [../product/requirem
 
 | Fase | Nome | Estado |
 | --- | --- | --- |
-| 0 | Descoberta e definição | em andamento |
+| 0 | Descoberta e definição | concluída |
 | 1 | Fundação técnica | não iniciada |
 | 2 | Identidade e anúncios | não iniciada |
 | 3 | Solicitações, pagamentos e contato | não iniciada |
 | 4 | Encerramento, avaliações e moderação | não iniciada |
 | 5 | Hardening e lançamento | não iniciada |
 | — | Pós-MVP (candidatos) | não planejado |
+
+**Estado em 2026-09-14.** A **Fase 0 está concluída**: o seu gate de saída foi verificado item a item por F0-023, com matriz de critério, fonte, evidência e resultado em [phase-1-transition.md](phase-1-transition.md), e o resultado formal foi **APROVADO**. A **Fase 1 permanece `não iniciada`** — o estado da tabela é sobre execução, não sobre habilitação —, mas o seu **gate de entrada está satisfeito** e ela é a próxima fase habilitada. Parte do que a Fase 1 lista como entregável já existe no repositório, criada de forma antecipada e isolada; a classificação factual de cada entregável, entre `já existente`, `parcial` e `não iniciado`, está na seção 10 daquele documento. O gate de **saída** da Fase 1 continua integralmente por satisfazer.
 
 ## Fase 0 — Descoberta e definição
 
@@ -35,9 +37,11 @@ Fontes: [../product/mvp-scope.md](../product/mvp-scope.md), [../product/requirem
 
 - OD-08 e OD-09 fechadas, com ADRs correspondentes. **Ambas estão fechadas:** OD-09 por [ADR-0005](../adr/0005-prisma-orm-migrations.md) e OD-08 por [ADR-0004](../adr/0004-mercado-pago-pix.md) (DEC-036), em 2026-09-14.
 - OD-04 já está fechada por [../product/listing-lifecycle.md](../product/listing-lifecycle.md), OD-05 por [../product/image-policy.md](../product/image-policy.md), OD-01 por [../product/negotiation-lifecycle.md](../product/negotiation-lifecycle.md), OD-02 por [../product/ratings.md](../product/ratings.md), OD-03 por [../product/prohibited-items.md](../product/prohibited-items.md), OD-06 por [../product/reselection-policy.md](../product/reselection-policy.md), OD-10 por [../product/data-retention-policy.md](../product/data-retention-policy.md), OD-11 por [../product/age-eligibility.md](../product/age-eligibility.md), OD-12 por [../product/interest-flow.md](../product/interest-flow.md) e OD-07 por [../product/payment-exceptions.md](../product/payment-exceptions.md) (DEC-037).
-- **Nenhuma decisão aberta bloqueia mais este gate.** A validação real do gateway (F0-010) foi concluída em 2026-09-14, a escolha foi formalizada no mesmo dia por F0-011, que fechou OD-08 com [ADR-0004](../adr/0004-mercado-pago-pix.md) (DEC-036), F0-019 fechou OD-07 com [../product/payment-exceptions.md](../product/payment-exceptions.md) (DEC-037) e **F0-022 concluiu a arquitetura pré-implementação** na mesma data. O que resta do gate é a transição (F0-023), que inclui a sua verificação formal.
+- **Nenhuma decisão aberta bloqueia mais este gate.** A validação real do gateway (F0-010) foi concluída em 2026-09-14, a escolha foi formalizada no mesmo dia por F0-011, que fechou OD-08 com [ADR-0004](../adr/0004-mercado-pago-pix.md) (DEC-036), F0-019 fechou OD-07 com [../product/payment-exceptions.md](../product/payment-exceptions.md) (DEC-037) e **F0-022 concluiu a arquitetura pré-implementação** na mesma data.
 - Requisitos que a Fase 1 e a Fase 2 dependem com status `definido`.
 - Backlog da Fase 0 ([backlog.md](backlog.md)) sem itens `próximo` ou `bloqueado` que impeçam a Fase 1.
+
+**Verificação do gate — APROVADO em 2026-09-14.** F0-023 auditou cada condição acima contra a sua fonte, com evidência registrada, e todas resultaram `PASS`. A matriz completa, a verificação dos requisitos dos quais a Fase 1 e a Fase 2 dependem e a revisão dos riscos estão em [phase-1-transition.md](phase-1-transition.md). Os critérios deste gate ficam preservados como registro do que foi exigido e comprovado.
 
 ## Fase 1 — Fundação técnica
 
@@ -53,7 +57,9 @@ Fontes: [../product/mvp-scope.md](../product/mvp-scope.md), [../product/requirem
 - Infraestrutura mínima: projeto Vercel, bucket R2, Resend, em ambientes de desenvolvimento e preview.
 - Observabilidade básica: logs estruturados e rastreamento de erros, sem dados protegidos (RNF-018).
 
-**Dependências:** gate da Fase 0; em particular [ADR-0005](../adr/0005-prisma-orm-migrations.md) (ORM/migrations, OD-09 fechada) e modelo de dados.
+**Dependências:** gate da Fase 0 — **satisfeito e verificado** em 2026-09-14 ([phase-1-transition.md](phase-1-transition.md)); em particular [ADR-0005](../adr/0005-prisma-orm-migrations.md) (ORM/migrations, OD-09 fechada) e modelo de dados.
+
+**Estado dos entregáveis.** Parte desta lista já existe no repositório, criada de forma antecipada e isolada, e **não deve ser recriada**: os padrões de projeto e o CI estão `já existente`; o scaffold e a infraestrutura mínima estão `parcial`; o contrato de ambientes, o banco com Prisma e schema inicial, e a observabilidade estão `não iniciado`. A classificação item a item, com evidência, está em [phase-1-transition.md](phase-1-transition.md), seção 10. **Nenhum critério do gate de saída abaixo foi verificado.** O primeiro trabalho da fase é F1-001, cujo prompt está em [prompts/f1-001-environments-and-secrets.md](prompts/f1-001-environments-and-secrets.md).
 
 **Gate de saída:**
 
