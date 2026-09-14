@@ -35,7 +35,7 @@ Fontes: [../product/mvp-scope.md](../product/mvp-scope.md), [../product/requirem
 
 - OD-08 e OD-09 fechadas, com ADRs correspondentes. OD-09 já está fechada por [ADR-0005](../adr/0005-prisma-orm-migrations.md); OD-08 permanece aberta.
 - OD-04 já está fechada por [../product/listing-lifecycle.md](../product/listing-lifecycle.md), OD-05 por [../product/image-policy.md](../product/image-policy.md), OD-01 por [../product/negotiation-lifecycle.md](../product/negotiation-lifecycle.md), OD-02 por [../product/ratings.md](../product/ratings.md), OD-03 por [../product/prohibited-items.md](../product/prohibited-items.md), OD-06 por [../product/reselection-policy.md](../product/reselection-policy.md), OD-10 por [../product/data-retention-policy.md](../product/data-retention-policy.md), OD-11 por [../product/age-eligibility.md](../product/age-eligibility.md) e OD-12 por [../product/interest-flow.md](../product/interest-flow.md).
-- OD-07 e OD-08 continuam abertas e são as **únicas** que ainda bloqueiam este gate; ambas dependem da validação real do gateway (F0-010).
+- OD-07 e OD-08 continuam abertas e são as **únicas** que ainda bloqueiam este gate. A validação real do gateway (F0-010) foi **concluída** em 2026-09-14; o que resta é registrar o resultado e decidir, em F0-011, de onde saem ADR-0004 e, na sequência, o tratamento de exceções de pagamento (F0-019, OD-07).
 - Requisitos que a Fase 1 e a Fase 2 dependem com status `definido`.
 - Backlog da Fase 0 ([backlog.md](backlog.md)) sem itens `próximo` ou `bloqueado` que impeçam a Fase 1.
 

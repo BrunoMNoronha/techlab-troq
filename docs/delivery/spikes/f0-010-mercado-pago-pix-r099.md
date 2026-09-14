@@ -1056,3 +1056,244 @@ Uma aprovação TOTP de Bruno no aplicativo do Mercado Pago. Tudo o mais está p
 ## O que esta execução não fez
 
 Nenhuma aplicação foi criada — a criação é exatamente o que o TOTP bloqueia. Nenhuma aplicação existente foi aberta, alterada ou teve secret lido ou reutilizado. Nenhuma configuração de painel foi modificada. Nenhum login foi tentado e nenhuma senha foi digitada. Nenhum TOTP, MFA ou CAPTCHA foi contornado. Nenhum código entrou no repositório TROQ, nenhum dinheiro foi movimentado e nenhuma credencial de produção foi utilizada. OD-07 e OD-08 permanecem abertas, ADR-0004 não foi criado, F0-011 permanece bloqueado e o Mercado Pago permanece apenas candidato, conforme DEC-017.
+
+---
+
+# Sexta execução — 2026-09-14 (fechamento do critério 8)
+
+Retomada imediatamente após a quinta execução, com um único objetivo: fechar o critério 8 com uma notificação **real** do Mercado Pago, assinada pela mesma aplicação cuja chave secreta estava configurada no receiver. Nenhum experimento anterior foi refeito.
+
+## Classificação desta execução
+
+**CONCLUSIVO** — dez dos dez critérios comprovados. F0-010 passa a `concluído` e deixa de ser classificado como `INCONCLUSIVO`.
+
+## Baseline Git
+
+`main` = `origin/main` = `da30e43982023e795bb06e14ba826f11708b706c`, working tree limpo, nenhuma PR aberta.
+
+## Aplicação, conta e receiver utilizados
+
+| Item | Valor |
+| --- | --- |
+| Aplicação | `TROQ F0-010 Seller Test Webhook` |
+| `application_id` | `4982497380871264` |
+| Titular | Seller Test User, `user_id` `3689791164`, `tags: test_user` |
+| `sandbox_mode` | `true` |
+| Receiver | `https://troq-f0-010-webhook-validation.vercel.app/api/webhooks/mercadopago` |
+| Projeto Vercel | `troq-f0-010-webhook-validation`, conta pessoal `bruno-m-noronha` |
+| Evento assinado no painel | `Order (Mercado Pago)` |
+
+Verificação funcional do ambiente antes dos experimentos, sem exibir qualquer valor sensível:
+
+| Verificação | Resultado |
+| --- | --- |
+| `GET /api/health` do receiver | `HTTP 200`, `secretSource: "env"` |
+| `MP_WEBHOOK_SECRET` no projeto Vercel | presente, escopo `Production`, atualizada minutos antes da execução |
+| Deployment de produção | servindo tráfego externo |
+| Proteção de deployment na URL canônica | ausente; chamadas externas alcançam a função |
+| Alcance externo | comprovado pelas próprias entregas do Mercado Pago |
+
+Nenhum redeploy foi necessário.
+
+## Simulador oficial — duas execuções e um achado
+
+### Primeira execução do simulador — `data.id` alfanumérico
+
+`Data ID` `SIMTROQ20260914A`, evento `Order (Mercado Pago)`.
+
+| Campo | Valor |
+| --- | --- |
+| Horário (UTC) | `2026-09-14T18:03:47.140Z` |
+| `User-Agent` | `restclient-node/5.3.0` |
+| `application_id` no corpo | `4982497380871264` |
+| `x-request-id` | `8108ccfe-9c53-4853-87ea-5785edd5a7a3` |
+| `ts` | `1789409026` |
+| `v1` | `e7f40e739ed676677bbdef357e6c0d29b5b1afc237db7e5e25bc46343ba97285` |
+| Manifesto oficial, com `data.id` em minúsculas | não conferiu |
+| Manifesto com `data.id` no caixa original | conferiu |
+| HTTP devolvido pelo receiver | `401` |
+
+O HMAC conferiu, mas contra a variante que preserva o caixa original do `data.id`, e não contra o manifesto oficial. Como o receiver só devolve `200` para o manifesto oficial, a resposta foi `401` — comportamento correto e deliberado.
+
+**Achado material:** o **simulador** do painel assina o manifesto com o `data.id` no caixa em que ele foi digitado, enquanto a documentação oficial manda converter `data.id` alfanumérico para minúsculas. A divergência é do simulador, não da plataforma: a notificação real desta mesma execução, com `data.id` alfanumérico em maiúsculas, conferiu no manifesto oficial em minúsculas. Consequência prática para o produto: um validador que implemente apenas a regra oficial rejeitará o simulador quando o `Data ID` contiver letras maiúsculas, sem que isso indique defeito.
+
+### Segunda execução do simulador — `data.id` numérico
+
+`Data ID` `20260914183000`, em que caixa original e minúsculas coincidem e o manifesto é inequívoco.
+
+| Campo | Valor |
+| --- | --- |
+| Horário (UTC) | `2026-09-14T18:05:46.191Z` |
+| `application_id` no corpo | `4982497380871264` |
+| `type` / `action` | `order` / `order.processed` |
+| `api_version` | `v1` |
+| `x-request-id` | `a9904a87-5ac1-4746-9ca3-ebf0964bc177` |
+| `ts` | `1789409146` |
+| `v1` | `4be8ec8aae206ecf8aa0a71328a53f21b7dbddb44921485a7b7527d184a711bd` |
+| Manifesto reconstruído | `id:20260914183000;request-id:a9904a87-5ac1-4746-9ca3-ebf0964bc177;ts:1789409146;` |
+| Resultado HMAC | válido, manifesto oficial |
+| HTTP devolvido pelo receiver | `200` |
+| Retorno exibido no painel | `200 - OK`, com a mensagem de sucesso do simulador |
+
+Este resultado prova, isoladamente, que a chave secreta configurada no receiver pertence à aplicação `4982497380871264`.
+
+## Nova Order Pix de exatamente R$ 0,99
+
+Criada com o Access Token da mesma aplicação `4982497380871264`.
+
+Primeira tentativa, incluindo `notification_url` no corpo:
+
+| Campo | Valor |
+| --- | --- |
+| HTTP | `400` |
+| Código | `unsupported_properties` |
+| Detalhe | `additionalProperties $.notification_url not allowed` |
+
+**Achado material:** a API de Orders (`POST /v1/orders`) **não** aceita `notification_url` por requisição. Isso contrasta com o achado da quarta execução, em que a API de Preferences aceitava `notification_url` por requisição. Para Orders, a URL de notificação vem exclusivamente da configuração de Webhooks da aplicação.
+
+Segunda tentativa, sem `notification_url`:
+
+| Campo | Valor |
+| --- | --- |
+| HTTP | `402` |
+| `id` da Order | `ORDTST01M2GHKDD8W8DWNNBMX99SZ7YM` |
+| `external_reference` | `troq-f0-010-final-20260914-a` |
+| `total_amount` | `0.99`, sem ajuste |
+| `status` / `status_detail` | `failed` / `failed` |
+| Pagamento | `PAY01M2GHKDDR10RNBJ9QKCJ8XMNA`, `failed` / `processing_error` |
+| `integration_data.application_id` | `4982497380871264` |
+| `user_id` | `3689791164` |
+| `X-Idempotency-Key` | novo, gerado por execução |
+
+O `processing_error` é a mesma limitação de sandbox já registrada na quarta execução e **não** invalida o experimento: o critério 8 exige uma notificação real, assinada e correlacionável a uma operação real — e foi exatamente isso que o Mercado Pago produziu.
+
+Registro adicional, relevante para a correção de inferência mais abaixo: as Orders das execuções anteriores nasceram com `integration_data.application_id` `8054543444432991`, uma aplicação diferente. Esta é a primeira Order do spike nascida sob `4982497380871264`.
+
+## Notificação real — critério 8 comprovado
+
+| Campo | Valor |
+| --- | --- |
+| Horário (UTC) | `2026-09-14T18:06:54.171Z` |
+| `User-Agent` | `MercadoPago WebHook v1.0 order` |
+| IP de origem | `54.88.218.97` |
+| Query | `?data.external_reference=troq-f0-010-final-20260914-a&data.id=ORDTST01M2GHKDD8W8DWNNBMX99SZ7YM&type=order` |
+| `application_id` | `4982497380871264` |
+| `user_id` | `3689791164` |
+| `type` / `action` | `order` / `order.failed` |
+| `api_version` | `v1` |
+| `live_mode` | `false` |
+| `data.id` | `ORDTST01M2GHKDD8W8DWNNBMX99SZ7YM` |
+| `external_reference` | `troq-f0-010-final-20260914-a` |
+| `x-request-id` | `3d98709f-0f4e-4ac4-a951-cf1b9e983f06` |
+| `ts` | `1789409214` |
+| `v1` | `9e9760adcccfda2711738217a1fb4288bc6020c1fb4263cbcf5f111e9deaa006` |
+| Manifesto reconstruído | `id:ordtst01m2ghkdd8w8dwnnbmx99sz7ym;request-id:3d98709f-0f4e-4ac4-a951-cf1b9e983f06;ts:1789409214;` |
+| Regra de manifesto que conferiu | oficial, com `data.id` convertido para minúsculas |
+| Resultado HMAC | **válido** |
+| HTTP devolvido pelo receiver | **`200`** |
+
+Correlação com a operação: o `data.id` é exatamente o `id` da Order criada nesta execução e o `external_reference` é exatamente o identificador único gerado nesta execução. A notificação nasceu **depois** da configuração da chave secreta correta e **em decorrência** da nova Order. Nem o manifesto nem o `v1` são segredos — o primeiro é o texto assinado, o segundo é o MAC.
+
+O `application_id` foi conferido **antes** de qualquer avaliação de HMAC, conforme exigido. Nenhuma chave alternativa foi testada em momento algum.
+
+Observação relevante para o produto: a notificação real traz `data.id` alfanumérico em **maiúsculas** e ainda assim conferiu no manifesto oficial em minúsculas. A regra de minusculização da documentação está, portanto, confirmada para o tráfego real.
+
+## Testes negativos finais
+
+Executados contra o endpoint público, reproduzindo a notificação real e adulterando um componente por vez.
+
+| # | Caso | HTTP | Motivo devolvido |
+| --- | --- | --- | --- |
+| 1 | controle íntegro | `200` | `hmac: valid` |
+| 2 | `v1` adulterado em um dígito | `401` | `hmac_divergente` |
+| 3 | `data.id` da query adulterado | `401` | assinatura casou apenas com variante derivada do corpo, rejeitada |
+| 4 | `x-request-id` adulterado | `401` | `hmac_divergente` |
+| 5 | `ts` adulterado em um segundo | `401` | `hmac_divergente` |
+| 6 | controle íntegro, repetição | `200` | `hmac: valid` |
+
+O caso 3 merece nota: ao adulterar o `data.id` da query, a assinatura passou a casar com uma variante de manifesto construída a partir do `id` presente no **corpo**. O receiver rejeitou mesmo assim, com `401`, porque só aceita o manifesto oficial construído a partir da query. É o comportamento desejado e deve ser replicado na implementação de produto: **aceitar uma única forma de manifesto**, nunca a primeira que casar.
+
+## Critérios de conclusão de F0-010
+
+| # | Critério | Estado | Evidência |
+| --- | --- | --- | --- |
+| 1 | API autenticada funcionando | comprovado | `GET /users/me` `HTTP 200` |
+| 2 | Criação Pix | comprovado | Orders Pix criadas |
+| 3 | R$ 0,99 aceito | comprovado | `total_amount` `0.99` sem ajuste |
+| 4 | QR Code ou copia e cola gerado | comprovado | BR Code com CRC16 conferido |
+| 5 | Confirmação/status comprovável | comprovado no sandbox | transição até `processed/accredited` |
+| 6 | Idempotência comprovada | comprovado | `X-Idempotency-Key` |
+| 7 | Webhook HTTPS recebido | comprovado | entregas reais do Mercado Pago |
+| 8 | Origem/assinatura validada | **comprovado nesta execução** | notificação real de `4982497380871264`, HMAC válido, `HTTP 200`, negativos em `401` |
+| 9 | Tarifa vigente conhecida | comprovado no sandbox | R$ 0,01 sobre R$ 0,99 |
+| 10 | Nenhuma incompatibilidade com RB-004 | mantido | nenhuma incompatibilidade encontrada |
+
+**Dez de dez comprovados. F0-010 está concluído.**
+
+## Correções de inferências anteriores
+
+### Captura registrada na PR #19
+
+A quinta execução registrou o manifesto e o `v1` integrais de uma reentrega real da `merchant_order` `44469080694` e concluiu que o critério 8 poderia ser fechado **offline**, bastando calcular o HMAC sobre aquele manifesto assim que "a chave secreta" existisse. Essa conclusão estava **incompleta** e precisa ser corrigida.
+
+Uma notificação só pode ser validada offline com a chave secreta da aplicação que **efetivamente a assinou**. Chaves secretas de webhook são por aplicação e não são intercambiáveis: uma chave criada depois, em outra aplicação, não valida uma notificação assinada antes, por outra aplicação. Como a operação que gerou aquela `merchant_order` nasceu sob `application_id` diferente de `4982497380871264`, aquela captura **não** fechava o critério 8, e qualquer tentativa de validá-la com a chave da aplicação nova divergiria por construção — o que de fato se observou. A captura permanece válida como evidência do critério 7 e do formato do manifesto, e apenas isso.
+
+### Aplicação da conta real `2253545272046056`
+
+A aplicação `TROQ F0-010 Webhook Validation`, criada na conta real de Bruno, cumpriu um papel e apenas um: com a chave secreta dela, o **simulador** do painel produziu HMAC válido contra o receiver. Ela **não** fechou o critério 8, e a rejeição daquela evidência estava correta, porque a operação real disponível na época nascera sob outro `application_id` — o `application_id` recebido divergia do `application_id` da aplicação cuja chave estava configurada. A chave dessa aplicação foi **rotacionada** após a exposição parcial descrita abaixo e não foi reutilizada.
+
+### Aplicação do Seller Test User `4982497380871264`
+
+Cadeia de verificação completa, toda comprovada:
+
+| Elo | Evidência |
+| --- | --- |
+| Token para identidade | `GET /users/me` `HTTP 200`, `id` `3689791164`, `tags: test_user` |
+| Token para aplicação | `GET /applications/4982497380871264` `HTTP 200` |
+| Ambiente | `sandbox_mode: true` |
+| Simulador | HMAC válido, `HTTP 200` |
+| Operação real | Order criada sob `integration_data.application_id` `4982497380871264` |
+| Notificação real | `application_id` `4982497380871264`, correlacionada por `data.id` e `external_reference` |
+| HMAC real | válido no manifesto oficial |
+
+### Painel de Webhooks — achado operacional
+
+Durante o cadastro da URL de notificação, o painel só persistiu a configuração com a **URL de teste e a URL de produção ambas preenchidas**. É um achado operacional do painel, observado neste spike, e **não** deve ser convertido automaticamente em requisito de produto: o que ele implica é apenas que, ao configurar Webhooks no Mercado Pago, é preciso ter as duas URLs disponíveis no momento do cadastro.
+
+## Incidente de segurança — exposição operacional
+
+| Fato | Registro |
+| --- | --- |
+| O que foi exposto | 9 de 64 caracteres hexadecimais da chave secreta **anterior** materializaram-se em saída de terminal |
+| Entrou em Git? | não, em nenhum momento |
+| `.mp_token` | removido |
+| `cb.txt` | removido |
+| Rotação | a chave exposta foi rotacionada |
+| Reuso | a chave antiga não foi reutilizada em nenhuma verificação posterior |
+| Classificação | exposição operacional **baixa** |
+
+A classificação é baixa porque a fração exposta é insuficiente para reconstruir a chave, porque nada saiu do terminal local e porque a chave foi rotacionada em seguida. Não se afirma "sem impacto" de forma absoluta: um fragmento de segredo materializado em terminal é um evento a registrar, e o tratamento correto foi exatamente a rotação.
+
+## Limpeza dos recursos temporários
+
+| Recurso | Estado final | Verificação |
+| --- | --- | --- |
+| Aplicação `4982497380871264` (Seller Test User) | **excluída** | exclusão confirmada no painel; o token da aplicação passou a devolver `HTTP 401` em `GET /users/me` e em `GET /applications/4982497380871264` |
+| Webhook e chave secreta dessa aplicação | removidos junto com a aplicação | consequência da exclusão |
+| Variável `MP_WEBHOOK_SECRET` na Vercel | **removida** | a página de Environment Variables passou a exibir "No Environment Variables Added" |
+| Projeto Vercel `troq-f0-010-webhook-validation` | **excluído** | exclusão confirmada; `GET /api/health` e `GET /api/webhooks/mercadopago` passaram a devolver `HTTP 404` |
+| Domínio customizado no projeto temporário | não havia | apenas o domínio automático `.vercel.app`, liberado com a exclusão |
+| Projeto oficial `techlab-troq` na Vercel | não tocado | idem `upa-do-tenis` e `preconsulta-staging` |
+| Receiver, logs e arquivos de credencial em disco | **removidos** | varredura por padrões de token não retorna mais nenhum arquivo |
+| Área de transferência | limpa | conteúdo substituído |
+| Aplicação `2253545272046056` (conta real) | **pendente** | ver gate humano abaixo |
+
+Aplicações preexistentes do Seller Test User (`8054543444432991` e `1495245011178735`) não foram criadas por este spike e não foram tocadas. Na conta real, `TechLab TROQ`, `Claudia e Bruno` e `upadotenis` não foram tocadas.
+
+### Gate humano de limpeza
+
+A limpeza da aplicação `TROQ F0-010 Webhook Validation` (`2253545272046056`) **não** pôde ser concluída: a sessão de navegador está autenticada como o Seller Test User, o painel de desenvolvedores não oferece troca de conta e alcançar a conta real exige sair da sessão atual e autenticar com credenciais de Bruno. Isso é um gate humano e não foi contornado. O risco residual é baixo: a chave secreta dessa aplicação já foi rotacionada e a URL de webhook nela cadastrada aponta para um endpoint que agora devolve `HTTP 404`. A ação pendente é: entrar na conta real, remover a configuração de Webhook dessa aplicação e excluí-la.
+
+## O que esta execução não fez
+
+Nenhuma integração de pagamento foi implementada no produto; nenhum SDK do Mercado Pago, route handler de webhook, model, migration ou secret entrou no repositório TROQ. Nenhum segredo foi impresso, registrado em arquivo ou enviado a terceiros. Nenhum TOTP, MFA ou CAPTCHA foi contornado e nenhuma senha foi digitada. Nenhum dinheiro real foi movimentado e nenhuma credencial de produção foi usada. O projeto oficial `techlab-troq` não foi alterado. F0-011 foi **desbloqueado, mas não executado**. OD-08 permanece **aberta** e OD-07 permanece no estado vigente. ADR-0004 **não** foi criado. O Mercado Pago permanece apenas candidato, conforme DEC-017: este spike prova viabilidade técnica, não homologa gateway.
