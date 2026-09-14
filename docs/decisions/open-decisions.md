@@ -11,7 +11,7 @@ Registro das questões que **ainda não foram decididas** na Fase 0. Nenhum item
 
 ## Lista de decisões abertas
 
-Restam **duas** decisões abertas, ambas relacionadas a pagamentos e ambas dependentes, direta ou indiretamente, da validação real do gateway.
+Restam **duas** decisões abertas, ambas relacionadas a pagamentos. A validação técnica real do gateway (F0-010) foi concluída em 2026-09-14, mas nenhuma das duas decisões se fecha automaticamente por isso: ambas dependem de F0-011.
 
 ### OD-07 — Chargebacks, duplicidade e exceções de pagamento
 
@@ -23,7 +23,8 @@ Restam **duas** decisões abertas, ambas relacionadas a pagamentos e ambas depen
 
 - **Contexto:** pagamentos são Pix-first. Mercado Pago é apenas o primeiro candidato de gateway, **não** decisão final.
 - **O que falta decidir:** escolha do gateway, condicionada a um spike que prove cobrança de exatamente R$ 0,99, confirmação, webhook, idempotência e tarifas.
-- **Estado do spike:** 9 dos 10 critérios comprovados após as execuções de F0-010 em 2026-09-14, registrada em [../delivery/spikes/f0-010-mercado-pago-pix-r099.md](../delivery/spikes/f0-010-mercado-pago-pix-r099.md). Falta apenas validar a assinatura HMAC de uma notificação real, o que depende da chave secreta de webhook obtenível somente no painel do gateway.
+- **Estado do spike:** **concluído** na sexta execução de F0-010, em 2026-09-14, com 10 dos 10 critérios comprovados, registrada em [../delivery/spikes/f0-010-mercado-pago-pix-r099.md](../delivery/spikes/f0-010-mercado-pago-pix-r099.md). O último critério pendente, a validação da assinatura HMAC de uma notificação real, foi fechado com uma notificação do Mercado Pago decorrente de uma Order Pix nova de exatamente R$ 0,99, assinada pela mesma aplicação cuja chave estava configurada, com HMAC válido contra o manifesto oficial e testes negativos devolvendo `HTTP 401`.
+- **Por que continua aberta:** o spike prova **viabilidade técnica**, não homologa gateway. A escolha se fecha em F0-011, com ADR-0004, que ainda não foi executado. Até lá, Mercado Pago permanece apenas candidato (DEC-017).
 - **Bloqueia:** implementação de pagamentos e criação de ADR de pagamento.
 
 ## Decisões fechadas
