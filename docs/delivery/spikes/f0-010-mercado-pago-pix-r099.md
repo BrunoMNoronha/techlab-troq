@@ -268,3 +268,178 @@ Baseado exclusivamente nas evidências acima:
 5. **Manter F0-011 bloqueado.** Não há base para criar ADR-0004 nem para fechar OD-08.
 
 O item 4 é o de maior valor: mesmo que todos os experimentos técnicos venham a ser aprovados, a viabilidade econômica de um ticket de R$ 0,99 depende de uma regra de arredondamento que hoje não está documentada publicamente.
+
+---
+
+# Segunda execução — 2026-09-14
+
+Esta seção é acrescentada à execução de 2026-09-07, que permanece acima sem alteração. Ela registra uma nova tentativa de reexecução de F0-010 na data de 2026-09-14, com revalidação integral da documentação oficial vigente.
+
+## Classificação desta execução
+
+**INCONCLUSIVO**
+
+A parte experimental permanece integralmente não executada. O bloqueio, porém, **mudou de composição**: dos dois bloqueios da primeira execução, um foi eliminado com evidência concreta e o outro permanece.
+
+| Bloqueio da 1ª execução | Estado em 2026-09-14 | Evidência |
+| --- | --- | --- |
+| Credenciais de teste do Mercado Pago ausentes | **permanece** | busca sem resultado no ambiente; sem sessão autenticada no painel |
+| Endpoint HTTPS público para webhook indisponível | **eliminado** | credencial de plataforma de deploy presente no ambiente e verificada como válida (HTTP 200) |
+
+O bloqueio de F0-010 é hoje **exclusivamente** a ausência de credencial de teste do Mercado Pago e de acesso ao painel "Suas integrações".
+
+## Baseline Git
+
+`main` = `origin/main` = `f73d783c8974dfddf05e4bf7d794ae1249a42d73`, working tree limpo, sem stash, no início desta execução.
+
+## Estado das credenciais
+
+Verificação sem exibir qualquer valor:
+
+- nenhuma variável de ambiente cujo nome remeta a Mercado Pago, Pix, pagamento, gateway ou access token de pagamento;
+- nenhum arquivo `.env` no repositório;
+- nenhum diretório de configuração do Mercado Pago no perfil do usuário;
+- nenhuma credencial de outro projeto foi lida, reaproveitada ou inspecionada;
+- nenhuma credencial de produção foi procurada ou utilizada.
+
+### Sessão no painel do Mercado Pago
+
+Tentativa de acesso a `https://www.mercadopago.com.br/developers/panel/app` em navegador com sessões reais do usuário: a navegação foi redirecionada para a tela de identificação (`/login/identification`), que exige CPF, e-mail ou telefone, seguida de senha, e é protegida por reCAPTCHA.
+
+Conclusão: **não existe sessão autenticada do Mercado Pago disponível neste ambiente.** Nenhuma tentativa de autenticação foi feita: inserir credenciais de conta e resolver reCAPTCHA são ações vedadas ao agente. Nenhuma aplicação de teste foi criada e nenhuma configuração do painel foi alterada.
+
+Consequência direta: o Access Token de teste, que a documentação oficial localiza em *Suas integrações > Dados da integração > Testes > Credenciais de teste* e identifica pelo prefixo `APP_USR`, permanece inacessível — e com ele a chave secreta de webhook e o simulador oficial de notificações, que vivem no mesmo painel.
+
+## Endpoint HTTPS temporário
+
+A primeira execução registrou a ausência de endpoint HTTPS como bloqueio. **Isso deixou de ser verdade.**
+
+Observado nesta data: o ambiente de execução possui credencial válida de plataforma de deploy, verificada por chamada autenticada de leitura com resposta `HTTP 200`, sem exibir o valor do token. Um receiver HTTPS temporário e descartável é, portanto, provisionável sob demanda.
+
+**Nenhum deploy foi feito.** Motivo objetivo e deliberado: sem credencial do Mercado Pago e sem acesso ao painel, não há como configurar a URL de notificação nem acionar o simulador, de modo que o endpoint não receberia nenhuma requisição do gateway. Publicá-lo produziria infraestrutura sem evidência. O receiver deve ser criado na execução que dispuser das credenciais, junto com os experimentos.
+
+Nenhum serviço público de captura de webhook de terceiros foi utilizado.
+
+## Conectividade com a API — revalidada
+
+Sondagens sem envio de qualquer credencial:
+
+```
+2026-09-14T13:16:11Z GET https://api.mercadopago.com/v1/payment_methods (sem Authorization) -> HTTP 401
+2026-09-14T13:16:12Z GET https://api.mercadopago.com/v1/orders/0          (sem Authorization) -> HTTP 403
+```
+
+Resultado idêntico ao de 2026-09-07: rede, TLS e cliente HTTP funcionam; a API responde exatamente o esperado para requisição não autenticada.
+
+## Fontes oficiais revalidadas em 2026-09-14
+
+| # | Título | URL | Consulta | Fato utilizado |
+| --- | --- | --- | --- | --- |
+| G1 | Pix — Checkout API (via Orders API) | https://www.mercadopago.com.br/developers/pt/docs/checkout-api-orders/payment-integration/pix | 2026-09-14 | `POST /v1/orders`; headers `Authorization`, `Content-Type` e `X-Idempotency-Key` ("Essa chave garante que cada solicitação seja processada apenas uma vez"); `total_amount` e `transactions.payments.amount`; `payment_method.id = "pix"`, `type = "bank_transfer"`; resposta com `qr_code`, `qr_code_base64` e `ticket_url`; `expiration_time` ISO 8601, padrão 24 h, mínimo 30 min, máximo 30 dias; criação de order sujeita a limite de requisições, com `429 Too Many Requests` e header `Retry-After` |
+| G2 | Realizar uma compra teste com Pix | https://www.mercadopago.com.br/developers/pt/docs/checkout-api-orders/integration-test/pix | 2026-09-14 | Caso oficial com `total_amount` `"50.00"`, `payer.first_name = "APRO"`, `payer.email = "test_user_br@testuser.com"`; Access Token de teste obtido em *Suas integrações > Dados da integração > Testes*, prefixo `APP_USR`; **"Afterwards, the payment status will automatically change to approved"**; resposta de exemplo com `status` `action_required` e `status_detail` `waiting_transfer` |
+| G3 | Configurar notificações de orders | https://www.mercadopago.com.br/developers/pt/docs/checkout-api-orders/notifications | 2026-09-14 | Evento `Order (Mercado Pago)`, `action: "order.processed"`; header `X-Signature` no formato `ts=<timestamp>,v1=<hmac>`; resposta esperada `HTTP 200` ou `201` em até 22 s; reenvio a cada 15 minutos até a confirmação, com prazo prorrogado após a terceira tentativa; chave secreta gerada ao salvar a configuração, sem prazo de validade; simulador de notificação no painel |
+| G4 | Configurar notificações de orders — aba "Sem SDKs", versão Markdown da mesma página | https://www.mercadopago.com.br/developers/pt/docs/checkout-api-orders/notifications.md | 2026-09-14 | **Texto literal do manifesto do HMAC**, transcrito abaixo |
+| G5 | Quanto custa receber pagamentos com Checkout? | https://www.mercadopago.com.br/ajuda/33399 | 2026-09-14 | Tabela vigente do Checkout: **Pix 0,99%, dinheiro disponível "Na hora"**; boleto R$ 3,49; cartão de crédito 4,98% / 4,49% / 3,98%; Open Finance grátis. Nenhum componente fixo e nenhuma tarifa mínima para Pix |
+| G6 | Qual é o valor mínimo e máximo que posso pagar pelo Mercado Pago? | https://www.mercadopago.com.br/ajuda/324 | 2026-09-14 | Mínimos publicados: saldo em conta R$ 0,01; cartão de crédito e Cartão Mercado Pago R$ 0,50; boleto R$ 4,00. **Pix continua ausente da lista** |
+
+### Comparação com a primeira execução
+
+| Ponto | 2026-09-07 | 2026-09-14 | Natureza |
+| --- | --- | --- | --- |
+| Endpoint, headers e campos do Pix por Orders API | registrado | **inalterado** | documentado |
+| Tarifa Pix do Checkout = 0,99%, "Na hora" | registrado | **inalterado** | documentado |
+| Pix ausente da tabela de valores mínimos | registrado | **inalterado** | documentado |
+| Expiração: padrão 24 h, mínimo 30 min, máximo 30 dias | registrado | **inalterado** | documentado |
+| Manifesto do HMAC não extraído literalmente | lacuna registrada | **lacuna fechada** (G4) | documentado |
+| Aprovação do pagamento de teste não simulável | afirmado a partir de F2 | **corrigido**: G2 afirma que o status muda automaticamente para aprovado | documentado |
+| Limite de requisições na criação de order | não registrado | `429 Too Many Requests` com `Retry-After` (G1) | documentado |
+| Política de reenvio do webhook | não registrada | a cada 15 min até a confirmação (G3) | documentado |
+
+## Manifesto do HMAC — lacuna da primeira execução, agora fechada
+
+A primeira execução registrou explicitamente que "o texto exato do manifesto usado no cálculo do HMAC não foi extraído literalmente das páginas consultadas". Essa lacuna está fechada. Texto oficial (G4, aba *Without SDKs*):
+
+```
+id:[data.id_url];request-id:[x-request-id_header];ts:[ts_header];
+```
+
+Regras oficiais que acompanham o template:
+
+1. `[data.id_url]` é o valor do query param `data.id` recebido na URL. Se vier com caracteres alfanuméricos maiúsculos, **deve ser convertido para minúsculas** antes de compor o manifesto — o exemplo oficial converte `ORD01M28P44G5FG8RJPM579EH56FV` em `ord01m28p44g5fg8rjpm579eh56fv`.
+2. `[x-request-id_header]` é o valor do header `x-request-id`.
+3. `[ts_header]` é o valor `ts` extraído do header `x-signature`, separando o conteúdo do header pelo caractere `,`.
+4. Se `data.id` ou `x-request-id` não estiverem presentes na notificação, **devem ser removidos do manifesto** antes de calcular o HMAC.
+5. O cálculo é um `HMAC` com função de hash `SHA256` em base hexadecimal, usando a chave secreta como chave e o manifesto como mensagem; o resultado é comparado com o valor `v1`.
+
+Classificação: **documentado**. Nenhuma assinatura real foi recebida e nenhuma validação foi executada contra uma notificação verdadeira; isto não substitui a prova experimental exigida pelos critérios 7 e 8 de F0-010.
+
+## Correção material sobre o ambiente de teste
+
+A primeira execução concluiu, a partir da frase oficial "só será possível verificar o funcionamento da sua integração por meio de uma requisição, e não simulando uma compra", que a aprovação do pagamento provavelmente não seria observável em sandbox, e registrou isso como limitação.
+
+A documentação vigente em 2026-09-14, na mesma página (G2), afirma literalmente, logo após descrever a order criada com `status` `action_required`: **"Afterwards, the payment status will automatically change to approved."**
+
+Leitura conciliada: a primeira frase nega a simulação de uma *compra* pelo pagador — não existe pagador de teste efetuando transferência Pix; a segunda afirma que o ambiente de teste promove automaticamente o pagamento a aprovado. As duas convivem, e a segunda é diretamente relevante para o critério 5 de F0-010, porque indica que a transição **é** observável por consulta ao `GET /v1/orders/{id}` no ambiente de teste.
+
+Classificação: **documentado**, não observado. Nada nesta seção foi medido. A observação da transição e de seu tempo continua pendente de execução com credencial.
+
+## Experimento 1 — controle oficial R$ 50,00
+
+**Não executado.** Bloqueado por ausência de credencial de teste. Sem HTTP status, sem order ID, sem payment ID, sem status inicial, sem QR Code, sem copia e cola, sem ticket URL.
+
+## Experimento 2 — exatamente R$ 0,99
+
+**Não executado.** Bloqueado pela mesma causa.
+
+Permanece válida a leitura documental da primeira execução, reforçada pela revalidação de G6: não há mínimo publicado para Pix, e a página oficial de mínimos, revisitada em 2026-09-14, continua listando explicitamente saldo, cartão e boleto sem citar Pix. Isso **não** prova que R$ 0,99 seja aceito. Classificação da origem do resultado: **indeterminada**, exatamente como em 2026-09-07.
+
+## Idempotência, QR Code, status, webhook, assinatura e teste negativo
+
+Todos **não comprovados experimentalmente**, pela mesma causa única. Nenhuma requisição autenticada foi enviada, nenhuma notificação foi recebida, nenhuma assinatura foi validada e nenhum teste negativo de assinatura foi executado.
+
+A capacidade documentada correspondente está registrada em G1, G3 e G4 acima e na primeira execução. Documentação não é prova: RF-011 e RF-012 permanecem sem evidência experimental.
+
+## Tarifas
+
+Tabela oficial do Checkout revalidada em 2026-09-14 (G5): **Pix = 0,99%**, dinheiro disponível **"Na hora"**, sem componente fixo e sem tarifa mínima publicada. A mesma tabela explicita R$ 3,49 fixos para boleto, o que sustenta a leitura de que componentes fixos são declarados quando existem.
+
+Para R$ 0,99, a aritmética nominal continua a mesma da primeira execução: 0,99% × R$ 0,99 = R$ 0,0098010, valor não representável em centavos.
+
+**Tarifa efetiva e arredondamento: continuam sem evidência.** Nenhuma fonte oficial consultada nesta data define regra de arredondamento da tarifa, existência de tarifa mínima para Pix ou o líquido efetivo de uma transação de R$ 0,99. Nenhum experimento mediu o líquido e o ambiente de teste não reflete tarifas. As hipóteses de arredondamento para baixo (tarifa R$ 0,00), para cima (tarifa R$ 0,01) ou de tarifa mínima não publicada permanecem indistinguíveis e materialmente diferentes para um ticket de R$ 0,99.
+
+Esta continua sendo a incerteza economicamente mais relevante do spike e corresponde ao risco R-01.
+
+## Expiração
+
+Documentado (G1), inalterado em relação à primeira execução: campo `transaction.payment.expiration_time`, duração ISO 8601, padrão 24 horas, mínimo 30 minutos a partir da criação do pagamento, máximo 30 dias. Não observado experimentalmente. O tempo de reserva do TROQ não é decidido aqui: pertence ao design de pagamentos e a OD-07, que permanece aberta.
+
+## Critérios de conclusão de F0-010 nesta execução
+
+| # | Critério | Estado | Natureza |
+| --- | --- | --- | --- |
+| 1 | API autenticada funcionando | não comprovado | — |
+| 2 | Criação Pix | não comprovado | documentado apenas (G1) |
+| 3 | R$ 0,99 aceito | não comprovado | indeterminado |
+| 4 | QR Code ou copia e cola gerado | não comprovado | documentado apenas (G1, G2) |
+| 5 | Confirmação/status comprovável | não comprovado | documentado (G2), agora com indicação explícita de transição automática para aprovado no ambiente de teste |
+| 6 | Idempotência comprovada | não comprovado | documentado apenas (G1) |
+| 7 | Webhook HTTPS recebido | não comprovado | documentado apenas (G3) |
+| 8 | Origem/assinatura validada | não comprovado | **manifesto agora documentado literalmente** (G4) |
+| 9 | Tarifa vigente conhecida | parcialmente satisfeito | 0,99% documentado (G5); arredondamento sobre R$ 0,99 não determinado |
+| 10 | Nenhuma incompatibilidade conhecida com RB-004 | mantido | nenhuma evidência de incompatibilidade encontrada |
+
+Sete dos dez critérios continuam sem qualquer prova. F0-010 **não** pode ser marcado como concluído.
+
+## Evidência adicional necessária para concluir F0-010
+
+Exatamente uma condição, da qual todo o resto decorre:
+
+1. **Access Token de teste do Mercado Pago** disponibilizado com segurança ao ambiente de execução, ou sessão autenticada no painel "Suas integrações" com autorização para criar uma aplicação exclusivamente de teste. Com ele vêm a chave secreta de webhook e o simulador oficial de notificações.
+
+Tudo o mais já está disponível e verificado nesta data: conectividade com `api.mercadopago.com`, cliente HTTP e capacidade de publicar o receiver HTTPS temporário.
+
+Permanece, fora do alcance de sandbox, a questão da tarifa efetiva sobre R$ 0,99, que exige regra escrita do suporte comercial do Mercado Pago ou validação controlada em produção com autorização explícita e documentada de Bruno. Essa validação **não** foi executada e nenhum dinheiro real foi movimentado.
+
+## O que esta execução não fez
+
+Nenhuma integração de pagamento foi implementada, nenhum SDK adicionado, nenhum schema ou migration criado, nenhuma aplicação registrada no Mercado Pago, nenhuma configuração de produção alterada, nenhum endpoint publicado, nenhum dinheiro movimentado, nenhum segredo gravado e nenhum gateway alternativo comparado. OD-07 e OD-08 permanecem abertas, ADR-0004 não foi criado e o Mercado Pago permanece apenas candidato, conforme DEC-017.
