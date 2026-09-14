@@ -1,0 +1,756 @@
+// Schema fisico inicial do TROQ — materializacao de docs/architecture/data-model.md.
+// Decisoes fisicas e limites do que o Prisma Schema consegue expressar estao em
+// docs/engineering/database.md. Garantias que exigem SQL customizado (indices
+// parciais, CHECKs e triggers) vivem na migration inicial, nao aqui.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// Enums — conjuntos fechados, grafia tecnica literal do documento de origem
+// ---------------------------------------------------------------------------
+
+/// DM-3.1 — estado da conta (DEC-031 secao 10, DEC-034 secao 5, RF-023).
+enum UserStatus {
+  active
+  blocked_age
+  blocked_admin
+  deletion_requested
+
+  @@map("user_status")
+}
+
+/// DM-3.2 — tipo da aceitacao de termos (DEC-034 secao 3; DEC-031 secao 5, item 1).
+enum TermsAcceptanceType {
+  age_eligibility
+  listing_compliance
+
+  @@map("terms_acceptance_type")
+}
+
+/// DEC-027 secao 2 — estados do anuncio.
+enum ListingStatus {
+  draft
+  published
+  paused
+  closed
+  removed
+
+  @@map("listing_status")
+}
+
+/// DM-5.2 — estados da imagem.
+enum ListingImageStatus {
+  uploaded
+  processing
+  ready
+  failed
+
+  @@map("listing_image_status")
+}
+
+/// DEC-028 secao 7 — derivados publicos.
+enum ImageDerivativeKind {
+  thumb
+  medium
+  large
+
+  @@map("image_derivative_kind")
+}
+
+/// DM-6.1 — estados da solicitacao de desbloqueio.
+enum ContactRequestStatus {
+  reserved
+  paid
+  expired
+  failed
+
+  @@map("contact_request_status")
+}
+
+/// DEC-037 secao 15 / PD-3.2 — estados da tentativa de pagamento.
+enum PaymentAttemptStatus {
+  tentativa_criada
+  aguardando_pagamento
+  em_confirmacao
+  pagamento_confirmado
+  expirada
+  falha
+  reembolso_pendente
+  reembolsada_ou_revertida
+  inconsistente
+
+  @@map("payment_attempt_status")
+}
+
+/// PE-10.1 / PD-2.1 — origem do reconhecimento da acreditacao.
+enum RecognitionSource {
+  notificacao
+  reconciliacao
+
+  @@map("recognition_source")
+}
+
+/// PE-7.2 — hipoteses exaustivas de reembolso tecnico.
+enum TechnicalRefundHypothesis {
+  rt_1
+  rt_2
+  rt_3
+  rt_4
+
+  @@map("technical_refund_hypothesis")
+}
+
+/// PD-2.3 — estados do reembolso tecnico.
+enum TechnicalRefundStatus {
+  pendente
+  concluido
+  falhou_retentando
+  pendente_operacional
+
+  @@map("technical_refund_status")
+}
+
+/// PD-2.5 — tipos de caso de reconciliacao.
+enum ReconciliationCaseKind {
+  pendente
+  divergencia
+  reembolso_pendente
+  inconsistente
+
+  @@map("reconciliation_case_kind")
+}
+
+/// DEC-029 secao 3 — estados da negociacao.
+enum NegotiationStatus {
+  active
+  closed
+
+  @@map("negotiation_status")
+}
+
+/// DM-9 — validade da avaliacao (DEC-030 secao 13).
+enum RatingValidity {
+  valid
+  invalidated
+
+  @@map("rating_validity")
+}
+
+/// DEC-031 secao 6 — categoria da denuncia: PI-01 a PI-12 mais `outro`.
+enum ReportCategory {
+  pi_01
+  pi_02
+  pi_03
+  pi_04
+  pi_05
+  pi_06
+  pi_07
+  pi_08
+  pi_09
+  pi_10
+  pi_11
+  pi_12
+  outro
+
+  @@map("report_category")
+}
+
+/// DEC-031 secao 7.1 — estados da denuncia.
+enum ReportStatus {
+  recebida
+  procedente
+  improcedente
+  sem_acao
+
+  @@map("report_status")
+}
+
+/// DEC-031 secao 7.1 — desfecho de uma decisao de moderacao.
+enum ModerationOutcome {
+  procedente
+  improcedente
+  sem_acao
+
+  @@map("moderation_outcome")
+}
+
+/// DEC-031 secao 10 — medidas de reincidencia.
+enum SanctionKind {
+  advertencia
+  restricao_temporaria
+  bloqueio_administrativo
+
+  @@map("sanction_kind")
+}
+
+/// DEC-031 secao 11 — resultado da contestacao.
+enum AppealOutcome {
+  mantida
+  revista
+
+  @@map("appeal_outcome")
+}
+
+// ---------------------------------------------------------------------------
+// Identidade e conta (modulo `identity`)
+// ---------------------------------------------------------------------------
+
+/// DM-3.1. Nao contem telefone/WhatsApp (DM-4.1) nem dado etario ou documental
+/// (DEC-034 secao 4). Unicidade de email entre contas nao excluidas: indice
+/// unico parcial na migration inicial.
+model User {
+  id              String     @id @default(uuid()) @db.Uuid
+  displayName     String     @map("display_name")
+  email           String
+  emailVerifiedAt DateTime?  @map("email_verified_at") @db.Timestamptz(6)
+  status          UserStatus @default(active)
+  createdAt       DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime   @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  contact                 UserContact?
+  termsAcceptances        TermsAcceptance[]
+  accountDeletionRequest  AccountDeletionRequest?
+  listings                Listing[]               @relation("ListingOwner")
+  listingTransitions      ListingTransition[]     @relation("ListingTransitionActor")
+  contactRequests         ContactRequest[]        @relation("ContactRequestRequester")
+  selectionsMade          Selection[]             @relation("SelectionActor")
+  negotiationsAsOwner     Negotiation[]           @relation("NegotiationOwner")
+  negotiationsAsChosen    Negotiation[]           @relation("NegotiationChosen")
+  negotiationsClosed      Negotiation[]           @relation("NegotiationClosedBy")
+  contactReleasesGranted  ContactRelease[]        @relation("ContactReleaseOwner")
+  contactReleasesReceived ContactRelease[]        @relation("ContactReleaseRecipient")
+  contactAccessEvents     ContactAccessEvent[]    @relation("ContactAccessActor")
+  ratingsGiven            Rating[]                @relation("RatingEvaluator")
+  ratingsReceived         Rating[]                @relation("RatingEvaluated")
+  reports                 Report[]                @relation("ReportReporter")
+  moderationDecisions     ModerationDecision[]    @relation("ModerationDecisionModerator")
+  sanctions               Sanction[]              @relation("SanctionUser")
+  appeals                 Appeal[]                @relation("AppealAppellant")
+  appealsDecided          Appeal[]                @relation("AppealDecidedBy")
+  auditEvents             AuditEvent[]            @relation("AuditEventActor")
+
+  @@map("users")
+}
+
+/// DM-4.1 — dado protegido em tabela propria, modulo `contact`. 1 usuario : 0..1.
+model UserContact {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @unique @map("user_id") @db.Uuid
+  phoneNumber String   @map("phone_number")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@map("user_contacts")
+}
+
+/// DM-3.2 — cada aceitacao com instante e versao dos termos. Fato historico.
+model TermsAcceptance {
+  id           String              @id @default(uuid()) @db.Uuid
+  userId       String              @map("user_id") @db.Uuid
+  type         TermsAcceptanceType
+  termsVersion String              @map("terms_version")
+  listingId    String?             @map("listing_id") @db.Uuid
+  acceptedAt   DateTime            @default(now()) @map("accepted_at") @db.Timestamptz(6)
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Restrict)
+  listing Listing? @relation(fields: [listingId], references: [id], onDelete: Restrict)
+
+  @@index([userId])
+  @@index([listingId])
+  @@map("terms_acceptances")
+}
+
+/// DM-3.3 — solicitacao de exclusao (RF-023). 1 usuario : 0..1.
+model AccountDeletionRequest {
+  id                String    @id @default(uuid()) @db.Uuid
+  userId            String    @unique @map("user_id") @db.Uuid
+  requestedAt       DateTime  @default(now()) @map("requested_at") @db.Timestamptz(6)
+  immediateEffectAt DateTime  @map("immediate_effect_at") @db.Timestamptz(6)
+  purgeCompletedAt  DateTime? @map("purge_completed_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@map("account_deletion_requests")
+}
+
+// ---------------------------------------------------------------------------
+// Anuncio e imagens (modulos `listing` e `media`)
+// ---------------------------------------------------------------------------
+
+/// DM-5.1. Localizacao apenas cidade/UF (RB-005). Matriz de transicoes T1..T9
+/// protegida por trigger na migration inicial.
+model Listing {
+  id          String        @id @default(uuid()) @db.Uuid
+  ownerId     String        @map("owner_id") @db.Uuid
+  title       String
+  description String
+  city        String
+  uf          String        @db.Char(2)
+  status      ListingStatus @default(draft)
+  publishedAt DateTime?     @map("published_at") @db.Timestamptz(6)
+  pausedAt    DateTime?     @map("paused_at") @db.Timestamptz(6)
+  closedAt    DateTime?     @map("closed_at") @db.Timestamptz(6)
+  removedAt   DateTime?     @map("removed_at") @db.Timestamptz(6)
+  createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  owner               User                 @relation("ListingOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  transitions         ListingTransition[]
+  images              ListingImage[]
+  contactRequests     ContactRequest[]
+  reports             Report[]
+  termsAcceptances    TermsAcceptance[]
+  selections          Selection[]
+  negotiations        Negotiation[]
+  contactReleases     ContactRelease[]
+  moderationDecisions ModerationDecision[]
+
+  @@index([ownerId])
+  @@index([status])
+  @@map("listings")
+}
+
+/// DM-5.6 — cada mudanca de estado do anuncio. Fato historico. Par
+/// (origem, destino) restrito a T1..T9 por CHECK na migration inicial.
+model ListingTransition {
+  id         String          @id @default(uuid()) @db.Uuid
+  listingId  String          @map("listing_id") @db.Uuid
+  actorId    String          @map("actor_id") @db.Uuid
+  fromStatus ListingStatus   @map("from_status")
+  toStatus   ListingStatus   @map("to_status")
+  reason     String?
+  category   ReportCategory?
+  occurredAt DateTime        @default(now()) @map("occurred_at") @db.Timestamptz(6)
+
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Restrict)
+  actor   User    @relation("ListingTransitionActor", fields: [actorId], references: [id], onDelete: Restrict)
+
+  @@index([listingId])
+  @@index([actorId])
+  @@map("listing_transitions")
+}
+
+/// DM-5.7 — no maximo 6 imagens por anuncio, posicao unica dentro do anuncio.
+/// Faixa 1..6 por CHECK na migration inicial.
+model ListingImage {
+  id          String             @id @default(uuid()) @db.Uuid
+  listingId   String             @map("listing_id") @db.Uuid
+  position    Int
+  status      ListingImageStatus @default(uploaded)
+  objectKey   String             @map("object_key")
+  width       Int?
+  height      Int?
+  processedAt DateTime?          @map("processed_at") @db.Timestamptz(6)
+  createdAt   DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  listing     Listing           @relation(fields: [listingId], references: [id], onDelete: Restrict)
+  derivatives ImageDerivative[]
+
+  @@unique([listingId, position])
+  @@map("listing_images")
+}
+
+/// DEC-028 secao 7 — derivados `thumb`/`medium`/`large`, com dimensoes conhecidas.
+model ImageDerivative {
+  id        String              @id @default(uuid()) @db.Uuid
+  imageId   String              @map("image_id") @db.Uuid
+  kind      ImageDerivativeKind
+  objectKey String              @map("object_key")
+  width     Int
+  height    Int
+  createdAt DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  image ListingImage @relation(fields: [imageId], references: [id], onDelete: Cascade)
+
+  @@unique([imageId, kind])
+  @@map("image_derivatives")
+}
+
+// ---------------------------------------------------------------------------
+// Solicitacao e vaga (modulo `request`) — nucleo de concorrencia de RB-003
+// ---------------------------------------------------------------------------
+
+/// DM-6.1 — a solicitacao E a reserva de vaga. I-1 (indice unico parcial sobre
+/// (listing_id, slot_index) em `reserved`/`paid`), faixa 1..3 e I-8 (trigger
+/// que impede sair de `paid`) vivem na migration inicial.
+model ContactRequest {
+  id            String               @id @default(uuid()) @db.Uuid
+  listingId     String               @map("listing_id") @db.Uuid
+  requesterId   String               @map("requester_id") @db.Uuid
+  slotIndex     Int                  @map("slot_index")
+  status        ContactRequestStatus @default(reserved)
+  reservedFrom  DateTime             @map("reserved_from") @db.Timestamptz(6)
+  reservedUntil DateTime             @map("reserved_until") @db.Timestamptz(6)
+  paidAt        DateTime?            @map("paid_at") @db.Timestamptz(6)
+  createdAt     DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  listing        Listing         @relation(fields: [listingId], references: [id], onDelete: Restrict)
+  requester      User            @relation("ContactRequestRequester", fields: [requesterId], references: [id], onDelete: Restrict)
+  paymentAttempt PaymentAttempt?
+  selection      Selection?
+  contactRelease ContactRelease?
+
+  @@index([listingId])
+  @@index([requesterId])
+  @@map("contact_requests")
+}
+
+// ---------------------------------------------------------------------------
+// Pagamento (modulo `payments`)
+// ---------------------------------------------------------------------------
+
+/// PD-2.1 — a tentativa logica de cobrar R$ 0,99 por UMA reserva. I-2: unica
+/// por solicitacao (DM-7.1); chave de idempotencia persistida e unica (DM-7.2).
+model PaymentAttempt {
+  id                String               @id @default(uuid()) @db.Uuid
+  contactRequestId  String               @unique @map("contact_request_id") @db.Uuid
+  idempotencyKey    String               @unique @map("idempotency_key")
+  externalReference String               @unique @map("external_reference")
+  providerOrderId   String?              @unique @map("provider_order_id")
+  status            PaymentAttemptStatus @default(tentativa_criada)
+  accreditedAt      DateTime?            @map("accredited_at") @db.Timestamptz(6)
+  recognizedAt      DateTime?            @map("recognized_at") @db.Timestamptz(6)
+  recognitionSource RecognitionSource?   @map("recognition_source")
+  createdAt         DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  contactRequest      ContactRequest        @relation(fields: [contactRequestId], references: [id], onDelete: Restrict)
+  payments            Payment[]
+  notifications       PaymentNotification[]
+  reconciliationCases ReconciliationCase[]
+
+  @@index([status])
+  @@map("payment_attempts")
+}
+
+/// PD-2.2 — espelho de um pagamento reportado pelo provedor. Unico pelo
+/// identificador no provedor (DM-7.3). No maximo um canonico por tentativa
+/// (DM-7.4): indice unico parcial sobre `is_canonical` na migration inicial.
+/// Valor em centavos inteiros (DM-1.3): R$ 0,99 = 99.
+model Payment {
+  id                   String    @id @default(uuid()) @db.Uuid
+  paymentAttemptId     String    @map("payment_attempt_id") @db.Uuid
+  providerPaymentId    String    @unique @map("provider_payment_id")
+  amountCents          Int       @map("amount_cents")
+  providerStatus       String    @map("provider_status")
+  providerStatusDetail String?   @map("provider_status_detail")
+  accreditedAt         DateTime? @map("accredited_at") @db.Timestamptz(6)
+  isCanonical          Boolean   @default(false) @map("is_canonical")
+  firstObservedAt      DateTime  @default(now()) @map("first_observed_at") @db.Timestamptz(6)
+  lastObservedAt       DateTime  @default(now()) @map("last_observed_at") @db.Timestamptz(6)
+  createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  paymentAttempt  PaymentAttempt   @relation(fields: [paymentAttemptId], references: [id], onDelete: Restrict)
+  technicalRefund TechnicalRefund?
+  contactReleases ContactRelease[]
+
+  @@index([paymentAttemptId])
+  @@map("payments")
+}
+
+/// PD-2.3 — reembolso tecnico integral. Um por pagamento (1 : 0..1).
+model TechnicalRefund {
+  id                String                    @id @default(uuid()) @db.Uuid
+  paymentId         String                    @unique @map("payment_id") @db.Uuid
+  hypothesis        TechnicalRefundHypothesis
+  status            TechnicalRefundStatus     @default(pendente)
+  attemptCount      Int                       @default(0) @map("attempt_count")
+  lastAttemptAt     DateTime?                 @map("last_attempt_at") @db.Timestamptz(6)
+  lastAttemptResult String?                   @map("last_attempt_result")
+  providerRefundId  String?                   @map("provider_refund_id")
+  concludedAt       DateTime?                 @map("concluded_at") @db.Timestamptz(6)
+  createdAt         DateTime                  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime                  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+
+  @@index([status])
+  @@map("technical_refunds")
+}
+
+/// PD-2.4 — cada notificacao recebida e validada. Auditoria e diagnostico,
+/// nao corretude (PD-5.4). Nunca contem segredo nem payload capaz de
+/// reconstitui-lo (PE-6.3).
+model PaymentNotification {
+  id                String    @id @default(uuid()) @db.Uuid
+  paymentAttemptId  String?   @map("payment_attempt_id") @db.Uuid
+  providerRequestId String    @map("provider_request_id")
+  providerDataId    String    @map("provider_data_id")
+  receivedAt        DateTime  @default(now()) @map("received_at") @db.Timestamptz(6)
+  processedAt       DateTime? @map("processed_at") @db.Timestamptz(6)
+  processingResult  String?   @map("processing_result")
+
+  paymentAttempt PaymentAttempt? @relation(fields: [paymentAttemptId], references: [id], onDelete: Restrict)
+
+  @@index([paymentAttemptId])
+  @@index([providerDataId])
+  @@map("payment_notifications")
+}
+
+/// PD-2.5 — caso aberto de divergencia, pendencia ou inconsistencia. Nunca
+/// fechado sem desfecho real (PD-2.4).
+model ReconciliationCase {
+  id               String                 @id @default(uuid()) @db.Uuid
+  paymentAttemptId String                 @map("payment_attempt_id") @db.Uuid
+  kind             ReconciliationCaseKind
+  reason           String
+  openedAt         DateTime               @default(now()) @map("opened_at") @db.Timestamptz(6)
+  closedAt         DateTime?              @map("closed_at") @db.Timestamptz(6)
+  outcome          String?
+  createdAt        DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime               @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  paymentAttempt PaymentAttempt @relation(fields: [paymentAttemptId], references: [id], onDelete: Restrict)
+
+  @@index([paymentAttemptId])
+  @@index([kind, closedAt])
+  @@map("reconciliation_cases")
+}
+
+// ---------------------------------------------------------------------------
+// Escolha, negociacao e liberacao (modulos `negotiation` e `contact`)
+// ---------------------------------------------------------------------------
+
+/// DM-8.1 — o ato de escolher uma solicitacao paga. I-6: unica por
+/// solicitacao (DM-8.3). Fato historico imutavel.
+model Selection {
+  id               String   @id @default(uuid()) @db.Uuid
+  listingId        String   @map("listing_id") @db.Uuid
+  contactRequestId String   @unique @map("contact_request_id") @db.Uuid
+  actorId          String   @map("actor_id") @db.Uuid
+  selectedAt       DateTime @default(now()) @map("selected_at") @db.Timestamptz(6)
+
+  listing        Listing        @relation(fields: [listingId], references: [id], onDelete: Restrict)
+  contactRequest ContactRequest @relation(fields: [contactRequestId], references: [id], onDelete: Restrict)
+  actor          User           @relation("SelectionActor", fields: [actorId], references: [id], onDelete: Restrict)
+  negotiation    Negotiation?
+
+  @@index([listingId])
+  @@map("selections")
+}
+
+/// DM-8.2 — 1 escolha : 1 negociacao. I-5: no maximo uma `active` por
+/// anuncio, por indice unico parcial na migration inicial (DM-8.5). Sem motivo,
+/// culpado ou resultado (DM-8.7). `closed` e terminal: trigger na migration.
+model Negotiation {
+  id          String            @id @default(uuid()) @db.Uuid
+  selectionId String            @unique @map("selection_id") @db.Uuid
+  listingId   String            @map("listing_id") @db.Uuid
+  ownerId     String            @map("owner_id") @db.Uuid
+  chosenId    String            @map("chosen_id") @db.Uuid
+  status      NegotiationStatus @default(active)
+  createdAt   DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  closedAt    DateTime?         @map("closed_at") @db.Timestamptz(6)
+  closedById  String?           @map("closed_by_id") @db.Uuid
+  updatedAt   DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  selection      Selection       @relation(fields: [selectionId], references: [id], onDelete: Restrict)
+  listing        Listing         @relation(fields: [listingId], references: [id], onDelete: Restrict)
+  owner          User            @relation("NegotiationOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  chosen         User            @relation("NegotiationChosen", fields: [chosenId], references: [id], onDelete: Restrict)
+  closedBy       User?           @relation("NegotiationClosedBy", fields: [closedById], references: [id], onDelete: Restrict)
+  contactRelease ContactRelease?
+  ratings        Rating[]
+
+  @@index([listingId])
+  @@index([ownerId])
+  @@index([chosenId])
+  @@map("negotiations")
+}
+
+/// CR-3.1 — a AUTORIZACAO de liberacao, uma por negociacao (DM-8.8), imutavel,
+/// nunca revogada (CR-3.5). Nao contem o telefone/WhatsApp.
+model ContactRelease {
+  id               String   @id @default(uuid()) @db.Uuid
+  negotiationId    String   @unique @map("negotiation_id") @db.Uuid
+  listingId        String   @map("listing_id") @db.Uuid
+  contactRequestId String   @unique @map("contact_request_id") @db.Uuid
+  ownerId          String   @map("owner_id") @db.Uuid
+  recipientId      String   @map("recipient_id") @db.Uuid
+  paymentId        String   @map("payment_id") @db.Uuid
+  authorizedAt     DateTime @default(now()) @map("authorized_at") @db.Timestamptz(6)
+
+  negotiation    Negotiation          @relation(fields: [negotiationId], references: [id], onDelete: Restrict)
+  listing        Listing              @relation(fields: [listingId], references: [id], onDelete: Restrict)
+  contactRequest ContactRequest       @relation(fields: [contactRequestId], references: [id], onDelete: Restrict)
+  owner          User                 @relation("ContactReleaseOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  recipient      User                 @relation("ContactReleaseRecipient", fields: [recipientId], references: [id], onDelete: Restrict)
+  payment        Payment              @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  accessEvents   ContactAccessEvent[]
+
+  @@index([recipientId])
+  @@index([paymentId])
+  @@map("contact_releases")
+}
+
+/// CR-1.1 / DM-4.4 — cada ENTREGA efetiva do contato ao escolhido. Append-only.
+model ContactAccessEvent {
+  id               String   @id @default(uuid()) @db.Uuid
+  contactReleaseId String   @map("contact_release_id") @db.Uuid
+  actorId          String   @map("actor_id") @db.Uuid
+  accessedAt       DateTime @default(now()) @map("accessed_at") @db.Timestamptz(6)
+
+  contactRelease ContactRelease @relation(fields: [contactReleaseId], references: [id], onDelete: Restrict)
+  actor          User           @relation("ContactAccessActor", fields: [actorId], references: [id], onDelete: Restrict)
+
+  @@index([contactReleaseId])
+  @@map("contact_access_events")
+}
+
+// ---------------------------------------------------------------------------
+// Avaliacoes (modulo `reputation`)
+// ---------------------------------------------------------------------------
+
+/// DM-9.1 — unica por (negociacao, avaliador). Nota 1..5 por CHECK na migration
+/// (DM-9.2). Publicidade derivada na leitura (DM-9.4).
+model Rating {
+  id            String         @id @default(uuid()) @db.Uuid
+  negotiationId String         @map("negotiation_id") @db.Uuid
+  evaluatorId   String         @map("evaluator_id") @db.Uuid
+  evaluatedId   String         @map("evaluated_id") @db.Uuid
+  score         Int
+  submittedAt   DateTime       @default(now()) @map("submitted_at") @db.Timestamptz(6)
+  publishedAt   DateTime?      @map("published_at") @db.Timestamptz(6)
+  validity      RatingValidity @default(valid)
+  invalidatedAt DateTime?      @map("invalidated_at") @db.Timestamptz(6)
+  createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  negotiation Negotiation @relation(fields: [negotiationId], references: [id], onDelete: Restrict)
+  evaluator   User        @relation("RatingEvaluator", fields: [evaluatorId], references: [id], onDelete: Restrict)
+  evaluated   User        @relation("RatingEvaluated", fields: [evaluatedId], references: [id], onDelete: Restrict)
+
+  @@unique([negotiationId, evaluatorId])
+  @@index([evaluatedId])
+  @@map("ratings")
+}
+
+// ---------------------------------------------------------------------------
+// Denuncia e moderacao (modulo `moderation`)
+// ---------------------------------------------------------------------------
+
+/// DEC-031 secao 6 — denuncia. Unica por (denunciante, anuncio) (DM-10.1).
+/// Texto complementar opcional de ate 500 caracteres.
+model Report {
+  id         String         @id @default(uuid()) @db.Uuid
+  listingId  String         @map("listing_id") @db.Uuid
+  reporterId String         @map("reporter_id") @db.Uuid
+  category   ReportCategory
+  details    String?        @db.VarChar(500)
+  status     ReportStatus   @default(recebida)
+  createdAt  DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  decidedAt  DateTime?      @map("decided_at") @db.Timestamptz(6)
+  updatedAt  DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  listing  Listing             @relation(fields: [listingId], references: [id], onDelete: Restrict)
+  reporter User                @relation("ReportReporter", fields: [reporterId], references: [id], onDelete: Restrict)
+  decision ModerationDecision?
+
+  @@unique([reporterId, listingId])
+  @@index([listingId])
+  @@index([status])
+  @@map("reports")
+}
+
+/// DEC-031 secoes 7 e 12 — a decisao sobre uma denuncia (1 : 0..1) ou de oficio
+/// (sem denuncia, com origem do conhecimento). Sempre motivada.
+model ModerationDecision {
+  id              String            @id @default(uuid()) @db.Uuid
+  reportId        String?           @unique @map("report_id") @db.Uuid
+  listingId       String            @map("listing_id") @db.Uuid
+  moderatorId     String            @map("moderator_id") @db.Uuid
+  outcome         ModerationOutcome
+  category        ReportCategory?
+  reason          String
+  knowledgeSource String?           @map("knowledge_source")
+  decidedAt       DateTime          @default(now()) @map("decided_at") @db.Timestamptz(6)
+
+  report    Report?    @relation(fields: [reportId], references: [id], onDelete: Restrict)
+  listing   Listing    @relation(fields: [listingId], references: [id], onDelete: Restrict)
+  moderator User       @relation("ModerationDecisionModerator", fields: [moderatorId], references: [id], onDelete: Restrict)
+  sanctions Sanction[]
+  appeal    Appeal?
+
+  @@index([listingId])
+  @@index([moderatorId])
+  @@map("moderation_decisions")
+}
+
+/// DEC-031 secao 10 — advertencia, restricao temporaria de 7 dias ou bloqueio.
+/// `revoked_at` registra o desfazimento por contestacao `revista` (secao 11.2).
+model Sanction {
+  id                   String       @id @default(uuid()) @db.Uuid
+  moderationDecisionId String       @map("moderation_decision_id") @db.Uuid
+  userId               String       @map("user_id") @db.Uuid
+  kind                 SanctionKind
+  startsAt             DateTime     @default(now()) @map("starts_at") @db.Timestamptz(6)
+  endsAt               DateTime?    @map("ends_at") @db.Timestamptz(6)
+  revokedAt            DateTime?    @map("revoked_at") @db.Timestamptz(6)
+  createdAt            DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  moderationDecision ModerationDecision @relation(fields: [moderationDecisionId], references: [id], onDelete: Restrict)
+  user               User               @relation("SanctionUser", fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([userId])
+  @@index([moderationDecisionId])
+  @@map("sanctions")
+}
+
+/// DEC-031 secao 11 — contestacao. Unica por decisao (DM-10.5). Texto de ate
+/// 1000 caracteres, sem anexo.
+model Appeal {
+  id                   String         @id @default(uuid()) @db.Uuid
+  moderationDecisionId String         @unique @map("moderation_decision_id") @db.Uuid
+  appellantId          String         @map("appellant_id") @db.Uuid
+  category             String
+  text                 String         @db.VarChar(1000)
+  submittedAt          DateTime       @default(now()) @map("submitted_at") @db.Timestamptz(6)
+  outcome              AppealOutcome?
+  decidedAt            DateTime?      @map("decided_at") @db.Timestamptz(6)
+  decidedById          String?        @map("decided_by_id") @db.Uuid
+
+  moderationDecision ModerationDecision @relation(fields: [moderationDecisionId], references: [id], onDelete: Restrict)
+  appellant          User               @relation("AppealAppellant", fields: [appellantId], references: [id], onDelete: Restrict)
+  decidedBy          User?              @relation("AppealDecidedBy", fields: [decidedById], references: [id], onDelete: Restrict)
+
+  @@index([appellantId])
+  @@map("appeals")
+}
+
+// ---------------------------------------------------------------------------
+// Auditoria (modulo transversal `audit`)
+// ---------------------------------------------------------------------------
+
+/// DM-11.1 — trilha unica, append-only, escrita na mesma transacao do efeito
+/// (AR-9.3, AR-9.4). Alvo referenciado por tipo + id. `details` guarda os campos
+/// adicionais que a fonte normativa exigir; nunca telefone/WhatsApp em texto
+/// claro, segredo ou payload capaz de reconstitui-lo (DM-11.2).
+model AuditEvent {
+  id         String   @id @default(uuid()) @db.Uuid
+  eventType  String   @map("event_type")
+  actorId    String?  @map("actor_id") @db.Uuid
+  targetType String   @map("target_type")
+  targetId   String?  @map("target_id") @db.Uuid
+  result     String
+  details    Json?
+  occurredAt DateTime @default(now()) @map("occurred_at") @db.Timestamptz(6)
+
+  actor User? @relation("AuditEventActor", fields: [actorId], references: [id], onDelete: Restrict)
+
+  @@index([targetType, targetId])
+  @@index([actorId])
+  @@index([eventType, occurredAt])
+  @@map("audit_events")
+}

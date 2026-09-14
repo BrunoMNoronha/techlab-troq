@@ -10,7 +10,7 @@ Documento irmão de [conventions.md](conventions.md), cuja seção 3.2 fixa a fr
 
 **Não faz:** não provisiona Neon, Cloudflare R2, Resend, Mercado Pago, Vercel ou qualquer outro serviço; não cria conta, projeto, bucket ou credencial; não configura variável em painel de provedor; não instala dependência; não cria `schema.prisma` nem migration; não implementa leitura, parsing ou validação de variáveis em código; não escolhe ferramenta de observabilidade; não altera regra de negócio, requisito, ADR ou decisão vigente; e **não** declara a Fase 1 concluída.
 
-**Estado factual na data desta versão.** Nenhuma variável deste catálogo é lida por código hoje: o repositório contém apenas o scaffold Next.js, sem módulos de domínio, sem Prisma, sem adaptadores e sem integração externa ([../project-state.md](../project-state.md), seção 3). Por isso **toda** variável do catálogo está marcada como `previsto`. O contrato existe para que a integração de cada provedor, quando ocorrer, encontre a fronteira já decidida e escrita — não porque já exista consumidor.
+**Estado factual na data desta versão (atualizado por F1-002, 2026-09-14).** **Uma** variável deste catálogo passou a ter consumidor real: `DIRECT_URL` é lida por `prisma.config.ts`, a configuração do Prisma CLI criada por F1-002 ([database.md](database.md), seção 4). **Todas as demais continuam `previsto`**, sem código que as leia: não há módulos de domínio, não há runtime do Prisma Client, não há adaptadores nem integração externa ([../project-state.md](../project-state.md), seção 3). Em particular, `DATABASE_URL` permanece sem consumidor. **Nenhum serviço foi provisionado e nenhum segredo real está versionado.** O contrato existe para que a integração de cada provedor, quando ocorrer, encontre a fronteira já decidida e escrita.
 
 ## 2. Ambientes
 
@@ -119,7 +119,7 @@ Legenda das colunas:
 - **Ambientes** — onde a variável precisa existir.
 - **Classificação** — `pública` (prefixo `NEXT_PUBLIC_`, conteúdo público) ou `server-side` (exclusivamente servidor). Segredos são sempre `server-side` e estão marcados como tal.
 - **Obrigatoriedade** — `obrigatória` quando a funcionalidade correspondente não opera sem ela; `condicional` quando depende de um caminho específico.
-- **Estado** — `previsto` significa **ainda não consumido por código**. Hoje **todas** as variáveis estão nesse estado (seção 1).
+- **Estado** — `previsto` significa **ainda não consumido por código**; `consumido` significa que existe código versionado que a lê, indicado na própria célula. Hoje **apenas `DIRECT_URL`** está `consumido` (seção 5.2); todas as demais estão `previsto` (seção 1).
 - **Origem** — a fonte normativa que exige a variável e a justificativa do nome.
 
 ### 5.1 Aplicação
@@ -136,11 +136,11 @@ Legenda das colunas:
 | Variável | Ambientes | Classificação | Obrigatoriedade | Estado | Origem |
 | --- | --- | --- | --- | --- | --- |
 | `DATABASE_URL` | os três | server-side — **segredo** | obrigatória | previsto | String de conexão usada pela **aplicação em runtime**, apontando para o endpoint **pooled** do Neon. Exigida por [../adr/0002-postgresql-neon.md](../adr/0002-postgresql-neon.md) e por [../adr/0005-prisma-orm-migrations.md](../adr/0005-prisma-orm-migrations.md), decisão 10. O nome é a convenção documentada de Prisma e Neon (regra 4 da seção 4) |
-| `DIRECT_URL` | `development` e o job de CI/CD de migrations | server-side — **segredo** | condicional: obrigatória onde se executam comandos de schema | previsto | String de conexão **direta, não pooled**, usada pelo CLI do Prisma. [../adr/0005-prisma-orm-migrations.md](../adr/0005-prisma-orm-migrations.md), decisão 10, registra que o Neon exige duas strings e que `prisma migrate` e `prisma db push` precisam de conexão direta para operações de schema |
+| `DIRECT_URL` | `development` e o job de CI/CD de migrations | server-side — **segredo** | condicional: obrigatória onde se executam comandos de schema | **consumido** — por `prisma.config.ts` (Prisma CLI), desde F1-002 | String de conexão **direta, não pooled**, usada pelo CLI do Prisma. [../adr/0005-prisma-orm-migrations.md](../adr/0005-prisma-orm-migrations.md), decisão 10, registra que o Neon exige duas strings e que `prisma migrate` e `prisma db push` precisam de conexão direta para operações de schema |
 
 **Por que são duas variáveis, e não uma.** A distinção não é preferência de configuração: o endpoint pooled do Neon usa PgBouncer em modo transação e **não suporta** recursos de sessão ([../adr/0006-async-work-scheduling-concurrency.md](../adr/0006-async-work-scheduling-concurrency.md), fato N-1; [../architecture/overview.md](../architecture/overview.md), AR-15.5). Executar migration sobre o endpoint pooled é defeito conhecido e está listado como risco mitigado em ADR-0005. A mesma restrição tem uma consequência **de código**, que não é objeto deste documento e fica registrada para não ser reaberta por suposição: a aplicação usa exclusivamente trava de escopo de transação, sendo **proibida** a trava consultiva de sessão (DEC-038, decisão 6).
 
-**Fora de escopo aqui.** Nenhum banco foi provisionado, o Prisma não está instalado, não existe `schema.prisma` e nenhuma migration existe ([../project-state.md](../project-state.md), seção 3.2). Estas variáveis são o contrato que o provisionamento futuro deve satisfazer, não evidência de que ele ocorreu.
+**Estado após F1-002.** O Prisma 7.10.0 está instalado, `prisma/schema.prisma` e a migration inicial existem, e `prisma.config.ts` lê `DIRECT_URL` para as operações de schema do CLI — carregando `.env.local` (ou `.env`) por `process.loadEnvFile`, sem dependência extra, e sem erro quando o arquivo não existe ([database.md](database.md), seção 4.1). `DATABASE_URL` **continua sem consumidor**: o runtime do Prisma Client não foi criado. **Nenhum banco foi provisionado**: a migration só foi aplicada a PostgreSQL local e descartável, e estas variáveis continuam sendo o contrato que o provisionamento futuro deve satisfazer.
 
 ### 5.3 Cloudflare R2
 
