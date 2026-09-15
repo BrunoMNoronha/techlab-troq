@@ -10,7 +10,7 @@ Este documento **não duplica** o modelo lógico: entidades, relações, cardina
 
 **Não faz:** não provisiona banco de `production` nem cria credencial de produção; não cria repositórios de domínio; não integra Better Auth, R2, Resend ou Mercado Pago; não cria os módulos de domínio de AR-3.3; não implementa funcionalidade de produto; não altera regra de negócio, requisito, ADR ou decisão vigente.
 
-**Estado factual na data desta versão (2026-09-15, durante F1-004).** O repositório contém `prisma.config.ts`, `prisma/schema.prisma`, a migration inicial versionada, a fronteira de runtime `src/persistence/prisma.ts` (seção 13) e, desde F1-004, o workflow `.github/workflows/migrate-preview.yml` (seção 15). O **Neon de `preview` está provisionado** — projeto `techlab-troq-preview`, São Paulo, PostgreSQL 17, branch `preview`, database `troq` — e as duas conexões (direta e pooled) foram verificadas com `SELECT 1` e estão sob custódia do GitHub Environment `preview`. **A migration inicial ainda não foi aplicada em ambiente compartilhado:** a primeira execução do workflow ocorre no primeiro push a `main` após o merge da PR de F1-004. A configuração de `DATABASE_URL` no escopo Preview da Vercel ficou **pendente** por falta de acesso do executor ao projeto Vercel (seção 15.7). E-5 permanece **parcial** até que o workflow aplique a migration no Neon e a Vercel Preview receba a conexão pooled.
+**Estado factual na data desta versão (2026-09-15, durante F1-004).** O repositório contém `prisma.config.ts`, `prisma/schema.prisma`, a migration inicial versionada, a fronteira de runtime `src/persistence/prisma.ts` (seção 13) e, desde F1-004, o workflow `.github/workflows/migrate-preview.yml` (seção 15). O **Neon de `preview` está provisionado** — projeto `techlab-troq-preview`, São Paulo, PostgreSQL 17, branch `preview`, database `troq` — e as duas conexões (direta e pooled) foram verificadas com `SELECT 1` e estão sob custódia do GitHub Environment `preview`; a pooled está também no escopo **Preview** do projeto Vercel `techlab-troq`, junto de `APP_ENV=preview`, com um deployment de preview novo em `READY` (seção 15.2). **A migration inicial ainda não foi aplicada em ambiente compartilhado:** a primeira execução do workflow ocorre no primeiro push a `main` após o merge da PR de F1-004 (seção 15.6). E-5 permanece **parcial** até que essa execução aplique a migration e aprove a suíte de integração contra o Neon.
 
 ## 2. Prisma adotado
 
@@ -42,7 +42,7 @@ A separação é a de [ADR-0005](../adr/0005-prisma-orm-migrations.md), decisão
 | `DIRECT_URL` | **`prisma.config.ts`**, lida pelo Prisma CLI (`migrate dev`, `migrate deploy`, `migrate status`, `migrate reset`, `migrate diff`) | Conexão **direta, não pooled**, para operações de schema. **Nunca** é lida pelo runtime |
 | `DATABASE_URL` | **`src/persistence/prisma.ts`**, a fronteira de runtime criada por F1-003 (seção 13). **Consumida** | Conexão **pooled** do runtime da aplicação, passada ao `PrismaPg` que o Prisma Client usa. **Nunca** é lida pelo CLI |
 
-Custódia em `preview`, desde F1-004 (detalhe na seção 15.2): `DIRECT_URL` existe **apenas** como secret do GitHub Environment `preview`, lido pelo workflow de migrations; `DATABASE_URL` existe como secret do mesmo environment (para a prova de integração pós-merge) e deve existir no escopo Preview da Vercel (para o runtime hospedado). A conexão direta **não** entra na Vercel.
+Custódia em `preview`, desde F1-004 (detalhe na seção 15.2): `DIRECT_URL` existe **apenas** como secret do GitHub Environment `preview`, lido pelo workflow de migrations; `DATABASE_URL` existe como secret do mesmo environment (para a prova de integração pós-merge) e como variável sensível do projeto Vercel no escopo Preview (para o runtime hospedado). A conexão direta **não** entra na Vercel.
 
 Por que o CLI não pode usar a pooled: o endpoint pooled do Neon usa PgBouncer em modo transação e não suporta os recursos de sessão de que as operações de schema dependem ([ADR-0006](../adr/0006-async-work-scheduling-concurrency.md), fato N-1). Em `development` contra banco local, as duas URLs podem apontar para o mesmo servidor; a distinção de nomes é preservada mesmo assim, para que o contrato não mude ao conectar o Neon.
 
@@ -200,7 +200,7 @@ Pré-requisito: `DIRECT_URL` apontando para um PostgreSQL **local ou descartáve
 | --- | --- | --- |
 | Provisionamento do Neon de `preview` (projeto, branch `preview`, database `troq`) | **concluído por F1-004** | Seção 15.1. `development` continua sendo banco local ou descartável (seção 12); `production` **não existe** |
 | `DIRECT_URL` e `DATABASE_URL` como secrets do GitHub Environment `preview` | **concluído por F1-004** | Seção 15.2 |
-| `DATABASE_URL` no escopo Preview da Vercel | **pendente** | Seção 15.7: o executor de F1-004 não tinha acesso ao projeto Vercel; exige ação de Bruno |
+| `DATABASE_URL` e `APP_ENV=preview` no escopo Preview da Vercel | **concluído por F1-004** | Seção 15.2. Somente Preview; nada em Production; sem `DIRECT_URL` |
 | Runtime: instância do Prisma Client com driver adapter, singleton, leitura de `DATABASE_URL` | **concluído por F1-003** | `src/persistence/prisma.ts` (seção 13). Provado contra banco descartável; a prova contra o Neon é executada pelo workflow da seção 15 |
 | Workflow controlado executando `prisma migrate deploy` em `preview`, serializado, somente a partir de `main` | **criado por F1-004; primeira execução pendente do merge** | `.github/workflows/migrate-preview.yml` (seção 15.3). O equivalente de `production`, com aprovação (ADR-0005, decisão 7), depende do provisionamento desse ambiente |
 | Validação de migration e execução de `npm run test:integration` em CI de PR contra banco efêmero | **não iniciado** | [testing.md](testing.md), seção 7. A suíte de integração existe (seção 13.7) e roda pós-merge contra o Neon (seção 15); falta o job de PR que sobe um banco efêmero |
@@ -355,7 +355,7 @@ As duas strings foram obtidas do provedor tal como ele as gera (com `sslmode=req
 | Variável | Endpoint | Onde vive em `preview` | Quem lê |
 | --- | --- | --- | --- |
 | `DIRECT_URL` | **direto** (host sem sufixo `-pooler`) | **Somente** secret do GitHub Environment `preview` | `prisma.config.ts`, no workflow da seção 15.3 (`migrate deploy`, `migrate status`) |
-| `DATABASE_URL` | **pooled** (host com sufixo `-pooler`, PgBouncer em modo transação) | Secret do GitHub Environment `preview` **e** variável do projeto Vercel no escopo Preview (esta última pendente; seção 15.7) | `src/persistence/prisma.ts`: no workflow, pela suíte de integração; na Vercel, pelo runtime hospedado |
+| `DATABASE_URL` | **pooled** (host com sufixo `-pooler`, PgBouncer em modo transação) | Secret do GitHub Environment `preview` **e** variável do projeto Vercel `techlab-troq` no escopo **Preview** (tipo sensível: o valor não é exibido no painel), ao lado de `APP_ENV=preview` | `src/persistence/prisma.ts`: no workflow, pela suíte de integração; na Vercel, pelo runtime hospedado |
 
 Regras que decorrem da custódia: a conexão direta **não** existe na Vercel; nenhuma das duas existe no escopo Production da Vercel nem como secret de repositório do GitHub; os secrets são de **environment**, e o environment `preview` só libera secrets para jobs originados de `main` (política de branch de deployment com a única entrada `main`, sem revisores e sem tempo de espera). Uma observação factual: o GitHub trata nomes de environment sem distinção de maiúsculas, e o environment `Preview` já existia, criado pelos registros de deployment da integração da Vercel; `preview` é, portanto, esse mesmo environment, agora restrito a `main`.
 
@@ -387,6 +387,7 @@ O banco de `preview` é **único e compartilhado** por todos os deployments de p
 - `SELECT 1`, `SHOW server_version` e `current_database()` nas **duas** conexões, a partir da máquina do executor, com o driver `pg` já adotado: ambas responderam; versão 17.11; database `troq`; tabela `_prisma_migrations` ausente (banco vazio). Nenhuma migration foi aplicada nessa verificação.
 - Conferência estrutural das strings do provedor: esquema `postgresql`, sufixo `-pooler` presente apenas na pooled, parâmetros `sslmode` e `channel_binding` presentes nas duas, região `sa-east-1` no host.
 - Presença dos secrets por nome no environment `preview`; ausência de secrets de repositório; política de branch com a única entrada `main`.
+- Vercel, por API e apenas por nome, escopo e tipo: o projeto `techlab-troq` não tinha nenhuma variável; após F1-004 tem exatamente `APP_ENV` (`preview`, plain) e `DATABASE_URL` (`preview`, sensível); nenhuma no escopo Production; nenhum `DIRECT_URL`. Um redeploy do último deployment de preview da PR foi disparado depois da configuração — variável nova não vale para deployment anterior — e terminou em `READY`.
 - Localmente, sem credencial real: `format:check`, `lint`, `typecheck`, `test:ci`, `build`, `prisma format --check`, `prisma validate`, `prisma generate` e `git diff --check`.
 
 ### 15.6 O que a primeira execução do workflow deve provar, e o que ela torna imutável
@@ -399,9 +400,10 @@ Se a execução falhar, `main` não é alterada diretamente: o diagnóstico vira
 
 | Pendência | Fato | Menor ação necessária |
 | --- | --- | --- |
-| `DATABASE_URL` (pooled) e `APP_ENV=preview` no escopo **Preview** do projeto Vercel `techlab-troq` | O executor de F1-004 não tinha acesso ao projeto: o token de Vercel disponível no ambiente pertence a outro time, o conector Vercel do executor não tem escopo sobre `techlab-troq` e o CLI da Vercel não estava autenticado. Configurar pelo painel com sessão de navegador implicaria digitar um segredo em formulário, o que o executor não faz | Bruno concede ao executor acesso ao projeto (reautorizar o conector Vercel incluindo `techlab-troq`, ou autenticar o CLI da Vercel na máquina do executor); em seguida o executor cria as variáveis **só** em Preview, dispara um novo deployment de preview e confirma `READY` |
-| Primeira execução do workflow | Depende do merge da PR de F1-004 | Merge após o required check verde e após a pendência da Vercel — ou, se Bruno decidir merjar antes, `workflow_dispatch` sobre `main` |
-| Registro de E-5 como concluído e de F1-004 como concluída | Depende das duas linhas acima | PR documental após as evidências |
+| Primeira execução do workflow | Depende do merge da PR de F1-004, cujo diff inclui o próprio workflow e por isso satisfaz o filtro de caminhos | Squash merge após o required check verde; se não disparar, `workflow_dispatch` sobre `main` |
+| Registro de E-5 como concluído e de F1-004 como concluída | Depende da execução acima, com as evidências da seção 15.6 | PR documental curta, depois da execução |
+
+Nota de acesso, registrada para não ser reaberta por suposição: o executor só conseguiu configurar a Vercel depois de o CLI da Vercel ser autenticado nesta máquina por Bruno; o token de Vercel presente no ambiente do executor pertence a outro time e o conector Vercel disponível não expõe operação de variáveis de ambiente.
 
 ## 16. Revisão
 
