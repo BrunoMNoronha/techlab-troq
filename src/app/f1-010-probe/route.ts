@@ -39,7 +39,7 @@ export async function GET(request: Request): Promise<Response> {
     let importError: string | null = null;
     if (Sentry.getClient() === undefined) {
       try {
-        await import('../../../sentry.server.config');
+        await import('../../sentry.server.config');
       } catch (error) {
         importError = String(error).slice(0, 400);
       }
