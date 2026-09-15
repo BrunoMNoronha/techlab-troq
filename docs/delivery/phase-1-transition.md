@@ -188,6 +188,8 @@ Classificação item a item dos entregáveis listados por [roadmap.md](roadmap.m
 
 **Atualização de 2026-09-14 (F1-001).** Desde a auditoria, **E-4 passou a existir**. Restam `não iniciado` E-5 e E-7, e `parcial` E-1 e E-6. **A Fase 1 continua não concluída** e nenhum critério do seu gate de saída foi verificado.
 
+**Atualização de 2026-09-15 (F1-005).** **E-5 foi concluído** por F1-002, F1-003 e F1-004, e **E-1 foi concluído** por F1-005: a única lacuna que esta seção nomeava para E-1 — a estrutura de módulos de AR-3.3 — foi materializada em `src/modules/<module>/index.ts`, com os nove módulos de domínio e os transversais `audit` e `platform`, sem lógica funcional e sem recriar o scaffold. Permanecem `parcial` **E-6** (projeto Vercel existe; R2 e Resend não foram provisionados) e `não iniciado` **E-7**. **A Fase 1 continua não concluída** e nenhum critério do seu gate de saída foi verificado.
+
 ### 10.2 Pendências documentais residuais
 
 Registradas para visibilidade, sem ação nesta entrega:
