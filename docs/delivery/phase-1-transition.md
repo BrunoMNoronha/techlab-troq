@@ -190,6 +190,8 @@ Classificação item a item dos entregáveis listados por [roadmap.md](roadmap.m
 
 **Atualização de 2026-09-15 (F1-005).** **E-5 foi concluído** por F1-002, F1-003 e F1-004, e **E-1 foi concluído** por F1-005: a única lacuna que esta seção nomeava para E-1 — a estrutura de módulos de AR-3.3 — foi materializada em `src/modules/<module>/index.ts`, com os nove módulos de domínio e os transversais `audit` e `platform`, sem lógica funcional e sem recriar o scaffold. Permanecem `parcial` **E-6** (projeto Vercel existe; R2 e Resend não foram provisionados) e `não iniciado` **E-7**. **A Fase 1 continua não concluída** e nenhum critério do seu gate de saída foi verificado.
 
+**Atualização de 2026-09-15 (F1-006).** **E-6 avançou, e continua `parcial`.** O Cloudflare R2, que esta seção registrava como `não provisionado`, foi provisionado em `development` e em `preview`: buckets isolados `troq-media-development` e `troq-media-preview`, ambos em classe `Standard` e **privados**, com uma Account API Token *Object Read & Write* por ambiente, restrita ao bucket daquele ambiente, e custódia das cinco variáveis em `.env.local` e **somente** no escopo Preview da Vercel ([../engineering/environments.md](../engineering/environments.md), seção 5.3). O projeto Vercel já existia, como esta auditoria registrou. **E-6 permanece `parcial` porque o Resend continua não provisionado**, e essa é agora a sua única lacuna. Permanece `não iniciado` **E-7**, e nada de `production` foi criado. **A Fase 1 continua não concluída** e nenhum critério do seu gate de saída foi verificado.
+
 ### 10.2 Pendências documentais residuais
 
 Registradas para visibilidade, sem ação nesta entrega:
