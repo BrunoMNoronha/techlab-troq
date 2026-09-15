@@ -128,11 +128,19 @@ O **que** cada evento de pagamento significa está em [../product/payment-except
 
 ## 7. Testes no CI
 
-O CI é materializado na Fase 1 e não faz parte desta tarefa. Ficam registradas as expectativas que ele deve atender:
+O CI de validação existe desde antes da Fase 1 (`.github/workflows/ci.yml`) e, desde F1-004, existe também uma validação **pós-merge** contra o banco de `preview` (`.github/workflows/migrate-preview.yml`; [database.md](database.md), seção 15). São duas coisas distintas:
 
-- `format:check`, `lint`, `typecheck`, `test:ci` e `build` executam em toda PR ([conventions.md](conventions.md), seção 5.1).
-- Testes que dependem de banco rodam contra banco efêmero do próprio pipeline, jamais contra staging ou produção.
-- A validação de migration em CI de PR ocorre contra banco efêmero, conforme [ADR-0005](../adr/0005-prisma-orm-migrations.md).
+| | CI de PR | Validação pós-merge contra o Neon |
+| --- | --- | --- |
+| Quando | toda PR e todo push em `main` | push em `main` que toque migrations, schema, configuração do Prisma, dependências, `src/persistence/**` ou o próprio workflow; ou disparo manual sobre `main` |
+| O que roda | `format:check`, `lint`, `typecheck`, `test:ci`, `build` ([conventions.md](conventions.md), seção 5.1) | `prisma migrate deploy`, `prisma migrate status`, `npm run test:integration` |
+| Banco | **nenhum** — `test:ci` é determinístico e sem banco | o Neon de `preview`, compartilhado e alinhado a `main`; nunca produção |
+| Papel na governança | é o required status check de `main` | **não** é required check: executa depois do merge e não bloqueia PR |
+
+Regras e expectativas:
+
+- Testes que dependem de banco em **CI de PR** devem rodar contra banco efêmero do próprio pipeline, jamais contra `preview` ou produção. Esse job **ainda não existe** ([database.md](database.md), seção 11): hoje a prova de migration em PR é local, em banco descartável ([database.md](database.md), seção 12), e a validação de migration contra banco efêmero em CI de PR, prevista por [ADR-0005](../adr/0005-prisma-orm-migrations.md), continua pendente.
+- `npm run test:integration` é **somente leitura**: conecta, executa `SELECT 1`, lê `_prisma_migrations` e faz `count()` em tabelas do schema ([database.md](database.md), seção 13.7). É por isso que a mesma suíte pode rodar tanto contra banco descartável quanto, pós-merge, contra o Neon compartilhado: ela não escreve, não faz seed e não altera estado. Um teste futuro que precise escrever não entra nessa suíte sem banco efêmero próprio.
 - Teste intermitente é tratado como defeito: investiga-se a causa. Marcar como `skip` ou reexecutar até passar não é solução ([conventions.md](conventions.md), seção 6, item 8).
 
 ## 8. Referências
