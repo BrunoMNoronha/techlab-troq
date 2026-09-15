@@ -113,6 +113,8 @@ Conjunto obtido dos requisitos **efetivamente citados** por [roadmap.md](roadmap
 
 Nenhum requisito necessário à Fase 1 ou à Fase 2 está aberto, bloqueado ou sem fonte. As três lacunas residuais são de design ou de métrica e nenhuma delas bloqueia o primeiro trabalho da Fase 1 (F1-001), cuja dependência de requisito é RNF-015, `definido`. Ver O-1.
 
+> **Nota de atualização — 2026-09-15, F1-008.** Este resultado é o **registro da auditoria de F0-023** e é preservado como tal. Uma das três lacunas deixou de existir desde então: **RNF-018 passou a `definido`**, porque [../adr/0007-observability-sentry.md](../adr/0007-observability-sentry.md) (DEC-039) escolheu a ferramenta de observabilidade e o seu escopo — exatamente a lacuna que a linha de RNF-018 na seção 5.2 nomeava e que AR-14.1 atribuía à Fase 1, condição que O-1 registrou como circular. Restam `parcialmente definido` **RF-004** e **RF-021**. `definido` é definição do requisito: o entregável **E-7** permanece `não iniciado` (seção 10). O estado corrente dos requisitos vive em [../product/requirements.md](../product/requirements.md).
+
 ## 6. Revisão de riscos
 
 Revisão integral de [risks.md](risks.md) à luz do encerramento da Fase 0. **Nenhuma probabilidade foi atribuída** — o documento não as usa e não há base para estimá-las. **Nenhum risco foi encerrado por ter design definido:** design não é implementação, e vários riscos só se fecham com teste, ambiente real, operação, tarifa comercial, revisão jurídica/contábil ou comportamento de fornecedor.
@@ -194,6 +196,8 @@ Classificação item a item dos entregáveis listados por [roadmap.md](roadmap.m
 
 **Atualização de 2026-09-15 (F1-007).** **E-6 está concluído.** O Resend, que esta seção registrava como `não provisionado` e que era a última lacuna de E-6, foi provisionado em `development` e em `preview`: os subdomínios remetentes **verificados** `dev.troqs.app` e `preview.troqs.app`, sob o domínio `troqs.app` já pertencente ao TROQ, com DKIM, SPF e MX publicados na zona da Cloudflare, e uma API key *Sending access* por ambiente, restrita ao domínio daquele ambiente, custodiada em `.env.local` e **somente** no escopo Preview da Vercel ([../engineering/environments.md](../engineering/environments.md), seção 5.4). Com o projeto Vercel preexistente e o R2 de F1-006, os três componentes que esta auditoria nomeava para E-6 existem. Permanece `não iniciado` **E-7**, e nada de `production` foi criado. **A Fase 1 continua não concluída** e nenhum critério do seu gate de saída foi verificado.
 
+**Atualização de 2026-09-15 (F1-008).** **E-7 continua `não iniciado`**, e esta atualização existe justamente para que isso não seja lido de outra forma. F1-008 fechou a parte **decisória** que esta seção nomeava para E-7 — "a ferramenta concreta é, por AR-14.1, escolha da Fase 1" —, adotando o **Sentry SaaS** em [../adr/0007-observability-sentry.md](../adr/0007-observability-sentry.md) (DEC-039), com um projeto e um DSN por ambiente, escopo funcional cobrindo erro não tratado de browser e de servidor, logs estruturados, tracing, associação ao ambiente e à release e os **seis sinais de AR-14.3 preservados sem redução**, Session Replay **fora do MVP**, lista explícita de dados proibidos na telemetria e reafirmação de que observabilidade **não** é auditoria (AR-14.2); e registrou o contrato das quatro variáveis em [../engineering/environments.md](../engineering/environments.md), seção 5.8, todas `previsto`. **Nenhuma implementação passou a existir:** não há projeto Sentry provisionado, `@sentry/nextjs` não está instalado, não há arquivo de instrumentação e nenhuma telemetria é emitida. O próximo item é **F1-009**, o provisionamento em `development` e `preview`. Nada de `production` foi criado. **A Fase 1 continua não concluída** e nenhum critério do seu gate de saída foi verificado.
+
 ### 10.2 Pendências documentais residuais
 
 Registradas para visibilidade, sem ação nesta entrega:
@@ -218,7 +222,7 @@ Prompt versionado: [prompts/f1-001-environments-and-secrets.md](prompts/f1-001-e
 - [risks.md](risks.md) — R-01 a R-11
 - [../project-state.md](../project-state.md) — estado corrente
 - [../decisions/open-decisions.md](../decisions/open-decisions.md) — decisões abertas; nenhuma
-- [../decisions/decision-log.md](../decisions/decision-log.md) — DEC-001 a DEC-038
+- [../decisions/decision-log.md](../decisions/decision-log.md) — DEC-001 a DEC-039
 - [../product/requirements.md](../product/requirements.md) — RF-xxx e RNF-xxx
 - [../engineering/ai-agent-workflow.md](../engineering/ai-agent-workflow.md) — hierarquia de verdade, Git e governança de `main`
 - [../architecture/overview.md](../architecture/overview.md) — camadas, módulos de domínio e observabilidade mínima
