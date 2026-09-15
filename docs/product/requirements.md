@@ -24,9 +24,9 @@ Catálogo inicial de requisitos rastreáveis do MVP. Contém **apenas** requisit
 | Encerramento e avaliações | RF-016, RF-017 | 2 | 0 | 0 |
 | Denúncia e moderação | RF-018 a RF-020 | 3 | 0 | 0 |
 | Transversais | RF-021, RF-022 | 1 | 1 | 0 |
-| Não funcionais | RNF-001 a RNF-018 | 11 | 7 | 0 |
+| Não funcionais | RNF-001 a RNF-018 | 12 | 6 | 0 |
 
-Nenhum requisito permanece `bloqueado` e **não há mais decisão aberta**. OD-08 foi fechada por [../adr/0004-mercado-pago-pix.md](../adr/0004-mercado-pago-pix.md) (DEC-036), que homologou o gateway Pix, e OD-07 — a última — foi fechada por [payment-exceptions.md](payment-exceptions.md) (DEC-037), que definiu as exceções de pagamento e levou RF-009, RF-010, RF-011, RF-012 e RF-022 a `definido`. Os requisitos que permanecem `parcialmente definido` dependem apenas de trabalho de design ou de métrica a fixar no gate correspondente: RF-004 (campos do anúncio), RF-021 (catálogo de emails) e os não funcionais sem métrica homologada.
+Nenhum requisito permanece `bloqueado` e **não há mais decisão aberta**. OD-08 foi fechada por [../adr/0004-mercado-pago-pix.md](../adr/0004-mercado-pago-pix.md) (DEC-036), que homologou o gateway Pix, e OD-07 — a última — foi fechada por [payment-exceptions.md](payment-exceptions.md) (DEC-037), que definiu as exceções de pagamento e levou RF-009, RF-010, RF-011, RF-012 e RF-022 a `definido`. Os requisitos que permanecem `parcialmente definido` dependem apenas de trabalho de design ou de métrica a fixar no gate correspondente: RF-004 (campos do anúncio), RF-021 (catálogo de emails) e os não funcionais sem métrica homologada. **RNF-018 deixou de estar entre eles em 2026-09-15:** [../adr/0007-observability-sentry.md](../adr/0007-observability-sentry.md) (DEC-039) definiu a ferramenta de observabilidade e o seu escopo, e o requisito passou a `definido` — o que é definição, e **não** implementação.
 
 ## Requisitos funcionais
 
@@ -419,9 +419,9 @@ Nenhum requisito permanece `bloqueado` e **não há mais decisão aberta**. OD-0
 
 - **Descrição:** logs estruturados e rastreamento de erros suficientes para operar o MVP, sem registrar dados protegidos.
 - **Prioridade MVP:** obrigatória.
-- **Origem:** roadmap Fase 1; DEC-023 (contato nunca em logs).
-- **Critério de aceite (alto nível):** ferramentas e escopo definidos na Fase 1; logs não contêm telefone/WhatsApp nem segredos.
-- **Status:** parcialmente definido.
+- **Origem:** roadmap Fase 1; DEC-023 (contato nunca em logs); [../adr/0007-observability-sentry.md](../adr/0007-observability-sentry.md) (DEC-039).
+- **Critério de aceite (alto nível):** ferramenta e escopo definidos — **Sentry SaaS**, com um projeto e um DSN por ambiente, cobrindo erro não tratado de browser e de servidor, logs estruturados, tracing de diagnóstico e os sinais mínimos de [../architecture/overview.md](../architecture/overview.md) (AR-14.3), com Session Replay fora do MVP; logs e telemetria não contêm telefone/WhatsApp, dado protegido nem segredos (AR-14.4); a observabilidade não substitui a auditoria (AR-14.2).
+- **Status:** definido — por [../adr/0007-observability-sentry.md](../adr/0007-observability-sentry.md) (DEC-039), que fechou a lacuna de ferramenta e escopo que AR-14.1 atribuía à Fase 1. **`definido` é definição do requisito, não implementação:** nenhum projeto Sentry foi provisionado, nenhum SDK está instalado, nenhuma telemetria é emitida e o entregável **E-7** da Fase 1 permanece `não iniciado` ([../delivery/backlog.md](../delivery/backlog.md)). O contrato de variáveis está em [../engineering/environments.md](../engineering/environments.md), seção 5.8.
 
 ## Rastreabilidade por regra de negócio
 

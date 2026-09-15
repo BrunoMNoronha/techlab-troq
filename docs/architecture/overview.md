@@ -225,7 +225,7 @@ O desenho completo está em [payments-design.md](payments-design.md). Em nível 
 
 ## 14. Observabilidade mínima
 
-**AR-14.1 (normativa).** Logs estruturados e rastreamento de erros suficientes para operar o MVP, sem dados protegidos e sem segredos (RNF-018). Ferramenta concreta e escopo são definidos na Fase 1.
+**AR-14.1 (normativa).** Logs estruturados e rastreamento de erros suficientes para operar o MVP, sem dados protegidos e sem segredos (RNF-018). A ferramenta concreta e o escopo, que esta seção atribuía à Fase 1, foram definidos por [ADR-0007](../adr/0007-observability-sentry.md) (DEC-039): a plataforma é o **Sentry SaaS**, com **um projeto e um DSN por ambiente**, cobrindo erro não tratado de browser e de servidor, logs estruturados, tracing de diagnóstico e a associação da telemetria ao ambiente e à release, com **Session Replay fora do MVP** e fronteiras de privacidade explícitas. Aquele ADR é **decisão e contrato**: na data desta revisão nada está provisionado, nenhum SDK está instalado e nenhuma telemetria é emitida.
 
 **AR-14.2 (decisão arquitetural).** Observabilidade é **distinta** de auditoria e não a substitui: auditoria é estado versionado no banco, com valor probatório e retenção normativa; log é telemetria operacional, descartável. Uma operação crítica nunca é considerada auditada porque apareceu em log.
 
@@ -282,7 +282,7 @@ Consequências concretas, cada uma detalhada no documento indicado:
 | Schema, migrations, nomes de tabela e de coluna | Fase 1, a partir de [data-model.md](data-model.md) e de [ADR-0005](../adr/0005-prisma-orm-migrations.md) |
 | Endpoints, rotas, contratos HTTP e telas | Fases 2 a 4 |
 | Metas numéricas de desempenho, acessibilidade e disponibilidade | Gate da Fase 5 (RNF-003, RNF-004, RNF-010, RNF-012) |
-| Ferramenta concreta de observabilidade | Fase 1 (RNF-018) |
+| Ferramenta concreta de observabilidade | **Decidida** por [ADR-0007](../adr/0007-observability-sentry.md) (DEC-039) na Fase 1, com o contrato de variáveis em [environments.md](../engineering/environments.md), seção 5.8 (RNF-018). Taxas de amostragem, dashboards e limiares de alerta continuam sendo design |
 | Catálogo completo de emails transacionais | RF-021, na fase de cada fluxo |
 | Provisionamento de Vercel, Neon, R2 e Resend | Fase 1 |
 
@@ -300,6 +300,7 @@ Consequências concretas, cada uma detalhada no documento indicado:
 | RNF-007, RNF-008, RNF-013, RNF-014, RNF-015, RNF-016, RNF-017, RNF-018 | Convertidos em regra estrutural nas seções 4, 7, 8, 9, 14 e 16 |
 | ADR-0001 a ADR-0005 | Obedecidos integralmente; nenhum é alterado |
 | [ADR-0006](../adr/0006-async-work-scheduling-concurrency.md) | **Criado** por F0-022 (DEC-038), para o tema que a seção 15 exigia decidir |
+| [ADR-0007](../adr/0007-observability-sentry.md) | **Criado** por F1-008 (DEC-039), que fechou a lacuna de ferramenta e escopo de AR-14.1. **Preserva integralmente AR-14.2, AR-14.3 — os seis sinais mínimos, sem redução — e AR-14.4**; nenhuma outra parte deste documento é alterada |
 | DEC-019 | Materializada: a reserva atômica antes da cobrança deixa de ser recomendação e ganha mecanismo |
 | DEC-037 | Obedecida integralmente; CI-1 a CI-12 são rastreados em [payments-design.md](payments-design.md) |
 | R-02, R-04 | Mitigação sai do plano normativo e ganha mecanismo; residual fica no teste de concorrência do gate da Fase 3 |
