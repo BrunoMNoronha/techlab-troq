@@ -45,7 +45,36 @@ export async function GET(request: Request): Promise<Response> {
       }
     }
     const client = Sentry.getClient();
+
+    Sentry.captureMessage('f1-010 probe: mensagem de prova (report mode)');
+    const flushed = await Sentry.flush(5000);
+
+    let rawIngestStatus: number | string = 'skipped';
+    const dsn = client?.getDsn();
+    if (dsn !== undefined) {
+      const url = `https://${dsn.host}/api/${dsn.projectId}/envelope/?sentry_key=${dsn.publicKey}&sentry_version=7`;
+      const body =
+        JSON.stringify({ event_id: '00000000000000000000000000000010' }) +
+        String.fromCharCode(10) +
+        JSON.stringify({ type: 'event' }) +
+        String.fromCharCode(10) +
+        JSON.stringify({
+          message: 'f1-010 probe: envelope bruto de prova',
+          level: 'info',
+          environment: process.env.APP_ENV,
+        }) +
+        String.fromCharCode(10);
+      try {
+        const response = await fetch(url, { method: 'POST', body });
+        rawIngestStatus = response.status;
+      } catch (error) {
+        rawIngestStatus = String(error).slice(0, 200);
+      }
+    }
+
     return Response.json({
+      flushed,
+      rawIngestStatus,
       hasClient: client !== undefined,
       hasDsn: client?.getDsn() !== undefined,
       environment: client?.getOptions().environment ?? null,
