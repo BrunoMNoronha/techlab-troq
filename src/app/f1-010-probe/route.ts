@@ -36,6 +36,14 @@ export async function GET(request: Request): Promise<Response> {
   installProbeHooks();
 
   if (new URL(request.url).searchParams.get('report') === '1') {
+    let importError: string | null = null;
+    if (Sentry.getClient() === undefined) {
+      try {
+        await import('../../../sentry.server.config');
+      } catch (error) {
+        importError = String(error).slice(0, 400);
+      }
+    }
     const client = Sentry.getClient();
     return Response.json({
       hasClient: client !== undefined,
@@ -46,6 +54,7 @@ export async function GET(request: Request): Promise<Response> {
       appEnvPresent: typeof process.env.APP_ENV === 'string',
       dsnEnvPresent: typeof process.env.NEXT_PUBLIC_SENTRY_DSN === 'string',
       nextRuntime: process.env.NEXT_RUNTIME ?? null,
+      importError,
     });
   }
 
