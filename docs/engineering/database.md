@@ -1,16 +1,16 @@
 # Banco de dados — Prisma, schema físico e migrations — TROQ
 
-Fonte de engenharia da **materialização física** do banco de dados e do **runtime do Prisma Client**. Produzido por **F1-002**, o segundo trabalho da Fase 1, como a primeira parte do entregável E-5 de [../delivery/phase-1-transition.md](../delivery/phase-1-transition.md), seção 10, e atualizado por **F1-003**, que acrescentou a seção 13 (runtime).
+Fonte de engenharia da **materialização física** do banco de dados e do **runtime do Prisma Client**. Produzido por **F1-002**, o segundo trabalho da Fase 1, como a primeira parte do entregável E-5 de [../delivery/phase-1-transition.md](../delivery/phase-1-transition.md), seção 10; atualizado por **F1-003**, que acrescentou a seção 13 (runtime), e por **F1-004**, que provisionou o Neon de `preview` e criou o workflow controlado de `migrate deploy` (seção 15).
 
 Este documento **não duplica** o modelo lógico: entidades, relações, cardinalidades, estados e invariantes estão em [../architecture/data-model.md](../architecture/data-model.md), e a política de migrations está em [../adr/0005-prisma-orm-migrations.md](../adr/0005-prisma-orm-migrations.md). Aqui ficam apenas as decisões **físicas** — o que foi escolhido para representar o modelo no PostgreSQL —, o que o Prisma Schema consegue expressar e o que exigiu SQL customizado, e o procedimento de validação. Em caso de conflito com ADR, decisão registrada ou documento de arquitetura, **prevalece a fonte de nível superior** ([ai-agent-workflow.md](ai-agent-workflow.md), seção 2) e este documento deve ser corrigido.
 
 ## 1. Escopo
 
-**Faz:** registra o Prisma adotado e a versão efetivamente instalada, a estrutura dos arquivos, a separação entre conexão pooled e direta, as convenções físicas (nomes, identificadores, instantes, dinheiro, tipos de texto, ações referenciais), como a migration inicial materializa as invariantes de restrição de banco, quais garantias vivem no Prisma Schema e quais exigem SQL customizado, os comandos permitidos em desenvolvimento, o procedimento de validação sobre banco descartável e, desde F1-003, a **fronteira de runtime** que instancia o Prisma Client com driver adapter (seção 13).
+**Faz:** registra o Prisma adotado e a versão efetivamente instalada, a estrutura dos arquivos, a separação entre conexão pooled e direta, as convenções físicas (nomes, identificadores, instantes, dinheiro, tipos de texto, ações referenciais), como a migration inicial materializa as invariantes de restrição de banco, quais garantias vivem no Prisma Schema e quais exigem SQL customizado, os comandos permitidos em desenvolvimento, o procedimento de validação sobre banco descartável, desde F1-003 a **fronteira de runtime** que instancia o Prisma Client com driver adapter (seção 13) e, desde F1-004, o **Neon de `preview`** e o **workflow controlado de `migrate deploy`** (seção 15).
 
-**Não faz:** não provisiona Neon nem cria credencial; não cria repositórios de domínio nem o job de CI/CD de `prisma migrate deploy`; não integra Better Auth, R2, Resend ou Mercado Pago; não cria os módulos de domínio de AR-3.3; não implementa funcionalidade de produto; não altera regra de negócio, requisito, ADR ou decisão vigente.
+**Não faz:** não provisiona banco de `production` nem cria credencial de produção; não cria repositórios de domínio; não integra Better Auth, R2, Resend ou Mercado Pago; não cria os módulos de domínio de AR-3.3; não implementa funcionalidade de produto; não altera regra de negócio, requisito, ADR ou decisão vigente.
 
-**Estado factual na data desta versão (2026-09-14, após F1-003).** O repositório contém `prisma.config.ts`, `prisma/schema.prisma`, a migration inicial versionada e, desde F1-003, a fronteira de runtime `src/persistence/prisma.ts`, que instancia o Prisma Client com `@prisma/adapter-pg` a partir de `DATABASE_URL` (seção 13). Migration e runtime foram validados **apenas contra PostgreSQL local e descartável** (seção 12). **Nenhum banco Neon foi provisionado**, nenhuma migration foi aplicada em ambiente compartilhado e nenhum job de `migrate deploy` existe. E-5 permanece **parcial**.
+**Estado factual na data desta versão (2026-09-15, durante F1-004).** O repositório contém `prisma.config.ts`, `prisma/schema.prisma`, a migration inicial versionada, a fronteira de runtime `src/persistence/prisma.ts` (seção 13) e, desde F1-004, o workflow `.github/workflows/migrate-preview.yml` (seção 15). O **Neon de `preview` está provisionado** — projeto `techlab-troq-preview`, São Paulo, PostgreSQL 17, branch `preview`, database `troq` — e as duas conexões (direta e pooled) foram verificadas com `SELECT 1` e estão sob custódia do GitHub Environment `preview`; a pooled está também no escopo **Preview** do projeto Vercel `techlab-troq`, junto de `APP_ENV=preview`, com um deployment de preview novo em `READY` (seção 15.2). **A migration inicial ainda não foi aplicada em ambiente compartilhado:** a primeira execução do workflow ocorre no primeiro push a `main` após o merge da PR de F1-004 (seção 15.6). E-5 permanece **parcial** até que essa execução aplique a migration e aprove a suíte de integração contra o Neon.
 
 ## 2. Prisma adotado
 
@@ -31,7 +31,7 @@ Atualizações de minor e patch dentro de 7.x seguem a política de ADR-0005: at
 
 O banco é **PostgreSQL padrão**, conforme [ADR-0002](../adr/0002-postgresql-neon.md). O schema físico e a migration usam apenas recursos do PostgreSQL core: tipos `uuid`, `timestamptz`, `text`, `varchar`, `char`, `integer`, `boolean`, `jsonb`, enums nativos, índices únicos parciais, `CHECK`, funções `sql`/`plpgsql` e triggers. **Nenhuma extensão** é criada e **nenhum recurso proprietário do Neon** (branching, por exemplo) é usado ou pressuposto.
 
-A validação desta entrega usou PostgreSQL **17.11** em contêiner descartável (seção 12). Isso é a versão do ambiente executor, **não** um pin de produção: qualquer versão estável suportada pelo Prisma 7 serve.
+A validação de F1-002 e F1-003 usou PostgreSQL **17.11** em contêiner descartável (seção 12). O Neon de `preview` provisionado por F1-004 roda a major **17** (17.11 observado em 2026-09-15 por `SHOW server_version`; seção 15). Nenhum dos dois é pin de produção: qualquer versão estável suportada pelo Prisma 7 serve, e a major de `production`, quando esse banco existir, será escolhida no seu provisionamento.
 
 ## 4. Conexões: `DATABASE_URL` pooled e `DIRECT_URL` direta
 
@@ -41,6 +41,8 @@ A separação é a de [ADR-0005](../adr/0005-prisma-orm-migrations.md), decisão
 | --- | --- | --- |
 | `DIRECT_URL` | **`prisma.config.ts`**, lida pelo Prisma CLI (`migrate dev`, `migrate deploy`, `migrate status`, `migrate reset`, `migrate diff`) | Conexão **direta, não pooled**, para operações de schema. **Nunca** é lida pelo runtime |
 | `DATABASE_URL` | **`src/persistence/prisma.ts`**, a fronteira de runtime criada por F1-003 (seção 13). **Consumida** | Conexão **pooled** do runtime da aplicação, passada ao `PrismaPg` que o Prisma Client usa. **Nunca** é lida pelo CLI |
+
+Custódia em `preview`, desde F1-004 (detalhe na seção 15.2): `DIRECT_URL` existe **apenas** como secret do GitHub Environment `preview`, lido pelo workflow de migrations; `DATABASE_URL` existe como secret do mesmo environment (para a prova de integração pós-merge) e como variável sensível do projeto Vercel no escopo Preview (para o runtime hospedado). A conexão direta **não** entra na Vercel.
 
 Por que o CLI não pode usar a pooled: o endpoint pooled do Neon usa PgBouncer em modo transação e não suporta os recursos de sessão de que as operações de schema dependem ([ADR-0006](../adr/0006-async-work-scheduling-concurrency.md), fato N-1). Em `development` contra banco local, as duas URLs podem apontar para o mesmo servidor; a distinção de nomes é preservada mesmo assim, para que o contrato não mude ao conectar o Neon.
 
@@ -72,7 +74,7 @@ vitest.integration.config.mts                 config da suite de integracao (for
 
 - `src/generated/prisma/` está em `.gitignore`, `.prettierignore` e nos `ignores` do ESLint. Ele é recriado por `npx prisma generate` e **não** entra em commit. Desde F1-003, o script `postinstall` do `package.json` executa `prisma generate` ao fim de `npm ci`/`npm install`: como a fronteira de runtime (seção 13) importa o client gerado, `typecheck`, `test:ci` e `build` passaram a depender dele, e o CI e a Vercel instalam a partir de um checkout sem o artefato. `prisma generate` não toca o banco e não exige `DATABASE_URL` nem `DIRECT_URL` (seção 4.1); é exatamente o uso que [ADR-0005](../adr/0005-prisma-orm-migrations.md) admite no build/`postinstall`, enquanto `migrate deploy` continua fora dele.
 - O `datasource` do schema declara apenas `provider = "postgresql"`; a URL vive exclusivamente em `prisma.config.ts` (regra da linha 7).
-- Migrations são **imutáveis depois de aplicadas em ambiente compartilhado** (ADR-0005, decisão 5). Como nenhuma foi aplicada fora de banco descartável, a inicial ainda poderia ser reescrita em PR própria; a partir do primeiro `migrate deploy` em `preview` ou `production`, corrigir significa **nova** migration.
+- Migrations são **imutáveis depois de aplicadas em ambiente compartilhado** (ADR-0005, decisão 5). A migration inicial torna-se imutável no instante em que a primeira execução bem-sucedida do workflow da seção 15 a aplicar ao Neon de `preview`; a partir daí, corrigir significa **nova** migration. Enquanto essa primeira execução não ocorreu (estado em 2026-09-15), ela ainda poderia ser reescrita em PR própria — F1-004 **não** a alterou (seção 15.6).
 
 ## 6. Convenções físicas
 
@@ -174,7 +176,7 @@ Todos os estados fechados são **enums nativos** do PostgreSQL. Nenhum estado fo
 
 `prisma db push` é **proibido fora de `development`** e, em `development`, só contra banco local ou descartável (ADR-0005, decisão 8; [environments.md](environments.md), seção 2.4). Ele não cria histórico em `_prisma_migrations` e não pode substituir migration em `preview` ou `production` em nenhuma circunstância. **Nesta entrega ele não foi usado.**
 
-`prisma migrate dev` e `prisma migrate reset` são igualmente restritos a banco local ou descartável (decisão 6). `prisma migrate deploy` é o único mecanismo autorizado para ambiente compartilhado e será executado por **job controlado de CI/CD**, ainda não criado (seção 11).
+`prisma migrate dev` e `prisma migrate reset` são igualmente restritos a banco local ou descartável (decisão 6). `prisma migrate deploy` é o único mecanismo autorizado para ambiente compartilhado e é executado pelo **workflow controlado** `.github/workflows/migrate-preview.yml`, criado por F1-004 (seção 15) — somente a partir de `main`, serializado e com a conexão direta do GitHub Environment `preview`. Para `production`, que ainda não existe, o job correspondente, com aprovação explícita (decisão 7), será criado quando esse ambiente for provisionado.
 
 ## 10. Comandos permitidos em desenvolvimento
 
@@ -196,15 +198,16 @@ Pré-requisito: `DIRECT_URL` apontando para um PostgreSQL **local ou descartáve
 
 | Item | Estado | Onde fica |
 | --- | --- | --- |
-| Provisionamento do Neon (projeto, branches `development`/`preview`/`production`, credenciais) | **não iniciado** | Trabalho próprio da Fase 1; F1-002 não acessou nem provisionou o Neon |
-| Configuração de `DATABASE_URL`/`DIRECT_URL` em painel (Vercel, segredo de CI/CD) | **não iniciado** | Depende do provisionamento |
-| Runtime: instância do Prisma Client com driver adapter, singleton, leitura de `DATABASE_URL` | **concluído por F1-003** | `src/persistence/prisma.ts` (seção 13). Provado apenas contra banco descartável |
-| Job controlado de CI/CD executando `prisma migrate deploy`, serializado, com aprovação para produção | **não iniciado** | ADR-0005, decisão 7 |
-| Validação de migration e execução de `npm run test:integration` em CI de PR contra banco efêmero | **não iniciado** | [testing.md](testing.md), seção 7. A suíte de integração já existe (seção 13.7); falta o job que sobe o banco efêmero e a executa |
+| Provisionamento do Neon de `preview` (projeto, branch `preview`, database `troq`) | **concluído por F1-004** | Seção 15.1. `development` continua sendo banco local ou descartável (seção 12); `production` **não existe** |
+| `DIRECT_URL` e `DATABASE_URL` como secrets do GitHub Environment `preview` | **concluído por F1-004** | Seção 15.2 |
+| `DATABASE_URL` e `APP_ENV=preview` no escopo Preview da Vercel | **concluído por F1-004** | Seção 15.2. Somente Preview; nada em Production; sem `DIRECT_URL` |
+| Runtime: instância do Prisma Client com driver adapter, singleton, leitura de `DATABASE_URL` | **concluído por F1-003** | `src/persistence/prisma.ts` (seção 13). Provado contra banco descartável; a prova contra o Neon é executada pelo workflow da seção 15 |
+| Workflow controlado executando `prisma migrate deploy` em `preview`, serializado, somente a partir de `main` | **criado por F1-004; primeira execução pendente do merge** | `.github/workflows/migrate-preview.yml` (seção 15.3). O equivalente de `production`, com aprovação (ADR-0005, decisão 7), depende do provisionamento desse ambiente |
+| Validação de migration e execução de `npm run test:integration` em CI de PR contra banco efêmero | **não iniciado** | [testing.md](testing.md), seção 7. A suíte de integração existe (seção 13.7) e roda pós-merge contra o Neon (seção 15); falta o job de PR que sobe um banco efêmero |
 | Integrações: Better Auth (e suas tabelas), R2, Resend, Mercado Pago | **não iniciado** | Fases 2 e 3 |
 | Módulos de domínio de AR-3.3 e repositórios da camada de persistência | **não iniciado** | Fase 1, E-1. O que existe da camada de persistência é apenas a fronteira de obtenção do client (seção 13) |
 
-Consequência: **E-5 permanece parcial** e a **Fase 1 permanece em andamento**.
+Consequência: **E-5 permanece parcial** — schema, migration, runtime, Neon de `preview` e workflow existem; falta a primeira aplicação da migration pelo workflow e a variável na Vercel Preview — e a **Fase 1 permanece em andamento**.
 
 ## 12. Procedimento de validação sobre banco descartável
 
@@ -316,15 +319,92 @@ O módulo lê um segredo e abre TCP; ele **não pode** ser importado por Client 
 | --- | --- |
 | F1-002 | Entrega: Prisma 7.10.0 pinado, `prisma.config.ts`, `schema.prisma`, migration inicial, este documento |
 | F1-003 | Entrega: `@prisma/adapter-pg` e `pg` pinados, fronteira `src/persistence/prisma.ts`, testes unitários e de integração, `npm run test:integration`, seção 13 deste documento |
-| E-5 ([../delivery/phase-1-transition.md](../delivery/phase-1-transition.md), seção 10) | **Parcial**: schema, migration e runtime do Prisma Client existem (F1-002 e F1-003); Neon e job de `migrate deploy` não |
+| F1-004 | Entrega: Neon de `preview` provisionado (São Paulo, PostgreSQL 17, branch `preview`, database `troq`), GitHub Environment `preview` restrito a `main` com os secrets `DIRECT_URL` e `DATABASE_URL`, workflow `.github/workflows/migrate-preview.yml`, seção 15 deste documento. Pendente: `DATABASE_URL` na Vercel Preview e a primeira execução do workflow (seção 15.7) |
+| E-5 ([../delivery/phase-1-transition.md](../delivery/phase-1-transition.md), seção 10) | **Parcial**: schema, migration e runtime do Prisma Client (F1-002 e F1-003), Neon de `preview` e workflow de `migrate deploy` (F1-004) existem; falta a primeira aplicação da migration pelo workflow e a variável na Vercel Preview |
 | [../architecture/data-model.md](../architecture/data-model.md) | Materializado; I-1, I-2, I-5, I-6 e I-8 como garantias reais de banco (seção 7.1); nenhuma entidade `Interest` |
 | [ADR-0005](../adr/0005-prisma-orm-migrations.md) | Executado na prática pela primeira vez: pin exato, `--create-only` + SQL editado, `migrate dev` só em descartável, `migrate deploy` provado em banco vazio. A revisão prevista na sua política de evolução ("revisitada quando a Fase 1 criar o primeiro schema") está registrada aqui: a política mostrou-se executável |
 | [ADR-0002](../adr/0002-postgresql-neon.md) | Preservado: PostgreSQL padrão, sem extensão e sem recurso do provedor |
 | [ADR-0006](../adr/0006-async-work-scheduling-concurrency.md), decisão 7 | Aplicada: restrição de banco é a garantia; trava é comportamento da futura transação |
-| [environments.md](environments.md) | `DIRECT_URL` (F1-002) e `DATABASE_URL` (F1-003) têm consumidor real; as demais variáveis continuam `previsto` |
-| R-07 | Passa de teórico a exercitável: existe histórico versionado a proteger |
+| [environments.md](environments.md) | `DIRECT_URL` (F1-002) e `DATABASE_URL` (F1-003) têm consumidor real e, desde F1-004, valores reais de `preview` sob custódia do GitHub Environment; as demais variáveis continuam `previsto` |
+| R-07 | Passa de teórico a exercitável (histórico versionado) e, com F1-004, a **exercitado**: o único caminho para o Neon de `preview` é o workflow da seção 15 |
+| R-08 | O Neon deixa de ser escolha documental e passa a ser dependência operacional de `preview` (seção 15.1) |
 | Gate da Fase 1 | O critério "invariantes atribuídas a restrição de banco materializadas no schema inicial" tem evidência; os demais critérios continuam por verificar |
 
-## 15. Revisão
+## 15. Neon de `preview` e deployment controlado de migrations
 
-Revisado a cada migration nova, quando o Neon for provisionado, quando o job de `migrate deploy` existir, quando a fronteira de runtime mudar de adapter ou de estratégia de reuso, ou quando [../architecture/data-model.md](../architecture/data-model.md) mudar.
+Produzido por **F1-004**, quarto trabalho da Fase 1 e terceira parte de E-5. Materializa, para o ambiente `preview` de [environments.md](environments.md), seção 2.2, a decisão 7 de [ADR-0005](../adr/0005-prisma-orm-migrations.md): `migrate deploy` por job controlado de CI/CD, serializado, fora do build e fora de qualquer função da aplicação. Nada aqui cria, configura ou pressupõe `production`.
+
+### 15.1 Recurso provisionado
+
+| Item | Valor | Observação |
+| --- | --- | --- |
+| Provedor | Neon ([ADR-0002](../adr/0002-postgresql-neon.md)) | Conta de Bruno; organização Neon `TechLab PreConsulta`, plano **Free**, gerida pelo console — a única das organizações existentes que é gratuita **e** não é gerida pela integração de marketplace da Vercel. Não existia organização própria do TROQ e a API não cria organizações; mover o projeto para uma organização dedicada é ação de painel, não bloqueia nada e fica registrada como opção |
+| Projeto | `techlab-troq-preview` | Criado em 2026-09-15, exclusivamente para `preview`. Nenhum plano foi contratado ou elevado |
+| Região | AWS South America East 1 (São Paulo), `aws-sa-east-1` | Conferida na lista de regiões da conta antes da criação; a região de um projeto Neon não pode ser alterada depois |
+| PostgreSQL | major **17** (17.11 observado) | Escolhida explicitamente: o padrão da conta em 2026-09-15 seria 18 |
+| Branch | `preview` | Criada como branch inicial do projeto, com esse nome, e é a branch padrão. O painel do Neon rotula a branch padrão de um projeto como *production branch*: é terminologia do provedor para "branch primária do projeto" e **não** torna este recurso o ambiente `production` do TROQ, que não existe |
+| Database | `troq` | Owner `troq_owner`, role criado pelo provedor |
+| Compute | 0,25 CU fixo, suspensão automática padrão do plano | Suficiente para `preview`; o primeiro acesso após suspensão paga o cold start do compute |
+| Dados | apenas o schema; nenhuma linha de produto, nenhum dado pessoal | O workflow não faz seed; a suíte de integração é somente leitura |
+| Extensões e recursos proprietários | nenhum | O schema não exige extensão (seção 3). Nenhum branching por Pull Request, nenhuma integração Neon–Vercel, nenhum recurso do Neon é dependência de arquitetura (ADR-0005, "Recursos exclusivos") |
+
+### 15.2 Conexões e custódia
+
+As duas strings foram obtidas do provedor tal como ele as gera (com `sslmode=require` e `channel_binding=require`), sem edição de host ou senha, e nenhuma delas está — nem pode estar — em arquivo versionado, PR, commit, relatório ou log.
+
+| Variável | Endpoint | Onde vive em `preview` | Quem lê |
+| --- | --- | --- | --- |
+| `DIRECT_URL` | **direto** (host sem sufixo `-pooler`) | **Somente** secret do GitHub Environment `preview` | `prisma.config.ts`, no workflow da seção 15.3 (`migrate deploy`, `migrate status`) |
+| `DATABASE_URL` | **pooled** (host com sufixo `-pooler`, PgBouncer em modo transação) | Secret do GitHub Environment `preview` **e** variável do projeto Vercel `techlab-troq` no escopo **Preview** (tipo sensível: o valor não é exibido no painel), ao lado de `APP_ENV=preview` | `src/persistence/prisma.ts`: no workflow, pela suíte de integração; na Vercel, pelo runtime hospedado |
+
+Regras que decorrem da custódia: a conexão direta **não** existe na Vercel; nenhuma das duas existe no escopo Production da Vercel nem como secret de repositório do GitHub; os secrets são de **environment**, e o environment `preview` só libera secrets para jobs originados de `main` (política de branch de deployment com a única entrada `main`, sem revisores e sem tempo de espera). Uma observação factual: o GitHub trata nomes de environment sem distinção de maiúsculas, e o environment `Preview` já existia, criado pelos registros de deployment da integração da Vercel; `preview` é, portanto, esse mesmo environment, agora restrito a `main`.
+
+Fato verificado em 2026-09-15 sobre o driver: o `pg` 8.23 trata `sslmode=require` como `verify-full` e emite um aviso a respeito na conexão. Isso **não** é erro — o certificado do Neon é válido para o host — e não altera o contrato; a string permanece a do provedor.
+
+### 15.3 Workflow `.github/workflows/migrate-preview.yml`
+
+| Item | Contrato |
+| --- | --- |
+| Nome | `Migrations de preview (Neon)`; job `Aplicar migrations no Neon de preview`. Nomes distintos do required status check, que **não** muda |
+| Gatilhos | `push` em `main`, filtrado por caminho (migrations, `schema.prisma`, `prisma.config.ts`, `package.json`, `package-lock.json`, `src/persistence/**`, `vitest.integration.config.mts` e o próprio workflow) e `workflow_dispatch`. **Nenhum** gatilho de Pull Request |
+| Guarda | `if: github.ref == 'refs/heads/main'` no job, além do gatilho e da política do environment |
+| Permissões | `contents: read` |
+| Environment | `preview` — origem exclusiva de `DIRECT_URL` e `DATABASE_URL`, expostas como variáveis do job |
+| Serialização | grupo de concorrência `migrate-preview`, `cancel-in-progress: false`: uma execução por vez, nunca cancelada por outra |
+| Runner e toolchain | `ubuntu-latest`, `actions/checkout@v5`, `actions/setup-node@v5` com Node.js 24 e cache npm, `npm ci` — os mesmos do CI de validação |
+| Limite | `timeout-minutes: 15` |
+| Passos, nesta ordem | verificação de presença dos dois secrets (nome e status, nunca o valor); `npm ci`; `npx prisma migrate deploy`; `npx prisma migrate status`; `npm run test:integration`. Qualquer falha falha o job; sem `continue-on-error`, sem retry |
+| O que não contém | comando de desenvolvimento do Prisma Migrate, `db push`, SQL destrutivo, seed, credencial literal, conexão de produção, migration em build ou em Pull Request |
+
+O workflow **não** é required status check: ele executa depois do merge e não substitui o CI da PR ([testing.md](testing.md), seção 7). Torná-lo obrigatório bloquearia toda PR à espera de um check que só existe em `main`.
+
+### 15.4 Por que somente a partir de `main`, e o que isso limita
+
+O banco de `preview` é **único e compartilhado** por todos os deployments de preview da Vercel, e o seu schema acompanha `main`. Consequências deliberadas: (a) uma PR que altere migration só a vê aplicada em `preview` depois do merge — antes disso, a prova é local, em banco descartável (seção 12), e o deploy de preview da própria PR roda contra o schema de `main`; (b) uma migration incompatível com a versão anterior da aplicação quebra os previews até o merge da correção — exatamente o motivo pelo qual mudanças destrutivas seguem expand/contract (ADR-0005, decisão 9); (c) não há banco por PR nem branching efêmero do Neon, por decisão de escopo e por ADR-0005. Esta limitação é aceita para o MVP e será revista apenas por decisão registrada.
+
+### 15.5 Validações executadas por F1-004 antes do merge
+
+- `SELECT 1`, `SHOW server_version` e `current_database()` nas **duas** conexões, a partir da máquina do executor, com o driver `pg` já adotado: ambas responderam; versão 17.11; database `troq`; tabela `_prisma_migrations` ausente (banco vazio). Nenhuma migration foi aplicada nessa verificação.
+- Conferência estrutural das strings do provedor: esquema `postgresql`, sufixo `-pooler` presente apenas na pooled, parâmetros `sslmode` e `channel_binding` presentes nas duas, região `sa-east-1` no host.
+- Presença dos secrets por nome no environment `preview`; ausência de secrets de repositório; política de branch com a única entrada `main`.
+- Vercel, por API e apenas por nome, escopo e tipo: o projeto `techlab-troq` não tinha nenhuma variável; após F1-004 tem exatamente `APP_ENV` (`preview`, plain) e `DATABASE_URL` (`preview`, sensível); nenhuma no escopo Production; nenhum `DIRECT_URL`. Um redeploy do último deployment de preview da PR foi disparado depois da configuração — variável nova não vale para deployment anterior — e terminou em `READY`.
+- Localmente, sem credencial real: `format:check`, `lint`, `typecheck`, `test:ci`, `build`, `prisma format --check`, `prisma validate`, `prisma generate` e `git diff --check`.
+
+### 15.6 O que a primeira execução do workflow deve provar, e o que ela torna imutável
+
+Na primeira execução sobre `main` — disparada pelo merge da PR de F1-004, cujo diff inclui o próprio workflow — `migrate deploy` cria `_prisma_migrations` e aplica `20260914210926_initial_schema`; `migrate status` deve reportar o histórico em dia; `npm run test:integration` deve aprovar os 5 casos da seção 13.7 contra o endpoint pooled. Evidência a registrar: identificador da execução, conclusão de cada passo, nome da migration, contagem de migrations aplicadas e resultado da suíte — nunca URL, usuário, senha ou token. **A partir dessa execução bem-sucedida a migration inicial é imutável** (seção 5); F1-004 não alterou `prisma/schema.prisma` nem nenhum `migration.sql`, o que foi conferido por hash antes e depois da entrega.
+
+Se a execução falhar, `main` não é alterada diretamente: o diagnóstico vira PR corretiva dentro do mesmo escopo, e uma correção que exigisse alterar schema ou migration seria bloqueio a reportar, não ação autônoma.
+
+### 15.7 Pendências de F1-004
+
+| Pendência | Fato | Menor ação necessária |
+| --- | --- | --- |
+| Primeira execução do workflow | Depende do merge da PR de F1-004, cujo diff inclui o próprio workflow e por isso satisfaz o filtro de caminhos | Squash merge após o required check verde; se não disparar, `workflow_dispatch` sobre `main` |
+| Registro de E-5 como concluído e de F1-004 como concluída | Depende da execução acima, com as evidências da seção 15.6 | PR documental curta, depois da execução |
+
+Nota de acesso, registrada para não ser reaberta por suposição: o executor só conseguiu configurar a Vercel depois de o CLI da Vercel ser autenticado nesta máquina por Bruno; o token de Vercel presente no ambiente do executor pertence a outro time e o conector Vercel disponível não expõe operação de variáveis de ambiente.
+
+## 16. Revisão
+
+Revisado a cada migration nova, quando `production` for provisionado (banco, environment e job com aprovação), quando a Vercel Preview receber `DATABASE_URL`, quando a fronteira de runtime mudar de adapter ou de estratégia de reuso, quando o workflow da seção 15 mudar de contrato, ou quando [../architecture/data-model.md](../architecture/data-model.md) mudar.

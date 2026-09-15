@@ -1,0 +1,89 @@
+# Aplicacao controlada de migrations no Neon de PREVIEW (F1-004).
+#
+# Contrato (docs/engineering/database.md, secao 15; ADR-0005, decisao 7):
+# - roda SOMENTE a partir de `main`, depois do merge — nunca em Pull Request;
+# - usa o GitHub Environment `preview`, cujos secrets DIRECT_URL (conexao
+#   direta, Prisma CLI) e DATABASE_URL (conexao pooled, runtime) so sao
+#   liberados para jobs originados de `main`;
+# - e serializado: um grupo de concorrencia estavel, sem cancelar execucao em
+#   andamento, para que duas migrations nunca corram ao mesmo tempo;
+# - executa apenas `migrate deploy`, `migrate status` e a suite de integracao
+#   (somente leitura). Nenhum comando destrutivo, nenhuma carga de dados e
+#   nenhum comando de desenvolvimento do Prisma Migrate (dev, push, reset).
+#
+# Este workflow NAO e required status check: ele e validacao pos-merge e nao
+# substitui o CI de validacao da PR (.github/workflows/ci.yml).
+name: Migrations de preview (Neon)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/migrate-preview.yml'
+      - 'prisma/migrations/**'
+      - 'prisma/schema.prisma'
+      - 'prisma.config.ts'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'src/persistence/**'
+      - 'vitest.integration.config.mts'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: migrate-preview
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    name: Aplicar migrations no Neon de preview
+    # Defesa em profundidade: o gatilho ja restringe a `main`, e o environment
+    # `preview` so libera os secrets para `main`; a condicao impede que um
+    # `workflow_dispatch` sobre outra ref sequer inicie o job.
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: preview
+    env:
+      # Conexao DIRETA (nao pooled): lida por prisma.config.ts, exclusiva do CLI.
+      DIRECT_URL: ${{ secrets.DIRECT_URL }}
+      # Conexao POOLED: lida por src/persistence/prisma.ts, exclusiva do runtime.
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js 24
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Verificar presença dos secrets do environment
+        # Reporta apenas nome e status; nunca o valor.
+        run: |
+          missing=0
+          for name in DIRECT_URL DATABASE_URL; do
+            if [ -z "${!name}" ]; then
+              echo "::error::secret $name ausente no environment preview"
+              missing=1
+            else
+              echo "$name: presente"
+            fi
+          done
+          test "$missing" -eq 0
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Aplicar migrations pendentes (migrate deploy)
+        run: npx prisma migrate deploy
+
+      - name: Conferir histórico de migrations (migrate status)
+        run: npx prisma migrate status
+
+      - name: Prova de integração do runtime contra o banco migrado
+        run: npm run test:integration
