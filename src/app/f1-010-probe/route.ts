@@ -97,7 +97,5 @@ export async function GET(request: Request): Promise<Response> {
     await new Promise((resolve) => setTimeout(resolve, 10));
   });
 
-  await Sentry.flush(3000);
-
   throw new Error('f1-010 probe: erro nao tratado de servidor');
 }
