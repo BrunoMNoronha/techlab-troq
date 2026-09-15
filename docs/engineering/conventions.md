@@ -42,7 +42,7 @@ Aplicação **única** Next.js, conforme [ADR-0001](../adr/0001-modular-monolith
 
 ## 2. Organização de código
 
-Esta seção define **princípios** de estrutura. O conjunto de módulos de negócio foi definido depois por F0-022, em [../architecture/overview.md](../architecture/overview.md) (AR-3.3), a partir de [../architecture/data-model.md](../architecture/data-model.md); as camadas estão em AR-3.2. Nenhum módulo funcional é criado por este documento.
+Esta seção define **princípios** de estrutura. O conjunto de módulos de negócio foi definido depois por F0-022, em [../architecture/overview.md](../architecture/overview.md) (AR-3.3), a partir de [../architecture/data-model.md](../architecture/data-model.md); as camadas estão em AR-3.2. Nenhum módulo funcional é criado por este documento. A **estrutura física** que materializa esses módulos no repositório foi fixada por F1-005 e está na seção 2.5; ela não redefine o conjunto de AR-3.3, apenas registra onde cada módulo mora.
 
 ### 2.1 Camadas
 
@@ -57,6 +57,7 @@ Esta seção define **princípios** de estrutura. O conjunto de módulos de neg�
 - Dependências entre módulos são **direcionais e explícitas**. Ciclos entre módulos são defeito estrutural e devem ser resolvidos por inversão ou por extração, não por importação atravessada.
 - Um módulo não lê nem manipula dados protegidos de outro módulo sem interface explícita desse outro módulo (RNF-013, RNF-008).
 - Fronteira de módulo é o que preserva a possibilidade de extração futura prevista em [ADR-0001](../adr/0001-modular-monolith-nextjs.md). Ela é disciplina de código, não separação física.
+- A forma concreta desse ponto de entrada no repositório é o `index.ts` do diretório do módulo (seção 2.5).
 
 ### 2.3 Código compartilhado
 
@@ -69,6 +70,21 @@ Esta seção define **princípios** de estrutura. O conjunto de módulos de neg�
 - Nomes descrevem intenção de domínio, não mecanismo. O vocabulário do código segue o vocabulário dos documentos de produto (anúncio, solicitação paga, escolha, liberação de contato, negociação, encerramento, avaliação, denúncia, moderação).
 - Convenções de nomeação de arquivos e diretórios são consistentes dentro de cada camada e definidas de uma vez no scaffold; o valor está na consistência, não na escolha específica.
 - Um arquivo que precisa de um comentário explicando por que contém coisas não relacionadas está pedindo para ser dividido.
+
+### 2.5 Estrutura física dos módulos
+
+Materializada por **F1-005**. Esta subseção registra a convenção física; ela **não** cria nem altera decisão arquitetural — o conjunto de módulos continua sendo exatamente o de [../architecture/overview.md](../architecture/overview.md), AR-3.3.
+
+- **Estrutura:** cada módulo é um diretório `src/modules/<module>/`, e o seu ponto de entrada público é `src/modules/<module>/index.ts`.
+- **`index.ts` é a API pública do módulo.** O que ele não exporta não faz parte do contrato do módulo.
+- **O interior é privado por padrão.** Implementações futuras — casos de uso, entidades, serviços, tipos internos — ficam em arquivos internos do diretório e só se tornam públicas quando o `index.ts` deliberadamente as exportar.
+- **Import externo não atravessa o `index.ts`.** Consome-se `@/modules/listing`, nunca `@/modules/listing/<arquivo-interno>`. Importar caminho interno de outro módulo é defeito estrutural, não atalho.
+- **Não existe barrel global.** Não há `src/modules/index.ts` que reexporte todos os módulos: um barrel desses apagaria a fronteira que a seção 2.2 exige, transformando qualquer import em import de tudo.
+- **Os nove módulos de domínio** são os de AR-3.3: `identity`, `contact`, `listing`, `media`, `request`, `payments`, `negotiation`, `reputation` e `moderation`. Os nomes seguem AR-3.3 literalmente, inclusive o plural de `payments`.
+- **`audit` e `platform` são transversais**, e não módulos de domínio: moram sob `src/modules/` pela mesma convenção física, mas não possuem regra de negócio própria (AR-3.3).
+- **`src/app` continua sendo composição e roteamento** (seção 2.1): **nenhuma regra de negócio mora no App Router**. Rota, layout, Route Handler e Server Action adaptam, validam, autorizam e delegam (seção 3.6).
+- **`src/persistence` continua sendo a fronteira de persistência** da camada de AR-3.2 — hoje `src/persistence/prisma.ts`, o único ponto que instancia o Prisma Client ([database.md](database.md), seção 13). Não é um módulo de AR-3.3 e não muda de papel por causa desta convenção.
+- Enquanto um módulo não tiver implementação, o seu `index.ts` é deliberadamente mínimo: documenta a responsabilidade e declara o arquivo como módulo TypeScript, sem comportamento. Não se inventa entidade, interface, serviço ou caso de uso para preencher o arquivo (seção 2.3).
 
 ## 3. Fronteira servidor / cliente
 
