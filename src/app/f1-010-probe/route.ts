@@ -32,8 +32,22 @@ function installProbeHooks(): void {
   });
 }
 
-export async function GET(): Promise<Response> {
+export async function GET(request: Request): Promise<Response> {
   installProbeHooks();
+
+  if (new URL(request.url).searchParams.get('report') === '1') {
+    const client = Sentry.getClient();
+    return Response.json({
+      hasClient: client !== undefined,
+      hasDsn: client?.getDsn() !== undefined,
+      environment: client?.getOptions().environment ?? null,
+      enableLogs: client?.getOptions().enableLogs ?? null,
+      tracesSampleRate: client?.getOptions().tracesSampleRate ?? null,
+      appEnvPresent: typeof process.env.APP_ENV === 'string',
+      dsnEnvPresent: typeof process.env.NEXT_PUBLIC_SENTRY_DSN === 'string',
+      nextRuntime: process.env.NEXT_RUNTIME ?? null,
+    });
+  }
 
   Sentry.logger.info('f1-010 probe: log estruturado de prova', {
     probe: 'f1-010',
