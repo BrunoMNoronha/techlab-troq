@@ -9,7 +9,8 @@
 // importado de fora (docs/engineering/conventions.md, secao 2.2). Consumidores
 // externos importam `@/modules/platform`; nunca um caminho interno do modulo.
 //
-// F1-005 materializa apenas a fronteira: nao ha implementacao, e nenhuma
-// abstracao e antecipada aqui. O `export {}` mantem o arquivo como modulo
-// TypeScript sob `isolatedModules`, sem comportamento.
-export {};
+// F1-005 materializou apenas a fronteira. F1-010 acrescentou a configuracao da
+// telemetria — inclusive a redacao de dados proibidos na fronteira de saida,
+// exigida por docs/adr/0007-observability-sentry.md, decisoes 5 e 6.
+export type { TelemetryOptions } from './telemetry/sentry-options';
+export { createTelemetryOptions } from './telemetry/sentry-options';
