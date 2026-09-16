@@ -184,9 +184,9 @@ Classificação item a item dos entregáveis listados por [roadmap.md](roadmap.m
 - **já existente:** E-2, E-3.
 - **parcial:** E-1, E-6.
 - **não iniciado:** E-4, E-5, E-7.
+- **bloqueado:** nenhum.
 
 > **Nota de atualização — 2026-09-16.** Esta classificação é o registro da auditoria de F0-023 e é preservada como tal. Desde então, **os sete entregáveis foram concluídos**: E-4 por F1-001, E-5 por F1-002/F1-003/F1-004, E-1 por F1-005, E-6 por F1-006/F1-007 e **E-7 por F1-008 (decisão), F1-009 (provisionamento) e F1-010 (instrumentação)**. Ver as atualizações no fim desta seção.
-- **bloqueado:** nenhum.
 
 **A Fase 1 não está implementada.** Cinco dos sete entregáveis estão total ou parcialmente ausentes, e nenhum dos critérios do gate de saída da Fase 1 foi verificado por esta tarefa.
 
