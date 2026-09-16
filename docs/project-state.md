@@ -1,10 +1,11 @@
 # Estado do projeto
 
 **Primeiro registro:** 2026-09-07
-**Última atualização:** 2026-09-16 (F1-010)
+**Última atualização:** 2026-09-16 (F1-011)
 **Repositório:** `BrunoMNoronha/techlab-troq`, branch principal `main`
 **Fase 0:** concluída — gate de saída verificado e **APROVADO** em [delivery/phase-1-transition.md](delivery/phase-1-transition.md)
-**Fase 1:** **em andamento**, com **F1-001 a F1-010 concluídos** e os **sete entregáveis concluídos**: E-1 (estrutura modular de AR-3.3), E-2 e E-3 (padrões e CI, já existentes), E-4 (contrato de ambientes), E-5 (Neon de `preview` migrado pelo workflow controlado), E-6 (projeto Vercel, Cloudflare R2 por F1-006 e Resend por F1-007) e, desde **F1-010**, **E-7** — a observabilidade passou a ser **funcional**: `@sentry/nextjs` está instalado, a SDK inicializa nos três runtimes e a aplicação emite erro não tratado de browser e de servidor, log estruturado e tracing, isolados por ambiente, em `development` e em `preview`. **`production` continua inexistente em todo provedor** — banco, bucket, domínio, projeto Sentry e credencial —, e o **gate de saída da Fase 1 continua por verificar formalmente**: entregável concluído não é gate aprovado
+**Fase 1:** **concluída** em 2026-09-16 — gate de saída verificado por **F1-011** e **APROVADO** em [delivery/phase-2-transition.md](delivery/phase-2-transition.md), com os cinco critérios `PASS` e os sete entregáveis (E-1 a E-7) conferidos sem regressão. **`production` continua inexistente em todo provedor** — banco, bucket, domínio, projeto Sentry e credencial —, o que é matéria da Fase 5
+**Fase 2:** **em andamento** desde 2026-09-16, **sem funcionalidade implementada**; próximo trabalho **F2-001 — Consolidar o contrato técnico de identidade e autenticação da Fase 2**
 
 Este documento separa categorias que não devem ser confundidas: o que **existe de fato hoje** no repositório, o que **já foi decidido** e o que **ainda não foi implementado**. A seção 1 preserva a **baseline histórica** da inspeção inicial e **não** descreve o estado atual; para o estado atual, ver a seção 3.
 
@@ -73,6 +74,8 @@ Decisões já tomadas e válidas na Fase 0. Detalhes nos ADRs indicados.
 ## 3. Estado atual do repositório — o que existe e o que falta
 
 **Verificado em 2026-09-14 por F0-023.** Esta seção substitui, para efeito de estado corrente, o registro histórico da seção 1. A classificação detalhada, com evidência item a item, está em [delivery/phase-1-transition.md](delivery/phase-1-transition.md), seção 10.
+
+**Gate da Fase 1 verificado em 2026-09-16 por F1-011.** A matriz, com a evidência de CI, preview, migrations, segredos e invariantes de banco, está em [delivery/phase-2-transition.md](delivery/phase-2-transition.md). As listas abaixo continuam descrevendo o que existe e o que falta.
 
 ### 3.1 O que já existe
 
@@ -167,10 +170,12 @@ A **fronteira de privacidade ganhou uma segunda camada, dentro da aplicação**:
 
 O que F1-010 **não** fez: nenhum recurso, variável ou projeto de `production`; nenhum source map e nenhuma release — ambos desabilitados **explicitamente** em `next.config.ts`, em vez de deixados no padrão —; nenhum `SENTRY_AUTH_TOKEN` criado; `SENTRY_ORG` e `SENTRY_PROJECT` continuam sem consumidor e sem configuração; nenhum Session Replay; nenhum dashboard, alerta, cron monitor, túnel ou proxy; nenhuma integração Vercel–Sentry ou GitHub–Sentry; nenhum logger externo e nenhuma segunda ferramenta de observabilidade; nenhum dos seis sinais de AR-14.3, que dependem de fluxos de domínio ainda inexistentes; nenhuma superfície diagnóstica residual no código; e nenhuma alteração de `prisma/schema.prisma`, de migration, do modelo de dados, do CI, do ruleset, de regra de negócio, de requisito, de ADR ou de decisão. **Três das quatro variáveis da seção 5.8 continuam `previsto`**; apenas `NEXT_PUBLIC_SENTRY_DSN` passou a `consumido`, junto de `APP_ENV`.
 
-**Os sete entregáveis da Fase 1 estão concluídos**, E-7 inclusive. Isso **não** declara a fase concluída: o **gate de saída** continua por verificar formalmente, item a item, como F0-023 fez com o da Fase 0, e permanecem fora **todo o ambiente `production`** — banco, bucket, domínio, projeto Sentry, credencial, variáveis e migrations — e toda a funcionalidade de produto. Entregável concluído não é gate aprovado.
+**Os sete entregáveis da Fase 1 estão concluídos**, E-7 inclusive. Isso, sozinho, **não** declarava a fase concluída: o **gate de saída** foi verificado formalmente, item a item, por **F1-011** em 2026-09-16, e **APROVADO** ([delivery/phase-2-transition.md](delivery/phase-2-transition.md)). Permanecem fora **todo o ambiente `production`** — banco, bucket, domínio, projeto Sentry, credencial, variáveis e migrations — e toda a funcionalidade de produto. Entregável concluído não é gate aprovado.
 
 ## 5. Riscos
 
 Riscos conhecidos e mitigações iniciais estão em [delivery/risks.md](delivery/risks.md).
+
+Os onze riscos foram **revisados de novo por F1-011** em 2026-09-16, ao fim da Fase 1 ([delivery/phase-2-transition.md](delivery/phase-2-transition.md), seção 9). Nenhum foi encerrado; apenas **R-07** recebeu fato novo — reversibilidade de migrations comprovada em desenvolvimento e a limitação do `migrate status` do Prisma 7.10.0 em detectar migration aplicada e ausente do histórico local.
 
 Os onze riscos R-01 a R-11 foram **revisados integralmente por F0-023** em 2026-09-14, à luz do encerramento da Fase 0. Nenhum foi encerrado e nenhuma alteração factual se justificou: design definido não é implementação, e os residuais que dependem de teste, ambiente real, operação, tarifa comercial, revisão jurídica e contábil ou comportamento do fornecedor permanecem vigentes. O registro da revisão, risco a risco, está em [delivery/phase-1-transition.md](delivery/phase-1-transition.md), seção 6.

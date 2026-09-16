@@ -38,12 +38,12 @@ O gate auditado é exatamente o de [roadmap.md](roadmap.md), seção "Fase 1 —
 | # | Critério | Fonte normativa | Procedimento executado | Evidência | Resultado |
 | --- | --- | --- | --- | --- | --- |
 | G1 | CI verde em `main` com lint, typecheck, testes e build | [roadmap.md](roadmap.md), gate da Fase 1; [../engineering/conventions.md](../engineering/conventions.md), seção 5.1 | Leitura de `.github/workflows/ci.yml`; consulta às execuções do workflow `CI` em `main` e aos check runs do commit `51e280a`; leitura do estado de cada passo; execução local, em Node `24.19.0` / npm `11.17.0`, dos mesmos seis comandos que o workflow executa, na mesma ordem | Seção 5.1 | **PASS** |
-| G2 | Deploy de preview funcionando na Vercel a partir de PR | [roadmap.md](roadmap.md), gate da Fase 1 | Abertura da PR desta tarefa; observação do deployment de Preview gerado para o commit da PR; requisição HTTP real à aplicação implantada | Seção 5.2 | **em verificação nesta PR** |
+| G2 | Deploy de preview funcionando na Vercel a partir de PR | [roadmap.md](roadmap.md), gate da Fase 1 | Abertura da PR #36 desta tarefa; observação do check da Vercel e do deployment GitHub de ambiente `Preview` gerado para o commit da PR; requisição HTTP real, autenticada, à aplicação implantada | Seção 5.2 | **PASS** |
 | G3 | Migrations executáveis e reversíveis em ambiente de desenvolvimento | [roadmap.md](roadmap.md), gate da Fase 1; [../adr/0005-prisma-orm-migrations.md](../adr/0005-prisma-orm-migrations.md), decisões 5, 6, 9 e 11; [../engineering/database.md](../engineering/database.md), seções 10 e 12 | PostgreSQL 17.11 em contêiner Docker descartável, porta local isolada; banco vazio → `migrate deploy` → catálogo e `_prisma_migrations` → `test:integration` → recriação do banco e reaplicação por `migrate dev` → reversão de mudança por **nova** migration numa cópia descartável do histórico → comparação estrutural com banco de referência → reset ao estado conhecido → reexecução das provas → destruição do contêiner e do volume | Seção 5.3 | **PASS** |
 | G4 | Nenhum segredo versionado (RNF-015) | [roadmap.md](roadmap.md), gate da Fase 1; [../product/requirements.md](../product/requirements.md), RNF-015; [../engineering/environments.md](../engineering/environments.md) | Varredura defensiva, sem imprimir valores, dos 85 arquivos rastreados em `HEAD` e dos 380 blobs de todo o histórico (43 commits, todas as refs), por 14 categorias de credencial; classificação dos achados por forma, sem exibição; conferência de `.gitignore`, de `.env*` rastreados e de caminhos sensíveis jamais adicionados | Seção 5.4 | **PASS** |
 | G5 | As invariantes que [../architecture/data-model.md](../architecture/data-model.md) atribui a **restrição de banco** (quadro da seção 12) estão materializadas no schema inicial | [roadmap.md](roadmap.md), gate da Fase 1; [../architecture/data-model.md](../architecture/data-model.md), seção 12 e DM-1.6 | Para cada invariante: localização do artefato no `schema.prisma`, no SQL da migration e no catálogo do PostgreSQL efetivamente migrado; prova por caso negativo em banco descartável, com o nome da restrição que recusou; complemento de concorrência real sobre I-1 | Seção 6 | **PASS** |
 
-**Resultado global: pendente de G2.** Ver seção 11.
+**Resultado global: os cinco critérios resultaram `PASS`.** Ver seção 11.
 
 ## 5. Evidências por critério
 
@@ -68,7 +68,19 @@ O gate auditado é exatamente o de [roadmap.md](roadmap.md), seção "Fase 1 —
 
 ### 5.2 G2 — Preview da Vercel a partir de PR
 
-Em verificação nesta PR. A evidência é registrada aqui depois da observação do deployment e da requisição HTTP real.
+Prova **atual**, gerada pela própria PR desta tarefa, e não evidência histórica.
+
+| Passo | Evidência |
+| --- | --- |
+| PR | [#36](https://github.com/BrunoMNoronha/techlab-troq/pull/36), branch `agent/f1-011-phase-1-gate`, commit `8b22ce6aeae93afd605686a61625d95e1e10efd3` (primeiro commit desta tarefa, somente documentação) |
+| Deployment criado a partir da PR | GitHub deployment `6479104048`, criado por `vercel[bot]` em 2026-09-16T10:45:20Z, `environment: Preview`, `ref` e `sha` iguais ao commit da PR, `production_environment: false` |
+| Estado | status do deployment `success`; check `Vercel` da PR `pass` — "Deployment has completed" —, equivalente a `READY`; check `Vercel Preview Comments` `pass` |
+| Host | deployment de preview do projeto `bruno-m-noronha/techlab-troq`, servido pela região `gru1` |
+| Proteção | requisição sem sessão → `HTTP 302` para o SSO da Vercel, comportamento esperado da proteção por autenticação Vercel dos previews, que **não** foi alterada nem contornada |
+| Requisição real | pela sessão autenticada do titular no navegador: `GET /` → **`HTTP 200`**, sem redirecionamento, HTML com assets `/_next/static/`, título `TechLab+ TROQ` e corpo "Fundação técnica operacional. Nenhuma funcionalidade de produto foi implementada." — idêntico a `src/app/page.tsx` e `src/app/layout.tsx`; `GET /rota-inexistente-f1011` → `HTTP 404` da própria aplicação |
+| CI da mesma PR | run `35086651948`, job `Validação (format, lint, typecheck, test, build)`, todos os passos `success` |
+
+A consulta ao deployment pelo conector da Vercel respondeu `403` para o escopo `bruno-m-noronha`, fato já conhecido; a observação foi feita pela API do GitHub, pelos checks da PR e pela requisição HTTP, sem nenhum token ou URL com parâmetro sensível registrado aqui. Nenhum *protection bypass* foi criado.
 
 ### 5.3 G3 — Migrations executáveis e reversíveis em desenvolvimento
 
@@ -179,7 +191,7 @@ Nenhuma regressão encontrada desde F1-010.
 
 | Dependência | Situação | Evidência |
 | --- | --- | --- |
-| Gate da Fase 1 | ver seção 11 | este documento |
+| Gate da Fase 1 | **aprovado** | seção 11 |
 | OD-04 | fechada | [../decisions/open-decisions.md](../decisions/open-decisions.md) → [../product/listing-lifecycle.md](../product/listing-lifecycle.md), DEC-027 |
 | OD-05 | fechada | → [../product/image-policy.md](../product/image-policy.md), DEC-028 |
 | OD-11 | fechada | → [../product/age-eligibility.md](../product/age-eligibility.md), DEC-034 |
@@ -231,9 +243,24 @@ Revisão de R-01 a R-11 de [risks.md](risks.md) contra os fatos da Fase 1. **Nen
 
 ## 11. Resultado formal
 
-Pendente da verificação de G2 nesta PR.
+### **APROVADO**
 
-## 12. Referências
+Os cinco critérios da matriz da seção 4 resultaram `PASS`, cada um com evidência própria e nenhum por inferência. O gate de saída da Fase 1 está satisfeito.
+
+- **Fase 1: concluída** em 2026-09-16.
+- **Fase 2: aberta, `em andamento`.** Nenhuma funcionalidade dela foi implementada por esta tarefa.
+- **F1-011: concluído** — este documento é a sua entrega.
+- Nenhum item `F1-xxx` permanece `próximo`, `pendente` ou `bloqueado`.
+
+A aprovação vale para o gate de saída da Fase 1. Ela **não** afirma que exista `production` — não existe, em provedor nenhum — nem que os residuais da seção 10 estejam resolvidos.
+
+## 12. Próximo trabalho recomendado
+
+**F2-001 — Consolidar o contrato técnico de identidade e autenticação da Fase 2**, `próximo`: validar a integração atual do Better Auth com Next.js/App Router e Prisma, consolidar o modelo de identidade, sessão e verificação de email do TROQ e definir o contrato técnico necessário antes da implementação funcional da autenticação.
+
+F2-001 **não** foi executado, e o seu prompt executor não é produzido aqui.
+
+## 13. Referências
 
 - [roadmap.md](roadmap.md) — fases, entregáveis e gates
 - [backlog.md](backlog.md) — itens `F1-xxx`
