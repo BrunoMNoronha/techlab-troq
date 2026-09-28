@@ -10,15 +10,14 @@ Fontes: [../product/mvp-scope.md](../product/mvp-scope.md), [../product/requirem
 | --- | --- | --- |
 | 0 | Descoberta e definição | concluída |
 | 1 | Fundação técnica | concluída |
-| 2 | Identidade e anúncios | em andamento |
-| 3 | Solicitações, pagamentos e contato | não iniciada |
+| 2 | Identidade e anúncios | concluída |
+| 3 | Solicitações, pagamentos e contato | em andamento |
 | 4 | Encerramento, avaliações e moderação | não iniciada |
 | 5 | Hardening e lançamento | não iniciada |
 | — | Pós-MVP (candidatos) | não planejado |
 
-**Estado em 2026-09-15.** A **Fase 0 está concluída**: o seu gate de saída foi verificado item a item por F0-023, com matriz de critério, fonte, evidência e resultado em [phase-1-transition.md](phase-1-transition.md), e o resultado formal foi **APROVADO**. A **Fase 1 está `em andamento`** desde 2026-09-14, quando **F1-001 — contrato de ambientes e segredos** foi concluído; o seu gate de entrada estava satisfeito. Parte do que a Fase 1 lista como entregável já existia no repositório antes disso, criada de forma antecipada e isolada; a classificação factual de cada entregável, entre `já existente`, `parcial` e `não iniciado`, está na seção 10 daquele documento, com as notas de atualização de F1-001, de F1-005, de F1-006 e de F1-007. Desde **F1-005** (2026-09-15), **E-1 está concluído**; e desde **F1-007** (2026-09-15), **E-6 também está**, com o Cloudflare R2 provisionado por F1-006 e o Resend por F1-007, ambos em `development` e `preview`. E desde **F1-010** (2026-09-16), **E-7 também está concluído**: a observabilidade saiu do papel em três etapas deliberadamente separadas — **F1-008** decidiu o provedor (Sentry SaaS, [../adr/0007-observability-sentry.md](../adr/0007-observability-sentry.md), DEC-039), levando **RNF-018** a `definido`; **F1-009** provisionou os dois projetos isolados de `development` e `preview`; e **F1-010** instalou a SDK, integrou-a ao App Router e comprovou a emissão nos dois ambientes — os quatro sinais em `development` e erro de servidor, log estruturado e tracing em `preview`, cada um no projeto do próprio ambiente —, com a fronteira de redação de dados proibidos implementada **em código** e coberta por testes. **Os sete entregáveis da Fase 1 estão concluídos.** Isso **não** conclui a fase: o gate de **saída** continua **integralmente por satisfazer**, e o ambiente `production` não existe em provedor nenhum.
+**Estado em 2026-09-28.** A **Fase 0 está concluída**: o seu gate de saída foi verificado item a item por F0-023 em [phase-1-transition.md](phase-1-transition.md). A **Fase 1 está concluída**: o seu gate de saída foi verificado e aprovado por F1-011 em [phase-2-transition.md](phase-2-transition.md). A **Fase 2 está concluída**: todas as 14 issues de execução (#38–#51) foram entregues e o seu gate de saída foi auditado e aprovado por **F2-013 (Issue #51)** em [phase-3-transition.md](phase-3-transition.md) (G1: fluxo E2E, G2: RF-014 estrito sem vazamento de contato, G3: 107/107 testes automatizados passando). A **Fase 3 está `em andamento`**.
 
-**Atualização de 2026-09-16 (F1-011).** O gate de saída da **Fase 1** foi auditado critério a critério por **F1-011**, com matriz de critério, fonte, procedimento, evidência e resultado em [phase-2-transition.md](phase-2-transition.md), e o resultado formal foi **APROVADO**: os cinco critérios resultaram `PASS`. **A Fase 1 está concluída** e **a Fase 2 está `em andamento`** desde 2026-09-16, sem nenhuma funcionalidade implementada; o primeiro trabalho é **F2-001**. O ambiente `production` continua inexistente em todo provedor, o que é matéria da Fase 5 e não do gate da Fase 1.
 
 ## Fase 0 — Descoberta e definição
 

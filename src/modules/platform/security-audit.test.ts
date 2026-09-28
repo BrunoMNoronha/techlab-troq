@@ -2,20 +2,17 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
   createDraftListing,
   updateListing,
-  getListingForEdit,
   publishListing,
   pauseListing,
-  reactivateListing,
   closeListing,
-  discardDraft,
   getPublicFeed,
   getPublicListingDetail,
 } from '@/modules/listing/actions';
 import { getPublicListingImages } from '@/modules/media/service';
-import { redactText, sanitizeRecord } from '@/modules/platform/telemetry/redaction';
 import { sanitizeEvent } from '@/modules/platform/telemetry/sentry-options';
 import * as identityModule from '@/modules/identity';
 import * as prismaModule from '@/persistence/prisma';
+import type { UserStatus } from '@/generated/prisma/client';
 
 describe('Audit de Segurança Integrada, RF-014 e Resiliência (F2-012 - Issue #50)', () => {
   const userAId = 'user-a-1111-1111-1111-111111111111';
@@ -40,17 +37,20 @@ describe('Audit de Segurança Integrada, RF-014 e Resiliência (F2-012 - Issue #
         },
       ]);
       const mockCount = vi.fn().mockResolvedValueOnce(1);
-      const mockTransaction = vi.fn().mockResolvedValueOnce([[
-        {
-          id: 'pub-lst-1',
-          title: 'MacBook Air M2',
-          description: 'Excelente estado de conservacao. Contato no chat.',
-          city: 'São Paulo',
-          uf: 'SP',
-          createdAt: new Date(),
-          images: [],
-        },
-      ], 1]);
+      const mockTransaction = vi.fn().mockResolvedValueOnce([
+        [
+          {
+            id: 'pub-lst-1',
+            title: 'MacBook Air M2',
+            description: 'Excelente estado de conservacao. Contato no chat.',
+            city: 'São Paulo',
+            uf: 'SP',
+            createdAt: new Date(),
+            images: [],
+          },
+        ],
+        1,
+      ]);
 
       vi.spyOn(prismaModule, 'getPrismaClient').mockReturnValue({
         listing: { findMany: mockFindMany, count: mockCount },
@@ -86,7 +86,7 @@ describe('Audit de Segurança Integrada, RF-014 e Resiliência (F2-012 - Issue #
       const mockFindUnique = vi.fn().mockResolvedValueOnce({
         id: listingId,
         status: 'published',
-        owner: { status: 'blocked' }, // Conta bloqueada
+        owner: { status: 'blocked_admin' as UserStatus }, // Conta bloqueada
         images: [{ id: 'img-1', status: 'ready', position: 1, derivatives: [] }],
       });
 
@@ -126,7 +126,7 @@ describe('Audit de Segurança Integrada, RF-014 e Resiliência (F2-012 - Issue #
           email: 'unverified@example.invalid',
           displayName: 'Unverified',
           emailVerified: false,
-          status: 'unverified',
+          status: 'active' as UserStatus,
         },
         isValid: false,
         reason: 'unverified',
@@ -143,7 +143,7 @@ describe('Audit de Segurança Integrada, RF-014 e Resiliência (F2-012 - Issue #
       expect(res.error).toContain('autenticado');
     });
 
-    it('usuário bloqueado/excluído (status: blocked/deletion_requested) tem ações de anúncio negadas', async () => {
+    it('usuário bloqueado/excluído (status: blocked_admin/deletion_requested) tem ações de anúncio negadas', async () => {
       vi.spyOn(identityModule, 'validateSession').mockResolvedValueOnce({
         session: {},
         user: {
@@ -151,7 +151,7 @@ describe('Audit de Segurança Integrada, RF-014 e Resiliência (F2-012 - Issue #
           email: 'blocked@example.invalid',
           displayName: 'Blocked',
           emailVerified: true,
-          status: 'blocked',
+          status: 'blocked_admin' as UserStatus,
         },
         isValid: false,
         reason: 'blocked',
@@ -170,7 +170,7 @@ describe('Audit de Segurança Integrada, RF-014 e Resiliência (F2-012 - Issue #
           email: 'userB@example.invalid',
           displayName: 'User B',
           emailVerified: true,
-          status: 'active',
+          status: 'active' as UserStatus,
         },
         isValid: true,
       });
@@ -198,7 +198,7 @@ describe('Audit de Segurança Integrada, RF-014 e Resiliência (F2-012 - Issue #
           email: 'userB@example.invalid',
           displayName: 'User B',
           emailVerified: true,
-          status: 'active',
+          status: 'active' as UserStatus,
         },
         isValid: true,
       });
@@ -226,7 +226,7 @@ describe('Audit de Segurança Integrada, RF-014 e Resiliência (F2-012 - Issue #
           email: 'userA@example.invalid',
           displayName: 'User A',
           emailVerified: true,
-          status: 'active',
+          status: 'active' as UserStatus,
         },
         isValid: true,
       });
@@ -254,7 +254,7 @@ describe('Audit de Segurança Integrada, RF-014 e Resiliência (F2-012 - Issue #
           email: 'userA@example.invalid',
           displayName: 'User A',
           emailVerified: true,
-          status: 'active',
+          status: 'active' as UserStatus,
         },
         isValid: true,
       });
@@ -284,7 +284,7 @@ describe('Audit de Segurança Integrada, RF-014 e Resiliência (F2-012 - Issue #
           email: 'userA@example.invalid',
           displayName: 'User A',
           emailVerified: true,
-          status: 'active',
+          status: 'active' as UserStatus,
         },
         isValid: true,
       });
@@ -297,9 +297,11 @@ describe('Audit de Segurança Integrada, RF-014 e Resiliência (F2-012 - Issue #
       });
 
       // Simula erro no $transaction (ex: timeout de conexao ou constraint no DB)
-      const mockTransaction = vi.fn().mockRejectedValueOnce(
-        new Error('Database Connection Refused postgresql://user:secret@localhost:5432/troq'),
-      );
+      const mockTransaction = vi
+        .fn()
+        .mockRejectedValueOnce(
+          new Error('Database Connection Refused postgresql://user:secret@localhost:5432/troq'),
+        );
 
       vi.spyOn(prismaModule, 'getPrismaClient').mockReturnValue({
         listing: { findUnique: mockFindUnique },

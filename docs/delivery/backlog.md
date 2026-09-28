@@ -263,11 +263,16 @@ Fato novo registrado em R-07: o `migrate status` do Prisma `7.10.0` **não** acu
 
 ## Fase 2
 
-A Fase 2 está **em andamento** desde 2026-09-16, aberta pela aprovação do gate da Fase 1. Nenhuma funcionalidade foi implementada.
+A Fase 2 foi **concluída** em 2026-09-28. Todas as 14 issues (#38–#51) foram entregues e o seu gate de saída foi auditado e aprovado em [phase-3-transition.md](phase-3-transition.md).
 
 | ID | Título | Objetivo | Dependências | Estado |
 | --- | --- | --- | --- | --- |
-| F2-001 | Consolidar o contrato técnico de identidade e autenticação da Fase 2 | Validar a integração atual do Better Auth com Next.js/App Router e Prisma, consolidar o modelo de identidade, sessão e verificação de email do TROQ e definir o contrato técnico necessário antes da implementação funcional da autenticação | F1-011 | próximo |
+| F2-001 a F2-013 | Execução completa da Fase 2 (Identidade e Anúncios) | Pnpm, Better Auth, cadastro, verificação Resend, área privada, rascunhos, imagens R2/Sharp, ciclo de vida T1-T5, vitrine pública, auditoria de segurança e gate F2 | F1-011 | concluído |
+
+## Fase 3
+
+A Fase 3 está **em andamento** desde 2026-09-28.
+
 
 ## Fora deste backlog
 
