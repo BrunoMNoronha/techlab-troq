@@ -1,3 +1,20 @@
-export { createDraftListing, updateListing, getOwnerListings, getListingForEdit } from './actions';
+export {
+  createDraftListing,
+  updateListing,
+  getOwnerListings,
+  getListingForEdit,
+  publishListing,
+  pauseListing,
+  reactivateListing,
+  closeListing,
+  discardDraft,
+  getPublicFeed,
+  getPublicListingDetail,
+} from './actions';
 
-export type { CreateListingInput, UpdateListingInput, ListingDTO } from './actions';
+export type {
+  CreateListingInput,
+  UpdateListingInput,
+  ListingDTO,
+  PublicListingFeedItem,
+} from './actions';
