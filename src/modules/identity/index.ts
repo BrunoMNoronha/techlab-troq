@@ -4,6 +4,13 @@ import { getPrismaClient } from '@/persistence/prisma';
 import type { UserStatus } from '@/generated/prisma/client';
 
 export { getAuth } from './auth';
+export {
+  registerUser,
+  confirmEmailToken,
+  resendVerificationToken,
+  loginUser,
+  logoutUser,
+} from './actions';
 
 export interface AuthenticatedUser {
   id: string;

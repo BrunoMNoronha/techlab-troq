@@ -226,3 +226,49 @@ export async function resendVerificationToken(
 
   return { success: true };
 }
+
+/**
+ * Server Action para autenticacao (Login).
+ * Valida existencia da conta, se o e-mail foi verificado e se o status e ativo.
+ */
+export async function loginUser(
+  email: string,
+): Promise<{ success: boolean; error?: string; redirectTo?: string }> {
+  const cleanEmail = email ? email.trim().toLowerCase() : '';
+  if (!cleanEmail) {
+    return { success: false, error: 'Informe seu e-mail.' };
+  }
+
+  const prisma = getPrismaClient();
+
+  const user = await prisma.user.findFirst({
+    where: { email: cleanEmail },
+  });
+
+  if (!user) {
+    return { success: false, error: 'E-mail ou credenciais invalidas.' };
+  }
+
+  if (user.status !== 'active') {
+    return {
+      success: false,
+      error: 'Sua conta esta suspensa ou inativa. Entre em contato com a plataforma.',
+    };
+  }
+
+  if (!user.emailVerified) {
+    return {
+      success: false,
+      error: 'Seu e-mail ainda nao foi verificado. Confira sua caixa de entrada.',
+    };
+  }
+
+  return { success: true, redirectTo: '/conta' };
+}
+
+/**
+ * Server Action para encerramento de sessao (Logout).
+ */
+export async function logoutUser(): Promise<{ success: boolean }> {
+  return { success: true };
+}
