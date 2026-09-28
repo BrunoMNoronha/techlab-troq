@@ -6,6 +6,7 @@
   "engines": {
     "node": "24.x"
   },
+  "packageManager": "pnpm@11.25.0",
   "scripts": {
     "postinstall": "prisma generate",
     "dev": "next dev",
@@ -20,13 +21,18 @@
     "test:integration": "vitest run --config vitest.integration.config.mts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1141.0",
+    "@aws-sdk/s3-request-presigner": "^3.1141.0",
     "@prisma/adapter-pg": "7.10.0",
     "@prisma/client": "7.10.0",
     "@sentry/nextjs": "10.74.0",
+    "better-auth": "^1.7.6",
     "next": "16.3.5",
     "pg": "8.23.0",
     "react": "19.3.0",
-    "react-dom": "19.3.0"
+    "react-dom": "19.3.0",
+    "resend": "^6.30.0",
+    "sharp": "^0.35.5"
   },
   "devDependencies": {
     "@testing-library/dom": "^10.4.2",

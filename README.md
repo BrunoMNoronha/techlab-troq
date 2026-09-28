@@ -36,31 +36,31 @@ Não resta nenhuma decisão aberta. A escolha do gateway (OD-08) foi fechada em 
 
 ## Execução local
 
-Pré-requisito: **Node.js 24.x** (a linha está declarada em `engines` e em `.nvmrc`).
+Pré-requisito: **Node.js 24.x** (a linha está declarada em `engines` e em `.nvmrc`) e **pnpm** (a versão exata está declarada em `packageManager` no `package.json`).
 
 Instalação determinística das dependências:
 
 ```bash
-npm ci
+pnpm install --frozen-lockfile
 ```
 
 Servidor de desenvolvimento:
 
 ```bash
-npm run dev
+pnpm run dev
 ```
 
 Validação completa, a mesma executada no CI:
 
 ```bash
-npm run format:check
-npm run lint
-npm run typecheck
-npm run test:ci
-npm run build
+pnpm run format:check
+pnpm run lint
+pnpm run typecheck
+pnpm run test:ci
+pnpm run build
 ```
 
-`npm run format` aplica a formatação e `npm run test` executa a suíte em modo de desenvolvimento. `npm run test:integration` executa a prova de integração contra um PostgreSQL descartável já migrado, apontado por `DATABASE_URL` ([docs/engineering/database.md](docs/engineering/database.md), seção 12); a mesma suíte roda depois do merge, contra o Neon de `preview`, pelo workflow de migrations controladas (seção 15 do mesmo documento). Os contratos normativos desses comandos estão em [docs/engineering/conventions.md](docs/engineering/conventions.md) e a estratégia de testes em [docs/engineering/testing.md](docs/engineering/testing.md).
+`pnpm run format` aplica a formatação e `pnpm run test` executa a suíte em modo de desenvolvimento. `pnpm run test:integration` executa a prova de integração contra um PostgreSQL descartável já migrado, apontado por `DATABASE_URL` ([docs/engineering/database.md](docs/engineering/database.md), seção 12); a mesma suíte roda depois do merge, contra o Neon de `preview`, pelo workflow de migrations controladas (seção 15 do mesmo documento). Os contratos normativos desses comandos estão em [docs/engineering/conventions.md](docs/engineering/conventions.md) e a estratégia de testes em [docs/engineering/testing.md](docs/engineering/testing.md).
 
 ## Documentação
 
