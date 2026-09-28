@@ -24,7 +24,7 @@ on:
       - 'prisma/schema.prisma'
       - 'prisma.config.ts'
       - 'package.json'
-      - 'package-lock.json'
+      - 'pnpm-lock.yaml'
       - 'src/persistence/**'
       - 'vitest.integration.config.mts'
   workflow_dispatch:
@@ -56,11 +56,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
       - name: Setup Node.js 24
         uses: actions/setup-node@v5
         with:
           node-version: 24
-          cache: npm
+          cache: pnpm
 
       - name: Verificar presença dos secrets do environment
         # Reporta apenas nome e status; nunca o valor.
@@ -77,13 +80,13 @@ jobs:
           test "$missing" -eq 0
 
       - name: Instalar dependências
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Aplicar migrations pendentes (migrate deploy)
-        run: npx prisma migrate deploy
+        run: pnpm exec prisma migrate deploy
 
       - name: Conferir histórico de migrations (migrate status)
-        run: npx prisma migrate status
+        run: pnpm exec prisma migrate status
 
       - name: Prova de integração do runtime contra o banco migrado
-        run: npm run test:integration
+        run: pnpm run test:integration
