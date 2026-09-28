@@ -210,10 +210,14 @@ model User {
   displayName     String     @map("display_name")
   email           String
   emailVerifiedAt DateTime?  @map("email_verified_at") @db.Timestamptz(6)
+  emailVerified   Boolean    @default(false) @map("email_verified")
+  image           String?
   status          UserStatus @default(active)
   createdAt       DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt       DateTime   @updatedAt @map("updated_at") @db.Timestamptz(6)
 
+  sessions                Session[]
+  accounts                Account[]
   contact                 UserContact?
   termsAcceptances        TermsAcceptance[]
   accountDeletionRequest  AccountDeletionRequest?
@@ -237,6 +241,53 @@ model User {
   auditEvents             AuditEvent[]            @relation("AuditEventActor")
 
   @@map("users")
+}
+
+/// DM-3.1 — Sessao do Better Auth.
+model Session {
+  id        String   @id @default(uuid())
+  expiresAt DateTime @map("expires_at") @db.Timestamptz(6)
+  token     String   @unique
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  ipAddress String?  @map("ip_address")
+  userAgent String?  @map("user_agent")
+  userId    String   @map("user_id") @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+/// DM-3.1 — Conta de autenticacao do Better Auth.
+model Account {
+  id                    String    @id @default(uuid())
+  accountId             String    @map("account_id")
+  providerId            String    @map("provider_id")
+  userId                String    @map("user_id") @db.Uuid
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?   @map("access_token")
+  refreshToken          String?   @map("refresh_token")
+  idToken               String?   @map("id_token")
+  accessTokenExpiresAt  DateTime? @map("access_token_expires_at") @db.Timestamptz(6)
+  refreshTokenExpiresAt DateTime? @map("refresh_token_expires_at") @db.Timestamptz(6)
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("accounts")
+}
+
+/// DM-3.1 — Token de verificacao do Better Auth.
+model Verification {
+  id         String    @id @default(uuid())
+  identifier String
+  value      String
+  expiresAt  DateTime  @map("expires_at") @db.Timestamptz(6)
+  createdAt  DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime? @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("verifications")
 }
 
 /// DM-4.1 — dado protegido em tabela propria, modulo `contact`. 1 usuario : 0..1.
