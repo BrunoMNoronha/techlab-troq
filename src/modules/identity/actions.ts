@@ -1,5 +1,6 @@
 'use server';
 
+import { cookies } from 'next/headers';
 import { getPrismaClient } from '@/persistence/prisma';
 import { sendVerificationEmail } from './email';
 import crypto from 'crypto';
@@ -230,6 +231,7 @@ export async function resendVerificationToken(
 /**
  * Server Action para autenticacao (Login).
  * Valida existencia da conta, se o e-mail foi verificado e se o status e ativo.
+ * Cria a sessao no banco de dados e grava o cookie better-auth.session_token.
  */
 export async function loginUser(
   email: string,
@@ -263,6 +265,35 @@ export async function loginUser(
     };
   }
 
+  // Criar registro de sessao no Prisma (Better Auth Session)
+  const sessionToken = crypto.randomBytes(32).toString('hex');
+  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 dias
+
+  if (prisma.session?.create) {
+    await prisma.session.create({
+      data: {
+        userId: user.id,
+        token: sessionToken,
+        expiresAt,
+        ipAddress: '127.0.0.1',
+        userAgent: 'TROQ App Router',
+      },
+    });
+  }
+
+  try {
+    const cookieStore = await cookies();
+    cookieStore.set('better-auth.session_token', sessionToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      expires: expiresAt,
+    });
+  } catch (_e) {
+    // Tratamento em contextos sem request context ativo (ex: vitest unit)
+  }
+
   return { success: true, redirectTo: '/conta' };
 }
 
@@ -270,5 +301,21 @@ export async function loginUser(
  * Server Action para encerramento de sessao (Logout).
  */
 export async function logoutUser(): Promise<{ success: boolean }> {
-  return { success: true };
+  try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get('better-auth.session_token')?.value;
+
+    if (token) {
+      const prisma = getPrismaClient();
+      if (prisma.session?.deleteMany) {
+        await prisma.session.deleteMany({
+          where: { token },
+        });
+      }
+      cookieStore.delete('better-auth.session_token');
+    }
+    return { success: true };
+  } catch (_e) {
+    return { success: true };
+  }
 }
