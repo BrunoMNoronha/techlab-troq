@@ -22,7 +22,7 @@ export default function LoginPage() {
     if (!res.success) {
       setErrorMessage(res.error || 'Erro ao efetuar login.');
     } else if (res.redirectTo) {
-      router.push(res.redirectTo);
+      window.location.href = res.redirectTo;
     }
   }
 
