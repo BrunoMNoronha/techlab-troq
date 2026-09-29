@@ -1,6 +1,14 @@
+import type { Metadata } from 'next';
+import Link from 'next/link';
 import { getPublicFeed } from '@/modules/listing';
+import { ListingCard, listingGridStyle } from '../_components/listing-card';
 
 export const dynamic = 'force-dynamic';
+
+export const metadata: Metadata = {
+  title: 'Ofertas — TROQ',
+  description: 'Ofertas publicadas no TROQ, abertas sem login.',
+};
 
 export default async function ExplorarPage({
   searchParams,
@@ -15,9 +23,20 @@ export default async function ExplorarPage({
 
   return (
     <main
-      style={{ maxWidth: '720px', margin: '40px auto', padding: '24px', fontFamily: 'sans-serif' }}
+      style={{
+        maxWidth: '1040px',
+        margin: '0 auto',
+        padding: '24px 16px',
+        fontFamily: 'sans-serif',
+      }}
     >
-      <h1 style={{ fontSize: '28px', fontWeight: 'bold', marginBottom: '8px' }}>
+      <Link
+        href="/"
+        style={{ color: '#1d4ed8', textDecoration: 'none', fontSize: '14px', fontWeight: '600' }}
+      >
+        ← Início
+      </Link>
+      <h1 style={{ fontSize: '28px', fontWeight: 'bold', margin: '12px 0 8px' }}>
         Anúncios no TROQ
       </h1>
       <p style={{ color: '#6b7280', fontSize: '14px', marginBottom: '24px' }}>
@@ -30,7 +49,7 @@ export default async function ExplorarPage({
             padding: '40px 24px',
             textAlign: 'center',
             backgroundColor: '#f9fafb',
-            border: '1px border-dashed #d1d5db',
+            border: '1px dashed #d1d5db',
             borderRadius: '8px',
           }}
         >
@@ -43,96 +62,10 @@ export default async function ExplorarPage({
           </p>
         </div>
       ) : (
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-            gap: '20px',
-          }}
-        >
-          {listings.map((item) => {
-            const coverImage =
-              item.images.length > 0
-                ? item.images[0].derivatives.find((d) => d.kind === 'medium')?.url ||
-                  item.images[0].derivatives[0]?.url
-                : null;
-
-            return (
-              <a
-                key={item.id}
-                href={`/explorar/${item.id}`}
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  backgroundColor: 'white',
-                  border: '1px solid #e5e7eb',
-                  borderRadius: '8px',
-                  overflow: 'hidden',
-                  textDecoration: 'none',
-                  color: 'inherit',
-                }}
-              >
-                <div
-                  style={{
-                    width: '100%',
-                    height: '180px',
-                    backgroundColor: '#f3f4f6',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  {coverImage ? (
-                    <img
-                      src={coverImage}
-                      alt={item.title}
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                    />
-                  ) : (
-                    <span style={{ fontSize: '32px', color: '#9ca3af' }}>📷</span>
-                  )}
-                </div>
-
-                <div
-                  style={{
-                    padding: '16px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '8px',
-                    flex: 1,
-                  }}
-                >
-                  <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#111827', margin: 0 }}>
-                    {item.title}
-                  </h3>
-                  <p
-                    style={{
-                      color: '#4b5563',
-                      fontSize: '14px',
-                      margin: 0,
-                      lineClamp: 2,
-                      display: '-webkit-box',
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: 'vertical',
-                      overflow: 'hidden',
-                    }}
-                  >
-                    {item.description}
-                  </p>
-                  <div
-                    style={{
-                      marginTop: 'auto',
-                      paddingTop: '8px',
-                      fontSize: '13px',
-                      color: '#6b7280',
-                    }}
-                  >
-                    📍 {item.city} - {item.state}
-                  </div>
-                </div>
-              </a>
-            );
-          })}
+        <div style={listingGridStyle}>
+          {listings.map((item) => (
+            <ListingCard key={item.id} item={item} />
+          ))}
         </div>
       )}
     </main>

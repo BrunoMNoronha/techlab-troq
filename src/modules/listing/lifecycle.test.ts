@@ -268,8 +268,20 @@ describe('modulo listing — transicoes de ciclo de vida e feed publico (#48/#49
         listing: { findFirst: mockFindFirst },
       } as unknown as prismaModule.PrismaClient);
 
-      const item = await getPublicListingDetail('unpublished-id');
+      const item = await getPublicListingDetail('0b6f2d9e-3c4a-4e8b-9f1a-2d3c4b5a6e7f');
       expect(item).toBeNull();
+    });
+
+    it('detalhe publico trata ID fora do formato UUID como inexistente, sem consultar o banco', async () => {
+      const mockFindFirst = vi.fn();
+      vi.spyOn(prismaModule, 'getPrismaClient').mockReturnValue({
+        listing: { findFirst: mockFindFirst },
+      } as unknown as prismaModule.PrismaClient);
+
+      for (const id of ['nao-e-uuid', "1' OR '1'='1", '../conta', '']) {
+        expect(await getPublicListingDetail(id)).toBeNull();
+      }
+      expect(mockFindFirst).not.toHaveBeenCalled();
     });
   });
 });

@@ -3,6 +3,7 @@
 import { validateSession } from '@/modules/identity';
 import { getPrismaClient } from '@/persistence/prisma';
 import type { ListingStatus } from '@/generated/prisma/client';
+import { isUuid } from './ids';
 
 export interface CreateListingInput {
   title: string;
@@ -636,6 +637,12 @@ export async function getPublicFeed(options?: {
 export async function getPublicListingDetail(
   listingId: string,
 ): Promise<PublicListingFeedItem | null> {
+  // ID fora do formato UUID (URL adulterada) e tratado como anuncio inexistente,
+  // em vez de erro de consulta na coluna uuid.
+  if (!isUuid(listingId)) {
+    return null;
+  }
+
   const prisma = getPrismaClient();
   const mediaBaseUrl = process.env.NEXT_PUBLIC_MEDIA_BASE_URL || 'https://media.example.invalid';
 

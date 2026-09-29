@@ -100,6 +100,13 @@ Todas as telas que lidam com listas ou carregamento de dados devem implementar:
   - *Formulário:* "Ocorreu um erro ao salvar seu rascunho. Tente novamente." (com opção de retry)
   - *Feed:* "Não foi possível carregar os anúncios no momento." (com botão de recarregar)
 
+### 3.4. Página inicial e entrada da solicitação de contato (#59)
+
+- `/` é pública: apresenta o TROQ, mostra as ofertas recentes pela primeira página de `getPublicFeed` (mesma regra de visibilidade: só `published` de conta `active`, mais recentes primeiro, limite de 12) e navega para `/explorar`, `/login` e `/cadastro`. Carregamento, catálogo vazio e erro têm estados próprios; nenhuma oferta fictícia é exibida.
+- `/explorar/[id]` abre sem login, inclusive por URL direta. ID fora do formato UUID é tratado como anúncio inexistente (404), como os estados não públicos.
+- O bloco "Contato do anunciante" do detalhe usa `getContactRequestEntry` (`src/modules/request`), avaliado no servidor a cada requisição: visitante ou sessão expirada/revogada vê "Entrar para solicitar" (`/login?motivo=solicitar&next=/explorar/<id>`); e-mail não verificado, conta bloqueada/em exclusão e anúncio próprio veem o motivo; o elegível vê que a solicitação paga ainda não está disponível. Nenhum estado cria solicitação, reserva ou cobrança — isso é da Fase 3 (#54) — e nenhum expõe telefone/WhatsApp.
+- O retorno após o login usa `next`, validado no servidor por `sanitizeReturnPath` (`src/modules/identity`): só caminho interno; URL absoluta, `//host`, barra invertida e caracteres de controle levam a `/conta`.
+
 ## 4. Critérios de Acessibilidade (a11y)
 
 - Todos os campos de formulário devem possuir `<label>` associado de forma implícita ou explícita (atributo `for`).

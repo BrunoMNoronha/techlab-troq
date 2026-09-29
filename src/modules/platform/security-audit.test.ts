@@ -78,7 +78,7 @@ describe('Audit de Segurança Integrada, RF-014 e Resiliência (F2-012 - Issue #
         listing: { findFirst: mockFindFirst },
       } as unknown as prismaModule.PrismaClient);
 
-      const result = await getPublicListingDetail('draft-listing-id');
+      const result = await getPublicListingDetail('1c7e3fae-4d5b-4f9c-8a2b-3e4d5c6b7a8f');
       expect(result).toBeNull();
     });
 
