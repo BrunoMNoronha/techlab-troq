@@ -218,6 +218,8 @@ Estado de `main` em `942bf0d` (2026-09-29). Cada item pertence à issue indicada
 
 **Atualização de F2-003 (#41, 2026-09-29):** estão resolvidas as linhas do token em claro com `identifier` = email, do reenvio que apagava os tokens anteriores sem limite, do envio que logava destinatário e link e devolvia sucesso sem chave, da resposta de reenvio que revelava a conta, da duplicidade que ignorava `deletion_requested` e da corrida entre cadastros, e da base de links com fallback `localhost`. Tokens crus emitidos antes de F2-003 deixam de valer: o link responde inválido e o usuário pede outro. Em `preview`, `BETTER_AUTH_URL` é fixada por branch no alias da própria branch, que é a forma estática de IC-12.1 (docs/engineering/environments.md, seção 5.5). Resta em #42 o limite de tentativas de login.
 
+**Atualização da prova em `preview` (2026-09-29):** os logs de requisição da plataforma gravavam o token quando ele viajava na query string do link (`?token=`, inclusive no `Referer` dos POSTs), o que contrariava IC-9.1 e IC-11.2. Desde [#67](https://github.com/BrunoMNoronha/techlab-troq/pull/67), o link leva o token no fragmento (`/verificar-email#token=`), que o navegador não envia ao servidor; a página o lê, apaga da barra de endereço e confirma pelo corpo da Server Action. Links com `?token=` são inválidos.
+
 | Código atual | Contrato | Issue |
 | --- | --- | --- |
 | `loginUser` verifica a senha por conta própria, cria linha em `sessions` e grava cookie `better-auth.session_token` com o token cru, sem assinatura | Login por `auth.api.signInEmail` + `nextCookies()` (IC-5.1, IC-5.2) | #40 (núcleo) e #42 (action) |
