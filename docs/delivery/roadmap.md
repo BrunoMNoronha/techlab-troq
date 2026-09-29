@@ -10,13 +10,13 @@ Fontes: [../product/mvp-scope.md](../product/mvp-scope.md), [../product/requirem
 | --- | --- | --- |
 | 0 | Descoberta e definição | concluída |
 | 1 | Fundação técnica | concluída |
-| 2 | Identidade e anúncios | concluída |
-| 3 | Solicitações, pagamentos e contato | em andamento |
+| 2 | Identidade e anúncios | em andamento — implementação parcial integrada; gate de saída **não aprovado** |
+| 3 | Solicitações, pagamentos e contato | condicionada ao gate da Fase 2; não implementada |
 | 4 | Encerramento, avaliações e moderação | não iniciada |
 | 5 | Hardening e lançamento | não iniciada |
 | — | Pós-MVP (candidatos) | não planejado |
 
-**Estado em 2026-09-28.** A **Fase 0 está concluída**: o seu gate de saída foi verificado item a item por F0-023 em [phase-1-transition.md](phase-1-transition.md). A **Fase 1 está concluída**: o seu gate de saída foi verificado e aprovado por F1-011 em [phase-2-transition.md](phase-2-transition.md). A **Fase 2 está concluída**: todas as 14 issues de execução (#38–#51) foram entregues e o seu gate de saída foi auditado e aprovado por **F2-013 (Issue #51)** em [phase-3-transition.md](phase-3-transition.md) (G1: fluxo E2E, G2: RF-014 estrito sem vazamento de contato, G3: 107/107 testes automatizados passando). A **Fase 3 está `em andamento`**.
+**Estado em 2026-09-29.** A **Fase 0 está concluída**: o seu gate de saída foi verificado item a item por F0-023 em [phase-1-transition.md](phase-1-transition.md). A **Fase 1 está concluída**: o seu gate de saída foi verificado e aprovado por F1-011 em [phase-2-transition.md](phase-2-transition.md). A **Fase 2 está em andamento**: há implementação parcial integrada (PRs #52, #53, #57, #58 e #60), mas o **gate de saída não está aprovado**. A aprovação registrada em 2026-09-28 por F2-013 (Issue #51) foi **retificada em 2026-09-29** em [phase-3-transition.md](phase-3-transition.md): G1 `NÃO ATENDIDO`, G2 `NÃO COMPROVADO`, G3 `PARCIAL`, sem nenhum `PASS`, e as issues #38 a #51 continuam abertas. A **Fase 3 permanece condicionada ao gate** e não está implementada; o seu acompanhamento está em [#54](https://github.com/BrunoMNoronha/techlab-troq/issues/54). Nada neste roadmap afirma produção ou deploy atual.
 
 
 ## Fase 0 — Descoberta e definição
@@ -94,9 +94,13 @@ Fontes: [../product/mvp-scope.md](../product/mvp-scope.md), [../product/requirem
 - Nenhum payload público contém telefone/WhatsApp (RF-014 verificado por teste).
 - Testes automatizados cobrindo autenticação e publicação.
 
+**Estado do gate — NÃO APROVADO em 2026-09-29.** A verificação de 2026-09-28 (F2-013) declarou os três critérios aprovados; a retificação de 2026-09-29 retirou essa aprovação como estado vigente, porque as evidências citadas eram testes simulados e a fase tinha uma falha de autenticação, depois corrigida por #57 e #58. Resultado vigente, sem nenhum `PASS`: **G1** (fluxo em `preview`) `NÃO ATENDIDO`, porque publicar e enviar imagem não têm caminho na interface e não há prova em `preview`; **G2** (nenhum payload público com contato) `NÃO COMPROVADO`, com evidência apenas parcial; **G3** (testes automatizados de autenticação e publicação) `PARCIAL`, com CI verde mas provas de banco real só para autenticação e fora da CI. Matriz, evidências e o que falta estão em [phase-3-transition.md](phase-3-transition.md). Os critérios acima ficam preservados como o que é exigido; a revalidação é o escopo de [#51](https://github.com/BrunoMNoronha/techlab-troq/issues/51), que segue aberta.
+
 ## Fase 3 — Solicitações, pagamentos e contato
 
 **Objetivo:** implementar o núcleo monetizado: solicitação paga, limite de 3, escolha e liberação de contato.
+
+**Estado em 2026-09-29:** nenhuma entrega implementada. `payments` e `contact` são fronteiras vazias; `request` tem apenas a entrada de leitura integrada por #60, que exige login e elegibilidade e devolve `request_unavailable`, **sem** criar solicitação, reservar vaga, cobrar ou liberar contato.
 
 **Principais entregáveis:**
 
@@ -108,7 +112,7 @@ Fontes: [../product/mvp-scope.md](../product/mvp-scope.md), [../product/requirem
 - Autorização server-side e liberação de contato ao escolhido com pagamento aprovado, com auditoria (RF-014, RF-015, RF-022).
 - Design de pagamentos e de liberação de contato implementados conforme `architecture/payments-design.md` e `architecture/contact-release.md`.
 
-**Dependências:** gate da Fase 2; OD-07 e OD-08 fechadas e ADR-0004 (gateway) aceito. **Todas satisfeitas:** OD-08 está fechada e [ADR-0004](../adr/0004-mercado-pago-pix.md) aceito (DEC-036), OD-07 está fechada por [../product/payment-exceptions.md](../product/payment-exceptions.md) (DEC-037), OD-06 por [../product/reselection-policy.md](../product/reselection-policy.md) e OD-12 por [../product/interest-flow.md](../product/interest-flow.md).
+**Dependências:** gate da Fase 2; OD-07 e OD-08 fechadas e ADR-0004 (gateway) aceito. **O gate da Fase 2 não está aprovado (ver a Fase 2 acima), portanto a execução da Fase 3 permanece condicionada a ele; o planejamento pode avançar em [#54](https://github.com/BrunoMNoronha/techlab-troq/issues/54).** As decisões estão **satisfeitas:** OD-08 está fechada e [ADR-0004](../adr/0004-mercado-pago-pix.md) aceito (DEC-036), OD-07 está fechada por [../product/payment-exceptions.md](../product/payment-exceptions.md) (DEC-037), OD-06 por [../product/reselection-policy.md](../product/reselection-policy.md) e OD-12 por [../product/interest-flow.md](../product/interest-flow.md).
 
 **Gate de saída:**
 

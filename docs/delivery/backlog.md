@@ -6,7 +6,7 @@ Backlog de **alto nível** por fase. Este documento **não** é o backlog técni
 
 **A Fase 1 está concluída desde 2026-09-16.** A sua numeração `F1-xxx` foi aberta por F1-001 e encerrada por F1-011, que verificou o gate de saída em [phase-2-transition.md](phase-2-transition.md) com resultado **APROVADO**.
 
-**A Fase 2 está em andamento.** A numeração `F2-xxx` foi aberta com **F2-001**, `próximo`, ainda não executado.
+**A Fase 2 está em andamento, com implementação parcial integrada e gate de saída não aprovado** (reconciliação de 2026-09-29; ver a seção Fase 2 abaixo e [phase-3-transition.md](phase-3-transition.md)). A numeração `F2-xxx` foi aberta com F2-001; as issues #38 a #51 continuam abertas.
 
 Fontes: [roadmap.md](roadmap.md), [../decisions/open-decisions.md](../decisions/open-decisions.md), [../decisions/decision-log.md](../decisions/decision-log.md), [../product/requirements.md](../product/requirements.md), [risks.md](risks.md).
 
@@ -263,16 +263,34 @@ Fato novo registrado em R-07: o `migrate status` do Prisma `7.10.0` **não** acu
 
 ## Fase 2
 
-A Fase 2 foi **concluída** em 2026-09-28. Todas as 14 issues (#38–#51) foram entregues e o seu gate de saída foi auditado e aprovado em [phase-3-transition.md](phase-3-transition.md).
+**Estado reconciliado em 2026-09-29 (`main` em `e8ad1ae`).** A Fase 2 **não** está concluída. A declaração de conclusão de 2026-09-28 e a aprovação do gate foram **retificadas** em [phase-3-transition.md](phase-3-transition.md): G1 `NÃO ATENDIDO`, G2 `NÃO COMPROVADO`, G3 `PARCIAL`. O merge de uma PR e a CI verde **não** encerram uma issue: as issues #38 a #51 continuam abertas e nenhuma foi encerrada nesta reconciliação.
 
-| ID | Título | Objetivo | Dependências | Estado |
+Os estados abaixo descrevem o que o Git e o código mostram, e não substituem o aceite de cada issue. `implementação parcial` significa que há código integrado, ainda sem prova funcional suficiente. O diagnóstico de 2026-09-29 registrado nas issues foi feito sobre `906cccd`; onde as PRs #57, #58 e #60 o alteraram, isso está indicado.
+
+| Issue | ID | Título | Estado atual | Pendência (na própria issue) |
 | --- | --- | --- | --- | --- |
-| F2-001 a F2-013 | Execução completa da Fase 2 (Identidade e Anúncios) | Pnpm, Better Auth, cadastro, verificação Resend, área privada, rascunhos, imagens R2/Sharp, ciclo de vida T1-T5, vitrine pública, auditoria de segurança e gate F2 | F1-011 | concluído |
+| [#38](https://github.com/BrunoMNoronha/techlab-troq/issues/38) | PRE | Adequar instalação, CI e documentação ao pnpm | parcial: `packageManager`, lockfile e workflows em pnpm | instruções ativas ainda citam `npm`/`npx` (`docs/engineering`, comentários de `vitest*.mts`); separar o que é registro histórico |
+| [#39](https://github.com/BrunoMNoronha/techlab-troq/issues/39) | F2-001 | Contrato técnico de identidade e autenticação | contrato existe, com divergência | alternativa de data de nascimento incompatível com o cadastro declaratório 18+; seção 6 atualizada por #58 |
+| [#40](https://github.com/BrunoMNoronha/techlab-troq/issues/40) | F2-002 | Persistência e núcleo server-side do Better Auth | implementação parcial; migration aplicada ao Neon de `preview` | fallback de sessão lido direto da tabela e segredo fixo de desenvolvimento; prova de sessões reais |
+| [#41](https://github.com/BrunoMNoronha/techlab-troq/issues/41) | F2-003 | Cadastro e verificação de e-mail com Resend | implementação parcial; senha passou a ser persistida por #57 | falha de envio ignorada, link no console sem a chave, reenvio sem limite localizado; testes de token |
+| [#42](https://github.com/BrunoMNoronha/techlab-troq/issues/42) | F2-004 | Login, logout e área privada | login com senha e logout com revogação integrados por #57 e #58 | prova em `preview` com senha real; o diagnóstico de login sem senha está **superado** |
+| [#43](https://github.com/BrunoMNoronha/techlab-troq/issues/43) | F2-005 | Contrato do formulário e da consulta de anúncios | contrato existe, com divergência | 5 imagens em vez de 6, estados fora do vocabulário oficial e texto de contato por "match"; #60 acrescentou apenas a seção 3.4 |
+| [#44](https://github.com/BrunoMNoronha/techlab-troq/issues/44) | F2-006 | Rascunhos, edição e meus anúncios | telas e ações existem | revalidar com dois usuários reais; preservar dados em erro |
+| [#45](https://github.com/BrunoMNoronha/techlab-troq/issues/45) | F2-007 | Execução, privacidade e retenção do pipeline de imagens | contrato existe, sem mecanismo executável | executor, fila, limpeza, reserva de posição e limites de provedor |
+| [#46](https://github.com/BrunoMNoronha/techlab-troq/issues/46) | F2-008 | Upload autorizado e processamento no R2 | serviço existe, **sem interface** | UI de upload; validar tamanho real; reserva atômica de posição; idempotência; `syntheticBuffer` fora do caminho de produção |
+| [#47](https://github.com/BrunoMNoronha/techlab-troq/issues/47) | F2-009 | Acesso às imagens, limpeza e expurgo | não implementado | entrega autorizada dos bytes, revogação, jobs de limpeza e expurgo |
+| [#48](https://github.com/BrunoMNoronha/techlab-troq/issues/48) | F2-010 | Publicação e ciclo de vida pelo dono | ações existem, **sem tela que as chame** | ligar a interface; `discardDraft` grava `removed` em vez de `closed`; atomicidade sob concorrência |
+| [#49](https://github.com/BrunoMNoronha/techlab-troq/issues/49) | F2-011 | Listagem e detalhe públicos sem contato | telas existem; home pública integrada por #60 | provas de HTML/RSC/cache com dados persistidos; paginação; avisos de imagem do lint |
+| [#50](https://github.com/BrunoMNoronha/techlab-troq/issues/50) | F2-012 | Autorização, concorrência e ausência de contato público | suíte de segurança com mocks | prova integrada com PostgreSQL descartável e requisições reais |
+| [#51](https://github.com/BrunoMNoronha/techlab-troq/issues/51) | F2-013 | Auditar o gate e registrar a transição | declaração retificada em 2026-09-29; **não concluída** | repetir G1, G2 e G3 com SHA, deployment e evidência; sincronizar as issues |
+
+**Página inicial e entrada da solicitação ([#59](https://github.com/BrunoMNoronha/techlab-troq/issues/59)).** Integradas por [#60](https://github.com/BrunoMNoronha/techlab-troq/pull/60) (`4bb78fe`): home pública com ofertas e detalhe sem login, com entrada da solicitação condicionada a login. A entrada é somente leitura e **não** cria solicitação, reserva de vaga, cobrança nem liberação de contato; a jornada depende da Fase 3 ([#54](https://github.com/BrunoMNoronha/techlab-troq/issues/54)). A issue #59 permanece aberta.
+
+**Próxima entrega técnica por dependência: [#40](https://github.com/BrunoMNoronha/techlab-troq/issues/40) (F2-002).** A cadeia de autenticação #40 → #41 → #42 sustenta rascunhos, mídia, ciclo de vida e a solicitação da Fase 3; o login sem senha já foi corrigido, e o que resta em #40 é o fallback de sessão, o segredo fixo e a prova de sessões reais. Ela depende de #38 e #39, ambas parciais; #38 e #43 (documentais) podem correr em paralelo. A justificativa completa está em [../project-state.md](../project-state.md), seção 3.3. **Nenhum trabalho foi executado por esta reconciliação.**
 
 ## Fase 3
 
-A Fase 3 está **em andamento** desde 2026-09-28.
-
+A Fase 3 está **condicionada ao gate da Fase 2** e **não está implementada** (reconciliação de 2026-09-29). O planejamento e a decomposição continuam em [#54](https://github.com/BrunoMNoronha/techlab-troq/issues/54); a execução dependente da Fase 2 não está liberada. As Fases 4 e 5 são acompanhadas em [#55](https://github.com/BrunoMNoronha/techlab-troq/issues/55) e [#56](https://github.com/BrunoMNoronha/techlab-troq/issues/56). Nenhum item `F3-xxx` foi aberto neste backlog.
 
 ## Fora deste backlog
 

@@ -1,13 +1,13 @@
 # Estado do projeto
 
 **Primeiro registro:** 2026-09-07
-**Última atualização:** 2026-09-16 (F1-011)
+**Última atualização:** 2026-09-29 (reconciliação da Fase 2; baseline `main` em `e8ad1ae`)
 **Repositório:** `BrunoMNoronha/techlab-troq`, branch principal `main`
 **Fase 0:** concluída — gate de saída verificado e **APROVADO** em [delivery/phase-1-transition.md](delivery/phase-1-transition.md)
 **Fase 1:** **concluída** em 2026-09-16 — gate de saída verificado por **F1-011** e **APROVADO** em [delivery/phase-2-transition.md](delivery/phase-2-transition.md), com os cinco critérios `PASS` e os sete entregáveis (E-1 a E-7) conferidos sem regressão. **`production` continua inexistente em todo provedor** — banco, bucket, domínio, projeto Sentry e credencial —, o que é matéria da Fase 5
-**Fase 2:** **em andamento** desde 2026-09-16, **sem funcionalidade implementada**; próximo trabalho **F2-001 — Consolidar o contrato técnico de identidade e autenticação da Fase 2**
+**Fase 2:** **em andamento** desde 2026-09-16, com **implementação parcial integrada** (PRs #52, #53, #57, #58 e #60) e **gate de saída NÃO aprovado**. A aprovação registrada em 2026-09-28 foi **retificada em 2026-09-29** ([delivery/phase-3-transition.md](delivery/phase-3-transition.md)): G1 `NÃO ATENDIDO`, G2 `NÃO COMPROVADO`, G3 `PARCIAL`, sem nenhum `PASS`. As issues #38 a #51 continuam **abertas**. A **Fase 3 permanece condicionada ao gate** e nada dela está implementado. Próxima entrega técnica por dependência: **#40 (F2-002)**, ver a seção 3.3
 
-Este documento separa categorias que não devem ser confundidas: o que **existe de fato hoje** no repositório, o que **já foi decidido** e o que **ainda não foi implementado**. A seção 1 preserva a **baseline histórica** da inspeção inicial e **não** descreve o estado atual; para o estado atual, ver a seção 3.
+Este documento separa categorias que não devem ser confundidas: o que **existe de fato hoje** no repositório, o que **já foi decidido**, o que **ainda não foi implementado** e, desde 2026-09-29, o que está **validado** e o que tem **evidência funcional pendente**. A seção 1 preserva a **baseline histórica** da inspeção inicial e **não** descreve o estado atual; as seções 3.1 e 3.2 descrevem o estado **ao fim da Fase 1**; para o estado atual da Fase 2, ver a seção 3.3.
 
 ## 1. Baseline histórica — estado encontrado na inspeção inicial
 
@@ -77,9 +77,9 @@ Decisões já tomadas e válidas na Fase 0. Detalhes nos ADRs indicados.
 
 **Gate da Fase 1 verificado em 2026-09-16 por F1-011.** A matriz, com a evidência de CI, preview, migrations, segredos e invariantes de banco, está em [delivery/phase-2-transition.md](delivery/phase-2-transition.md). As listas abaixo continuam descrevendo o que existe e o que falta.
 
-### 3.1 O que já existe
+### 3.1 O que já existia ao fim da Fase 1
 
-Fundação técnica mínima, criada de forma antecipada e isolada, **sem nenhuma funcionalidade de produto**, mais o primeiro entregável da Fase 1:
+**Registro de 2026-09-16, anterior à Fase 2.** As listas 3.1 e 3.2 não descrevem o código atual; a Fase 2 acrescentou funcionalidade (seção 3.3). Fundação técnica mínima, criada de forma antecipada e isolada, **sem nenhuma funcionalidade de produto**, mais o primeiro entregável da Fase 1:
 
 - aplicação Next.js `16.3.5` com App Router e React `19.3.0`, em `src/app/` — apenas `layout.tsx`, `page.tsx` e um teste;
 - `package.json` com `engines.node` em `24.x`, lockfile versionado e os sete comandos padronizados de [engineering/conventions.md](engineering/conventions.md), seção 5.1: `format`, `format:check`, `lint`, `typecheck`, `test`, `test:ci` e `build`;
@@ -96,7 +96,9 @@ Fundação técnica mínima, criada de forma antecipada e isolada, **sem nenhuma
 - **Resend de `development` e de `preview`** — produzido por **F1-007** em 2026-09-15: os subdomínios remetentes **verificados** `dev.troqs.app` e `preview.troqs.app`, sob o domínio `troqs.app` que o TROQ já possuía na Cloudflare, ambos na região `sa-east-1`, com DKIM, SPF e MX publicados manualmente na zona (a opção *Auto configure* foi recusada por exigir acesso OAuth de escrita ao DNS). Duas API keys com permissão **Sending access** e **restrição ao domínio do próprio ambiente**, com isolamento cruzado comprovado (403 nas duas direções, declarado pelo provedor). `RESEND_API_KEY` e `EMAIL_FROM` vivem em `.env.local` (development, não versionado) e **somente** no escopo Preview da Vercel, com a chave marcada como sensível; **nada em Production**. Os envios de prova partiram de cada remetente para o endereço **simulado** `delivered@resend.dev` — nunca uma pessoa real —, ambos com HTTP 200. As variáveis **continuam `previsto`**, porque nenhum código versionado as lê. Documentado em [engineering/environments.md](engineering/environments.md), seção 5.4. **E-6 concluído.**
 - **observabilidade funcional da aplicação** — produzida por **F1-010** em 2026-09-16: `@sentry/nextjs` em versão exata, SDK inicializada nos três runtimes a partir de `src/instrumentation.ts`, `src/instrumentation-client.ts`, `src/sentry.server.config.ts` e `src/sentry.edge.config.ts`, mais `src/app/global-error.tsx`; erro não tratado de browser e de servidor, log estruturado e tracing chegando ao projeto Sentry **do ambiente correspondente**, com `environment` correto e isolamento comprovado entre `development` e `preview`; e uma fronteira de redação em `src/modules/platform`, coberta por testes, que impede que dado proibido saia do processo ([ADR-0007](adr/0007-observability-sentry.md), decisões 5 e 6). **E-7 concluído.**
 
-### 3.2 O que ainda não existe
+### 3.2 O que ainda não existia ao fim da Fase 1
+
+**Registro de 2026-09-16.** Os itens de autenticação, anúncios e mídia abaixo passaram a ter implementação parcial na Fase 2 (seção 3.3); pagamentos, jobs, PWA e `production` seguem sem implementação. A inexistência de `production` é o registro de F1-011 e **não foi revalidada** em 2026-09-29.
 
 - **banco de `production`** — **nenhum banco, credencial, environment ou job de `production`** existe; e não há validação de migration em CI de PR contra banco efêmero (o que existe é a validação pós-merge contra o Neon de `preview`);
 - **autenticação, anúncios, pagamentos, jobs e PWA** — nenhuma implementação;
@@ -105,6 +107,29 @@ Fundação técnica mínima, criada de forma antecipada e isolada, **sem nenhuma
 - **deploy de produção** — nenhum.
 
 Escolha registrada em documentação **não** é provisionamento, e arquivo de configuração parcial **não** é entregável concluído.
+
+### 3.3 Fase 2 — estado reconciliado em 2026-09-29
+
+**Base:** `main` = `origin/main` em `e8ad1ae`. Fontes, contradições corrigidas e limites de cada evidência estão em [delivery/phase-3-transition.md](delivery/phase-3-transition.md), seções R1 a R7. A leitura foi feita em Git, issues, PRs e código; **nenhuma suíte, build, migration ou consulta a provedor foi executada** nesta reconciliação, e **nada é afirmado sobre produção ou deploy atual**.
+
+**Implementação existente no código** (presença, não validação):
+
+- **Identidade:** cadastro com autodeclaração 18+, e-mail de verificação, login com senha verificada e logout com revogação de sessão. O login sem senha do diagnóstico de 2026-09-29 foi **corrigido** por [#57](https://github.com/BrunoMNoronha/techlab-troq/pull/57) (`0de1a1c`) e [#58](https://github.com/BrunoMNoronha/techlab-troq/pull/58) (`9480c5c`), que também fechou a escrita pela rota `/api/auth`; o diagnóstico antigo não vale mais como estava. A migration aditiva `20260928103600_add_better_auth_tables` foi aplicada ao Neon de `preview` pelo workflow controlado, em [run `36445306800`](https://github.com/BrunoMNoronha/techlab-troq/actions/runs/36445306800).
+- **Anúncios:** rascunho, edição e "meus anúncios" com telas; ações de publicação, pausa, reativação, encerramento e descarte **sem tela que as chame**; vitrine e detalhe públicos; **home pública com ofertas e entrada da solicitação com login**, integradas por [#60](https://github.com/BrunoMNoronha/techlab-troq/pull/60) (`4bb78fe`).
+- **Mídia:** serviço de upload para o R2 e processamento com Sharp, **sem interface de upload** e sem entrega autorizada dos bytes.
+- **Solicitação, pagamento e contato:** [`request`](../src/modules/request/entry.ts) só lê o estado de entrada e devolve `request_unavailable` para quem é elegível; [`payments`](../src/modules/payments/index.ts) e [`contact`](../src/modules/contact/index.ts) são fronteiras vazias. Não há cobrança, reserva de vaga nem liberação de contato implementadas.
+
+**Validação técnica comprovada:** CI verde em `e8ad1ae` ([run `36578636484`](https://github.com/BrunoMNoronha/techlab-troq/actions/runs/36578636484)) e a aplicação da migration acima. A CI não sobe banco; a suíte de integração do Neon é somente leitura.
+
+**Validação relatada e não reexecutada:** teste de integração de autenticação em PostgreSQL 17 descartável (só roda com `INTEGRATION_EPHEMERAL_DB=1`, fora da CI), verificações locais em navegador e prova parcial em `preview`, descritos nas PRs #57, #58 e #60. Os totais de testes e de avisos de lint citados em documentos anteriores são do autor de cada PR e não da árvore atual.
+
+**Evidência funcional pendente:** fluxo cadastro → verificação → login → publicar → consultar em `preview`; publicação e upload pela interface; RF-014 sobre HTTP, cache e imagens; concorrência e autorização sobre banco real; login com senha real em `preview`. Cada lacuna está em uma issue aberta.
+
+**Gate de saída da Fase 2 — NÃO aprovado.** G1 `NÃO ATENDIDO` (publicar e enviar imagem não têm caminho na interface; sem prova em `preview`), G2 `NÃO COMPROVADO` e G3 `PARCIAL`. A declaração de aprovação de 2026-09-28 permanece como registro histórico retificado. **Esta reconciliação não é homologação e não conclui a issue [#51](https://github.com/BrunoMNoronha/techlab-troq/issues/51).**
+
+**Pendências, cada uma na issue existente** ([#37](https://github.com/BrunoMNoronha/techlab-troq/issues/37) coordena): pnpm nas instruções ativas ([#38](https://github.com/BrunoMNoronha/techlab-troq/issues/38)); contratos de identidade, anúncios e mídia divergentes das fontes normativas ([#39](https://github.com/BrunoMNoronha/techlab-troq/issues/39), [#43](https://github.com/BrunoMNoronha/techlab-troq/issues/43), [#45](https://github.com/BrunoMNoronha/techlab-troq/issues/45)); fallback de sessão e segredo fixo de desenvolvimento ([#40](https://github.com/BrunoMNoronha/techlab-troq/issues/40)); falha de envio de e-mail ignorada, link no console sem a chave e reenvio sem limite localizado ([#41](https://github.com/BrunoMNoronha/techlab-troq/issues/41)); prova de login em `preview` ([#42](https://github.com/BrunoMNoronha/techlab-troq/issues/42)); rascunhos entre usuários ([#44](https://github.com/BrunoMNoronha/techlab-troq/issues/44)); upload, reserva de posição e `syntheticBuffer` ([#46](https://github.com/BrunoMNoronha/techlab-troq/issues/46)); acesso às imagens e limpeza ([#47](https://github.com/BrunoMNoronha/techlab-troq/issues/47)); ciclo de vida na interface e descarte gravando `removed` em vez de `closed` ([#48](https://github.com/BrunoMNoronha/techlab-troq/issues/48)); provas de vitrine e avisos de imagem do lint ([#49](https://github.com/BrunoMNoronha/techlab-troq/issues/49)); suíte de segurança ainda simulada ([#50](https://github.com/BrunoMNoronha/techlab-troq/issues/50)); revalidação do gate ([#51](https://github.com/BrunoMNoronha/techlab-troq/issues/51)). A jornada da home ([#59](https://github.com/BrunoMNoronha/techlab-troq/issues/59)) depende da Fase 3 ([#54](https://github.com/BrunoMNoronha/techlab-troq/issues/54)) e as Fases 4 e 5 são acompanhadas em [#55](https://github.com/BrunoMNoronha/techlab-troq/issues/55) e [#56](https://github.com/BrunoMNoronha/techlab-troq/issues/56).
+
+**Próxima entrega técnica recomendada: [#40](https://github.com/BrunoMNoronha/techlab-troq/issues/40) (F2-002), o núcleo server-side da autenticação.** Justificativa por dependência e evidência: (1) a cadeia de autenticação #40 → #41 → #42 é a base de tudo o que exige sessão — rascunhos (#44), mídia (#46), ciclo de vida (#48) e a solicitação da Fase 3 —, e #40 é o primeiro elo com pendência de código; (2) a regressão mais grave, o login sem senha, já foi corrigida por #57 e #58, então o que resta em #40 é o núcleo: o fallback que lê o token direto da tabela de sessões ([`identity/index.ts:67`](../src/modules/identity/index.ts)), o segredo fixo de desenvolvimento ([`identity/auth.ts:41`](../src/modules/identity/auth.ts)) e a prova de sessões reais; (3) #40 declara dependência de #38 e #39, que estão parciais — a divergência do contrato de identidade com o cadastro declaratório (#39) deve ser resolvida junto ou antes. Trabalhos documentais independentes (#38, #43) podem correr em paralelo. **Esta reconciliação não executa essa entrega.**
 
 ## 4. Decisões abertas
 
