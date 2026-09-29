@@ -88,6 +88,13 @@ Após a exclusão da conta ou o expurgo definitivo do anúncio:
 
 A retenção legitimamente necessária inclui, notadamente, imagem que seja evidência de caso de moderação em aberto ou de item proibido (seção 7) ou que esteja sob legal hold (seção 9). Nesses casos a imagem deixa de ser pública na mesma hora e é conservada fora da superfície pública, pelo prazo da finalidade correspondente.
 
+**Anúncio `closed` (esclarecimento de 2026-09-29, F2-007).** Esta seção aplica, sem alterá-las, DEC-027 e as categorias da seção 2; não cria regra nem prazo:
+
+- A transição para `closed` retira as imagens da superfície pública **imediatamente** ([listing-lifecycle.md](listing-lifecycle.md), seção 5; [image-policy.md](image-policy.md), seção 8).
+- `closed` **não** é, por si só, "expurgo definitivo do anúncio". DEC-027 mantém o anúncio `closed` visível ao anunciante como histórico privado ([listing-lifecycle.md](listing-lifecycle.md), seção 3).
+- Enquanto o anúncio permanecer como histórico privado de uma conta ativa, existe finalidade operacional concreta (categoria "Operacional" da seção 2) para conservar os seus derivados em armazenamento **privado**. Isso não é retenção indefinida genérica: a retenção está vinculada a essa finalidade. Como `closed` é terminal, esses derivados nunca voltam a ser públicos.
+- No MVP, o gatilho concreto de expurgo desse histórico é a **exclusão da conta**: retirada pública imediata e remoção dos objetos persistentes em até 30 dias (seção 3), observadas as exceções de retenção legítima (seções 7 a 9). Não há prazo de expurgo contado a partir de `closed`.
+
 Isso fecha a lacuna que [image-policy.md](image-policy.md) deixou expressamente aberta para OD-10.
 
 ## 5. Logs de acesso à aplicação

@@ -327,7 +327,7 @@ Conferência feita em `7296cb3`. Nenhuma foi corrigida por F2-005, que é docume
 | D-11 | Desempate por `id` (seção 9.2) | Ordena só por `createdAt` | [#49](https://github.com/BrunoMNoronha/techlab-troq/issues/49) |
 | D-12 | `/explorar` pagina e filtra por cidade/UF, com estados de carregamento e erro | Lê só `city`/`state` da URL, sem `page`, sem controles de navegação ou filtro, sem estado de erro próprio; `city` só com espaços vira filtro vazio | [#49](https://github.com/BrunoMNoronha/techlab-troq/issues/49) |
 | D-13 | Ausência de contato e de dados privados provada em HTML/RSC/JSON/metadata/erros/cache | Projeções explícitas existem; a prova sobre HTTP real e cache aquecido não | [#49](https://github.com/BrunoMNoronha/techlab-troq/issues/49) e [#50](https://github.com/BrunoMNoronha/techlab-troq/issues/50) |
-| D-14 | URL de derivado revogável e retirada imediata do público ao sair de `published` | URL montada como `NEXT_PUBLIC_MEDIA_BASE_URL/objectKey` | [#47](https://github.com/BrunoMNoronha/techlab-troq/issues/47) |
+| D-14 | URL de derivado revogável e retirada imediata do público ao sair de `published`; contrato em [media-pipeline-contract.md](media-pipeline-contract.md), seção 9 (rota `/media/{imageId}/{kind}`, bucket privado, `private, no-store`) | URL montada como `NEXT_PUBLIC_MEDIA_BASE_URL/objectKey` | [#47](https://github.com/BrunoMNoronha/techlab-troq/issues/47) |
 | D-15 | Publicação respeita restrição/bloqueio de publicação (seção 4.4, item 6) | Sanções de moderação não implementadas | Fase 4 ([#55](https://github.com/BrunoMNoronha/techlab-troq/issues/55)) |
 
 ## 13. Rastreabilidade

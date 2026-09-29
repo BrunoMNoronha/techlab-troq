@@ -130,7 +130,7 @@ Modeladas em [contact-release.md](contact-release.md), CR-3 e CR-4. Em resumo, p
 
 | Aspecto | Definição |
 | --- | --- |
-| Estados da imagem | `uploaded` (original temporário recebido), `processing`, `ready`, `failed` |
+| Estados da imagem | `uploaded` (geração de upload autorizada e ainda não processada; a confirmação é `sourceConfirmedAt`), `processing`, `ready`, `failed`. Semântica técnica, execução e delta de campos para #46 em [media-pipeline-contract.md](media-pipeline-contract.md), seções 4 e 15 |
 | Campos | Anúncio, posição na ordenação, chave do objeto gerada pela aplicação, dimensões, instantes |
 | Derivados | `thumb` 320 px, `medium` 768 px, `large` 1600 px, em WebP qualidade 80, com dimensões conhecidas (DEC-028, seção 7) |
 
