@@ -165,6 +165,32 @@ describe('modulo identity — login e logout (#42 / F2-004)', () => {
       );
     });
 
+    it('retorna ao anuncio de origem quando o destino e interno (#59)', async () => {
+      mockPrisma();
+
+      const res = await loginUser('active@troq.app', PASSWORD, '/explorar/abc-123');
+      expect(res).toEqual({ success: true, redirectTo: '/explorar/abc-123' });
+    });
+
+    it.each(['https://evil.example', '//evil.example', '/\\evil.example', 'javascript:alert(1)'])(
+      'ignora destino de retorno externo %s e usa /conta (#59)',
+      async (returnTo) => {
+        mockPrisma();
+
+        const res = await loginUser('active@troq.app', PASSWORD, returnTo);
+        expect(res).toEqual({ success: true, redirectTo: '/conta' });
+      },
+    );
+
+    it('senha incorreta com destino de retorno nao autentica nem redireciona (#59)', async () => {
+      const prisma = mockPrisma();
+
+      const res = await loginUser('active@troq.app', 'senha-errada', '/explorar/abc-123');
+      expect(res.success).toBe(false);
+      expect(res.redirectTo).toBeUndefined();
+      expect(prisma.session.create).not.toHaveBeenCalled();
+    });
+
     it('nao declara sucesso quando a persistencia da sessao falha', async () => {
       mockPrisma({ sessionCreate: vi.fn().mockRejectedValue(new Error('db down')) });
       vi.spyOn(console, 'error').mockImplementation(() => undefined);

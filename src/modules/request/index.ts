@@ -11,7 +11,7 @@
 // importado de fora (docs/engineering/conventions.md, secao 2.2). Consumidores
 // externos importam `@/modules/request`; nunca um caminho interno do modulo.
 //
-// F1-005 materializa apenas a fronteira: nao ha implementacao, e nenhuma
-// entidade, servico, repositorio ou caso de uso e antecipado aqui. O `export {}`
-// mantem o arquivo como modulo TypeScript sob `isolatedModules`, sem comportamento.
-export {};
+// F1-005 materializou a fronteira. #59 acrescenta apenas a entrada da jornada
+// (somente leitura); reserva, cobranca e liberacao continuam na Fase 3 (#54).
+export { getContactRequestEntry } from './entry';
+export type { ContactRequestEntryState } from './entry';

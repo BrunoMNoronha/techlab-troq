@@ -1,0 +1,89 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import * as identityModule from '@/modules/identity';
+import * as listingModule from '@/modules/listing';
+import { getContactRequestEntry } from './entry';
+
+vi.mock('@/modules/identity', () => ({ validateSession: vi.fn() }));
+vi.mock('@/modules/listing', () => ({
+  getPublicListingDetail: vi.fn(),
+  isListingOwnedBy: vi.fn(),
+}));
+
+const validateSession = vi.mocked(identityModule.validateSession);
+const getPublicListingDetail = vi.mocked(listingModule.getPublicListingDetail);
+const isListingOwnedBy = vi.mocked(listingModule.isListingOwnedBy);
+
+const LISTING_ID = '0b6f2d9e-3c4a-4e8b-9f1a-2d3c4b5a6e7f';
+const listing = {
+  id: LISTING_ID,
+  title: 'Bicicleta',
+  description: 'Aro 29',
+  city: 'Recife',
+  state: 'PE',
+  createdAt: new Date(),
+  images: [],
+};
+const user = {
+  id: '9d8c7b6a-5f4e-4d3c-8b2a-1f0e9d8c7b6a',
+  email: 'pessoa@example.test',
+  displayName: 'Pessoa',
+  emailVerified: true,
+  status: 'active' as const,
+};
+
+describe('getContactRequestEntry — entrada da solicitacao de desbloqueio (#59)', () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+    getPublicListingDetail.mockResolvedValue(listing);
+    isListingOwnedBy.mockResolvedValue(false);
+  });
+
+  it('anuncio indisponivel (rascunho, pausado, conta inelegivel) nao abre a jornada', async () => {
+    getPublicListingDetail.mockResolvedValue(null);
+
+    expect(await getContactRequestEntry(LISTING_ID)).toBe('listing_unavailable');
+    expect(validateSession).not.toHaveBeenCalled();
+  });
+
+  it('visitante sem sessao ou com sessao expirada/revogada precisa entrar', async () => {
+    validateSession.mockResolvedValue({
+      session: null,
+      user: null,
+      isValid: false,
+      reason: 'no_session',
+    });
+
+    expect(await getContactRequestEntry(LISTING_ID)).toBe('login_required');
+  });
+
+  it('email nao verificado nao pode solicitar', async () => {
+    validateSession.mockResolvedValue({
+      session: {},
+      user: { ...user, emailVerified: false },
+      isValid: false,
+      reason: 'unverified',
+    });
+
+    expect(await getContactRequestEntry(LISTING_ID)).toBe('email_unverified');
+  });
+
+  it.each(['blocked', 'deletion_requested'] as const)('conta %s fica restrita', async (reason) => {
+    validateSession.mockResolvedValue({ session: {}, user, isValid: false, reason });
+
+    expect(await getContactRequestEntry(LISTING_ID)).toBe('account_restricted');
+  });
+
+  it('anunciante nao solicita o proprio contato', async () => {
+    validateSession.mockResolvedValue({ session: {}, user, isValid: true });
+    isListingOwnedBy.mockResolvedValue(true);
+
+    expect(await getContactRequestEntry(LISTING_ID)).toBe('own_listing');
+    expect(isListingOwnedBy).toHaveBeenCalledWith(LISTING_ID, user.id);
+  });
+
+  it('usuario elegivel recebe indisponibilidade da Fase 3, sem criar nada', async () => {
+    validateSession.mockResolvedValue({ session: {}, user, isValid: true });
+
+    expect(await getContactRequestEntry(LISTING_ID)).toBe('request_unavailable');
+  });
+});

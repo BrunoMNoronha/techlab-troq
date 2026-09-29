@@ -12,6 +12,8 @@ export {
   getPublicListingDetail,
 } from './actions';
 
+export { isListingOwnedBy } from './ownership';
+
 export type {
   CreateListingInput,
   UpdateListingInput,

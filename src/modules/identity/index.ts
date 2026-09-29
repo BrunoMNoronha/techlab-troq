@@ -4,6 +4,7 @@ import { getPrismaClient } from '@/persistence/prisma';
 import type { UserStatus } from '@/generated/prisma/client';
 
 export { getAuth } from './auth';
+export { sanitizeReturnPath } from './return-path';
 export {
   registerUser,
   confirmEmailToken,
