@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { registerUser } from '@/modules/identity/actions';
+import { ResendVerificationForm } from '../verificar-email/resend-form';
 
 export default function CadastroPage() {
   const [displayName, setDisplayName] = useState('');
@@ -13,6 +14,7 @@ export default function CadastroPage() {
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [emailPending, setEmailPending] = useState<string | null>(null);
+  const [deliveryFailed, setDeliveryFailed] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -32,8 +34,32 @@ export default function CadastroPage() {
     if (!res.success) {
       setErrorMessage(res.error || 'Erro ao realizar cadastro.');
     } else if (res.emailPending) {
+      setDeliveryFailed(res.emailDelivery === 'failed');
       setEmailPending(res.emailPending);
     }
+  }
+
+  if (emailPending && deliveryFailed) {
+    return (
+      <main
+        style={{
+          maxWidth: '480px',
+          margin: '40px auto',
+          padding: '24px',
+          fontFamily: 'sans-serif',
+        }}
+      >
+        <h1 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '16px' }}>
+          Conta criada — falta confirmar o e-mail
+        </h1>
+        <p role="alert" style={{ color: '#4b5563', marginBottom: '16px' }}>
+          Sua conta foi criada, mas não conseguimos enviar agora o e-mail de confirmação para{' '}
+          <strong>{emailPending}</strong>. Não é preciso se cadastrar de novo: peça um novo link
+          abaixo. A conta só pode ser usada depois que o e-mail for confirmado.
+        </p>
+        <ResendVerificationForm initialEmail={emailPending} />
+      </main>
+    );
   }
 
   if (emailPending) {
@@ -49,9 +75,9 @@ export default function CadastroPage() {
         <h1 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '16px' }}>
           Confirme seu e-mail
         </h1>
-        <p style={{ color: '#4b5563', marginBottom: '16px' }}>
+        <p role="status" style={{ color: '#4b5563', marginBottom: '16px' }}>
           Enviamos um link de confirmação para <strong>{emailPending}</strong>. Por favor, acesse
-          sua caixa de entrada e clique no link para ativar sua conta.
+          sua caixa de entrada e clique no link para ativar sua conta. O link vale por 24 horas.
         </p>
         <div
           style={{
@@ -60,10 +86,12 @@ export default function CadastroPage() {
             borderRadius: '6px',
             fontSize: '14px',
             color: '#1e40af',
+            marginBottom: '16px',
           }}
         >
           💡 Não encontrou? Verifique sua caixa de spam ou lixo eletrônico.
         </div>
+        <ResendVerificationForm initialEmail={emailPending} />
       </main>
     );
   }
@@ -159,6 +187,7 @@ export default function CadastroPage() {
             type="password"
             required
             minLength={8}
+            maxLength={128}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             style={{
@@ -168,7 +197,7 @@ export default function CadastroPage() {
               borderRadius: '6px',
               fontSize: '16px',
             }}
-            placeholder="Mínimo de 8 caracteres"
+            placeholder="De 8 a 128 caracteres"
           />
         </div>
 

@@ -32,7 +32,7 @@ vi.mock('next/headers', () => ({
 }));
 
 vi.mock('./email', () => ({
-  sendVerificationEmail: vi.fn().mockResolvedValue(true),
+  sendVerificationEmail: vi.fn().mockResolvedValue({ ok: true }),
 }));
 
 const RUN_ID = `${Date.now()}-${randomBytes(3).toString('hex')}`;
@@ -147,7 +147,13 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
       // Registros com FK RESTRICT para users saem antes; sessions/accounts caem em cascata.
       await prisma.listing.deleteMany({ where: { owner: { email: { in: all } } } });
       await prisma.termsAcceptance.deleteMany({ where: { user: { email: { in: all } } } });
-      await prisma.verification.deleteMany({ where: { identifier: { in: all } } });
+      const users = await prisma.user.findMany({
+        where: { email: { in: all } },
+        select: { id: true },
+      });
+      await prisma.verification.deleteMany({
+        where: { identifier: { in: users.map((u) => `email-verification:${u.id}`) } },
+      });
       await prisma.user.deleteMany({ where: { email: { in: all } } });
       await prisma.$disconnect();
       vi.unstubAllEnvs();

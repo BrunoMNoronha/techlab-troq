@@ -4,10 +4,16 @@ import { headers } from 'next/headers';
 import { getPrismaClient } from '@/persistence/prisma';
 import { hashPassword } from 'better-auth/crypto';
 import { isAPIError } from 'better-auth/api';
-import { ACCOUNT_NOT_ACTIVE_CODE, authErrorLabel, getAuth } from './auth';
+import { ACCOUNT_NOT_ACTIVE_CODE, authErrorLabel, getAuth, resolveAppOrigin } from './auth';
 import { sendVerificationEmail } from './email';
 import { sanitizeReturnPath } from './return-path';
-import crypto from 'crypto';
+import {
+  confirmVerificationToken,
+  invalidateVerificationToken,
+  issueResendToken,
+  issueVerificationToken,
+  type IssuedToken,
+} from './verification';
 
 export interface RegisterInput {
   displayName: string;
@@ -20,7 +26,25 @@ export interface RegisterInput {
 export interface RegisterResult {
   success: boolean;
   error?: string;
+  /** E-mail da conta criada, para a tela de confirmacao. */
   emailPending?: string;
+  /**
+   * `failed`: a conta foi criada e continua nao verificada, mas o e-mail nao
+   * saiu; a interface oferece reenvio, nunca novo cadastro (IC-9.2).
+   */
+  emailDelivery?: 'sent' | 'failed';
+}
+
+export interface ConfirmEmailResult {
+  success: boolean;
+  reason?: 'invalid' | 'expired' | 'error';
+  error?: string;
+}
+
+export interface ResendResult {
+  success: boolean;
+  message?: string;
+  error?: string;
 }
 
 const TERMS_VERSION = '1.0';
@@ -34,60 +58,127 @@ const INVALID_CREDENTIALS_ERROR = 'E-mail ou senha invalidos.';
 const SESSION_START_ERROR = 'Nao foi possivel iniciar a sessao. Tente novamente.';
 const SESSION_END_ERROR = 'Nao foi possivel encerrar a sessao. Tente novamente.';
 
+// Limites padrao do provedor para senha (IC-4.3).
+const MIN_PASSWORD_LENGTH = 8;
+const MAX_PASSWORD_LENGTH = 128;
+const MAX_EMAIL_LENGTH = 254;
+const EMAIL_FORMAT = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const DUPLICATE_EMAIL_ERROR = 'Este e-mail ja esta cadastrado na plataforma.';
+const REGISTRATION_UNAVAILABLE_ERROR =
+  'Nao foi possivel concluir o cadastro agora. Tente novamente mais tarde.';
+// Resposta unica do reenvio (IC-9.3): nao revela se a conta existe, se ja foi
+// verificada, se esta ativa ou se o limite suprimiu a emissao.
+const RESEND_GENERIC_MESSAGE =
+  'Se houver cadastro pendente de verificacao para este e-mail, enviaremos um novo link.';
+const RESEND_DELIVERY_ERROR = 'Nao foi possivel enviar o e-mail agora. Tente novamente.';
+
+function normalizeEmail(email: unknown): string {
+  return typeof email === 'string' ? email.trim().toLowerCase() : '';
+}
+
+function isUniqueViolation(err: unknown): boolean {
+  return (err as { code?: unknown } | null)?.code === 'P2002';
+}
+
 /**
- * Server Action de cadastro de usuario.
- * Registra a autodeclaracao de maioridade (18+) e o aceite dos termos em banco,
- * criando o usuario nao-verificado e disparando o e-mail de verificacao via Resend.
+ * Envia o link do token emitido. Se o envio falhar, o token e invalidado na
+ * hora: um link que o usuario nunca recebeu nao pode continuar valido (IC-9.2).
+ */
+async function deliverVerificationLink(
+  email: string,
+  baseURL: string,
+  issued: IssuedToken,
+): Promise<boolean> {
+  const delivery = await sendVerificationEmail({
+    to: email,
+    verificationUrl: `${baseURL}/verificar-email?token=${encodeURIComponent(issued.token)}`,
+    idempotencyKey: `email-verification/${issued.verificationId}`,
+  });
+  if (delivery.ok) {
+    return true;
+  }
+  try {
+    await invalidateVerificationToken(issued.verificationId);
+  } catch (err) {
+    console.error('[email] falha ao invalidar token nao entregue:', authErrorLabel(err));
+  }
+  return false;
+}
+
+/**
+ * Server Action de cadastro (identity-contract.md, IC-6).
+ * Valida no servidor nome, e-mail, senha (8 a 128), a declaracao explicita de
+ * 18 anos ou mais e o aceite dos termos — sem data de nascimento nem documento.
+ * Em UMA transacao cria `User` (`active`, nao verificado), a credencial e o
+ * `TermsAcceptance` `age_eligibility`, e emite o primeiro token (que conta no
+ * limite de reenvio). O e-mail sai depois do commit; se falhar, a conta
+ * permanece nao verificada e recuperavel pelo reenvio. Nao cria sessao.
  */
 export async function registerUser(input: RegisterInput): Promise<RegisterResult> {
-  const { displayName, email, password, over18, termsAccepted } = input;
+  const { displayName, password, over18, termsAccepted } = input ?? ({} as RegisterInput);
+  const cleanName = typeof displayName === 'string' ? displayName.trim() : '';
+  const cleanEmail = normalizeEmail(input?.email);
 
-  if (!displayName || displayName.trim().length < 2) {
+  if (cleanName.length < 2) {
     return { success: false, error: 'O nome exibido deve ter pelo menos 2 caracteres.' };
   }
 
-  const cleanEmail = email ? email.trim().toLowerCase() : '';
-  if (!cleanEmail || !cleanEmail.includes('@')) {
+  if (!cleanEmail || cleanEmail.length > MAX_EMAIL_LENGTH || !EMAIL_FORMAT.test(cleanEmail)) {
     return { success: false, error: 'Informe um e-mail valido.' };
   }
 
-  if (!password || password.length < 8) {
-    return { success: false, error: 'A senha deve ter no minimo 8 caracteres.' };
+  if (
+    typeof password !== 'string' ||
+    password.length < MIN_PASSWORD_LENGTH ||
+    password.length > MAX_PASSWORD_LENGTH
+  ) {
+    return {
+      success: false,
+      error: `A senha deve ter entre ${MIN_PASSWORD_LENGTH} e ${MAX_PASSWORD_LENGTH} caracteres.`,
+    };
   }
 
-  if (!over18) {
+  if (over18 !== true) {
     return {
       success: false,
       error: 'E necessario confirmar ter 18 anos ou mais para se cadastrar.',
     };
   }
 
-  if (!termsAccepted) {
+  if (termsAccepted !== true) {
     return { success: false, error: 'Voce precisa aceitar os Termos de Uso.' };
   }
 
-  const prisma = getPrismaClient();
-
-  // Verificar se e-mail ja existe em conta ativa
-  const existingUser = await prisma.user.findFirst({
-    where: {
-      email: cleanEmail,
-      status: { not: 'deletion_requested' },
-    },
-  });
-
-  if (existingUser) {
-    return { success: false, error: 'Este e-mail ja esta cadastrado na plataforma.' };
+  // A origem dos links e resolvida antes de gravar qualquer coisa: sem URL base
+  // valida nao ha link, e nao se cria conta que nao poderia ser verificada (IC-12.3).
+  let baseURL: string;
+  try {
+    baseURL = resolveAppOrigin().baseURL;
+  } catch (err) {
+    console.error('[Register Action Error]', authErrorLabel(err));
+    return { success: false, error: REGISTRATION_UNAVAILABLE_ERROR };
   }
 
+  let issued: IssuedToken;
   try {
+    const prisma = getPrismaClient();
+    // O provedor localiza usuario por e-mail em toda a tabela: enquanto a
+    // exclusao nao tornar o e-mail irresolvivel, qualquer linha conflita (IC-2.5).
+    const existing = await prisma.user.findFirst({
+      where: { email: cleanEmail },
+      select: { id: true },
+    });
+    if (existing) {
+      return { success: false, error: DUPLICATE_EMAIL_ERROR };
+    }
+
     const passwordHash = await hashPassword(password);
 
-    // 1. Criar usuario, credencial e aceite de termos em transacao
-    await prisma.$transaction(async (tx) => {
+    issued = await prisma.$transaction(async (tx) => {
       const newUser = await tx.user.create({
         data: {
-          displayName: displayName.trim(),
+          displayName: cleanName,
           email: cleanEmail,
           emailVerified: false,
           status: 'active',
@@ -103,7 +194,6 @@ export async function registerUser(input: RegisterInput): Promise<RegisterResult
         },
       });
 
-      // Gravar registro formal de aceite de maioridade/termos
       await tx.termsAcceptance.create({
         data: {
           userId: newUser.id,
@@ -112,144 +202,99 @@ export async function registerUser(input: RegisterInput): Promise<RegisterResult
         },
       });
 
-      return newUser;
+      return issueVerificationToken(tx, newUser.id);
     });
-
-    // 2. Gerar token de verificacao de e-mail (validade de 24 horas)
-    const token = crypto.randomBytes(32).toString('hex');
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
-
-    await prisma.verification.create({
-      data: {
-        identifier: cleanEmail,
-        value: token,
-        expiresAt,
-      },
-    });
-
-    // 3. Disparar e-mail de verificacao
-    const baseUrl =
-      process.env.NEXT_PUBLIC_APP_URL || process.env.BETTER_AUTH_URL || 'http://localhost:3000';
-    const verifyUrl = `${baseUrl}/verificar-email?token=${encodeURIComponent(token)}`;
-
-    await sendVerificationEmail(cleanEmail, verifyUrl);
-
-    return {
-      success: true,
-      emailPending: cleanEmail,
-    };
   } catch (err) {
-    console.error('[Register Action Error]', err);
+    // Cadastro concorrente com o mesmo e-mail: o indice unico decide (IC-6.4).
+    if (isUniqueViolation(err)) {
+      return { success: false, error: DUPLICATE_EMAIL_ERROR };
+    }
+    console.error('[Register Action Error]', authErrorLabel(err));
     return {
       success: false,
       error: 'Ocorreu um erro interno ao processar seu cadastro. Tente novamente.',
     };
   }
+
+  const sent = await deliverVerificationLink(cleanEmail, baseURL, issued);
+  return {
+    success: true,
+    emailPending: cleanEmail,
+    emailDelivery: sent ? 'sent' : 'failed',
+  };
 }
 
 /**
- * Server Action para confirmar o token de verificacao de e-mail.
+ * Server Action que confirma o e-mail pelo token do link (IC-7.3). O token e
+ * de uso unico e resistente a confirmacao concorrente. Nao cria sessao: depois
+ * do sucesso, o usuario entra pelo login.
  */
-export async function confirmEmailToken(
-  token: string,
-): Promise<{ success: boolean; error?: string }> {
-  if (!token) {
-    return { success: false, error: 'Token invalido ou ausente.' };
+export async function confirmEmailToken(token: string): Promise<ConfirmEmailResult> {
+  try {
+    const outcome = await confirmVerificationToken(token);
+    if (outcome === 'verified') {
+      return { success: true };
+    }
+    if (outcome === 'expired') {
+      return {
+        success: false,
+        reason: 'expired',
+        error: 'Este link de verificacao expirou. Solicite um novo link.',
+      };
+    }
+    return {
+      success: false,
+      reason: 'invalid',
+      error: 'Link de verificacao invalido ou ja utilizado. Se voce ja confirmou, faca login.',
+    };
+  } catch (err) {
+    console.error('[Confirm Email Error]', authErrorLabel(err));
+    return {
+      success: false,
+      reason: 'error',
+      error: 'Nao foi possivel confirmar agora. Tente abrir o link novamente em instantes.',
+    };
   }
-
-  const prisma = getPrismaClient();
-
-  const verification = await prisma.verification.findFirst({
-    where: { value: token },
-  });
-
-  if (!verification) {
-    return { success: false, error: 'Link de verificacao invalido ou ja utilizado.' };
-  }
-
-  if (verification.expiresAt < new Date()) {
-    // Remover token expirado
-    await prisma.verification.delete({ where: { id: verification.id } });
-    return { success: false, error: 'Este link de verificacao expirou. Solicite um novo link.' };
-  }
-
-  // Marcar e-mail do usuario como verificado
-  const user = await prisma.user.findFirst({
-    where: { email: verification.identifier },
-  });
-
-  if (!user) {
-    return { success: false, error: 'Usuario associado ao token nao foi encontrado.' };
-  }
-
-  await prisma.$transaction([
-    prisma.user.update({
-      where: { id: user.id },
-      data: {
-        emailVerified: true,
-        emailVerifiedAt: new Date(),
-      },
-    }),
-    prisma.verification.delete({
-      where: { id: verification.id },
-    }),
-  ]);
-
-  return { success: true };
 }
 
 /**
- * Server Action para solicitar reenvio de e-mail de verificacao.
+ * Server Action de reenvio do e-mail de verificacao (IC-9.3 e IC-9.4). A
+ * resposta e generica para e-mail inexistente, ja verificado, conta nao ativa
+ * ou envio suprimido pelo limite; so a falha do provedor para conta elegivel
+ * recebe resposta propria.
  */
-export async function resendVerificationToken(
-  email: string,
-): Promise<{ success: boolean; error?: string }> {
-  const cleanEmail = email ? email.trim().toLowerCase() : '';
+export async function resendVerificationToken(email: string): Promise<ResendResult> {
+  const cleanEmail = normalizeEmail(email);
   if (!cleanEmail) {
     return { success: false, error: 'Informe o e-mail cadastrado.' };
   }
 
-  const prisma = getPrismaClient();
+  const generic: ResendResult = { success: true, message: RESEND_GENERIC_MESSAGE };
 
-  const user = await prisma.user.findFirst({
-    where: { email: cleanEmail, status: 'active' },
-  });
+  let baseURL: string;
+  let issued: IssuedToken | null;
+  try {
+    baseURL = resolveAppOrigin().baseURL;
 
-  if (!user) {
-    return { success: false, error: 'E-mail nao encontrado.' };
+    const user = await getPrismaClient().user.findFirst({
+      where: { email: cleanEmail, status: 'active', emailVerified: false },
+      select: { id: true },
+    });
+    if (!user) {
+      return generic;
+    }
+    issued = await issueResendToken(user.id);
+  } catch (err) {
+    console.error('[Resend Verification Error]', authErrorLabel(err));
+    return { success: false, error: RESEND_DELIVERY_ERROR };
   }
 
-  if (user.emailVerified) {
-    return {
-      success: false,
-      error: 'Este e-mail ja foi verificado. Voce pode fazer login normalmente.',
-    };
+  if (!issued) {
+    return generic;
   }
 
-  // Deletar tokens anteriores para o mesmo e-mail
-  await prisma.verification.deleteMany({
-    where: { identifier: cleanEmail },
-  });
-
-  // Criar novo token
-  const token = crypto.randomBytes(32).toString('hex');
-  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
-
-  await prisma.verification.create({
-    data: {
-      identifier: cleanEmail,
-      value: token,
-      expiresAt,
-    },
-  });
-
-  const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL || process.env.BETTER_AUTH_URL || 'http://localhost:3000';
-  const verifyUrl = `${baseUrl}/verificar-email?token=${encodeURIComponent(token)}`;
-
-  await sendVerificationEmail(cleanEmail, verifyUrl);
-
-  return { success: true };
+  const sent = await deliverVerificationLink(cleanEmail, baseURL, issued);
+  return sent ? generic : { success: false, error: RESEND_DELIVERY_ERROR };
 }
 
 /**
