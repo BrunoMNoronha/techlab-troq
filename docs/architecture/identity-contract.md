@@ -68,7 +68,7 @@ Existe segregação total entre `development` e `preview` (bem como `production`
 ## 6. Superfícies de API/UI e Autorização
 
 - **API Routes (Backend)**:
-  - Rotas de base do framework injetadas (ex: `/api/auth/*`).
+  - Rota do framework `/api/auth/*` restrita a leituras sem efeito colateral (`GET /api/auth/ok` e `GET /api/auth/get-session`); os demais endpoints respondem 404 e `emailAndPassword.disableSignUp` está ativo. Cadastro, login e logout acontecem somente pelas Server Actions de `src/modules/identity/actions.ts`, que aplicam 18+, aceite de termos, verificação de senha, estado da conta e revogação de sessão (#42 / F2-004).
   - Rotas de estado (ex: `/api/users/me`) integradas para retornar informações agregadas (User + Termos).
 - **UI (Frontend)**:
   - Componentes e layouts restritos protegidos através da verificação de sessão (via middlewares e/ou Server-Side Rendering) evitando vazamentos de *flash of unauthenticated content*.

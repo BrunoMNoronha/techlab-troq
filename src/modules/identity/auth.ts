@@ -15,6 +15,10 @@ function createAuth() {
     emailAndPassword: {
       enabled: true,
       requireEmailVerification: true,
+      // Cadastro so pela Server Action `registerUser`, que registra 18+ e aceite
+      // dos termos (docs/product/age-eligibility.md). O endpoint do provedor
+      // criaria conta sem esses registros.
+      disableSignUp: true,
     },
     user: {
       modelName: 'user',

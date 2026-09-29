@@ -27,6 +27,21 @@ export interface SessionValidationResult {
   reason?: 'no_session' | 'unverified' | 'blocked' | 'deletion_requested';
 }
 
+const LOGIN_REASON: Record<NonNullable<SessionValidationResult['reason']>, string> = {
+  no_session: 'sessao',
+  blocked: 'bloqueada',
+  deletion_requested: 'excluida',
+  unverified: 'nao_verificada',
+};
+
+/**
+ * Caminho de login para uma sessao invalida, com o motivo exibido pela tela de
+ * login (sessao ausente/expirada/revogada, conta bloqueada, excluida ou nao verificada).
+ */
+export function loginRedirectPath(reason: SessionValidationResult['reason']): string {
+  return `/login?motivo=${LOGIN_REASON[reason ?? 'no_session']}`;
+}
+
 /**
  * Valida a sessao server-side da requisicao atual.
  * Verifica existencia da sessao no Better Auth ou fallback direto via Prisma token,

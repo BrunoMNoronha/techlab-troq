@@ -1,14 +1,7 @@
 import { redirect } from 'next/navigation';
-import { validateSession, logoutUser } from '@/modules/identity';
+import { validateSession, logoutUser, loginRedirectPath } from '@/modules/identity';
 
 export const dynamic = 'force-dynamic';
-
-const LOGIN_REASON = {
-  no_session: 'sessao',
-  blocked: 'bloqueada',
-  deletion_requested: 'excluida',
-  unverified: 'nao_verificada',
-} as const;
 
 export default async function ContaPage({
   searchParams,
@@ -18,7 +11,7 @@ export default async function ContaPage({
   const sessionResult = await validateSession();
 
   if (!sessionResult.isValid || !sessionResult.user) {
-    redirect(`/login?motivo=${LOGIN_REASON[sessionResult.reason ?? 'no_session']}`);
+    redirect(loginRedirectPath(sessionResult.reason));
   }
 
   const { erro } = await searchParams;
