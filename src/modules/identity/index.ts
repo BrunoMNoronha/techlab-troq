@@ -1,5 +1,5 @@
-import { headers, cookies } from 'next/headers';
-import { getAuth } from './auth';
+import { headers } from 'next/headers';
+import { authErrorLabel, getAuth } from './auth';
 import { getPrismaClient } from '@/persistence/prisma';
 import type { UserStatus } from '@/generated/prisma/client';
 
@@ -22,7 +22,6 @@ export interface AuthenticatedUser {
 }
 
 export interface SessionValidationResult {
-  session: unknown | null;
   user: AuthenticatedUser | null;
   isValid: boolean;
   reason?: 'no_session' | 'unverified' | 'blocked' | 'deletion_requested';
@@ -43,94 +42,64 @@ export function loginRedirectPath(reason: SessionValidationResult['reason']): st
   return `/login?motivo=${LOGIN_REASON[reason ?? 'no_session']}`;
 }
 
+const NO_SESSION: SessionValidationResult = {
+  user: null,
+  isValid: false,
+  reason: 'no_session',
+};
+
 /**
- * Valida a sessao server-side da requisicao atual.
- * Verifica existencia da sessao no Better Auth ou fallback direto via Prisma token,
- * e confirma estado ativo e email verificado no PostgreSQL.
+ * Guard server-side de toda acao protegida (nivel N1 de AR-7.2; IC-8.1).
+ *
+ * 1. A identidade vem EXCLUSIVAMENTE do Better Auth (`getSession`), que confere
+ *    a assinatura do cookie, a existencia da sessao e a expiracao. Sem sessao
+ *    do provedor nao ha sessao: nao existe leitura do cookie nem da tabela de
+ *    sessoes pelo token (IC-5.2).
+ * 2. A autorizacao de dominio le o estado ATUAL da conta em `users` pelo id
+ *    autenticado: so `active` com email verificado e valida.
+ *
+ * Qualquer falha interna nega (fail-closed) e e registrada sem token, cookie
+ * ou mensagem do erro (IC-5.7, IC-11.2).
  */
 export async function validateSession(): Promise<SessionValidationResult> {
-  const auth = getAuth();
-  const reqHeaders = await headers();
-  let sessionData: { session: unknown; user: { id: string } } | null = null;
-
+  let userId: string;
   try {
-    const rawSession = await auth.api.getSession({
-      headers: reqHeaders,
-    });
-    if (rawSession && rawSession.session && rawSession.user) {
-      sessionData = rawSession as { session: unknown; user: { id: string } };
+    const session = await getAuth().api.getSession({ headers: await headers() });
+    if (!session) {
+      return { ...NO_SESSION };
     }
-  } catch (_e) {
-    // Better Auth getSession error fallback
+    userId = session.user.id;
+  } catch (err) {
+    console.error('[validateSession] falha ao validar a sessao no provedor:', authErrorLabel(err));
+    return { ...NO_SESSION };
   }
 
-  // Fallback: Se auth.api.getSession nao autenticar via cookie assinado do Better Auth,
-  // busca a sessao token diretamente na tabela Session do Prisma
-  if (!sessionData) {
-    try {
-      const cookieStore = await cookies();
-      const token = cookieStore.get('better-auth.session_token')?.value;
-
-      if (token) {
-        const prisma = getPrismaClient();
-        if (prisma?.session) {
-          const sessionRecord = await prisma.session.findUnique({
-            where: { token },
-            include: { user: true },
-          });
-
-          if (sessionRecord && sessionRecord.expiresAt > new Date()) {
-            sessionData = {
-              session: sessionRecord,
-              user: { id: sessionRecord.userId },
-            };
-          }
-        }
-      }
-    } catch (_e) {
-      // Ignora erros na leitura de cookies/Prisma em ambientes sem DATABASE_URL ou contexto HTTP
-    }
-  }
-
-  if (!sessionData || !sessionData.session || !sessionData.user) {
-    return { session: null, user: null, isValid: false, reason: 'no_session' };
-  }
-
+  let dbUser: AuthenticatedUser | null;
   try {
-    const prisma = getPrismaClient();
-    const dbUser = await prisma.user.findUnique({
-      where: { id: sessionData.user.id },
+    dbUser = await getPrismaClient().user.findUnique({
+      where: { id: userId },
       select: { id: true, email: true, displayName: true, emailVerified: true, status: true },
     });
-
-    if (!dbUser) {
-      return { session: null, user: null, isValid: false, reason: 'no_session' };
-    }
-
-    if (dbUser.status !== 'active') {
-      return {
-        session: sessionData.session,
-        user: dbUser,
-        isValid: false,
-        reason: dbUser.status === 'deletion_requested' ? 'deletion_requested' : 'blocked',
-      };
-    }
-
-    if (!dbUser.emailVerified) {
-      return {
-        session: sessionData.session,
-        user: dbUser,
-        isValid: false,
-        reason: 'unverified',
-      };
-    }
-
-    return {
-      session: sessionData.session,
-      user: dbUser,
-      isValid: true,
-    };
-  } catch (_e) {
-    return { session: null, user: null, isValid: false, reason: 'no_session' };
+  } catch (err) {
+    console.error('[validateSession] falha ao ler o estado da conta:', authErrorLabel(err));
+    return { ...NO_SESSION };
   }
+
+  if (!dbUser) {
+    return { ...NO_SESSION };
+  }
+
+  if (dbUser.status !== 'active') {
+    return {
+      user: dbUser,
+      isValid: false,
+      reason: dbUser.status === 'deletion_requested' ? 'deletion_requested' : 'blocked',
+    };
+  }
+
+  if (!dbUser.emailVerified) {
+    return { user: dbUser, isValid: false, reason: 'unverified' };
+  }
+
+  return { user: dbUser, isValid: true };
 }

@@ -28,7 +28,6 @@ describe('modulo listing — transicoes de ciclo de vida e feed publico (#48/#49
 
     it('rejeita publicacao se o anuncio nao possuir nenhuma imagem no status ready', async () => {
       vi.spyOn(identityModule, 'validateSession').mockResolvedValueOnce({
-        session: {},
         user: {
           id: userId,
           email: 'user@troq.app',
@@ -57,7 +56,6 @@ describe('modulo listing — transicoes de ciclo de vida e feed publico (#48/#49
 
     it('publica rascunho com sucesso e grava aceite de termos e transicao', async () => {
       vi.spyOn(identityModule, 'validateSession').mockResolvedValueOnce({
-        session: {},
         user: {
           id: userId,
           email: 'user@troq.app',
@@ -93,7 +91,6 @@ describe('modulo listing — transicoes de ciclo de vida e feed publico (#48/#49
   describe('pauseListing (T3) & reactivateListing (T4)', () => {
     it('pausa anuncio publicado com sucesso', async () => {
       vi.spyOn(identityModule, 'validateSession').mockResolvedValueOnce({
-        session: {},
         user: {
           id: userId,
           email: 'user@troq.app',
@@ -124,7 +121,6 @@ describe('modulo listing — transicoes de ciclo de vida e feed publico (#48/#49
 
     it('reativa anuncio pausado com sucesso', async () => {
       vi.spyOn(identityModule, 'validateSession').mockResolvedValueOnce({
-        session: {},
         user: {
           id: userId,
           email: 'user@troq.app',
@@ -157,7 +153,6 @@ describe('modulo listing — transicoes de ciclo de vida e feed publico (#48/#49
   describe('closeListing (T5) & discardDraft (T2)', () => {
     it('encerra anuncio publicado', async () => {
       vi.spyOn(identityModule, 'validateSession').mockResolvedValueOnce({
-        session: {},
         user: {
           id: userId,
           email: 'user@troq.app',
@@ -188,7 +183,6 @@ describe('modulo listing — transicoes de ciclo de vida e feed publico (#48/#49
 
     it('descarta rascunho com sucesso', async () => {
       vi.spyOn(identityModule, 'validateSession').mockResolvedValueOnce({
-        session: {},
         user: {
           id: userId,
           email: 'user@troq.app',

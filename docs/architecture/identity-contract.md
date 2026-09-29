@@ -214,6 +214,8 @@ Confirmações concorrentes do mesmo token resultam em exatamente uma confirmaç
 
 Estado de `main` em `942bf0d` (2026-09-29). Cada item pertence à issue indicada e **não** é resolvido por este documento.
 
+**Atualização de F2-002 (#40, 2026-09-29):** estão resolvidas as linhas do login próprio com cookie cru, do fallback em `validateSession`, do `logoutUser` por token, do segredo e da URL com fallback em `auth.ts` e da configuração ausente de IC-5.3/IC-2.3. A regra de revogação de IC-5.6 aguarda os fluxos reais de bloqueio e exclusão; até lá o guard nega pelo status atual, o que foi provado. As demais linhas seguem com #41 e #42.
+
 | Código atual | Contrato | Issue |
 | --- | --- | --- |
 | `loginUser` verifica a senha por conta própria, cria linha em `sessions` e grava cookie `better-auth.session_token` com o token cru, sem assinatura | Login por `auth.api.signInEmail` + `nextCookies()` (IC-5.1, IC-5.2) | #40 (núcleo) e #42 (action) |
