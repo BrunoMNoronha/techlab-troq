@@ -16,7 +16,7 @@ vi.mock('resend', () => ({
 }));
 
 const TO = 'destinatario@example.test';
-const URL_WITH_TOKEN = 'https://troq.example.test/verificar-email?token=TOKEN_SECRETO_123';
+const URL_WITH_TOKEN = 'https://troq.example.test/verificar-email#token=TOKEN_SECRETO_123';
 const API_KEY = 're_chave_sintetica_de_teste';
 const message = {
   to: TO,
