@@ -8,7 +8,7 @@ import {
   getPublicFeed,
   getPublicListingDetail,
 } from '@/modules/listing/actions';
-import { getPublicListingImages } from '@/modules/media/service';
+import { getPublicListingImages } from '@/modules/media/public-images';
 import { sanitizeEvent } from '@/modules/platform/telemetry/sentry-options';
 import * as identityModule from '@/modules/identity';
 import * as prismaModule from '@/persistence/prisma';

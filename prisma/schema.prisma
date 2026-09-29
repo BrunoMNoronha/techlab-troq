@@ -64,6 +64,19 @@ enum ImageDerivativeKind {
   @@map("image_derivative_kind")
 }
 
+/// media-pipeline-contract.md secao 15.2 — por que um objeto entrou na fila de
+/// exclusao. Diagnostico e prova de prazo; o consumidor da fila e F2-009 (#47).
+enum MediaDeletionReason {
+  source_processed
+  source_failed
+  source_abandoned
+  derivative_orphan
+  image_removed
+  retention_purge
+
+  @@map("media_deletion_reason")
+}
+
 /// DM-6.1 — estados da solicitacao de desbloqueio.
 enum ContactRequestStatus {
   reserved
@@ -392,17 +405,31 @@ model ListingTransition {
 
 /// DM-5.7 — no maximo 6 imagens por anuncio, posicao unica dentro do anuncio.
 /// Faixa 1..6 por CHECK na migration inicial.
+/// media-pipeline-contract.md secoes 4 e 15.1. `objectKey` e a chave do
+/// original da geracao corrente (`originals/{id}/{uploadGeneration}`).
+/// `uploaded` = geracao autorizada e ainda nao processada; a confirmacao do
+/// upload e `sourceConfirmedAt`. A unicidade de (listing_id, position) e
+/// DEFERRABLE INITIALLY DEFERRED por SQL da migration 20260929191607_media_pipeline — o
+/// Prisma nao expressa isso; o @@unique abaixo so descreve a restricao.
 model ListingImage {
-  id          String             @id @default(uuid()) @db.Uuid
-  listingId   String             @map("listing_id") @db.Uuid
-  position    Int
-  status      ListingImageStatus @default(uploaded)
-  objectKey   String             @map("object_key")
-  width       Int?
-  height      Int?
-  processedAt DateTime?          @map("processed_at") @db.Timestamptz(6)
-  createdAt   DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id                 String             @id @default(uuid()) @db.Uuid
+  listingId          String             @map("listing_id") @db.Uuid
+  position           Int
+  status             ListingImageStatus @default(uploaded)
+  objectKey          String             @map("object_key")
+  width              Int?
+  height             Int?
+  processedAt        DateTime?          @map("processed_at") @db.Timestamptz(6)
+  sourceEtag         String?            @map("source_etag")
+  sourceConfirmedAt  DateTime?          @map("source_confirmed_at") @db.Timestamptz(6)
+  uploadGeneration   Int                @default(1) @map("upload_generation")
+  uploadAuthorizedAt DateTime           @default(now()) @map("upload_authorized_at") @db.Timestamptz(6)
+  attempts           Int                @default(0)
+  nextAttemptAt      DateTime?          @map("next_attempt_at") @db.Timestamptz(6)
+  leaseExpiresAt     DateTime?          @map("lease_expires_at") @db.Timestamptz(6)
+  failureCode        String?            @map("failure_code")
+  createdAt          DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   listing     Listing           @relation(fields: [listingId], references: [id], onDelete: Restrict)
   derivatives ImageDerivative[]
@@ -425,6 +452,23 @@ model ImageDerivative {
 
   @@unique([imageId, kind])
   @@map("image_derivatives")
+}
+
+/// media-pipeline-contract.md secoes 13 e 15.2 — fila de exclusao de objetos do
+/// R2. Inserida na MESMA transacao do fato que torna o objeto descartavel;
+/// unicidade parcial da pendencia ativa e indice de vencidos por SQL da
+/// migration. O consumidor (job horario) e F2-009 (#47).
+model MediaObjectDeletion {
+  id            String              @id @default(uuid()) @db.Uuid
+  objectKey     String              @map("object_key")
+  reason        MediaDeletionReason
+  dueAt         DateTime            @map("due_at") @db.Timestamptz(6)
+  attempts      Int                 @default(0)
+  lastErrorCode String?             @map("last_error_code")
+  completedAt   DateTime?           @map("completed_at") @db.Timestamptz(6)
+  createdAt     DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@map("media_object_deletions")
 }
 
 // ---------------------------------------------------------------------------

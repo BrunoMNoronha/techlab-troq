@@ -6,6 +6,8 @@ Contrato técnico de upload, confirmação, processamento, recuperação, concor
 
 Este documento **não** implementa nada, **não** altera schema nem cria migration e **não** configura bucket, CORS, lifecycle, cron ou Vercel. Cada mecanismo é contrato para a issue indicada; a seção 15 lista o delta de modelo que #46 precisa aplicar.
 
+**Atualização de F2-008 ([#46](https://github.com/BrunoMNoronha/techlab-troq/issues/46), 2026-09-29).** Upload, confirmação, processamento, reenvio, remoção e reordenação foram implementados conforme as seções 5 a 8, 10 e 15. O que foi provado, o que divergiu por prova e os dois bloqueios operacionais (CORS dos buckets e agendamento do cron) estão na seção 20. As seções 9 e 11 a 13 continuam contrato de #47.
+
 ## 1. Fontes e hierarquia
 
 | Fonte | O que determina aqui |
@@ -111,9 +113,9 @@ Limite de abuso: a emissão de autorizações de upload tem limite por usuário 
 | Operação | somente `PUT`, single-part; multipart não é usado (10 MB ≪ 5 GiB de R2-6) |
 | Chave | exatamente `objectKey` da reserva; gerada pelo servidor |
 | Validade | **900 s (15 min)**, preservada da versão anterior; não há evidência que justifique outro valor |
-| Cabeçalhos assinados | `Content-Type` igual ao tipo declarado (R2-1). Endurecimentos adicionais a **provar em #46** antes de depender deles: `If-None-Match: *` assinado, para que a URL só crie o objeto e não o sobrescreva (R2-2), e `Content-Length` assinado com o tamanho declarado |
+| Cabeçalhos assinados | `Content-Type` igual ao tipo declarado (R2-1), `Content-Length` igual ao tamanho declarado (1 byte a 10 MB, validado no servidor antes da reserva) e `If-None-Match: *`, para que a URL só crie o objeto e não o sobrescreva (R2-2). **Provados contra o R2 de `development` em #46** (seção 20.2): tipo, tamanho ou `If-None-Match` diferentes → `403`; reuso da URL depois de o objeto existir → `412`. O SDK AWS 3.x **não** assina `Content-Type` por padrão (`X-Amz-SignedHeaders=host`): é preciso `signableHeaders` explícito, sem o qual o R2 aceita qualquer tipo |
 | Endpoint | domínio da API S3 do R2 (R2-1); presigned URL não funciona em custom domain |
-| CORS | política no bucket de cada ambiente: `AllowedOrigins` = origens TROQ daquele ambiente (development: `http://localhost:3000`; preview: padrão dos domínios de preview do projeto, com no máximo um `*` — R2-3); `AllowedMethods` = `PUT`; `AllowedHeaders` = apenas os cabeçalhos assinados. CORS **não** é controle de acesso — a assinatura é —, apenas viabiliza o navegador |
+| CORS | política no bucket de cada ambiente: `AllowedOrigins` = origens TROQ daquele ambiente (development: `http://localhost:3000`; preview: padrão dos domínios de preview do projeto, com no máximo um `*` — R2-3); `AllowedMethods` = `PUT`; `AllowedHeaders` = `content-type` e `if-none-match` (`Content-Length` é definido pelo próprio navegador e não passa por CORS). CORS **não** é controle de acesso — a assinatura é —, apenas viabiliza o navegador |
 | Sigilo | a URL é credencial temporária (R2-1): nunca registrada em log, telemetria, auditoria ou mensagem de erro, nem persistida no banco |
 
 O binário **nunca** atravessa o corpo de uma Vercel Function (V-1, DEC-028 seção 5).
@@ -142,7 +144,7 @@ A presigned URL continua válida por até 15 min e pode ser reutilizada (R2-1); 
 - o ETag informado pelo navegador é ignorado; só o do `HeadObject` do servidor vale;
 - sobrescrever com bytes idênticos produz o mesmo ETag e o mesmo conteúdo, sem efeito.
 
-Se `If-None-Match: *` assinado for provado em #46 (5.2), a sobrescrita passa a falhar já no `PUT`; o `If-Match` continua obrigatório como segunda barreira.
+Com `If-None-Match: *` assinado, provado em #46 (5.2 e 20.2), a sobrescrita pela presigned URL já falha no `PUT` com `412`. O `If-Match` continua obrigatório como segunda barreira contra escrita por outro caminho e foi provado isoladamente: sobrescrita feita pelo servidor depois da confirmação → `failed` com `source_replaced`.
 
 ## 7. Validação do conteúdo (#46)
 
@@ -447,7 +449,7 @@ Deve mostrar que o pico de memória, inclusive com duas execuções concorrentes
 | 50 MP não caber em 2 GB com Fluid compute concorrente | Prova obrigatória em #46 (seção 16); bloqueio registrado se falhar, sem reduzir o limite |
 | Plano sem cron de minutos não cumpre 24 h | Dependência já registrada por ADR-0006, decisão 11; lifecycle como fallback |
 | Custo de entrega sem CDN | Aceito no MVP (9.3); medir em #47 |
-| PUT de até 5 GiB antes da confirmação | Confirmação recusa > 10 MB e apaga imediatamente; abandono limpo em até 1 h + cadência; limite de autorizações por usuário; `Content-Length` assinado a provar em #46 |
+| PUT de até 5 GiB antes da confirmação | `Content-Length` assinado com o tamanho declarado (≤ 10 MB) recusa outro tamanho já no `PUT` (provado em #46); confirmação recusa > 10 MB e enfileira a exclusão; abandono limpo em até 1 h + cadência; limite de autorizações por usuário |
 | CORS de preview com curinga | Assinatura é o controle de acesso; curinga restrito ao padrão de domínio do projeto (R2-3) |
 | Mudança de limites dos provedores | Reconferir a seção 2 em #46/#47 |
 
@@ -463,3 +465,36 @@ Deve mostrar que o pico de memória, inclusive com duas execuções concorrentes
 | DM-5.4, DM-5.5, DM-5.7 a DM-5.9 | Seções 9, 10, 3 e 14 |
 | RF-006, RNF-005, RF-014, RF-020, RF-023 | Seções 5 a 13 |
 | #46, #47, #48, #49, #50 | Destinos da seção 17 |
+
+## 20. Estado da implementação de #46 (F2-008)
+
+### 20.1 O que existe
+
+| Mecanismo | Onde |
+| --- | --- |
+| Migration do delta da seção 15 | `prisma/migrations/20260929191607_media_pipeline` ([database.md](../engineering/database.md), seção 16) |
+| Reserva, confirmação, reenvio, remoção, reordenação e visão do dono | `src/modules/media/upload.ts`; Server Actions finas em `src/modules/media/actions.ts` |
+| Limite de 30 autorizações por hora por usuário | `src/modules/media/upload-rate-limit.ts`, persistente em `verifications` (identificador `media-upload:<userId>`), serializado por `pg_advisory_xact_lock` |
+| Validação e derivados | `src/modules/media/image-processing.ts`, função pura; `syntheticBuffer` saiu de toda assinatura pública (M-8) |
+| Executor único `processPendingImages` | `src/modules/media/processor.ts`: claim `FOR UPDATE SKIP LOCKED`, lease de 360 s, fencing por `attempts` e `uploadGeneration`, 5 tentativas com recuo de 1, 5, 15 e 60 min |
+| Caminho rápido | `after()` na Server Action de confirmação; a página `/anuncios/[id]/editar` declara `maxDuration = 300` |
+| Recuperação | `GET /api/jobs/media-process` (`src/app/api/jobs/media-process/route.ts`): `Bearer CRON_SECRET` comparado em tempo constante, `401` sem corpo em qualquer outro caso; para de reclamar com 120 s de folga |
+| Fila de exclusão | `src/modules/media/deletions.ts` **enfileira**, de forma idempotente pelo índice parcial; **executar** a fila é de #47 |
+| Interface | gerenciador de imagens na edição privada: seletor nativo, progresso, estados, subir/descer, tentar de novo, reenviar e remover com confirmação |
+
+Divergências de detalhe, sem efeito contratual: o claim só seleciona linhas com `attempts < 5`, e uma linha `processing` com lease vencido e `attempts = 5` vai a `failed` (`transient_exhausted`) por um passo anterior do próprio executor, e não dentro da transação do claim; o reclamo de lease vencido grava `failure_code = 'interrupted'` como último código técnico.
+
+### 20.2 Provas
+
+| Camada | O que provou |
+| --- | --- |
+| Unitário (mock) | formato, animação, pixels, integridade, orientação e remoção de EXIF sobre fixtures geradas; chaves; classificação de erros do R2; configuração R2 ausente falha fechada; rota de recuperação |
+| PostgreSQL efêmero | 29 testes com sessão Better Auth real e R2 simulado: `not_found` uniforme; 6ª e 7ª reservas concorrentes, de forma determinística por trava e com teste de mutação; 35 autorizações concorrentes → 30 aceitas; confirmações e claims concorrentes; recuo; queda depois de 1, 2 ou 3 derivados; lease vivo e vencido; fencing do executor antigo; remoção durante o processamento; reordenação de seis; reenvio por geração |
+| R2 real de `development` | 6 testes: fluxo completo com JPEG, PNG e WebP pela presigned URL real; cabeçalhos assinados (`content-length;content-type;host;if-none-match`), validade de 900 s e nenhum checksum na URL; `403` para tipo, tamanho ou `If-None-Match` errados; `412` no reuso; `If-Match` isolado; `GET` sem assinatura recusado; bucket vazio ao final |
+| Docker 2 GB / 1 vCPU (Node 24.19.0, sharp 0.35.5, libvips 8.18.7) | seção 16: PNG de 16 bits 7071×7071 com orientação 6 — pico (VmHWM) ≈ 227 MB sozinho e ≈ 361 MB com duas execuções concorrentes, 2,4–2,7 s e 5,3–5,6 s; JPEG de 50 MP — 125–128 MB e 148–171 MB; ruído 1600×1600 → `large` de 1,74 MB; fixtures adversariais classificadas corretamente; sem OOM. `sharp.cache(false)` e `sharp.concurrency(1)` foram fixados por essa medição. Scripts em `scripts/media-benchmark/` |
+| Build local + navegador (375 px) | rota de recuperação: `401` sem cabeçalho, com segredo errado e com esquema errado; `200` com o segredo, derivados de 320, 768 e 1600 px no R2 real. Gerenciador: reserva real criada, `PUT` recusado pelo preflight CORS (20.3) com estado "Envio falhou" e alerta acessível; remoção com enfileiramento das exclusões; sem rolagem horizontal |
+
+### 20.3 Bloqueios operacionais registrados
+
+1. **CORS dos buckets.** Nenhum dos buckets (`development`, `preview`) tem política CORS, e o navegador recusa o `PUT` no preflight. O token de `development` não tem permissão de configuração de bucket (mínimo privilégio; `403` em `GetBucketCors`), e o painel da Cloudflare não está acessível ao agente. O `PUT` foi provado por cliente HTTP (20.2). **Ação do responsável pela conta:** aplicar a cada bucket os `AllowedOrigins` da seção 5.2, `AllowedMethods = PUT` e `AllowedHeaders = content-type, if-none-match`. Até lá, o upload pelo navegador não funciona em nenhum ambiente. Bucket público não é alternativa (MP-3.1).
+2. **Agendamento da recuperação.** A rota existe e está protegida, mas **nenhum cron foi configurado** (`vercel.json` sem `crons`): no Hobby o cron é diário (V-4), e declarar a cadência de 5 min faria o deployment falhar. Sem agendador, só o caminho rápido processa; uma imagem que ele não conclua fica em `uploaded` até uma chamada autorizada à rota. A cadência contratual de 5 min **não** foi enfraquecida; a dependência de plano é a de ADR-0006, decisão 11, e precisa ser resolvida antes de a Fase 2 depender da recuperação.

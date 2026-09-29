@@ -1,10 +1,15 @@
 import { notFound, redirect } from 'next/navigation';
 import { loginRedirectPath, validateSession } from '@/modules/identity';
 import { getListingForEdit } from '@/modules/listing';
+import { getOwnerListingImages } from '@/modules/media/upload';
 import { ListingForm } from '../../_components/listing-form';
 import { isEditableStatus, LISTING_STATUS_LABELS } from '../../_components/listing-status';
+import { ImageManager } from './_components/image-manager';
 
 export const dynamic = 'force-dynamic';
+// Server Actions desta pagina (confirmacao do upload) agendam o processamento
+// com after(), que herda este limite (media-pipeline-contract.md, secao 6).
+export const maxDuration = 300;
 
 const mainStyle: React.CSSProperties = {
   maxWidth: '540px',
@@ -70,6 +75,7 @@ export default async function EditarAnuncioPage({ params }: { params: Promise<{ 
   const { listing } = res;
   const statusInfo = LISTING_STATUS_LABELS[listing.status];
   const editable = isEditableStatus(listing.status);
+  const images = editable ? await getOwnerListingImages(listing.id) : null;
 
   return (
     <main style={mainStyle}>
@@ -95,7 +101,19 @@ export default async function EditarAnuncioPage({ params }: { params: Promise<{ 
             state: listing.state,
           }}
         />
-      ) : (
+      ) : null}
+
+      {editable && images?.success ? (
+        <ImageManager listingId={listing.id} initialImages={images.data.images} />
+      ) : null}
+
+      {editable && images && !images.success ? (
+        <p role="alert" style={{ marginTop: '24px', color: '#991b1b', fontSize: '14px' }}>
+          Não foi possível carregar as imagens. Recarregue a página.
+        </p>
+      ) : null}
+
+      {editable ? null : (
         <section aria-labelledby="historico">
           <p
             id="historico"
