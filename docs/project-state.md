@@ -4,7 +4,7 @@
 **Última atualização:** 2026-09-29 (reconciliação da Fase 2; baseline `main` em `e8ad1ae`)
 **Repositório:** `BrunoMNoronha/techlab-troq`, branch principal `main`
 **Fase 0:** concluída — gate de saída verificado e **APROVADO** em [delivery/phase-1-transition.md](delivery/phase-1-transition.md)
-**Fase 1:** **concluída** em 2026-09-16 — gate de saída verificado por **F1-011** e **APROVADO** em [delivery/phase-2-transition.md](delivery/phase-2-transition.md), com os cinco critérios `PASS` e os sete entregáveis (E-1 a E-7) conferidos sem regressão. **`production` continua inexistente em todo provedor** — banco, bucket, domínio, projeto Sentry e credencial —, o que é matéria da Fase 5
+**Fase 1:** **concluída** em 2026-09-16 — gate de saída verificado por **F1-011** e **APROVADO** em [delivery/phase-2-transition.md](delivery/phase-2-transition.md), com os cinco critérios `PASS` e os sete entregáveis (E-1 a E-7) conferidos sem regressão. **O ambiente `production` do TROQ (`APP_ENV=production`) continua não provisionado e não homologado em todo provedor** — banco, bucket, domínio, projeto Sentry e credencial —, o que é matéria da Fase 5. Isso não se confunde com o **target Production da Vercel**, que existe tecnicamente: em 2026-09-29, o projeto `techlab-troq` gera deployments de `main` com `target=production` em `techlab-troq.vercel.app`, sem nenhuma variável no escopo Production e, por isso, com a autenticação falhando fechada ([engineering/environments.md](engineering/environments.md), seção 1)
 **Fase 2:** **em andamento** desde 2026-09-16, com **implementação parcial integrada** (PRs #52, #53, #57, #58 e #60) e **gate de saída NÃO aprovado**. A aprovação registrada em 2026-09-28 foi **retificada em 2026-09-29** ([delivery/phase-3-transition.md](delivery/phase-3-transition.md)): G1 `NÃO ATENDIDO`, G2 `NÃO COMPROVADO`, G3 `PARCIAL`, sem nenhum `PASS`. As issues #38 a #51 continuam **abertas**. A **Fase 3 permanece condicionada ao gate** e nada dela está implementado. Próxima entrega técnica por dependência: concluir a prova em `preview` de **#41 (F2-003)** e seguir para **#42 (F2-004)**; ver a seção 3.3
 
 Este documento separa categorias que não devem ser confundidas: o que **existe de fato hoje** no repositório, o que **já foi decidido**, o que **ainda não foi implementado** e, desde 2026-09-29, o que está **validado** e o que tem **evidência funcional pendente**. A seção 1 preserva a **baseline histórica** da inspeção inicial e **não** descreve o estado atual; as seções 3.1 e 3.2 descrevem o estado **ao fim da Fase 1**; para o estado atual da Fase 2, ver a seção 3.3.
@@ -98,13 +98,13 @@ Decisões já tomadas e válidas na Fase 0. Detalhes nos ADRs indicados.
 
 ### 3.2 O que ainda não existia ao fim da Fase 1
 
-**Registro de 2026-09-16.** Os itens de autenticação, anúncios e mídia abaixo passaram a ter implementação parcial na Fase 2 (seção 3.3); pagamentos, jobs, PWA e `production` seguem sem implementação. A inexistência de `production` é o registro de F1-011 e **não foi revalidada** em 2026-09-29.
+**Registro de 2026-09-16.** Os itens de autenticação, anúncios e mídia abaixo passaram a ter implementação parcial na Fase 2 (seção 3.3); pagamentos, jobs, PWA e `production` seguem sem implementação. A inexistência de `production` abaixo é o registro de F1-011 e se refere ao **ambiente `production` do TROQ**. Em 2026-09-29 foi revalidado apenas o projeto Vercel: o **target Production da Vercel** existe tecnicamente, recebe deployments de `main` e não tem nenhuma variável, e o ambiente `production` do TROQ continua não provisionado ([engineering/environments.md](engineering/environments.md), seção 1). Os demais provedores **não** foram revalidados nessa data.
 
 - **banco de `production`** — **nenhum banco, credencial, environment ou job de `production`** existe; e não há validação de migration em CI de PR contra banco efêmero (o que existe é a validação pós-merge contra o Neon de `preview`);
 - **autenticação, anúncios, pagamentos, jobs e PWA** — nenhuma implementação;
 - **os seis sinais operacionais de AR-14.3** — a infraestrutura de observabilidade existe e está pronta para recebê-los, mas os sinais **não** foram criados: cada um deriva de um fluxo de domínio que ainda não existe, e antecipá-los seria inventar o fluxo;
 - **observabilidade de `production`, source maps, release, dashboard e alerta** — nenhum;
-- **deploy de produção** — nenhum.
+- **deploy de produção** — nenhum deploy do ambiente `production` do TROQ. Nota de 2026-09-29: os deployments de `main` com target Production da Vercel, verificados nessa data sem variáveis e sem homologação, não constituem esse deploy.
 
 Escolha registrada em documentação **não** é provisionamento, e arquivo de configuração parcial **não** é entregável concluído.
 
