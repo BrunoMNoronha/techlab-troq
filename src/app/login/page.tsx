@@ -10,6 +10,7 @@ const REASON_MESSAGES: Record<string, string> = {
   excluida: 'Esta conta esta em processo de exclusao e nao pode mais ser acessada.',
   nao_verificada: 'Seu e-mail ainda nao foi verificado. Confira sua caixa de entrada.',
   encerrada: 'Voce saiu da sua conta.',
+  solicitar: 'Entre na sua conta para solicitar o desbloqueio do contato deste anuncio.',
 };
 
 export default function LoginPage({
@@ -17,7 +18,9 @@ export default function LoginPage({
 }: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
-  const { motivo } = use(searchParams);
+  const { motivo, next } = use(searchParams);
+  // Repassado ao servidor, que valida o destino interno antes de usa-lo.
+  const returnTo = typeof next === 'string' ? next : undefined;
   const reasonMessage = typeof motivo === 'string' ? REASON_MESSAGES[motivo] : undefined;
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -29,7 +32,7 @@ export default function LoginPage({
     setErrorMessage(null);
     setLoading(true);
 
-    const res = await loginUser(email, password);
+    const res = await loginUser(email, password, returnTo);
     setLoading(false);
 
     if (!res.success) {

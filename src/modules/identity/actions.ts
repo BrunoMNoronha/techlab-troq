@@ -4,6 +4,7 @@ import { cookies } from 'next/headers';
 import { getPrismaClient } from '@/persistence/prisma';
 import { hashPassword, verifyPassword } from 'better-auth/crypto';
 import { sendVerificationEmail } from './email';
+import { sanitizeReturnPath } from './return-path';
 import crypto from 'crypto';
 
 export interface RegisterInput {
@@ -255,11 +256,13 @@ export async function resendVerificationToken(
  * persistida (`Account` com providerId 'credential') pelo verificador do
  * Better Auth. Status e verificacao de e-mail so sao revelados depois da senha
  * correta, para nao expor quais e-mails existem. So declara sucesso depois de
- * persistir a sessao e gravar o cookie.
+ * persistir a sessao e gravar o cookie. `returnTo` so e usado se for caminho
+ * interno valido (sanitizeReturnPath); caso contrario o destino e `/conta`.
  */
 export async function loginUser(
   email: string,
   password: string,
+  returnTo?: string,
 ): Promise<{ success: boolean; error?: string; redirectTo?: string }> {
   const cleanEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
   if (!cleanEmail) {
@@ -347,7 +350,7 @@ export async function loginUser(
     return { success: false, error: 'Nao foi possivel iniciar a sessao. Tente novamente.' };
   }
 
-  return { success: true, redirectTo: '/conta' };
+  return { success: true, redirectTo: sanitizeReturnPath(returnTo) ?? '/conta' };
 }
 
 /**

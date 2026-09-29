@@ -1,8 +1,29 @@
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import { cache } from 'react';
 import { getPublicListingDetail } from '@/modules/listing';
+import { getContactRequestEntry } from '@/modules/request';
+import { HowItWorks } from '../../_components/how-it-works';
+import { ContactRequestEntry } from './contact-request-entry';
 
 export const dynamic = 'force-dynamic';
+
+// Uma consulta por requisicao, compartilhada entre generateMetadata e a pagina.
+const getListing = cache(getPublicListingDetail);
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const listing = await getListing(id);
+  // Metadata so com campos da projecao publica; anuncio indisponivel nao revela nada.
+  return listing
+    ? { title: `${listing.title} — TROQ`, description: `${listing.city} - ${listing.state}` }
+    : { title: 'Anúncio indisponível — TROQ' };
+}
 
 export default async function DetalheAnuncioPublicoPage({
   params,
@@ -10,9 +31,14 @@ export default async function DetalheAnuncioPublicoPage({
   params: Promise<{ id: string }>;
 }) {
   const resolvedParams = await params;
-  const listing = await getPublicListingDetail(resolvedParams.id);
+  const listing = await getListing(resolvedParams.id);
 
   if (!listing) {
+    notFound();
+  }
+
+  const entryState = await getContactRequestEntry(listing.id);
+  if (entryState === 'listing_unavailable') {
     notFound();
   }
 
@@ -24,13 +50,18 @@ export default async function DetalheAnuncioPublicoPage({
 
   return (
     <main
-      style={{ maxWidth: '640px', margin: '40px auto', padding: '24px', fontFamily: 'sans-serif' }}
+      style={{
+        maxWidth: '640px',
+        margin: '0 auto',
+        padding: '24px 16px',
+        fontFamily: 'sans-serif',
+      }}
     >
       <Link
         href="/explorar"
-        style={{ color: '#2563eb', textDecoration: 'none', fontSize: '14px', fontWeight: '600' }}
+        style={{ color: '#1d4ed8', textDecoration: 'none', fontSize: '14px', fontWeight: '600' }}
       >
-        ← Voltar para todos os anúncios
+        ← Ver todas as ofertas
       </Link>
 
       <div
@@ -47,6 +78,7 @@ export default async function DetalheAnuncioPublicoPage({
         }}
       >
         {coverImage ? (
+          // eslint-disable-next-line @next/next/no-img-element
           <img
             src={coverImage}
             alt={listing.title}
@@ -58,7 +90,15 @@ export default async function DetalheAnuncioPublicoPage({
       </div>
 
       <div style={{ marginTop: '24px' }}>
-        <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#111827', marginBottom: '8px' }}>
+        <h1
+          style={{
+            fontSize: '24px',
+            fontWeight: 'bold',
+            color: '#111827',
+            marginBottom: '8px',
+            overflowWrap: 'anywhere',
+          }}
+        >
           {listing.title}
         </h1>
         <div style={{ color: '#4b5563', fontSize: '14px', marginBottom: '16px' }}>
@@ -90,18 +130,11 @@ export default async function DetalheAnuncioPublicoPage({
           </p>
         </div>
 
-        {/* Garantia RF-014: Nenhum telefone/WhatsApp transita na resposta ou tela. Opcional de solicitacao via R$ 0,99 entra na Fase 3. */}
-        <div
-          style={{
-            padding: '20px',
-            backgroundColor: '#eff6ff',
-            border: '1px solid #bfdbfe',
-            borderRadius: '8px',
-            color: '#1e40af',
-          }}
-        >
-          🔒 <strong>Proteção de Contato (RF-014):</strong> Os dados diretos do anunciante são
-          protegidos pela plataforma.
+        {/* Garantia RF-014: nenhum telefone/WhatsApp transita nesta resposta. */}
+        <ContactRequestEntry listingId={listing.id} state={entryState} />
+
+        <div style={{ marginTop: '24px' }}>
+          <HowItWorks />
         </div>
       </div>
     </main>
