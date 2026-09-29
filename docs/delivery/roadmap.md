@@ -86,7 +86,7 @@ Fontes: [../product/mvp-scope.md](../product/mvp-scope.md), [../product/requirem
 - Consulta de anúncios: listagem e detalhe sem contato (RF-005).
 - Email transacional de verificação via Resend (RF-021).
 
-**Dependências:** gate da Fase 1; OD-04, OD-05 e OD-11 fechadas. **Todas satisfeitas:** o gate da Fase 1 foi aprovado em 2026-09-16 ([phase-2-transition.md](phase-2-transition.md)) e as três decisões estão fechadas. RF-004 e RF-021 seguem `parcialmente definido`, com lacunas de design que pertencem à própria Fase 2 e não a bloqueiam (seção 8 daquele documento).
+**Dependências:** gate da Fase 1; OD-04, OD-05 e OD-11 fechadas. **Todas satisfeitas:** o gate da Fase 1 foi aprovado em 2026-09-16 ([phase-2-transition.md](phase-2-transition.md)) e as três decisões estão fechadas. RF-021 segue `parcialmente definido`, com lacuna de design que pertence à própria Fase 2 e não a bloqueia (seção 8 daquele documento); RF-004 passou a `definido` em 2026-09-29, quando F2-005 reconciliou o [contrato de anúncios](../architecture/listing-contract.md) com o conjunto mínimo de campos.
 
 **Gate de saída:**
 
