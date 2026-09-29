@@ -4,6 +4,11 @@ import { validateSession } from '@/modules/identity';
 import { getPrismaClient } from '@/persistence/prisma';
 import type { ListingStatus } from '@/generated/prisma/client';
 import { isUuid } from './ids';
+import {
+  validateListingContent,
+  validateListingPatch,
+  type ListingFieldErrors,
+} from './validation';
 
 export interface CreateListingInput {
   title: string;
@@ -31,165 +36,63 @@ export interface ListingDTO {
 }
 
 /**
- * Cria um novo anuncio obrigatoriamente no status DRAFT.
- * Exige sessao autenticada e e-mail verificado.
+ * Motivo de falha das actions privadas. `not_found` cobre, com a mesma
+ * resposta, anuncio inexistente, identificador malformado e anuncio alheio
+ * (listing-contract.md, secao 7): nenhuma resposta revela que um ID de outra
+ * conta existe.
  */
-export async function createDraftListing(
-  input: CreateListingInput,
-): Promise<{ success: boolean; error?: string; listingId?: string }> {
-  const sessionResult = await validateSession();
+export type ListingFailureReason =
+  'unauthenticated' | 'validation' | 'not_found' | 'not_editable' | 'error';
 
-  if (!sessionResult.isValid || !sessionResult.user) {
-    return {
-      success: false,
-      error: 'É necessário estar autenticado e com e-mail verificado para criar anúncios.',
-    };
-  }
-
-  const { title, description, city, state } = input;
-
-  if (!title || title.trim().length < 5 || title.trim().length > 60) {
-    return { success: false, error: 'O título deve ter entre 5 e 60 caracteres.' };
-  }
-
-  if (!description || description.trim().length > 1000) {
-    return { success: false, error: 'A descrição não pode ter mais de 1000 caracteres.' };
-  }
-
-  const cleanCity = city ? city.trim() : '';
-  const cleanUf = state ? state.trim().toUpperCase() : '';
-
-  if (!cleanCity || !cleanUf || cleanUf.length !== 2) {
-    return { success: false, error: 'Informe a Cidade e a UF (2 letras).' };
-  }
-
-  const prisma = getPrismaClient();
-
-  try {
-    const listing = await prisma.listing.create({
-      data: {
-        ownerId: sessionResult.user.id,
-        title: title.trim(),
-        description: description.trim(),
-        city: cleanCity,
-        uf: cleanUf,
-        status: 'draft',
-      },
-    });
-
-    return { success: true, listingId: listing.id };
-  } catch (err) {
-    console.error('[Create Listing Error]', err);
-    return { success: false, error: 'Erro ao salvar rascunho do anúncio.' };
-  }
-}
-
-/**
- * Atualiza os campos editaveis de um anuncio.
- * Restrito ao proprietario do anuncio. Estados terminais (CLOSED, REMOVED) sao estritamente somente-leitura.
- */
-export async function updateListing(
-  listingId: string,
-  input: UpdateListingInput,
-): Promise<{ success: boolean; error?: string }> {
-  const sessionResult = await validateSession();
-
-  if (!sessionResult.isValid || !sessionResult.user) {
-    return { success: false, error: 'Não autorizado.' };
-  }
-
-  const prisma = getPrismaClient();
-
-  const listing = await prisma.listing.findUnique({
-    where: { id: listingId },
-  });
-
-  if (!listing) {
-    return { success: false, error: 'Anúncio não encontrado.' };
-  }
-
-  if (listing.ownerId !== sessionResult.user.id) {
-    return { success: false, error: 'Você não tem permissão para editar este anúncio.' };
-  }
-
-  if (listing.status === 'closed' || listing.status === 'removed') {
-    return { success: false, error: 'Anúncios encerrados ou removidos não podem ser editados.' };
-  }
-
-  const updateData: {
-    title?: string;
-    description?: string;
-    city?: string;
-    uf?: string;
-  } = {};
-
-  if (input.title !== undefined) {
-    if (input.title.trim().length < 5 || input.title.trim().length > 60) {
-      return { success: false, error: 'O título deve ter entre 5 e 60 caracteres.' };
-    }
-    updateData.title = input.title.trim();
-  }
-
-  if (input.description !== undefined) {
-    if (input.description.trim().length > 1000) {
-      return { success: false, error: 'A descrição não pode ter mais de 1000 caracteres.' };
-    }
-    updateData.description = input.description.trim();
-  }
-
-  if (input.city !== undefined) {
-    updateData.city = input.city.trim();
-  }
-
-  if (input.state !== undefined) {
-    updateData.uf = input.state.trim().toUpperCase();
-  }
-
-  try {
-    await prisma.listing.update({
-      where: { id: listingId },
-      data: updateData,
-    });
-
-    return { success: true };
-  } catch (err) {
-    console.error('[Update Listing Error]', err);
-    return { success: false, error: 'Erro ao atualizar o anúncio.' };
-  }
-}
-
-/**
- * Consulta todos os anuncios pertencentes ao usuario autenticado ("Meus Anuncios").
- */
-export async function getOwnerListings(): Promise<{
+export interface ListingMutationResult {
   success: boolean;
-  listings?: ListingDTO[];
+  reason?: ListingFailureReason;
   error?: string;
-}> {
-  const sessionResult = await validateSession();
+  fieldErrors?: ListingFieldErrors;
+  listingId?: string;
+}
 
-  if (!sessionResult.isValid || !sessionResult.user) {
-    return { success: false, error: 'Não autorizado.' };
-  }
+/** Estados em que o dono edita o conteudo (listing-lifecycle.md, secao 3). */
+const EDITABLE_STATUSES: ListingStatus[] = ['draft', 'published', 'paused'];
 
-  const prisma = getPrismaClient();
+const MESSAGES = {
+  unauthenticated: 'É necessário estar autenticado e com e-mail verificado.',
+  validation: 'Revise os campos destacados.',
+  notFound: 'Anúncio não encontrado.',
+  notEditable: 'Anúncios encerrados ou removidos não podem ser editados.',
+  emptyPatch: 'Nenhuma alteração informada.',
+  createError: 'Não foi possível salvar o rascunho. Tente novamente.',
+  updateError: 'Não foi possível salvar as alterações. Tente novamente.',
+  loadError: 'Não foi possível carregar o anúncio. Tente novamente.',
+  listError: 'Não foi possível carregar seus anúncios. Tente novamente.',
+} as const;
 
-  const dbListings = await prisma.listing.findMany({
-    where: { ownerId: sessionResult.user.id },
-    orderBy: { updatedAt: 'desc' },
-    select: {
-      id: true,
-      title: true,
-      description: true,
-      city: true,
-      uf: true,
-      status: true,
-      createdAt: true,
-      updatedAt: true,
-    },
-  });
+function notFound(): { success: false; reason: 'not_found'; error: string } {
+  return { success: false, reason: 'not_found', error: MESSAGES.notFound };
+}
 
-  const listings: ListingDTO[] = dbListings.map((item) => ({
+const OWNER_LISTING_SELECT = {
+  id: true,
+  title: true,
+  description: true,
+  city: true,
+  uf: true,
+  status: true,
+  createdAt: true,
+  updatedAt: true,
+} as const;
+
+function toListingDTO(item: {
+  id: string;
+  title: string;
+  description: string;
+  city: string;
+  uf: string;
+  status: ListingStatus;
+  createdAt: Date;
+  updatedAt: Date;
+}): ListingDTO {
+  return {
     id: item.id,
     title: item.title,
     description: item.description,
@@ -198,60 +101,173 @@ export async function getOwnerListings(): Promise<{
     status: item.status,
     createdAt: item.createdAt,
     updatedAt: item.updatedAt,
-  }));
-
-  return { success: true, listings };
+  };
 }
 
 /**
- * Consulta um anuncio especifico para edicao, garantindo propriedade.
+ * Cria um novo anuncio, sempre em `draft` (listing-contract.md, secao 4.1).
+ * Dono vem da sessao; status e definido aqui; so os quatro campos de conteudo
+ * sao lidos da entrada. Exige sessao valida, e-mail verificado e conta ativa.
  */
-export async function getListingForEdit(
-  listingId: string,
-): Promise<{ success: boolean; listing?: ListingDTO; error?: string }> {
+export async function createDraftListing(
+  input: CreateListingInput,
+): Promise<ListingMutationResult> {
   const sessionResult = await validateSession();
 
   if (!sessionResult.isValid || !sessionResult.user) {
-    return { success: false, error: 'Não autorizado.' };
+    return { success: false, reason: 'unauthenticated', error: MESSAGES.unauthenticated };
   }
 
+  const validation = validateListingContent(input);
+  if (!validation.ok) {
+    return {
+      success: false,
+      reason: 'validation',
+      error: MESSAGES.validation,
+      fieldErrors: validation.fieldErrors,
+    };
+  }
+
+  try {
+    const listing = await getPrismaClient().listing.create({
+      data: { ...validation.data, ownerId: sessionResult.user.id, status: 'draft' },
+      select: { id: true },
+    });
+
+    return { success: true, listingId: listing.id };
+  } catch (err) {
+    console.error('[Create Listing Error]', err);
+    return { success: false, reason: 'error', error: MESSAGES.createError };
+  }
+}
+
+/**
+ * Atualiza o conteudo de um anuncio proprio em estado editavel.
+ *
+ * Posse e estado sao condicoes do proprio UPDATE (`id`, `ownerId` e `status`
+ * no WHERE): nao ha janela entre verificar e gravar em que uma transicao para
+ * `closed`/`removed` permita escrever em estado terminal. A validacao roda antes
+ * de qualquer acesso ao banco, e anuncio alheio responde como inexistente.
+ */
+export async function updateListing(
+  listingId: string,
+  input: UpdateListingInput,
+): Promise<ListingMutationResult> {
+  const sessionResult = await validateSession();
+
+  if (!sessionResult.isValid || !sessionResult.user) {
+    return { success: false, reason: 'unauthenticated', error: MESSAGES.unauthenticated };
+  }
+
+  const validation = validateListingPatch(input);
+  if (!validation.ok) {
+    return {
+      success: false,
+      reason: 'validation',
+      error: MESSAGES.validation,
+      fieldErrors: validation.fieldErrors,
+    };
+  }
+
+  if (Object.keys(validation.data).length === 0) {
+    return { success: false, reason: 'validation', error: MESSAGES.emptyPatch };
+  }
+
+  if (!isUuid(listingId)) {
+    return notFound();
+  }
+
+  const ownerId = sessionResult.user.id;
   const prisma = getPrismaClient();
 
-  const listing = await prisma.listing.findUnique({
-    where: { id: listingId },
-    select: {
-      id: true,
-      ownerId: true,
-      title: true,
-      description: true,
-      city: true,
-      uf: true,
-      status: true,
-      createdAt: true,
-      updatedAt: true,
-    },
-  });
+  try {
+    const { count } = await prisma.listing.updateMany({
+      where: { id: listingId, ownerId, status: { in: EDITABLE_STATUSES } },
+      data: validation.data,
+    });
 
-  if (!listing) {
-    return { success: false, error: 'Anúncio não encontrado.' };
+    if (count === 1) {
+      return { success: true, listingId };
+    }
+
+    // Nada foi gravado. A consulta e restrita ao dono: so distingue o proprio
+    // anuncio terminal; anuncio alheio e inexistente caem na mesma resposta not_found.
+    const own = await prisma.listing.findFirst({
+      where: { id: listingId, ownerId },
+      select: { id: true },
+    });
+
+    return own
+      ? { success: false, reason: 'not_editable', error: MESSAGES.notEditable }
+      : notFound();
+  } catch (err) {
+    console.error('[Update Listing Error]', err);
+    return { success: false, reason: 'error', error: MESSAGES.updateError };
+  }
+}
+
+/**
+ * Consulta todos os anuncios do usuario autenticado ("Meus anuncios"), em
+ * qualquer dos cinco estados. Falha de consulta e erro, nunca lista vazia.
+ */
+export async function getOwnerListings(): Promise<{
+  success: boolean;
+  listings?: ListingDTO[];
+  reason?: ListingFailureReason;
+  error?: string;
+}> {
+  const sessionResult = await validateSession();
+
+  if (!sessionResult.isValid || !sessionResult.user) {
+    return { success: false, reason: 'unauthenticated', error: MESSAGES.unauthenticated };
   }
 
-  if (listing.ownerId !== sessionResult.user.id) {
-    return { success: false, error: 'Você não tem permissão para acessar este anúncio.' };
+  try {
+    const dbListings = await getPrismaClient().listing.findMany({
+      where: { ownerId: sessionResult.user.id },
+      orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
+      select: OWNER_LISTING_SELECT,
+    });
+
+    return { success: true, listings: dbListings.map(toListingDTO) };
+  } catch (err) {
+    console.error('[Owner Listings Error]', err);
+    return { success: false, reason: 'error', error: MESSAGES.listError };
+  }
+}
+
+/**
+ * Consulta um anuncio proprio para a area privada (edicao ou historico).
+ * A busca ja e filtrada pelo dono: anuncio alheio, inexistente ou com ID
+ * malformado recebem exatamente a mesma resposta `not_found`.
+ */
+export async function getListingForEdit(listingId: string): Promise<{
+  success: boolean;
+  listing?: ListingDTO;
+  reason?: ListingFailureReason;
+  error?: string;
+}> {
+  const sessionResult = await validateSession();
+
+  if (!sessionResult.isValid || !sessionResult.user) {
+    return { success: false, reason: 'unauthenticated', error: MESSAGES.unauthenticated };
   }
 
-  const listingDto: ListingDTO = {
-    id: listing.id,
-    title: listing.title,
-    description: listing.description,
-    city: listing.city,
-    state: listing.uf,
-    status: listing.status,
-    createdAt: listing.createdAt,
-    updatedAt: listing.updatedAt,
-  };
+  if (!isUuid(listingId)) {
+    return notFound();
+  }
 
-  return { success: true, listing: listingDto };
+  try {
+    const listing = await getPrismaClient().listing.findFirst({
+      where: { id: listingId, ownerId: sessionResult.user.id },
+      select: OWNER_LISTING_SELECT,
+    });
+
+    return listing ? { success: true, listing: toListingDTO(listing) } : notFound();
+  } catch (err) {
+    console.error('[Get Listing For Edit Error]', err);
+    return { success: false, reason: 'error', error: MESSAGES.loadError };
+  }
 }
 
 /**

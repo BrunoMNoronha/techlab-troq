@@ -18,6 +18,8 @@ describe('Audit de Segurança Integrada, RF-014 e Resiliência (F2-012 - Issue #
   const userAId = 'user-a-1111-1111-1111-111111111111';
   const userBId = 'user-b-2222-2222-2222-222222222222';
   const listingId = 'listing-sec-100';
+  // Actions privadas de edicao tratam ID fora do formato UUID como inexistente.
+  const privateListingId = '5ec00000-0000-4000-8000-000000000100';
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -172,19 +174,25 @@ describe('Audit de Segurança Integrada, RF-014 e Resiliência (F2-012 - Issue #
         isValid: true,
       });
 
-      const mockFindUnique = vi.fn().mockResolvedValueOnce({
-        id: listingId,
-        ownerId: userAId, // Pertence ao Usuário A
-        status: 'draft',
-      });
+      // O UPDATE exige ownerId = B; o anuncio de A nao casa e nada e gravado.
+      const mockUpdateMany = vi.fn().mockResolvedValueOnce({ count: 0 });
+      const mockFindFirst = vi.fn().mockResolvedValueOnce(null);
 
       vi.spyOn(prismaModule, 'getPrismaClient').mockReturnValue({
-        listing: { findUnique: mockFindUnique },
+        listing: { updateMany: mockUpdateMany, findFirst: mockFindFirst },
       } as unknown as prismaModule.PrismaClient);
 
-      const res = await updateListing(listingId, { title: 'Tentativa de Hack por IDOR' });
+      const res = await updateListing(privateListingId, { title: 'Tentativa de Hack por IDOR' });
       expect(res.success).toBe(false);
-      expect(res.error).toContain('não tem permissão');
+      // Anuncio alheio responde como inexistente: nao revela que o ID existe (#44, D-8).
+      expect(res.reason).toBe('not_found');
+      expect(res.error).toBe('Anúncio não encontrado.');
+      expect(res.error).not.toContain('permissão');
+      expect(mockUpdateMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ id: privateListingId, ownerId: userBId }),
+        }),
+      );
     });
 
     it('proteção contra IDOR: Usuário B não pode encerrar ou descartar anúncio do Usuário A', async () => {
@@ -253,17 +261,15 @@ describe('Audit de Segurança Integrada, RF-014 e Resiliência (F2-012 - Issue #
         isValid: true,
       });
 
-      const mockFindUnique = vi.fn().mockResolvedValueOnce({
-        id: listingId,
-        ownerId: userAId,
-        status: 'closed',
-      });
-
+      // O UPDATE so casa draft/published/paused; o proprio anuncio closed nao e gravado.
       vi.spyOn(prismaModule, 'getPrismaClient').mockReturnValue({
-        listing: { findUnique: mockFindUnique },
+        listing: {
+          updateMany: vi.fn().mockResolvedValueOnce({ count: 0 }),
+          findFirst: vi.fn().mockResolvedValueOnce({ id: privateListingId }),
+        },
       } as unknown as prismaModule.PrismaClient);
 
-      const res = await updateListing(listingId, { title: 'Tentativa de Editar Fechado' });
+      const res = await updateListing(privateListingId, { title: 'Tentativa de Editar Fechado' });
       expect(res.success).toBe(false);
       expect(res.error).toContain('encerrados ou removidos não podem ser editados');
     });
