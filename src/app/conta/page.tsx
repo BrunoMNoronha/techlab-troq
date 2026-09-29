@@ -34,17 +34,19 @@ export default async function ContaPage({
         Área privada de gerenciamento do seu perfil no TROQ.
       </p>
 
-      <div
+      {/* Dados exibidos, nao campos de formulario: lista de definicao em vez de <label>. */}
+      <dl
         style={{
           padding: '24px',
           backgroundColor: '#f9fafb',
           border: '1px solid #e5e7eb',
           borderRadius: '8px',
+          marginTop: 0,
           marginBottom: '24px',
         }}
       >
         <div style={{ marginBottom: '16px' }}>
-          <label
+          <dt
             style={{
               fontSize: '12px',
               color: '#6b7280',
@@ -53,14 +55,14 @@ export default async function ContaPage({
             }}
           >
             Nome de exibição
-          </label>
-          <div style={{ fontSize: '18px', fontWeight: '600', color: '#111827' }}>
+          </dt>
+          <dd style={{ margin: 0, fontSize: '18px', fontWeight: '600', color: '#111827' }}>
             {user.displayName}
-          </div>
+          </dd>
         </div>
 
         <div style={{ marginBottom: '16px' }}>
-          <label
+          <dt
             style={{
               fontSize: '12px',
               color: '#6b7280',
@@ -69,12 +71,12 @@ export default async function ContaPage({
             }}
           >
             E-mail
-          </label>
-          <div style={{ fontSize: '16px', color: '#374151' }}>{user.email}</div>
+          </dt>
+          <dd style={{ margin: 0, fontSize: '16px', color: '#374151' }}>{user.email}</dd>
         </div>
 
         <div style={{ marginBottom: '8px' }}>
-          <label
+          <dt
             style={{
               fontSize: '12px',
               color: '#6b7280',
@@ -83,8 +85,8 @@ export default async function ContaPage({
             }}
           >
             Status da conta
-          </label>
-          <div>
+          </dt>
+          <dd style={{ margin: 0 }}>
             <span
               style={{
                 display: 'inline-block',
@@ -98,9 +100,9 @@ export default async function ContaPage({
             >
               Verificada e Ativa
             </span>
-          </div>
+          </dd>
         </div>
-      </div>
+      </dl>
 
       {logoutFailed && (
         <div

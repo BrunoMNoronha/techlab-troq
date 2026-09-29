@@ -8,6 +8,13 @@ import { ACCOUNT_NOT_ACTIVE_CODE, authErrorLabel, getAuth, resolveAppOrigin } fr
 import { sendVerificationEmail } from './email';
 import { sanitizeReturnPath } from './return-path';
 import {
+  clearLoginFailures,
+  recordLoginFailure,
+  releaseLoginAttempt,
+  reserveLoginAttempt,
+  type LoginAttemptReservation,
+} from './login-rate-limit';
+import {
   confirmVerificationToken,
   invalidateVerificationToken,
   issueResendToken,
@@ -57,6 +64,8 @@ const CREDENTIAL_PROVIDER_ID = 'credential';
 const INVALID_CREDENTIALS_ERROR = 'E-mail ou senha invalidos.';
 const SESSION_START_ERROR = 'Nao foi possivel iniciar a sessao. Tente novamente.';
 const SESSION_END_ERROR = 'Nao foi possivel encerrar a sessao. Tente novamente.';
+// IC-10.2: mesma resposta exista ou nao a conta.
+const TOO_MANY_ATTEMPTS_ERROR = 'Muitas tentativas. Aguarde alguns minutos e tente novamente.';
 
 // Limites padrao do provedor para senha (IC-4.3).
 const MIN_PASSWORD_LENGTH = 8;
@@ -309,6 +318,7 @@ export async function resendVerificationToken(email: string): Promise<ResendResu
  * e o hook de criacao recusa conta nao ativa; por isso status e verificacao so
  * sao revelados depois da senha correta (IC-10.3). `returnTo` so e usado se for
  * caminho interno valido (sanitizeReturnPath); caso contrario o destino e `/conta`.
+ * Antes do provedor, aplica o limite de 5 falhas em 15 min por e-mail (IC-10.2).
  */
 export async function loginUser(
   email: string,
@@ -324,6 +334,19 @@ export async function loginUser(
     return { success: false, error: 'Informe sua senha.' };
   }
 
+  // IC-10.2: reserva uma vaga no bucket do e-mail antes de chamar o provedor;
+  // com o bucket cheio, recusa sem verificar a credencial.
+  let reservation: LoginAttemptReservation | null;
+  try {
+    reservation = await reserveLoginAttempt(cleanEmail);
+  } catch (err) {
+    console.error('[Login Action Error] limite de tentativas', authErrorLabel(err));
+    return { success: false, error: SESSION_START_ERROR };
+  }
+  if (!reservation) {
+    return { success: false, error: TOO_MANY_ATTEMPTS_ERROR };
+  }
+
   try {
     await getAuth().api.signInEmail({
       body: { email: cleanEmail, password },
@@ -331,6 +354,15 @@ export async function loginUser(
     });
   } catch (err) {
     const code = isAPIError(err) ? err.body?.code : undefined;
+    // So a credencial invalida conta como falha; qualquer outro resultado
+    // descarta a reserva.
+    await (
+      code === 'INVALID_EMAIL_OR_PASSWORD'
+        ? recordLoginFailure(reservation)
+        : releaseLoginAttempt(reservation)
+    ).catch((finalizeErr) =>
+      console.error('[Login Action Error] limite de tentativas', authErrorLabel(finalizeErr)),
+    );
     if (code === 'EMAIL_NOT_VERIFIED') {
       return {
         success: false,
@@ -351,6 +383,12 @@ export async function loginUser(
     console.error('[Login Action Error]', authErrorLabel(err));
     return { success: false, error: SESSION_START_ERROR };
   }
+
+  // Sucesso zera o bucket do e-mail. Uma falha aqui nao desfaz a sessao ja
+  // criada; o bucket expira sozinho em no maximo 15 min.
+  await clearLoginFailures(reservation).catch((err) =>
+    console.error('[Login Action Error] limite de tentativas', authErrorLabel(err)),
+  );
 
   return { success: true, redirectTo: sanitizeReturnPath(returnTo) ?? '/conta' };
 }

@@ -142,6 +142,7 @@ export default function CadastroPage() {
             onChange={(e) => setDisplayName(e.target.value)}
             style={{
               width: '100%',
+              boxSizing: 'border-box',
               padding: '10px 12px',
               border: '1px solid #d1d5db',
               borderRadius: '6px',
@@ -166,6 +167,7 @@ export default function CadastroPage() {
             onChange={(e) => setEmail(e.target.value)}
             style={{
               width: '100%',
+              boxSizing: 'border-box',
               padding: '10px 12px',
               border: '1px solid #d1d5db',
               borderRadius: '6px',
@@ -192,6 +194,7 @@ export default function CadastroPage() {
             onChange={(e) => setPassword(e.target.value)}
             style={{
               width: '100%',
+              boxSizing: 'border-box',
               padding: '10px 12px',
               border: '1px solid #d1d5db',
               borderRadius: '6px',
