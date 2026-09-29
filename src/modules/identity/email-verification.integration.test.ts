@@ -47,11 +47,16 @@ function input(userEmail: string, overrides: Record<string, unknown> = {}) {
   } as Parameters<typeof registerUser>[0];
 }
 
+/** Token de um link de verificacao: vai no fragmento, que nunca chega ao servidor. */
+function tokenFromLink(link: string): string {
+  return new URLSearchParams(new URL(link).hash.slice(1)).get('token') ?? '';
+}
+
 /** Token do ultimo link "enviado" ao destinatario (lido do transporte simulado). */
 function lastTokenSentTo(userEmail: string): string {
   const call = sendVerificationEmail.mock.calls.filter(([m]) => m.to === userEmail).at(-1);
   if (!call) throw new Error('nenhum envio para o destinatario');
-  return new URL(call[0].verificationUrl).searchParams.get('token')!;
+  return tokenFromLink(call[0].verificationUrl);
 }
 
 async function register(userEmail: string) {
@@ -105,7 +110,7 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
       const sensitive = sendVerificationEmail.mock.calls.flatMap(([m]) => [
         m.to,
         m.verificationUrl,
-        new URL(m.verificationUrl).searchParams.get('token')!,
+        tokenFromLink(m.verificationUrl),
       ]);
       for (const value of [...createdEmails, ...sensitive]) {
         expect(logged).not.toContain(value);
@@ -238,6 +243,20 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
         ).toBe(0);
         const ttl = rows[0].expiresAt.getTime() - rows[0].createdAt!.getTime();
         expect(Math.round(ttl / 3_600_000)).toBe(24);
+      });
+
+      it('o link leva o token no fragmento, nunca na query string nem no caminho', async () => {
+        // Query string e Referer sao registrados pelos logs de requisicao da
+        // plataforma; o fragmento nunca e enviado ao servidor (IC-9.1, IC-11.2).
+        const userEmail = email('fragmento');
+        await register(userEmail);
+        const link = new URL(sendVerificationEmail.mock.calls.at(-1)![0].verificationUrl);
+
+        expect(link.origin).toBe('http://localhost:3000');
+        expect(link.pathname).toBe('/verificar-email');
+        expect(link.search).toBe('');
+        expect(tokenFromLink(link.href)).toMatch(/^[A-Za-z0-9_-]{43}$/);
+        expect(link.pathname).not.toContain(tokenFromLink(link.href));
       });
 
       it('token valido confirma, grava emailVerified e emailVerifiedAt e nao cria sessao', async () => {

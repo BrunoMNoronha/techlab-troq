@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, use } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { confirmEmailToken } from '@/modules/identity/actions';
 import { ResendVerificationForm } from './resend-form';
 
@@ -12,26 +12,37 @@ const FAILURE_TITLE: Record<Exclude<Status, 'verifying' | 'success'>, string> = 
   error: 'Não foi possível confirmar agora',
 };
 
-export default function VerificarEmailPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ token?: string }>;
-}) {
-  const { token } = use(searchParams);
+/**
+ * Le o token do FRAGMENTO do link (`#token=`) e o apaga da barra de endereco.
+ * O fragmento nunca e enviado ao servidor nem entra no `Referer`, entao o
+ * token nao chega aos logs de requisicao da plataforma (IC-9.1, IC-11.2); a
+ * confirmacao leva o token no corpo da Server Action.
+ */
+function takeTokenFromFragment(): string | null {
+  const token = new URLSearchParams(window.location.hash.slice(1)).get('token');
+  if (window.location.hash) {
+    window.history.replaceState(null, '', window.location.pathname);
+  }
+  return token;
+}
 
-  const [status, setStatus] = useState<Status>(token ? 'verifying' : 'invalid');
-  const [message, setMessage] = useState<string | null>(
-    token ? null : 'Nenhum código de verificação foi informado.',
-  );
+export default function VerificarEmailPage() {
+  const [status, setStatus] = useState<Status>('verifying');
+  const [message, setMessage] = useState<string | null>(null);
+  const token = useRef<string | null>(null);
   // O token e de uso unico: a confirmacao roda uma vez por montagem, mesmo que
   // o efeito seja reexecutado (modo estrito do React em desenvolvimento).
   const started = useRef(false);
 
-  useEffect(() => {
-    if (!token || started.current) return;
-    started.current = true;
-
-    confirmEmailToken(token).then((res) => {
+  function confirm() {
+    const current = token.current;
+    if (!current) {
+      setStatus('invalid');
+      setMessage('Nenhum código de verificação foi informado.');
+      return;
+    }
+    setStatus('verifying');
+    confirmEmailToken(current).then((res) => {
       if (res.success) {
         setStatus('success');
         return;
@@ -39,7 +50,15 @@ export default function VerificarEmailPage({
       setStatus(res.reason ?? 'error');
       setMessage(res.error ?? null);
     });
-  }, [token]);
+  }
+
+  useEffect(() => {
+    if (started.current) return;
+    started.current = true;
+    token.current = takeTokenFromFragment();
+    // Fora do corpo sincrono do efeito, como as demais atualizacoes de estado.
+    Promise.resolve().then(confirm);
+  }, []);
 
   return (
     <main
@@ -94,7 +113,7 @@ export default function VerificarEmailPage({
           {status === 'error' ? (
             <button
               type="button"
-              onClick={() => window.location.reload()}
+              onClick={confirm}
               style={{
                 marginBottom: '24px',
                 padding: '10px 16px',

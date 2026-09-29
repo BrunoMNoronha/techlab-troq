@@ -82,8 +82,11 @@ function isUniqueViolation(err: unknown): boolean {
 }
 
 /**
- * Envia o link do token emitido. Se o envio falhar, o token e invalidado na
- * hora: um link que o usuario nunca recebeu nao pode continuar valido (IC-9.2).
+ * Envia o link do token emitido. O token vai no FRAGMENTO (`#token=`), que o
+ * navegador nunca envia ao servidor nem poe no `Referer`: na query string ele
+ * seria gravado pelos logs de requisicao da plataforma (IC-9.1, IC-11.2). Se o
+ * envio falhar, o token e invalidado na hora: um link que o usuario nunca
+ * recebeu nao pode continuar valido (IC-9.2).
  */
 async function deliverVerificationLink(
   email: string,
@@ -92,7 +95,7 @@ async function deliverVerificationLink(
 ): Promise<boolean> {
   const delivery = await sendVerificationEmail({
     to: email,
-    verificationUrl: `${baseURL}/verificar-email?token=${encodeURIComponent(issued.token)}`,
+    verificationUrl: `${baseURL}/verificar-email#token=${encodeURIComponent(issued.token)}`,
     idempotencyKey: `email-verification/${issued.verificationId}`,
   });
   if (delivery.ok) {
