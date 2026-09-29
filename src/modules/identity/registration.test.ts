@@ -1,220 +1,115 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { registerUser, confirmEmailToken, resendVerificationToken } from './actions';
-import { verifyPassword } from 'better-auth/crypto';
+// @vitest-environment node
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import * as prismaModule from '@/persistence/prisma';
+import { registerUser, confirmEmailToken, resendVerificationToken } from './actions';
 
+// Testes UNITARIOS das guardas de entrada (IC-6.2, IC-7.3, IC-9.3): nenhuma
+// entrada recusada pode chegar ao banco nem ao envio. Persistencia, token,
+// concorrencia e limites sao provados contra PostgreSQL real em
+// email-verification.integration.test.ts.
+
+const sendVerificationEmail = vi.fn();
 vi.mock('./email', () => ({
-  sendVerificationEmail: vi.fn().mockResolvedValue(true),
+  sendVerificationEmail: (...args: unknown[]) => sendVerificationEmail(...args),
 }));
 
-describe('modulo identity — cadastro e verificacao de email (#41 / F2-003)', () => {
+const validInput = {
+  displayName: 'Pessoa Sintetica',
+  email: 'pessoa@example.test',
+  password: 'senha-valida-123',
+  over18: true,
+  termsAccepted: true,
+};
+
+describe('modulo identity — guardas de entrada do cadastro e da verificacao (#41)', () => {
+  let getPrismaClient: ReturnType<typeof vi.spyOn>;
+
   beforeEach(() => {
     vi.clearAllMocks();
+    getPrismaClient = vi.spyOn(prismaModule, 'getPrismaClient').mockImplementation(() => {
+      throw new Error('o banco nao deveria ser acessado');
+    });
+    vi.stubEnv('APP_ENV', 'development');
+    vi.stubEnv('BETTER_AUTH_URL', 'http://localhost:3000');
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllEnvs();
   });
 
   describe('registerUser', () => {
-    it('rejeita cadastro com nome invalido', async () => {
-      const res = await registerUser({
-        displayName: 'A',
-        email: 'user@troq.app',
-        password: 'password123',
-        over18: true,
-        termsAccepted: true,
-      });
+    it.each([
+      ['nome curto', { displayName: 'A' }, 'nome exibido'],
+      ['e-mail vazio', { email: '' }, 'e-mail valido'],
+      ['e-mail sem dominio', { email: 'pessoa@' }, 'e-mail valido'],
+      ['senha com 7 caracteres', { password: '1234567' }, 'entre 8 e 128'],
+      ['senha com 129 caracteres', { password: 'a'.repeat(129) }, 'entre 8 e 128'],
+      ['sem declaracao 18+', { over18: undefined }, '18 anos'],
+      ['declaracao 18+ falsa', { over18: false }, '18 anos'],
+      ['declaracao 18+ nao booleana', { over18: 'true' }, '18 anos'],
+      ['termos nao aceitos', { termsAccepted: false }, 'Termos de Uso'],
+    ])('recusa %s sem tocar o banco nem enviar e-mail', async (_caso, override, message) => {
+      const res = await registerUser({ ...validInput, ...override } as typeof validInput);
 
       expect(res.success).toBe(false);
-      expect(res.error).toContain('nome exibido');
+      expect(res.error).toContain(message);
+      expect(getPrismaClient).not.toHaveBeenCalled();
+      expect(sendVerificationEmail).not.toHaveBeenCalled();
     });
 
-    it('rejeita cadastro se autodeclaracao de maioridade (over18) for falsa', async () => {
-      const res = await registerUser({
-        displayName: 'User Minor',
-        email: 'minor@troq.app',
-        password: 'password123',
-        over18: false,
-        termsAccepted: true,
-      });
+    it('aceita os limites exatos de senha ate a etapa de persistencia', async () => {
+      for (const password of ['12345678', 'a'.repeat(128)]) {
+        getPrismaClient.mockClear();
+        vi.spyOn(console, 'error').mockImplementation(() => undefined);
+        await registerUser({ ...validInput, password });
+        expect(getPrismaClient).toHaveBeenCalled();
+      }
+    });
+
+    it.each([
+      ['APP_ENV invalido', 'APP_ENV', 'staging'],
+      ['URL base ausente', 'BETTER_AUTH_URL', ''],
+    ])('com %s nao grava conta nem produz link', async (_caso, variable, value) => {
+      vi.stubEnv(variable, value);
+      vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+      const res = await registerUser(validInput);
 
       expect(res.success).toBe(false);
-      expect(res.error).toContain('18 anos');
+      expect(getPrismaClient).not.toHaveBeenCalled();
+      expect(sendVerificationEmail).not.toHaveBeenCalled();
     });
 
-    it('rejeita cadastro se os termos de uso nao forem aceitos', async () => {
-      const res = await registerUser({
-        displayName: 'User Test',
-        email: 'user@troq.app',
-        password: 'password123',
-        over18: true,
-        termsAccepted: false,
-      });
+    it('preview nao aceita localhost como base dos links', async () => {
+      vi.stubEnv('APP_ENV', 'preview');
+      vi.stubEnv('BETTER_AUTH_URL', 'https://localhost:3000');
+      vi.spyOn(console, 'error').mockImplementation(() => undefined);
 
-      expect(res.success).toBe(false);
-      expect(res.error).toContain('Termos de Uso');
-    });
-
-    it('rejeita cadastro se o e-mail ja estiver em uso por conta ativa', async () => {
-      const mockFindFirst = vi.fn().mockResolvedValueOnce({
-        id: 'existing-id',
-        email: 'dup@troq.app',
-        status: 'active',
-      });
-
-      vi.spyOn(prismaModule, 'getPrismaClient').mockReturnValue({
-        user: { findFirst: mockFindFirst },
-      } as unknown as prismaModule.PrismaClient);
-
-      const res = await registerUser({
-        displayName: 'User Dup',
-        email: 'dup@troq.app',
-        password: 'password123',
-        over18: true,
-        termsAccepted: true,
-      });
-
-      expect(res.success).toBe(false);
-      expect(res.error).toContain('ja esta cadastrado');
-    });
-
-    it('cria usuario e aceite de termos age_eligibility em transacao com sucesso', async () => {
-      const mockFindFirst = vi.fn().mockResolvedValueOnce(null);
-      const mockUserCreate = vi.fn().mockResolvedValueOnce({
-        id: 'user-new-id',
-        displayName: 'New User',
-        email: 'new@troq.app',
-      });
-      const mockAccountCreate = vi.fn().mockResolvedValueOnce({ id: 'account-id' });
-      const mockTermsCreate = vi.fn().mockResolvedValueOnce({ id: 'terms-id' });
-      const mockVerificationCreate = vi.fn().mockResolvedValueOnce({ id: 'verif-id' });
-
-      const mockTransaction = vi.fn().mockImplementation(async (callback) => {
-        return callback({
-          user: { create: mockUserCreate },
-          account: { create: mockAccountCreate },
-          termsAcceptance: { create: mockTermsCreate },
-        });
-      });
-
-      vi.spyOn(prismaModule, 'getPrismaClient').mockReturnValue({
-        user: { findFirst: mockFindFirst },
-        $transaction: mockTransaction,
-        verification: { create: mockVerificationCreate },
-      } as unknown as prismaModule.PrismaClient);
-
-      const res = await registerUser({
-        displayName: 'New User',
-        email: 'new@troq.app',
-        password: 'password123',
-        over18: true,
-        termsAccepted: true,
-      });
-
-      expect(res.success).toBe(true);
-      expect(res.emailPending).toBe('new@troq.app');
-      expect(mockUserCreate).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
-            displayName: 'New User',
-            email: 'new@troq.app',
-            emailVerified: false,
-          }),
-        }),
-      );
-      // Credencial email/senha persistida com hash do Better Auth, nunca em texto puro.
-      const accountData = mockAccountCreate.mock.calls[0][0].data;
-      expect(accountData).toMatchObject({
-        userId: 'user-new-id',
-        accountId: 'user-new-id',
-        providerId: 'credential',
-      });
-      expect(accountData.password).not.toBe('password123');
-      await expect(
-        verifyPassword({ hash: accountData.password, password: 'password123' }),
-      ).resolves.toBe(true);
-      expect(mockTermsCreate).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
-            userId: 'user-new-id',
-            type: 'age_eligibility',
-            termsVersion: '1.0',
-          }),
-        }),
-      );
+      expect((await registerUser(validInput)).success).toBe(false);
+      expect(getPrismaClient).not.toHaveBeenCalled();
+      expect(sendVerificationEmail).not.toHaveBeenCalled();
     });
   });
 
   describe('confirmEmailToken', () => {
-    it('retorna erro se o token for invalido ou nao existir', async () => {
-      const mockFindFirst = vi.fn().mockResolvedValueOnce(null);
-      vi.spyOn(prismaModule, 'getPrismaClient').mockReturnValue({
-        verification: { findFirst: mockFindFirst },
-      } as unknown as prismaModule.PrismaClient);
+    it.each(['', 'curto', 'a'.repeat(64), `${'a'.repeat(42)}!`, 'a'.repeat(44)])(
+      'token malformado (%s) e invalido sem consultar o banco',
+      async (token) => {
+        const res = await confirmEmailToken(token);
 
-      const res = await confirmEmailToken('invalid-token');
-      expect(res.success).toBe(false);
-      expect(res.error).toContain('invalido');
-    });
-
-    it('retorna erro e remove o token se ele estiver expirado', async () => {
-      const mockDelete = vi.fn().mockResolvedValueOnce({});
-      const mockFindFirst = vi.fn().mockResolvedValueOnce({
-        id: 'verif-1',
-        identifier: 'expired@troq.app',
-        value: 'exp-token',
-        expiresAt: new Date(Date.now() - 10000), // Expirado ha 10s
-      });
-
-      vi.spyOn(prismaModule, 'getPrismaClient').mockReturnValue({
-        verification: { findFirst: mockFindFirst, delete: mockDelete },
-      } as unknown as prismaModule.PrismaClient);
-
-      const res = await confirmEmailToken('exp-token');
-      expect(res.success).toBe(false);
-      expect(res.error).toContain('expirou');
-      expect(mockDelete).toHaveBeenCalledWith({ where: { id: 'verif-1' } });
-    });
-
-    it('marca e-mail como verificado quando token e valido', async () => {
-      const mockVerifFindFirst = vi.fn().mockResolvedValueOnce({
-        id: 'verif-2',
-        identifier: 'valid@troq.app',
-        value: 'valid-token',
-        expiresAt: new Date(Date.now() + 100000),
-      });
-
-      const mockUserFindFirst = vi.fn().mockResolvedValueOnce({
-        id: 'user-valid-id',
-        email: 'valid@troq.app',
-      });
-
-      const mockTransaction = vi.fn().mockResolvedValueOnce([{}, {}]);
-
-      vi.spyOn(prismaModule, 'getPrismaClient').mockReturnValue({
-        verification: { findFirst: mockVerifFindFirst, delete: vi.fn() },
-        user: { findFirst: mockUserFindFirst, update: vi.fn() },
-        $transaction: mockTransaction,
-      } as unknown as prismaModule.PrismaClient);
-
-      const res = await confirmEmailToken('valid-token');
-      expect(res.success).toBe(true);
-      expect(mockTransaction).toHaveBeenCalled();
-    });
+        expect(res).toMatchObject({ success: false, reason: 'invalid' });
+        expect(getPrismaClient).not.toHaveBeenCalled();
+      },
+    );
   });
 
   describe('resendVerificationToken', () => {
-    it('retorna erro se o e-mail ja estiver verificado', async () => {
-      const mockUserFindFirst = vi.fn().mockResolvedValueOnce({
-        id: 'user-id',
-        email: 'verified@troq.app',
-        emailVerified: true,
-      });
+    it('exige o e-mail sem tocar o banco', async () => {
+      const res = await resendVerificationToken('   ');
 
-      vi.spyOn(prismaModule, 'getPrismaClient').mockReturnValue({
-        user: { findFirst: mockUserFindFirst },
-      } as unknown as prismaModule.PrismaClient);
-
-      const res = await resendVerificationToken('verified@troq.app');
       expect(res.success).toBe(false);
-      expect(res.error).toContain('ja foi verificado');
+      expect(getPrismaClient).not.toHaveBeenCalled();
     });
   });
 });

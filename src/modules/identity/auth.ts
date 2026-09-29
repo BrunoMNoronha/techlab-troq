@@ -40,24 +40,18 @@ function isAppEnvironment(value: string | undefined): value is AppEnvironment {
 }
 
 /**
- * Resolve e valida a configuracao do Better Auth, fail-closed (IC-12). Nao ha
- * segredo nem URL de fallback: sem configuracao completa e coerente, lanca
- * `AuthConfigurationError` e nenhuma instancia de autenticacao e criada.
+ * Resolve e valida o ambiente e a origem publica do TROQ (`APP_ENV` +
+ * `BETTER_AUTH_URL`), fail-closed (IC-12). E a unica regra de URL base: vale
+ * para o Better Auth e para os links enviados por email (IC-12.3). Nao ha URL
+ * de fallback; em `preview` e `production` so `https` fora de localhost.
  */
-export function resolveAuthEnvironment(
+export function resolveAppOrigin(
   env: Readonly<Record<string, string | undefined>> = process.env,
-): AuthEnvironment {
+): Pick<AuthEnvironment, 'appEnv' | 'baseURL'> {
   const appEnv = env.APP_ENV;
   if (!isAppEnvironment(appEnv)) {
     throw new AuthConfigurationError(
       `APP_ENV deve ser ${APP_ENVIRONMENTS.join(', ')} (docs/engineering/environments.md, secao 5.1).`,
-    );
-  }
-
-  const secret = env.BETTER_AUTH_SECRET;
-  if (!secret || secret.length < MIN_SECRET_LENGTH) {
-    throw new AuthConfigurationError(
-      `BETTER_AUTH_SECRET ausente ou com menos de ${MIN_SECRET_LENGTH} caracteres (docs/engineering/environments.md, secao 5.5).`,
     );
   }
 
@@ -84,7 +78,27 @@ export function resolveAuthEnvironment(
     }
   }
 
-  return { appEnv, secret, baseURL: parsed.origin };
+  return { appEnv, baseURL: parsed.origin };
+}
+
+/**
+ * Resolve e valida a configuracao do Better Auth, fail-closed (IC-12). Nao ha
+ * segredo nem URL de fallback: sem configuracao completa e coerente, lanca
+ * `AuthConfigurationError` e nenhuma instancia de autenticacao e criada.
+ */
+export function resolveAuthEnvironment(
+  env: Readonly<Record<string, string | undefined>> = process.env,
+): AuthEnvironment {
+  const { appEnv, baseURL } = resolveAppOrigin(env);
+
+  const secret = env.BETTER_AUTH_SECRET;
+  if (!secret || secret.length < MIN_SECRET_LENGTH) {
+    throw new AuthConfigurationError(
+      `BETTER_AUTH_SECRET ausente ou com menos de ${MIN_SECRET_LENGTH} caracteres (docs/engineering/environments.md, secao 5.5).`,
+    );
+  }
+
+  return { appEnv, secret, baseURL };
 }
 
 function createAuth() {
@@ -168,7 +182,12 @@ export function authErrorLabel(err: unknown): string {
     const code = typeof err.body?.code === 'string' ? err.body.code : 'sem-codigo';
     return `${err.status}/${code}`;
   }
-  return err instanceof Error ? err.name : 'erro-desconhecido';
+  if (err instanceof Error) {
+    // Codigos do Prisma (ex.: P2002) nao carregam valores de coluna.
+    const code = (err as { code?: unknown }).code;
+    return typeof code === 'string' && /^P\d{4}$/.test(code) ? `${err.name}/${code}` : err.name;
+  }
+  return 'erro-desconhecido';
 }
 
 // Cache singleton para o server-side do Better Auth
