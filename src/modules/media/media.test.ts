@@ -27,7 +27,6 @@ describe('modulo media — upload, processamento R2 e controle de acesso (#46/#4
   describe('requestImageUpload', () => {
     it('rejeita formato nao suportado', async () => {
       vi.spyOn(identityModule, 'validateSession').mockResolvedValueOnce({
-        session: {},
         user: {
           id: userId,
           email: 'user@troq.app',
@@ -50,7 +49,6 @@ describe('modulo media — upload, processamento R2 e controle de acesso (#46/#4
 
     it('rejeita arquivo maior que 10 MB', async () => {
       vi.spyOn(identityModule, 'validateSession').mockResolvedValueOnce({
-        session: {},
         user: {
           id: userId,
           email: 'user@troq.app',
@@ -73,7 +71,6 @@ describe('modulo media — upload, processamento R2 e controle de acesso (#46/#4
 
     it('rejeita upload se o limite de 6 imagens for atingido', async () => {
       vi.spyOn(identityModule, 'validateSession').mockResolvedValueOnce({
-        session: {},
         user: {
           id: userId,
           email: 'user@troq.app',
@@ -107,7 +104,6 @@ describe('modulo media — upload, processamento R2 e controle de acesso (#46/#4
 
     it('emite URL pre-assinada com sucesso para slot valido', async () => {
       vi.spyOn(identityModule, 'validateSession').mockResolvedValueOnce({
-        session: {},
         user: {
           id: userId,
           email: 'user@troq.app',
@@ -152,7 +148,6 @@ describe('modulo media — upload, processamento R2 e controle de acesso (#46/#4
   describe('confirmAndProcessImage', () => {
     it('processa imagem valida e cria 3 derivados WebP', async () => {
       vi.spyOn(identityModule, 'validateSession').mockResolvedValueOnce({
-        session: {},
         user: {
           id: userId,
           email: 'user@troq.app',
@@ -204,7 +199,6 @@ describe('modulo media — upload, processamento R2 e controle de acesso (#46/#4
 
     it('rejeita imagem com resolucao menor que 320px', async () => {
       vi.spyOn(identityModule, 'validateSession').mockResolvedValueOnce({
-        session: {},
         user: {
           id: userId,
           email: 'user@troq.app',
@@ -311,7 +305,6 @@ describe('modulo media — upload, processamento R2 e controle de acesso (#46/#4
   describe('deleteListingImage', () => {
     it('deleta imagem e reordena posicoes remanescentes', async () => {
       vi.spyOn(identityModule, 'validateSession').mockResolvedValueOnce({
-        session: {},
         user: {
           id: userId,
           email: 'user@troq.app',

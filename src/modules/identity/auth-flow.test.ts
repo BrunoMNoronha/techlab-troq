@@ -1,172 +1,124 @@
-import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest';
-import { hashPassword } from 'better-auth/crypto';
+// @vitest-environment node
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { APIError } from 'better-auth/api';
 import { loginUser, logoutUser } from './actions';
-import * as prismaModule from '@/persistence/prisma';
+import { ACCOUNT_NOT_ACTIVE_CODE } from './auth';
 
-const cookieStore = {
-  get: vi.fn(),
-  set: vi.fn(),
-  delete: vi.fn(),
-};
-const cookiesMock = vi.fn(async () => cookieStore);
+// Teste UNITARIO da ponte entre as Server Actions e o Better Auth: o provedor e
+// simulado para provar o que a action envia e como traduz cada resposta. Isto
+// NAO prova sessao real — essa prova, com o provedor real e PostgreSQL
+// descartavel, esta em auth-flow.integration.test.ts.
 
+const requestHeaders = new Headers({ cookie: 'better-auth.session_token=assinado' });
 vi.mock('next/headers', () => ({
-  cookies: () => cookiesMock(),
+  headers: async () => requestHeaders,
+}));
+
+const api = {
+  signInEmail: vi.fn(),
+  signOut: vi.fn(),
+  getSession: vi.fn(),
+};
+const getAuth = vi.fn(() => ({ api }));
+vi.mock('./auth', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./auth')>()),
+  getAuth: () => getAuth(),
 }));
 
 const PASSWORD = 'senha-correta-123';
-let passwordHash: string;
 
-interface UserFixture {
-  id: string;
-  email: string;
-  status: string;
-  emailVerified: boolean;
+function providerError(status: 'UNAUTHORIZED' | 'FORBIDDEN' | 'BAD_REQUEST', code: string) {
+  return new APIError(status, { message: 'erro do provedor', code });
 }
 
-const activeUser: UserFixture = {
-  id: 'user-active',
-  email: 'active@troq.app',
-  status: 'active',
-  emailVerified: true,
-};
-
-function mockPrisma({
-  user = activeUser as UserFixture | null,
-  credential = { password: passwordHash } as { password: string | null } | null,
-  sessionCreate = vi.fn().mockResolvedValue({ id: 'sess-1' }),
-  sessionDeleteMany = vi.fn().mockResolvedValue({ count: 1 }),
-} = {}) {
-  const prisma = {
-    user: { findFirst: vi.fn().mockResolvedValue(user) },
-    account: { findFirst: vi.fn().mockResolvedValue(credential) },
-    session: { create: sessionCreate, deleteMany: sessionDeleteMany },
-  };
-  vi.spyOn(prismaModule, 'getPrismaClient').mockReturnValue(
-    prisma as unknown as prismaModule.PrismaClient,
-  );
-  return prisma;
-}
-
-describe('modulo identity — login e logout (#42 / F2-004)', () => {
-  beforeAll(async () => {
-    passwordHash = await hashPassword(PASSWORD);
-  });
-
+describe('modulo identity — ponte das actions com o Better Auth (#40)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    cookiesMock.mockImplementation(async () => cookieStore);
+    vi.restoreAllMocks();
+    getAuth.mockImplementation(() => ({ api }));
   });
 
   describe('loginUser', () => {
-    it('rejeita e-mail vazio', async () => {
+    it('rejeita e-mail vazio sem chamar o provedor', async () => {
       const res = await loginUser('', PASSWORD);
       expect(res.success).toBe(false);
       expect(res.error).toContain('e-mail');
+      expect(api.signInEmail).not.toHaveBeenCalled();
     });
 
-    it('rejeita senha ausente mesmo com e-mail de conta ativa e verificada', async () => {
-      const prisma = mockPrisma();
-
-      const res = await loginUser('active@troq.app', '');
-      expect(res.success).toBe(false);
-      expect(res.error).toContain('senha');
-      expect(prisma.session.create).not.toHaveBeenCalled();
-      expect(cookieStore.set).not.toHaveBeenCalled();
-    });
-
-    it('rejeita chamada direta da action sem o argumento de senha (regressao)', async () => {
-      const prisma = mockPrisma();
-
-      // Chamada direta do endpoint da Server Action, sem passar pela validacao do formulario.
+    it('rejeita senha ausente, inclusive em chamada direta sem o argumento', async () => {
       const directCall = loginUser as unknown as (email: string) => ReturnType<typeof loginUser>;
-      const res = await directCall('active@troq.app');
 
-      expect(res.success).toBe(false);
-      expect(prisma.session.create).not.toHaveBeenCalled();
-      expect(cookieStore.set).not.toHaveBeenCalled();
+      for (const res of [await loginUser('active@troq.app', ''), await directCall('a@troq.app')]) {
+        expect(res.success).toBe(false);
+        expect(res.error).toContain('senha');
+      }
+      expect(api.signInEmail).not.toHaveBeenCalled();
     });
 
-    it('rejeita senha incorreta sem criar sessao nem cookie', async () => {
-      const prisma = mockPrisma();
-
-      const res = await loginUser('active@troq.app', 'senha-errada');
-      expect(res.success).toBe(false);
-      expect(res.error).toBe('E-mail ou senha invalidos.');
-      expect(prisma.session.create).not.toHaveBeenCalled();
-      expect(cookieStore.set).not.toHaveBeenCalled();
-    });
-
-    it('rejeita usuario sem credencial de senha persistida', async () => {
-      const prisma = mockPrisma({ credential: null });
-
-      const res = await loginUser('active@troq.app', PASSWORD);
-      expect(res.success).toBe(false);
-      expect(res.error).toBe('E-mail ou senha invalidos.');
-      expect(prisma.session.create).not.toHaveBeenCalled();
-    });
-
-    it('rejeita hash corrompido como credencial invalida', async () => {
-      mockPrisma({ credential: { password: 'nao-e-um-hash' } });
-
-      const res = await loginUser('active@troq.app', PASSWORD);
-      expect(res.success).toBe(false);
-      expect(res.error).toBe('E-mail ou senha invalidos.');
-    });
-
-    it('rejeita e-mail nao encontrado com a mesma mensagem generica', async () => {
-      mockPrisma({ user: null });
-
-      const res = await loginUser('notfound@troq.app', PASSWORD);
-      expect(res.success).toBe(false);
-      expect(res.error).toBe('E-mail ou senha invalidos.');
-    });
-
-    it('rejeita login de conta suspensa mesmo com senha correta', async () => {
-      const prisma = mockPrisma({ user: { ...activeUser, status: 'blocked_admin' } });
-
-      const res = await loginUser('active@troq.app', PASSWORD);
-      expect(res.success).toBe(false);
-      expect(res.error).toContain('suspensa ou inativa');
-      expect(prisma.session.create).not.toHaveBeenCalled();
-    });
-
-    it('nao revela status da conta para senha incorreta', async () => {
-      mockPrisma({ user: { ...activeUser, status: 'blocked_admin' } });
-
-      const res = await loginUser('active@troq.app', 'senha-errada');
-      expect(res.error).toBe('E-mail ou senha invalidos.');
-    });
-
-    it('rejeita login de e-mail ainda nao verificado', async () => {
-      const prisma = mockPrisma({ user: { ...activeUser, emailVerified: false } });
-
-      const res = await loginUser('active@troq.app', PASSWORD);
-      expect(res.success).toBe(false);
-      expect(res.error).toContain('nao foi verificado');
-      expect(prisma.session.create).not.toHaveBeenCalled();
-    });
-
-    it('autentica conta ativa e verificada com senha correta, persistindo sessao e cookie', async () => {
-      const prisma = mockPrisma();
+    it('delega ao signInEmail o e-mail normalizado, a senha e os headers da requisicao', async () => {
+      api.signInEmail.mockResolvedValueOnce({ token: 'nao-usado', user: { id: 'u1' } });
 
       const res = await loginUser('  Active@troq.app ', PASSWORD);
-      expect(res).toEqual({ success: true, redirectTo: '/conta' });
 
-      expect(prisma.user.findFirst).toHaveBeenCalledWith({
-        where: { email: 'active@troq.app', status: { not: 'deletion_requested' } },
+      expect(res).toEqual({ success: true, redirectTo: '/conta' });
+      expect(api.signInEmail).toHaveBeenCalledWith({
+        body: { email: 'active@troq.app', password: PASSWORD },
+        headers: requestHeaders,
       });
-      expect(prisma.session.create).toHaveBeenCalledTimes(1);
-      const token = prisma.session.create.mock.calls[0][0].data.token;
-      expect(cookieStore.set).toHaveBeenCalledWith(
-        'better-auth.session_token',
-        token,
-        expect.objectContaining({ httpOnly: true, sameSite: 'lax', path: '/' }),
-      );
+    });
+
+    it('nao devolve token nem dado de sessao ao cliente', async () => {
+      api.signInEmail.mockResolvedValueOnce({ token: 'token-secreto', user: { id: 'u1' } });
+
+      const res = await loginUser('active@troq.app', PASSWORD);
+
+      expect(JSON.stringify(res)).not.toContain('token-secreto');
+    });
+
+    it.each([
+      ['UNAUTHORIZED', 'INVALID_EMAIL_OR_PASSWORD'],
+      ['BAD_REQUEST', 'INVALID_EMAIL'],
+    ] as const)('credencial invalida (%s/%s) recebe a mensagem generica', async (status, code) => {
+      api.signInEmail.mockRejectedValueOnce(providerError(status, code));
+
+      const res = await loginUser('quem@troq.app', 'senha-errada');
+
+      expect(res).toEqual({ success: false, error: 'E-mail ou senha invalidos.' });
+    });
+
+    it('e-mail nao verificado e informado apos a senha correta', async () => {
+      api.signInEmail.mockRejectedValueOnce(providerError('FORBIDDEN', 'EMAIL_NOT_VERIFIED'));
+
+      const res = await loginUser('pendente@troq.app', PASSWORD);
+
+      expect(res.success).toBe(false);
+      expect(res.error).toContain('nao foi verificado');
+    });
+
+    it('conta nao ativa recusada pelo hook de sessao e informada apos a senha correta', async () => {
+      api.signInEmail.mockRejectedValueOnce(providerError('FORBIDDEN', ACCOUNT_NOT_ACTIVE_CODE));
+
+      const res = await loginUser('bloqueada@troq.app', PASSWORD);
+
+      expect(res.success).toBe(false);
+      expect(res.error).toContain('suspensa ou inativa');
+    });
+
+    it('falha inesperada ou configuracao ausente nao declara sucesso nem registra a senha', async () => {
+      const log = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      getAuth.mockImplementationOnce(() => {
+        throw new Error(`configuracao ausente ${PASSWORD}`);
+      });
+
+      const res = await loginUser('active@troq.app', PASSWORD);
+
+      expect(res.success).toBe(false);
+      expect(JSON.stringify(log.mock.calls)).not.toContain(PASSWORD);
     });
 
     it('retorna ao anuncio de origem quando o destino e interno (#59)', async () => {
-      mockPrisma();
+      api.signInEmail.mockResolvedValueOnce({});
 
       const res = await loginUser('active@troq.app', PASSWORD, '/explorar/abc-123');
       expect(res).toEqual({ success: true, redirectTo: '/explorar/abc-123' });
@@ -175,83 +127,56 @@ describe('modulo identity — login e logout (#42 / F2-004)', () => {
     it.each(['https://evil.example', '//evil.example', '/\\evil.example', 'javascript:alert(1)'])(
       'ignora destino de retorno externo %s e usa /conta (#59)',
       async (returnTo) => {
-        mockPrisma();
+        api.signInEmail.mockResolvedValueOnce({});
 
         const res = await loginUser('active@troq.app', PASSWORD, returnTo);
         expect(res).toEqual({ success: true, redirectTo: '/conta' });
       },
     );
-
-    it('senha incorreta com destino de retorno nao autentica nem redireciona (#59)', async () => {
-      const prisma = mockPrisma();
-
-      const res = await loginUser('active@troq.app', 'senha-errada', '/explorar/abc-123');
-      expect(res.success).toBe(false);
-      expect(res.redirectTo).toBeUndefined();
-      expect(prisma.session.create).not.toHaveBeenCalled();
-    });
-
-    it('nao declara sucesso quando a persistencia da sessao falha', async () => {
-      mockPrisma({ sessionCreate: vi.fn().mockRejectedValue(new Error('db down')) });
-      vi.spyOn(console, 'error').mockImplementation(() => undefined);
-
-      const res = await loginUser('active@troq.app', PASSWORD);
-      expect(res.success).toBe(false);
-      expect(cookieStore.set).not.toHaveBeenCalled();
-    });
-
-    it('nao declara sucesso quando o cookie nao pode ser gravado e revoga a sessao criada', async () => {
-      const prisma = mockPrisma();
-      cookiesMock.mockImplementation(async () => {
-        throw new Error('sem contexto de requisicao');
-      });
-      vi.spyOn(console, 'error').mockImplementation(() => undefined);
-
-      const res = await loginUser('active@troq.app', PASSWORD);
-      expect(res.success).toBe(false);
-      const token = prisma.session.create.mock.calls[0][0].data.token;
-      expect(prisma.session.deleteMany).toHaveBeenCalledWith({ where: { token } });
-    });
   });
 
   describe('logoutUser', () => {
-    it('revoga a sessao do cookie no banco e remove o cookie', async () => {
-      const prisma = mockPrisma();
-      cookieStore.get.mockReturnValue({ value: 'token-abc' });
+    it('encerra pelo signOut e confirma, com os mesmos headers, que a sessao deixou de existir', async () => {
+      api.signOut.mockResolvedValueOnce({ success: true });
+      api.getSession.mockResolvedValueOnce(null);
 
-      const res = await logoutUser();
-      expect(res.success).toBe(true);
-      expect(prisma.session.deleteMany).toHaveBeenCalledWith({ where: { token: 'token-abc' } });
-      expect(cookieStore.delete).toHaveBeenCalledWith('better-auth.session_token');
-    });
-
-    it('sem cookie de sessao, conclui sem tocar no banco', async () => {
-      const prisma = mockPrisma();
-      cookieStore.get.mockReturnValue(undefined);
-
-      const res = await logoutUser();
-      expect(res.success).toBe(true);
-      expect(prisma.session.deleteMany).not.toHaveBeenCalled();
-    });
-
-    it('nao declara sucesso quando a revogacao da sessao falha', async () => {
-      mockPrisma({ sessionDeleteMany: vi.fn().mockRejectedValue(new Error('db down')) });
-      cookieStore.get.mockReturnValue({ value: 'token-abc' });
-      vi.spyOn(console, 'error').mockImplementation(() => undefined);
-
-      const res = await logoutUser();
-      expect(res.success).toBe(false);
-      expect(cookieStore.delete).not.toHaveBeenCalled();
-    });
-
-    it('nao declara sucesso sem contexto de cookies', async () => {
-      cookiesMock.mockImplementation(async () => {
-        throw new Error('sem contexto de requisicao');
+      expect(await logoutUser()).toEqual({ success: true });
+      expect(api.signOut).toHaveBeenCalledWith({ headers: requestHeaders });
+      expect(api.getSession).toHaveBeenCalledWith({
+        headers: requestHeaders,
+        query: { disableRefresh: true },
       });
-      vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    });
 
-      const res = await logoutUser();
-      expect(res.success).toBe(false);
+    it('nao declara sucesso se a sessao continua valida depois do signOut', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      api.signOut.mockResolvedValueOnce({ success: true });
+      api.getSession.mockResolvedValueOnce({ session: {}, user: { id: 'u1' } });
+
+      expect((await logoutUser()).success).toBe(false);
+    });
+
+    it.each([
+      ['signOut falha', () => api.signOut.mockRejectedValueOnce(new Error('db'))],
+      [
+        'confirmacao falha',
+        () => {
+          api.signOut.mockResolvedValueOnce({ success: true });
+          api.getSession.mockRejectedValueOnce(new Error('db'));
+        },
+      ],
+      [
+        'configuracao ausente',
+        () =>
+          getAuth.mockImplementationOnce(() => {
+            throw new Error('configuracao ausente');
+          }),
+      ],
+    ])('nao declara sucesso quando %s', async (_caso, arrange) => {
+      vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      arrange();
+
+      expect((await logoutUser()).success).toBe(false);
     });
   });
 });

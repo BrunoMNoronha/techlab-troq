@@ -47,7 +47,6 @@ describe('getContactRequestEntry — entrada da solicitacao de desbloqueio (#59)
 
   it('visitante sem sessao ou com sessao expirada/revogada precisa entrar', async () => {
     validateSession.mockResolvedValue({
-      session: null,
       user: null,
       isValid: false,
       reason: 'no_session',
@@ -58,7 +57,6 @@ describe('getContactRequestEntry — entrada da solicitacao de desbloqueio (#59)
 
   it('email nao verificado nao pode solicitar', async () => {
     validateSession.mockResolvedValue({
-      session: {},
       user: { ...user, emailVerified: false },
       isValid: false,
       reason: 'unverified',
@@ -68,13 +66,13 @@ describe('getContactRequestEntry — entrada da solicitacao de desbloqueio (#59)
   });
 
   it.each(['blocked', 'deletion_requested'] as const)('conta %s fica restrita', async (reason) => {
-    validateSession.mockResolvedValue({ session: {}, user, isValid: false, reason });
+    validateSession.mockResolvedValue({ user, isValid: false, reason });
 
     expect(await getContactRequestEntry(LISTING_ID)).toBe('account_restricted');
   });
 
   it('anunciante nao solicita o proprio contato', async () => {
-    validateSession.mockResolvedValue({ session: {}, user, isValid: true });
+    validateSession.mockResolvedValue({ user, isValid: true });
     isListingOwnedBy.mockResolvedValue(true);
 
     expect(await getContactRequestEntry(LISTING_ID)).toBe('own_listing');
@@ -82,7 +80,7 @@ describe('getContactRequestEntry — entrada da solicitacao de desbloqueio (#59)
   });
 
   it('usuario elegivel recebe indisponibilidade da Fase 3, sem criar nada', async () => {
-    validateSession.mockResolvedValue({ session: {}, user, isValid: true });
+    validateSession.mockResolvedValue({ user, isValid: true });
 
     expect(await getContactRequestEntry(LISTING_ID)).toBe('request_unavailable');
   });

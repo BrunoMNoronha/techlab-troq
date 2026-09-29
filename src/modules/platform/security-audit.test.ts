@@ -120,7 +120,6 @@ describe('Audit de Segurança Integrada, RF-014 e Resiliência (F2-012 - Issue #
   describe('2. Autorização e Restrições de Estado da Conta', () => {
     it('usuário não verificado (emailVerified: false) não pode criar anúncio rascunho', async () => {
       vi.spyOn(identityModule, 'validateSession').mockResolvedValueOnce({
-        session: {},
         user: {
           id: userAId,
           email: 'unverified@example.invalid',
@@ -145,7 +144,6 @@ describe('Audit de Segurança Integrada, RF-014 e Resiliência (F2-012 - Issue #
 
     it('usuário bloqueado/excluído (status: blocked_admin/deletion_requested) tem ações de anúncio negadas', async () => {
       vi.spyOn(identityModule, 'validateSession').mockResolvedValueOnce({
-        session: {},
         user: {
           id: userAId,
           email: 'blocked@example.invalid',
@@ -164,7 +162,6 @@ describe('Audit de Segurança Integrada, RF-014 e Resiliência (F2-012 - Issue #
 
     it('proteção contra IDOR: Usuário B não pode editar anúncio do Usuário A', async () => {
       vi.spyOn(identityModule, 'validateSession').mockResolvedValueOnce({
-        session: {},
         user: {
           id: userBId, // Usuário B tentado alterar o anúncio do Usuário A
           email: 'userB@example.invalid',
@@ -192,7 +189,6 @@ describe('Audit de Segurança Integrada, RF-014 e Resiliência (F2-012 - Issue #
 
     it('proteção contra IDOR: Usuário B não pode encerrar ou descartar anúncio do Usuário A', async () => {
       vi.spyOn(identityModule, 'validateSession').mockResolvedValueOnce({
-        session: {},
         user: {
           id: userBId,
           email: 'userB@example.invalid',
@@ -220,7 +216,6 @@ describe('Audit de Segurança Integrada, RF-014 e Resiliência (F2-012 - Issue #
 
     it('bloqueia transição de estado inválida: tentar pausar anúncio no status DRAFT', async () => {
       vi.spyOn(identityModule, 'validateSession').mockResolvedValueOnce({
-        session: {},
         user: {
           id: userAId,
           email: 'userA@example.invalid',
@@ -248,7 +243,6 @@ describe('Audit de Segurança Integrada, RF-014 e Resiliência (F2-012 - Issue #
 
     it('bloqueia edição de anúncio encerrado (CLOSED)', async () => {
       vi.spyOn(identityModule, 'validateSession').mockResolvedValueOnce({
-        session: {},
         user: {
           id: userAId,
           email: 'userA@example.invalid',
@@ -278,7 +272,6 @@ describe('Audit de Segurança Integrada, RF-014 e Resiliência (F2-012 - Issue #
   describe('3. Resiliência e Tratamento Seguro de Erros', () => {
     it('falha no banco durante transação de publicação não vaza credenciais ou pilha interna', async () => {
       vi.spyOn(identityModule, 'validateSession').mockResolvedValueOnce({
-        session: {},
         user: {
           id: userAId,
           email: 'userA@example.invalid',

@@ -13,7 +13,6 @@ describe('modulo listing — rascunhos, edicao e meus anuncios (#44 / F2-006)', 
   describe('createDraftListing', () => {
     it('rejeita criacao se o usuario nao estiver autenticado ou verificado', async () => {
       vi.spyOn(identityModule, 'validateSession').mockResolvedValueOnce({
-        session: null,
         user: null,
         isValid: false,
         reason: 'no_session',
@@ -32,7 +31,6 @@ describe('modulo listing — rascunhos, edicao e meus anuncios (#44 / F2-006)', 
 
     it('rejeita titulo invalido (< 5 caracteres)', async () => {
       vi.spyOn(identityModule, 'validateSession').mockResolvedValueOnce({
-        session: {},
         user: {
           id: userId,
           email: 'user@troq.app',
@@ -56,7 +54,6 @@ describe('modulo listing — rascunhos, edicao e meus anuncios (#44 / F2-006)', 
 
     it('cria anuncio no status draft com sucesso', async () => {
       vi.spyOn(identityModule, 'validateSession').mockResolvedValueOnce({
-        session: {},
         user: {
           id: userId,
           email: 'user@troq.app',
@@ -102,7 +99,6 @@ describe('modulo listing — rascunhos, edicao e meus anuncios (#44 / F2-006)', 
   describe('updateListing', () => {
     it('rejeita edicao por usuario que nao seja o proprietario (IDOR)', async () => {
       vi.spyOn(identityModule, 'validateSession').mockResolvedValueOnce({
-        session: {},
         user: {
           id: 'other-user-id',
           email: 'other@troq.app',
@@ -130,7 +126,6 @@ describe('modulo listing — rascunhos, edicao e meus anuncios (#44 / F2-006)', 
 
     it('rejeita edicao de anuncio em estado terminal (closed / removed)', async () => {
       vi.spyOn(identityModule, 'validateSession').mockResolvedValueOnce({
-        session: {},
         user: {
           id: userId,
           email: 'user@troq.app',
@@ -158,7 +153,6 @@ describe('modulo listing — rascunhos, edicao e meus anuncios (#44 / F2-006)', 
 
     it('atualiza rascunho com sucesso', async () => {
       vi.spyOn(identityModule, 'validateSession').mockResolvedValueOnce({
-        session: {},
         user: {
           id: userId,
           email: 'user@troq.app',
@@ -194,7 +188,6 @@ describe('modulo listing — rascunhos, edicao e meus anuncios (#44 / F2-006)', 
   describe('getOwnerListings', () => {
     it('retorna os anuncios pertencentes ao usuario autenticado', async () => {
       vi.spyOn(identityModule, 'validateSession').mockResolvedValueOnce({
-        session: {},
         user: {
           id: userId,
           email: 'user@troq.app',
@@ -233,7 +226,6 @@ describe('modulo listing — rascunhos, edicao e meus anuncios (#44 / F2-006)', 
   describe('getListingForEdit', () => {
     it('bloqueia consulta de edicao para terceiros', async () => {
       vi.spyOn(identityModule, 'validateSession').mockResolvedValueOnce({
-        session: {},
         user: {
           id: 'hacker-id',
           email: 'hacker@troq.app',

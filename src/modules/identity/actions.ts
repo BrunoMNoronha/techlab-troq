@@ -1,8 +1,10 @@
 'use server';
 
-import { cookies } from 'next/headers';
+import { headers } from 'next/headers';
 import { getPrismaClient } from '@/persistence/prisma';
-import { hashPassword, verifyPassword } from 'better-auth/crypto';
+import { hashPassword } from 'better-auth/crypto';
+import { isAPIError } from 'better-auth/api';
+import { ACCOUNT_NOT_ACTIVE_CODE, authErrorLabel, getAuth } from './auth';
 import { sendVerificationEmail } from './email';
 import { sanitizeReturnPath } from './return-path';
 import crypto from 'crypto';
@@ -24,13 +26,13 @@ export interface RegisterResult {
 const TERMS_VERSION = '1.0';
 
 // Convencoes do Better Auth para a credencial email/senha: `providerId`
-// 'credential' e `accountId` igual ao id do usuario. O hash usa o mesmo
-// algoritmo do provedor (better-auth/crypto), para que a conta continue valida
-// se o fluxo migrar para `auth.api.signInEmail`.
+// 'credential' e `accountId` igual ao id do usuario. O hash usa o algoritmo
+// padrao do provedor (better-auth/crypto), o mesmo que `auth.api.signInEmail`
+// confere no login (identity-contract.md, IC-4.2).
 const CREDENTIAL_PROVIDER_ID = 'credential';
-const SESSION_COOKIE_NAME = 'better-auth.session_token';
-const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 dias
 const INVALID_CREDENTIALS_ERROR = 'E-mail ou senha invalidos.';
+const SESSION_START_ERROR = 'Nao foi possivel iniciar a sessao. Tente novamente.';
+const SESSION_END_ERROR = 'Nao foi possivel encerrar a sessao. Tente novamente.';
 
 /**
  * Server Action de cadastro de usuario.
@@ -252,12 +254,13 @@ export async function resendVerificationToken(
 
 /**
  * Server Action para autenticacao (Login).
- * Exige e-mail E senha: a senha e conferida contra o hash da credencial
- * persistida (`Account` com providerId 'credential') pelo verificador do
- * Better Auth. Status e verificacao de e-mail so sao revelados depois da senha
- * correta, para nao expor quais e-mails existem. So declara sucesso depois de
- * persistir a sessao e gravar o cookie. `returnTo` so e usado se for caminho
- * interno valido (sanitizeReturnPath); caso contrario o destino e `/conta`.
+ * Exige e-mail E senha. Autenticacao, criacao da sessao e gravacao do cookie
+ * pertencem ao Better Auth (`auth.api.signInEmail` + `nextCookies()`;
+ * identity-contract.md, IC-5.1): esta action nao cria sessao nem cookie.
+ * A ordem do provedor e senha -> verificacao do e-mail -> criacao da sessao,
+ * e o hook de criacao recusa conta nao ativa; por isso status e verificacao so
+ * sao revelados depois da senha correta (IC-10.3). `returnTo` so e usado se for
+ * caminho interno valido (sanitizeReturnPath); caso contrario o destino e `/conta`.
  */
 export async function loginUser(
   email: string,
@@ -273,81 +276,32 @@ export async function loginUser(
     return { success: false, error: 'Informe sua senha.' };
   }
 
-  const prisma = getPrismaClient();
-
-  const user = await prisma.user.findFirst({
-    where: { email: cleanEmail, status: { not: 'deletion_requested' } },
-  });
-
-  if (!user) {
-    return { success: false, error: INVALID_CREDENTIALS_ERROR };
-  }
-
-  const credential = await prisma.account.findFirst({
-    where: { userId: user.id, providerId: CREDENTIAL_PROVIDER_ID },
-    select: { password: true },
-  });
-
-  if (!credential?.password) {
-    return { success: false, error: INVALID_CREDENTIALS_ERROR };
-  }
-
-  let passwordMatches = false;
   try {
-    passwordMatches = await verifyPassword({ hash: credential.password, password });
-  } catch {
-    // Hash corrompido ou em formato desconhecido: tratar como credencial invalida.
-    passwordMatches = false;
-  }
-
-  if (!passwordMatches) {
-    return { success: false, error: INVALID_CREDENTIALS_ERROR };
-  }
-
-  if (user.status !== 'active') {
-    return {
-      success: false,
-      error: 'Sua conta esta suspensa ou inativa. Entre em contato com a plataforma.',
-    };
-  }
-
-  if (!user.emailVerified) {
-    return {
-      success: false,
-      error: 'Seu e-mail ainda nao foi verificado. Confira sua caixa de entrada.',
-    };
-  }
-
-  const sessionToken = crypto.randomBytes(32).toString('hex');
-  const expiresAt = new Date(Date.now() + SESSION_TTL_MS);
-
-  try {
-    await prisma.session.create({
-      data: {
-        userId: user.id,
-        token: sessionToken,
-        expiresAt,
-      },
+    await getAuth().api.signInEmail({
+      body: { email: cleanEmail, password },
+      headers: await headers(),
     });
   } catch (err) {
-    console.error('[Login Action Error] falha ao persistir sessao', err);
-    return { success: false, error: 'Nao foi possivel iniciar a sessao. Tente novamente.' };
-  }
-
-  try {
-    const cookieStore = await cookies();
-    cookieStore.set(SESSION_COOKIE_NAME, sessionToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      expires: expiresAt,
-    });
-  } catch (err) {
-    console.error('[Login Action Error] falha ao gravar cookie de sessao', err);
-    // Sem cookie a sessao ficaria orfa: removida para nao deixar credencial viva.
-    await prisma.session.deleteMany({ where: { token: sessionToken } }).catch(() => undefined);
-    return { success: false, error: 'Nao foi possivel iniciar a sessao. Tente novamente.' };
+    const code = isAPIError(err) ? err.body?.code : undefined;
+    if (code === 'EMAIL_NOT_VERIFIED') {
+      return {
+        success: false,
+        error: 'Seu e-mail ainda nao foi verificado. Confira sua caixa de entrada.',
+      };
+    }
+    if (code === ACCOUNT_NOT_ACTIVE_CODE) {
+      return {
+        success: false,
+        error: 'Sua conta esta suspensa ou inativa. Entre em contato com a plataforma.',
+      };
+    }
+    // Credencial invalida, e-mail inexistente ou malformado: mesma resposta,
+    // sem revelar se a conta existe.
+    if (isAPIError(err) && (err.status === 'UNAUTHORIZED' || err.status === 'BAD_REQUEST')) {
+      return { success: false, error: INVALID_CREDENTIALS_ERROR };
+    }
+    console.error('[Login Action Error]', authErrorLabel(err));
+    return { success: false, error: SESSION_START_ERROR };
   }
 
   return { success: true, redirectTo: sanitizeReturnPath(returnTo) ?? '/conta' };
@@ -355,30 +309,32 @@ export async function loginUser(
 
 /**
  * Server Action para encerramento de sessao (Logout).
- * Revoga a sessao no banco (a sessao usada deixa de valer mesmo que o cookie
- * seja reapresentado) e remove o cookie. Retorna falha se a revogacao nao
- * puder ser confirmada.
+ * Encerra a sessao pelo Better Auth (`auth.api.signOut`), que apaga a sessao e
+ * o cookie. Na versao 1.7.6 o provedor apenas registra em log uma falha ao
+ * apagar a sessao, por isso a action confirma pelo proprio provedor, com os
+ * mesmos headers da requisicao (que ainda trazem o cookie antigo), que a
+ * sessao deixou de existir; sem essa confirmacao, responde falha (IC-5.5).
+ * Sem sessao valida, o logout e sucesso idempotente.
  */
 export async function logoutUser(): Promise<{ success: boolean; error?: string }> {
-  let cookieStore: Awaited<ReturnType<typeof cookies>>;
   try {
-    cookieStore = await cookies();
-  } catch (err) {
-    console.error('[Logout Action Error] contexto de cookies indisponivel', err);
-    return { success: false, error: 'Nao foi possivel encerrar a sessao. Tente novamente.' };
-  }
+    const auth = getAuth();
+    const requestHeaders = await headers();
 
-  const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
+    await auth.api.signOut({ headers: requestHeaders });
 
-  if (token) {
-    try {
-      await getPrismaClient().session.deleteMany({ where: { token } });
-    } catch (err) {
-      console.error('[Logout Action Error] falha ao revogar sessao', err);
-      return { success: false, error: 'Nao foi possivel encerrar a sessao. Tente novamente.' };
+    const remaining = await auth.api.getSession({
+      headers: requestHeaders,
+      query: { disableRefresh: true },
+    });
+    if (remaining) {
+      console.error('[Logout Action Error] sessao ainda valida apos o encerramento');
+      return { success: false, error: SESSION_END_ERROR };
     }
+  } catch (err) {
+    console.error('[Logout Action Error]', authErrorLabel(err));
+    return { success: false, error: SESSION_END_ERROR };
   }
 
-  cookieStore.delete(SESSION_COOKIE_NAME);
   return { success: true };
 }
