@@ -1,4 +1,5 @@
 import {
+  DeleteObjectCommand,
   GetObjectCommand,
   HeadObjectCommand,
   PutObjectCommand,
@@ -13,8 +14,9 @@ import type { TransientFailureCode } from './failure-codes';
 // cada chamada e FALHA FECHADA se faltar alguma: nao existe credencial
 // substituta. O bucket e privado; nada aqui produz URL publica.
 //
-// A exclusao de objetos NAO mora aqui: ela e a fila de deletions.ts, consumida
-// pelo job de F2-009 (#47).
+// A exclusao de objetos so acontece pelo consumidor da fila de deletions.ts
+// (cleanup.ts); `deleteObject` abaixo e a primitiva que ele usa, e falha
+// ALTO em vez de engolir o erro.
 //
 // Nunca registrar em log a URL presignada, a query string assinada nem as
 // credenciais (media-pipeline-contract.md, secao 14).
@@ -183,6 +185,61 @@ export async function putDerivative(key: string, data: Buffer): Promise<void> {
       ContentLength: data.length,
     }),
   );
+}
+
+export interface DerivativeStream {
+  body: ReadableStream<Uint8Array>;
+  contentLength: number | undefined;
+}
+
+/**
+ * Corpo de um derivado em STREAM, para a rota autorizada de midia
+ * (media-pipeline-contract.md, secoes 9.1 e 9.4). Objeto ausente -> `null`;
+ * qualquer outra falha propaga. Nada do provedor (ETag, cabecalhos, chave)
+ * sai daqui alem do corpo e do tamanho.
+ */
+export async function getDerivativeStream(key: string): Promise<DerivativeStream | null> {
+  const { client, bucket } = r2();
+  try {
+    const res = await client.send(new GetObjectCommand({ Bucket: bucket, Key: key }));
+    if (!res.Body) return null;
+    return { body: res.Body.transformToWebStream(), contentLength: res.ContentLength };
+  } catch (err) {
+    if (httpStatus(err) === 404) return null;
+    throw err;
+  }
+}
+
+/**
+ * Apaga um objeto. Idempotente: o R2 responde sucesso para chave inexistente,
+ * e um 404 eventual tambem conta como apagado. Qualquer outra falha PROPAGA,
+ * para que a pendencia continue aberta (media-pipeline-contract.md, secao 13).
+ */
+export async function deleteObject(key: string): Promise<void> {
+  const { client, bucket } = r2();
+  try {
+    await client.send(new DeleteObjectCommand({ Bucket: bucket, Key: key }));
+  } catch (err) {
+    if (httpStatus(err) === 404) return;
+    throw err;
+  }
+}
+
+export type R2DeleteFailure = TransientFailureCode | 'r2_denied' | 'r2_rejected';
+
+/**
+ * Codigo fechado para `last_error_code` da fila; nunca a mensagem do provedor.
+ * 401/403: credencial sem permissao; outro 4xx (ex.: 400 do R2 para chave de
+ * acesso invalida): requisicao recusada. Nenhum dos dois conclui a pendencia.
+ */
+export function classifyR2DeleteError(err: unknown): R2DeleteFailure {
+  const status = httpStatus(err);
+  if (status === 401 || status === 403) return 'r2_denied';
+  if (status !== undefined && status >= 400 && status < 500 && status !== 429) {
+    return 'r2_rejected';
+  }
+  const code = classifyR2Error(err);
+  return code === 'source_replaced' || code === 'source_missing' ? 'r2_unavailable' : code;
 }
 
 function httpStatus(err: unknown): number | undefined {

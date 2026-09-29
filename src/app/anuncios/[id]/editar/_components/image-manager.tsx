@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import { mediaPath } from '@/modules/media/media-path';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   confirmImageUpload,
@@ -397,6 +398,17 @@ export function ImageManager({
                       height={72}
                       unoptimized
                       style={{ objectFit: 'cover' }}
+                    />
+                  ) : image.state === 'ready' ? (
+                    // Miniatura pela rota autorizada /media: acesso privado do
+                    // dono, sem Image Optimization (media-pipeline-contract.md, 9).
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={mediaPath(image.id, 'thumb')}
+                      alt=""
+                      width={72}
+                      height={72}
+                      style={{ width: '72px', height: '72px', objectFit: 'cover' }}
                     />
                   ) : (
                     <span aria-hidden="true">📷</span>
