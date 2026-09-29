@@ -3,253 +3,311 @@ import { createDraftListing, updateListing, getOwnerListings, getListingForEdit 
 import * as identityModule from '@/modules/identity';
 import * as prismaModule from '@/persistence/prisma';
 
+// Unitarios com Prisma simulado: provam o contrato das actions privadas
+// (listing-contract.md, secoes 3, 4, 6 e 7). O isolamento A/B contra banco
+// real esta em listing-drafts.integration.test.ts.
 describe('modulo listing — rascunhos, edicao e meus anuncios (#44 / F2-006)', () => {
-  const userId = '11111111-1111-1111-1111-111111111111';
+  const userId = '11111111-1111-4111-8111-111111111111';
+  const listingId = '22222222-2222-4222-8222-222222222222';
+  const validInput = {
+    title: 'Bicicleta Caloi Aro 29',
+    description: 'Bicicleta em bom estado',
+    city: 'São Paulo',
+    state: 'SP',
+  };
+
+  function asUser(id = userId) {
+    vi.spyOn(identityModule, 'validateSession').mockResolvedValueOnce({
+      user: {
+        id,
+        email: 'user@troq.app',
+        displayName: 'User',
+        emailVerified: true,
+        status: 'active',
+      },
+      isValid: true,
+    });
+  }
+
+  function mockPrisma(listing: Record<string, unknown>) {
+    vi.spyOn(prismaModule, 'getPrismaClient').mockReturnValue({
+      listing,
+    } as unknown as prismaModule.PrismaClient);
+  }
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.restoreAllMocks();
   });
 
   describe('createDraftListing', () => {
-    it('rejeita criacao se o usuario nao estiver autenticado ou verificado', async () => {
+    it('rejeita criacao sem sessao valida, sem tocar no banco', async () => {
       vi.spyOn(identityModule, 'validateSession').mockResolvedValueOnce({
         user: null,
         isValid: false,
         reason: 'no_session',
       });
+      const create = vi.fn();
+      mockPrisma({ create });
 
-      const res = await createDraftListing({
-        title: 'Bicicleta Caloi Aro 29',
-        description: 'Bicicleta em bom estado',
-        city: 'São Paulo',
-        state: 'SP',
-      });
+      const res = await createDraftListing(validInput);
 
-      expect(res.success).toBe(false);
+      expect(res).toMatchObject({ success: false, reason: 'unauthenticated' });
       expect(res.error).toContain('autenticado');
+      expect(create).not.toHaveBeenCalled();
     });
 
-    it('rejeita titulo invalido (< 5 caracteres)', async () => {
-      vi.spyOn(identityModule, 'validateSession').mockResolvedValueOnce({
-        user: {
-          id: userId,
-          email: 'user@troq.app',
-          displayName: 'User',
-          emailVerified: true,
-          status: 'active',
-        },
-        isValid: true,
-      });
+    it('rejeita titulo invalido com erro no campo, sem escrita', async () => {
+      asUser();
+      const create = vi.fn();
+      mockPrisma({ create });
 
-      const res = await createDraftListing({
-        title: 'Bike',
-        description: 'Bicicleta em bom estado',
-        city: 'São Paulo',
-        state: 'SP',
-      });
+      const res = await createDraftListing({ ...validInput, title: 'Bike' });
+
+      expect(res).toMatchObject({ success: false, reason: 'validation' });
+      expect(res.fieldErrors?.title).toContain('título');
+      expect(create).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      ['descricao so com espacos', { description: '   ' }, 'description'],
+      ['cidade so com espacos', { city: '  \t ' }, 'city'],
+      ['UF com uma letra', { state: 'S' }, 'state'],
+      ['UF com numero', { state: 'S1' }, 'state'],
+    ])('rejeita %s', async (_label, patch, field) => {
+      asUser();
+      const create = vi.fn();
+      mockPrisma({ create });
+
+      const res = await createDraftListing({ ...validInput, ...patch });
 
       expect(res.success).toBe(false);
-      expect(res.error).toContain('título');
+      expect(Object.keys(res.fieldErrors ?? {})).toEqual([field]);
+      expect(create).not.toHaveBeenCalled();
     });
 
-    it('cria anuncio no status draft com sucesso', async () => {
-      vi.spyOn(identityModule, 'validateSession').mockResolvedValueOnce({
-        user: {
-          id: userId,
-          email: 'user@troq.app',
-          displayName: 'User',
-          emailVerified: true,
-          status: 'active',
+    it('cria em draft, dono da sessao e ignora ownerId/status/timestamps do payload', async () => {
+      asUser();
+      const create = vi.fn().mockResolvedValueOnce({ id: listingId });
+      mockPrisma({ create });
+
+      const tampered = {
+        ...validInput,
+        title: '  Bicicleta Caloi Aro 29  ',
+        state: ' sp ',
+        ownerId: '99999999-9999-4999-8999-999999999999',
+        status: 'published',
+        createdAt: new Date(0),
+        images: [{ id: 'x' }],
+      };
+      const res = await createDraftListing(tampered);
+
+      expect(res).toEqual({ success: true, listingId });
+      expect(create).toHaveBeenCalledWith({
+        data: {
+          title: 'Bicicleta Caloi Aro 29',
+          description: 'Bicicleta em bom estado',
+          city: 'São Paulo',
+          uf: 'SP',
+          ownerId: userId,
+          status: 'draft',
         },
-        isValid: true,
+        select: { id: true },
       });
+    });
 
-      const mockCreate = vi.fn().mockResolvedValueOnce({
-        id: 'listing-100',
-        ownerId: userId,
-        title: 'Bicicleta Caloi Aro 29',
-        status: 'draft',
-      });
+    it('falha de banco vira erro controlado, sem detalhe interno', async () => {
+      asUser();
+      const create = vi.fn().mockRejectedValueOnce(new Error('connection refused at 10.0.0.1'));
+      mockPrisma({ create });
+      vi.spyOn(console, 'error').mockImplementation(() => {});
 
-      vi.spyOn(prismaModule, 'getPrismaClient').mockReturnValue({
-        listing: { create: mockCreate },
-      } as unknown as prismaModule.PrismaClient);
+      const res = await createDraftListing(validInput);
 
-      const res = await createDraftListing({
-        title: 'Bicicleta Caloi Aro 29',
-        description: 'Bicicleta em excelente estado',
-        city: 'São Paulo',
-        state: 'SP',
-      });
-
-      expect(res.success).toBe(true);
-      expect(res.listingId).toBe('listing-100');
-      expect(mockCreate).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
-            ownerId: userId,
-            title: 'Bicicleta Caloi Aro 29',
-            status: 'draft',
-          }),
-        }),
-      );
+      expect(res).toMatchObject({ success: false, reason: 'error' });
+      expect(res.error).not.toContain('10.0.0.1');
     });
   });
 
   describe('updateListing', () => {
-    it('rejeita edicao por usuario que nao seja o proprietario (IDOR)', async () => {
-      vi.spyOn(identityModule, 'validateSession').mockResolvedValueOnce({
-        user: {
-          id: 'other-user-id',
-          email: 'other@troq.app',
-          displayName: 'Other',
-          emailVerified: true,
-          status: 'active',
-        },
-        isValid: true,
+    it('grava com posse e estado editavel como condicao do proprio UPDATE', async () => {
+      asUser();
+      const updateMany = vi.fn().mockResolvedValueOnce({ count: 1 });
+      mockPrisma({ updateMany });
+
+      const res = await updateListing(listingId, { title: ' Título Atualizado ', state: 'rj' });
+
+      expect(res).toEqual({ success: true, listingId });
+      expect(updateMany).toHaveBeenCalledWith({
+        where: { id: listingId, ownerId: userId, status: { in: ['draft', 'published', 'paused'] } },
+        data: { title: 'Título Atualizado', uf: 'RJ' },
       });
-
-      const mockFindUnique = vi.fn().mockResolvedValueOnce({
-        id: 'listing-200',
-        ownerId: userId,
-        status: 'draft',
-      });
-
-      vi.spyOn(prismaModule, 'getPrismaClient').mockReturnValue({
-        listing: { findUnique: mockFindUnique },
-      } as unknown as prismaModule.PrismaClient);
-
-      const res = await updateListing('listing-200', { title: 'Novo Título Válido' });
-      expect(res.success).toBe(false);
-      expect(res.error).toContain('permissão');
     });
 
-    it('rejeita edicao de anuncio em estado terminal (closed / removed)', async () => {
-      vi.spyOn(identityModule, 'validateSession').mockResolvedValueOnce({
-        user: {
-          id: userId,
-          email: 'user@troq.app',
-          displayName: 'User',
-          emailVerified: true,
-          status: 'active',
-        },
-        isValid: true,
+    it('anuncio alheio e UUID inexistente produzem a mesma resposta', async () => {
+      const otherUser = '33333333-3333-4333-8333-333333333333';
+      asUser(otherUser);
+      mockPrisma({
+        updateMany: vi.fn().mockResolvedValueOnce({ count: 0 }),
+        findFirst: vi.fn().mockResolvedValueOnce(null),
+      });
+      const foreign = await updateListing(listingId, { title: 'Tentativa de terceiro' });
+
+      asUser(otherUser);
+      mockPrisma({
+        updateMany: vi.fn().mockResolvedValueOnce({ count: 0 }),
+        findFirst: vi.fn().mockResolvedValueOnce(null),
+      });
+      const missing = await updateListing('44444444-4444-4444-8444-444444444444', {
+        title: 'Tentativa de terceiro',
       });
 
-      const mockFindUnique = vi.fn().mockResolvedValueOnce({
-        id: 'listing-300',
-        ownerId: userId,
-        status: 'closed',
+      expect(foreign).toEqual({
+        success: false,
+        reason: 'not_found',
+        error: 'Anúncio não encontrado.',
+      });
+      expect(missing).toEqual(foreign);
+      expect(JSON.stringify(foreign)).not.toMatch(/permiss/i);
+    });
+
+    it('a consulta de desempate e restrita ao dono da sessao', async () => {
+      asUser();
+      const findFirst = vi.fn().mockResolvedValueOnce(null);
+      mockPrisma({ updateMany: vi.fn().mockResolvedValueOnce({ count: 0 }), findFirst });
+
+      await updateListing(listingId, { title: 'Titulo valido' });
+
+      expect(findFirst).toHaveBeenCalledWith({
+        where: { id: listingId, ownerId: userId },
+        select: { id: true },
+      });
+    });
+
+    it('anuncio proprio em estado terminal responde not_editable', async () => {
+      asUser();
+      mockPrisma({
+        updateMany: vi.fn().mockResolvedValueOnce({ count: 0 }),
+        findFirst: vi.fn().mockResolvedValueOnce({ id: listingId }),
       });
 
-      vi.spyOn(prismaModule, 'getPrismaClient').mockReturnValue({
-        listing: { findUnique: mockFindUnique },
-      } as unknown as prismaModule.PrismaClient);
+      const res = await updateListing(listingId, { title: 'Novo Título Válido' });
 
-      const res = await updateListing('listing-300', { title: 'Novo Título Válido' });
-      expect(res.success).toBe(false);
+      expect(res).toMatchObject({ success: false, reason: 'not_editable' });
       expect(res.error).toContain('encerrados ou removidos');
     });
 
-    it('atualiza rascunho com sucesso', async () => {
-      vi.spyOn(identityModule, 'validateSession').mockResolvedValueOnce({
-        user: {
-          id: userId,
-          email: 'user@troq.app',
-          displayName: 'User',
-          emailVerified: true,
-          status: 'active',
-        },
-        isValid: true,
-      });
+    it('ID malformado responde not_found sem consultar o banco', async () => {
+      asUser();
+      const updateMany = vi.fn();
+      mockPrisma({ updateMany });
 
-      const mockFindUnique = vi.fn().mockResolvedValueOnce({
-        id: 'listing-400',
-        ownerId: userId,
-        status: 'draft',
-      });
-      const mockUpdate = vi.fn().mockResolvedValueOnce({});
+      const res = await updateListing('listing-200', { title: 'Novo Título Válido' });
 
-      vi.spyOn(prismaModule, 'getPrismaClient').mockReturnValue({
-        listing: { findUnique: mockFindUnique, update: mockUpdate },
-      } as unknown as prismaModule.PrismaClient);
+      expect(res.reason).toBe('not_found');
+      expect(updateMany).not.toHaveBeenCalled();
+    });
 
-      const res = await updateListing('listing-400', { title: 'Título Atualizado com Sucesso' });
-      expect(res.success).toBe(true);
-      expect(mockUpdate).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: { id: 'listing-400' },
-          data: { title: 'Título Atualizado com Sucesso' },
-        }),
-      );
+    it('valida antes do banco, com a mesma regra da criacao', async () => {
+      asUser();
+      const updateMany = vi.fn();
+      mockPrisma({ updateMany });
+
+      const res = await updateListing(listingId, { description: '   ', city: '', state: '12' });
+
+      expect(res.reason).toBe('validation');
+      expect(Object.keys(res.fieldErrors ?? {}).sort()).toEqual(['city', 'description', 'state']);
+      expect(updateMany).not.toHaveBeenCalled();
+    });
+
+    it('rejeita edicao sem nenhum campo de conteudo', async () => {
+      asUser();
+      const updateMany = vi.fn();
+      mockPrisma({ updateMany });
+
+      const res = await updateListing(listingId, {});
+
+      expect(res.reason).toBe('validation');
+      expect(updateMany).not.toHaveBeenCalled();
     });
   });
 
   describe('getOwnerListings', () => {
-    it('retorna os anuncios pertencentes ao usuario autenticado', async () => {
-      vi.spyOn(identityModule, 'validateSession').mockResolvedValueOnce({
-        user: {
-          id: userId,
-          email: 'user@troq.app',
-          displayName: 'User',
-          emailVerified: true,
-          status: 'active',
-        },
-        isValid: true,
-      });
-
-      const mockFindMany = vi.fn().mockResolvedValueOnce([
+    it('retorna os anuncios do usuario autenticado, filtrados pela sessao', async () => {
+      asUser();
+      const findMany = vi.fn().mockResolvedValueOnce([
         {
-          id: 'listing-1',
+          id: listingId,
           title: 'Anúncio 1',
           description: 'Desc 1',
           city: 'São Paulo',
           uf: 'SP',
-          status: 'draft',
+          status: 'closed',
           createdAt: new Date(),
           updatedAt: new Date(),
         },
       ]);
-
-      vi.spyOn(prismaModule, 'getPrismaClient').mockReturnValue({
-        listing: { findMany: mockFindMany },
-      } as unknown as prismaModule.PrismaClient);
+      mockPrisma({ findMany });
 
       const res = await getOwnerListings();
+
       expect(res.success).toBe(true);
-      expect(res.listings).toHaveLength(1);
-      expect(res.listings?.[0].title).toBe('Anúncio 1');
-      expect(res.listings?.[0].state).toBe('SP');
+      expect(res.listings?.[0]).toMatchObject({
+        title: 'Anúncio 1',
+        state: 'SP',
+        status: 'closed',
+      });
+      expect(res.listings?.[0]).not.toHaveProperty('ownerId');
+      expect(findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { ownerId: userId } }),
+      );
+    });
+
+    it('falha de consulta e erro, nunca lista vazia', async () => {
+      asUser();
+      mockPrisma({ findMany: vi.fn().mockRejectedValueOnce(new Error('timeout')) });
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      const res = await getOwnerListings();
+
+      expect(res).toMatchObject({ success: false, reason: 'error' });
+      expect(res.listings).toBeUndefined();
     });
   });
 
   describe('getListingForEdit', () => {
-    it('bloqueia consulta de edicao para terceiros', async () => {
-      vi.spyOn(identityModule, 'validateSession').mockResolvedValueOnce({
-        user: {
-          id: 'hacker-id',
-          email: 'hacker@troq.app',
-          displayName: 'Hacker',
-          emailVerified: true,
-          status: 'active',
-        },
-        isValid: true,
+    it('busca ja filtrada pelo dono; alheio e inexistente sao o mesmo not_found', async () => {
+      const otherUser = '33333333-3333-4333-8333-333333333333';
+      asUser(otherUser);
+      const findFirst = vi.fn().mockResolvedValueOnce(null);
+      mockPrisma({ findFirst });
+
+      const res = await getListingForEdit(listingId);
+
+      expect(res).toEqual({
+        success: false,
+        reason: 'not_found',
+        error: 'Anúncio não encontrado.',
       });
+      expect(findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: listingId, ownerId: otherUser } }),
+      );
+    });
 
-      const mockFindUnique = vi.fn().mockResolvedValueOnce({
-        id: 'listing-500',
-        ownerId: userId,
-        title: 'Item Privado',
-        status: 'draft',
-      });
+    it('ID malformado e not_found, sem erro de consulta', async () => {
+      asUser();
+      const findFirst = vi.fn();
+      mockPrisma({ findFirst });
 
-      vi.spyOn(prismaModule, 'getPrismaClient').mockReturnValue({
-        listing: { findUnique: mockFindUnique },
-      } as unknown as prismaModule.PrismaClient);
+      expect((await getListingForEdit('nao-e-uuid')).reason).toBe('not_found');
+      expect(findFirst).not.toHaveBeenCalled();
+    });
 
-      const res = await getListingForEdit('listing-500');
-      expect(res.success).toBe(false);
-      expect(res.error).toContain('permissão');
+    it('falha de banco e erro operacional, distinto de not_found', async () => {
+      asUser();
+      mockPrisma({ findFirst: vi.fn().mockRejectedValueOnce(new Error('boom')) });
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      expect((await getListingForEdit(listingId)).reason).toBe('error');
     });
   });
 });

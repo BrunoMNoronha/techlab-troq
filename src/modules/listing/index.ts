@@ -18,5 +18,10 @@ export type {
   CreateListingInput,
   UpdateListingInput,
   ListingDTO,
+  ListingFailureReason,
+  ListingMutationResult,
   PublicListingFeedItem,
 } from './actions';
+
+export { LISTING_FIELDS, validateListingContent, validateListingPatch } from './validation';
+export type { ListingField, ListingFieldErrors } from './validation';

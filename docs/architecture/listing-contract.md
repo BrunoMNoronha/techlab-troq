@@ -224,7 +224,7 @@ Usado em "meus anúncios" e na edição, somente para o dono autenticado: `id`, 
 - Só aparece em superfície pública — listagem, detalhe, home, metadata, busca, feed ou cache público — o anúncio que esteja **`published` e pertença a conta `active`**. Conta bloqueada (`blocked_age`, `blocked_admin`) ou em exclusão (`deletion_requested`) tem seus anúncios fora da exposição pública, sem que isso mude o estado do anúncio ou o apague.
 - Para terceiros e anônimos, anúncio em qualquer outro estado, de conta não elegível, inexistente ou com identificador malformado responde **da mesma forma: recurso indisponível (404)**, sem revelar existência anterior nem estado interno ([listing-lifecycle.md](../product/listing-lifecycle.md), seção 3).
 - O dono vê seus anúncios não públicos apenas na área privada (seção 6.3).
-- Na área privada, anúncio alheio também deve ser indistinguível de inexistente; a mensagem atual "sem permissão" revela o ID e é tratada em [#44](https://github.com/BrunoMNoronha/techlab-troq/issues/44), com verificação em [#50](https://github.com/BrunoMNoronha/techlab-troq/issues/50).
+- Na área privada, anúncio alheio também é indistinguível de inexistente: `getListingForEdit` e `updateListing` filtram pelo dono da sessão e respondem `not_found`, e a página de edição devolve o mesmo 404 ([#44](https://github.com/BrunoMNoronha/techlab-troq/issues/44)); a verificação abrangente segue em [#50](https://github.com/BrunoMNoronha/techlab-troq/issues/50).
 - Ao sair de `published`, o anúncio e suas imagens deixam de ser servidos publicamente de imediato, inclusive em cache ([image-policy.md](../product/image-policy.md), seção 8; [#47](https://github.com/BrunoMNoronha/techlab-troq/issues/47)).
 
 ## 8. Contato (RB-001)
@@ -310,7 +310,7 @@ Requisitos proporcionais ao contrato, sem redesign; o nível formal de acessibil
 
 ## 12. Divergências da implementação atual e destino
 
-Conferência feita em `7296cb3`. Nenhuma foi corrigida por F2-005, que é documental; cada uma segue na issue indicada.
+Conferência feita em `7296cb3`. Nenhuma foi corrigida por F2-005, que é documental; cada uma segue na issue indicada. D-7 a D-9 foram corrigidas depois, por F2-006 ([#44](https://github.com/BrunoMNoronha/techlab-troq/issues/44)).
 
 | # | Contrato | Implementação atual | Destino |
 | --- | --- | --- | --- |
@@ -320,9 +320,9 @@ Conferência feita em `7296cb3`. Nenhuma foi corrigida por F2-005, que é docume
 | D-4 | Ações de ciclo de vida acessíveis pela interface, com confirmação em T2/T5/T6 | Ações existem sem tela que as chame | [#48](https://github.com/BrunoMNoronha/techlab-troq/issues/48) |
 | D-5 | Máximo de 6 imagens mesmo sob concorrência; posições consistentes | Limite de 6 existe, mas a posição é `images.length + 1` fora de transação ([`media/service.ts`](../../src/modules/media/service.ts)) | [#46](https://github.com/BrunoMNoronha/techlab-troq/issues/46) |
 | D-6 | Remover imagem de anúncio `published` não pode deixar zero `ready`; `closed`/`removed` não são editáveis | `deleteListingImage` não verifica o estado do anúncio nem a última imagem pronta | [#46](https://github.com/BrunoMNoronha/techlab-troq/issues/46), com a invariante de publicação em [#48](https://github.com/BrunoMNoronha/techlab-troq/issues/48) |
-| D-7 | Descrição obrigatória após `trim`; mesmas regras na criação e na edição; UF com duas letras `A`–`Z` (seção 3) | Criação aceita descrição só com espaços e UF de dois caracteres quaisquer; edição não valida cidade nem UF e aceita descrição vazia | [#44](https://github.com/BrunoMNoronha/techlab-troq/issues/44) |
-| D-8 | Anúncio alheio indistinguível de inexistente na área privada (seção 7) | `getListingForEdit` e `updateListing` respondem "sem permissão" | [#44](https://github.com/BrunoMNoronha/techlab-troq/issues/44) (correção) e [#50](https://github.com/BrunoMNoronha/techlab-troq/issues/50) (verificação) |
-| D-9 | Erro por campo, foco em erro e dados preservados (seção 11) | Formulário mostra um aviso geral, sem associação ao campo nem gestão de foco | [#44](https://github.com/BrunoMNoronha/techlab-troq/issues/44) |
+| D-7 | Descrição obrigatória após `trim`; mesmas regras na criação e na edição; UF com duas letras `A`–`Z` (seção 3) | **Corrigida em 2026-09-29.** Criação e edição usam a mesma validação (`src/modules/listing/validation.ts`). Antes, a criação aceitava descrição só com espaços e UF de dois caracteres quaisquer, e a edição não validava cidade nem UF | [#44](https://github.com/BrunoMNoronha/techlab-troq/issues/44) |
+| D-8 | Anúncio alheio indistinguível de inexistente na área privada (seção 7) | **Corrigida em 2026-09-29.** A busca e o `UPDATE` são filtrados pelo dono da sessão, e alheio, inexistente e ID malformado dão a mesma resposta `not_found`. Antes, a resposta era "sem permissão" | [#44](https://github.com/BrunoMNoronha/techlab-troq/issues/44) (correção) e [#50](https://github.com/BrunoMNoronha/techlab-troq/issues/50) (verificação abrangente) |
+| D-9 | Erro por campo, foco em erro e dados preservados (seção 11) | **Corrigida em 2026-09-29.** O formulário marca o campo com `aria-invalid` e associa a mensagem, foca o primeiro erro, preserva os valores e bloqueia envio duplicado. Antes, havia só um aviso geral | [#44](https://github.com/BrunoMNoronha/techlab-troq/issues/44) |
 | D-10 | `page` e `limit` validados, teto de 50, resposta com `page`/`limit` (seção 9) | `getPublicFeed` aceita qualquer `page`/`limit` sem validação nem teto e não devolve os valores aplicados | [#49](https://github.com/BrunoMNoronha/techlab-troq/issues/49) |
 | D-11 | Desempate por `id` (seção 9.2) | Ordena só por `createdAt` | [#49](https://github.com/BrunoMNoronha/techlab-troq/issues/49) |
 | D-12 | `/explorar` pagina e filtra por cidade/UF, com estados de carregamento e erro | Lê só `city`/`state` da URL, sem `page`, sem controles de navegação ou filtro, sem estado de erro próprio; `city` só com espaços vira filtro vazio | [#49](https://github.com/BrunoMNoronha/techlab-troq/issues/49) |
