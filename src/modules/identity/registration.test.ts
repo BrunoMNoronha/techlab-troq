@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { registerUser, confirmEmailToken, resendVerificationToken } from './actions';
+import { verifyPassword } from 'better-auth/crypto';
 import * as prismaModule from '@/persistence/prisma';
 
 vi.mock('./email', () => ({
@@ -81,12 +82,14 @@ describe('modulo identity — cadastro e verificacao de email (#41 / F2-003)', (
         displayName: 'New User',
         email: 'new@troq.app',
       });
+      const mockAccountCreate = vi.fn().mockResolvedValueOnce({ id: 'account-id' });
       const mockTermsCreate = vi.fn().mockResolvedValueOnce({ id: 'terms-id' });
       const mockVerificationCreate = vi.fn().mockResolvedValueOnce({ id: 'verif-id' });
 
       const mockTransaction = vi.fn().mockImplementation(async (callback) => {
         return callback({
           user: { create: mockUserCreate },
+          account: { create: mockAccountCreate },
           termsAcceptance: { create: mockTermsCreate },
         });
       });
@@ -116,6 +119,17 @@ describe('modulo identity — cadastro e verificacao de email (#41 / F2-003)', (
           }),
         }),
       );
+      // Credencial email/senha persistida com hash do Better Auth, nunca em texto puro.
+      const accountData = mockAccountCreate.mock.calls[0][0].data;
+      expect(accountData).toMatchObject({
+        userId: 'user-new-id',
+        accountId: 'user-new-id',
+        providerId: 'credential',
+      });
+      expect(accountData.password).not.toBe('password123');
+      await expect(
+        verifyPassword({ hash: accountData.password, password: 'password123' }),
+      ).resolves.toBe(true);
       expect(mockTermsCreate).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
