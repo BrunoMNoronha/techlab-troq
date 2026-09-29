@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { validateSession } from '@/modules/identity';
+import { validateSession, loginRedirectPath } from '@/modules/identity';
 import { getOwnerListings } from '@/modules/listing';
 
 export const dynamic = 'force-dynamic';
@@ -8,7 +8,7 @@ export default async function MeusAnunciosPage() {
   const sessionResult = await validateSession();
 
   if (!sessionResult.isValid || !sessionResult.user) {
-    redirect('/login');
+    redirect(loginRedirectPath(sessionResult.reason));
   }
 
   const { listings } = await getOwnerListings();

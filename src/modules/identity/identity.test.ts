@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { validateSession } from './index';
+import { validateSession, loginRedirectPath } from './index';
 import * as prismaModule from '@/persistence/prisma';
 
 // Mock do next/headers
@@ -107,5 +107,13 @@ describe('modulo identity — validateSession (Guard server-side)', () => {
     expect(result.isValid).toBe(true);
     expect(result.reason).toBeUndefined();
     expect(result.user?.email).toBe('active@troq.app');
+  });
+
+  it('loginRedirectPath traduz cada motivo de sessao invalida para a tela de login', () => {
+    expect(loginRedirectPath('no_session')).toBe('/login?motivo=sessao');
+    expect(loginRedirectPath(undefined)).toBe('/login?motivo=sessao');
+    expect(loginRedirectPath('blocked')).toBe('/login?motivo=bloqueada');
+    expect(loginRedirectPath('deletion_requested')).toBe('/login?motivo=excluida');
+    expect(loginRedirectPath('unverified')).toBe('/login?motivo=nao_verificada');
   });
 });
