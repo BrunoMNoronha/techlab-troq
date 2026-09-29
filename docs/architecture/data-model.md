@@ -378,8 +378,8 @@ Consolidação verificável. A coluna "protegida por" é o compromisso que a Fas
 | Tema | Onde fica |
 | --- | --- |
 | Schema Prisma, migrations, nomes físicos, tipos e índices concretos | Fase 1, conforme [ADR-0005](../adr/0005-prisma-orm-migrations.md) |
-| Estratégia de paginação, filtros e ordenação da listagem pública | Fase 2 (RF-005) |
-| Campos do anúncio além de título, descrição, imagens e cidade/UF | RF-004, que permanece `parcialmente definido` por decisão de produto |
+| Estratégia de paginação, filtros e ordenação da listagem pública | Fase 2 (RF-005); contrato em [listing-contract.md](listing-contract.md), seção 9 |
+| Campos do anúncio além de título, descrição, imagens e cidade/UF | Não existem no MVP: [listing-contract.md](listing-contract.md), seção 2, adotou o conjunto mínimo e RF-004 passou a `definido` em 2026-09-29 (F2-005) |
 | Modelagem interna da solução de autenticação | Better Auth, na Fase 2 |
 | Estrutura de telemetria agregada de funil | Fase 2; não é entidade funcional (DEC-035, seção 6.1) |
 

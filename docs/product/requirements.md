@@ -18,7 +18,7 @@ Catálogo inicial de requisitos rastreáveis do MVP. Contém **apenas** requisit
 | Grupo | IDs | Definido | Parcialmente definido | Bloqueado |
 | --- | --- | --- | --- | --- |
 | Identidade e conta | RF-001 a RF-003, RF-023 | 4 | 0 | 0 |
-| Anúncios | RF-004 a RF-007 | 3 | 1 | 0 |
+| Anúncios | RF-004 a RF-007 | 4 | 0 | 0 |
 | Solicitações e pagamentos | RF-008 a RF-012 | 5 | 0 | 0 |
 | Escolha e contato | RF-013 a RF-015 | 3 | 0 | 0 |
 | Encerramento e avaliações | RF-016, RF-017 | 2 | 0 | 0 |
@@ -26,7 +26,7 @@ Catálogo inicial de requisitos rastreáveis do MVP. Contém **apenas** requisit
 | Transversais | RF-021, RF-022 | 1 | 1 | 0 |
 | Não funcionais | RNF-001 a RNF-018 | 12 | 6 | 0 |
 
-Nenhum requisito permanece `bloqueado` e **não há mais decisão aberta**. OD-08 foi fechada por [../adr/0004-mercado-pago-pix.md](../adr/0004-mercado-pago-pix.md) (DEC-036), que homologou o gateway Pix, e OD-07 — a última — foi fechada por [payment-exceptions.md](payment-exceptions.md) (DEC-037), que definiu as exceções de pagamento e levou RF-009, RF-010, RF-011, RF-012 e RF-022 a `definido`. Os requisitos que permanecem `parcialmente definido` dependem apenas de trabalho de design ou de métrica a fixar no gate correspondente: RF-004 (campos do anúncio), RF-021 (catálogo de emails) e os não funcionais sem métrica homologada. **RNF-018 deixou de estar entre eles em 2026-09-15:** [../adr/0007-observability-sentry.md](../adr/0007-observability-sentry.md) (DEC-039) definiu a ferramenta de observabilidade e o seu escopo, e o requisito passou a `definido` — o que é definição, e **não** implementação.
+Nenhum requisito permanece `bloqueado` e **não há mais decisão aberta**. OD-08 foi fechada por [../adr/0004-mercado-pago-pix.md](../adr/0004-mercado-pago-pix.md) (DEC-036), que homologou o gateway Pix, e OD-07 — a última — foi fechada por [payment-exceptions.md](payment-exceptions.md) (DEC-037), que definiu as exceções de pagamento e levou RF-009, RF-010, RF-011, RF-012 e RF-022 a `definido`. Os requisitos que permanecem `parcialmente definido` dependem apenas de trabalho de design ou de métrica a fixar no gate correspondente: RF-021 (catálogo de emails) e os não funcionais sem métrica homologada. **RF-004 deixou de estar entre eles em 2026-09-29:** F2-005 ([#43](https://github.com/BrunoMNoronha/techlab-troq/issues/43)) reconciliou [../architecture/listing-contract.md](../architecture/listing-contract.md), que adota explicitamente o conjunto mínimo já homologado de campos — título, descrição, imagens e cidade/UF —, sem campo adicional e sem regra ou decisão nova. **RNF-018 deixou de estar entre eles em 2026-09-15:** [../adr/0007-observability-sentry.md](../adr/0007-observability-sentry.md) (DEC-039) definiu a ferramenta de observabilidade e o seu escopo, e o requisito passou a `definido` — o que é definição, e **não** implementação.
 
 ## Requisitos funcionais
 
@@ -82,7 +82,7 @@ Nenhum requisito permanece `bloqueado` e **não há mais decisão aberta**. OD-0
 - **Regra de negócio relacionada:** RB-005, RB-006.
 - **Decisão aberta relacionada:** — (OD-03 fechada por [prohibited-items.md](prohibited-items.md), DEC-031; OD-04 por [listing-lifecycle.md](listing-lifecycle.md), DEC-027; OD-05 por [image-policy.md](image-policy.md), DEC-028).
 - **Critério de aceite (alto nível):** anúncio criado por usuário autenticado e verificado; nenhum dado de localização mais preciso que cidade/UF é armazenado ou exibido publicamente; o anúncio nasce no estado `draft` e só se torna público por publicação explícita do anunciante, conforme [listing-lifecycle.md](listing-lifecycle.md); a publicação exige pelo menos uma imagem processada com sucesso, conforme [image-policy.md](image-policy.md); a publicação exige também a aceitação expressa da declaração de conformidade com [prohibited-items.md](prohibited-items.md) (DEC-031), registrada com instante, e admite validações preventivas apenas auxiliares, sem que um bloqueio preventivo constitua infração ou conte para reincidência.
-- **Status:** parcialmente definido. Campos além de título, descrição, imagens e cidade/UF não estão definidos.
+- **Status:** definido. Os campos do anúncio no MVP são exatamente título, descrição, imagens e cidade/UF, sem campo adicional (categoria, preço, estoque, condição, endereço ou similar); o contrato técnico do formulário — campos, validação, rascunho, publicação e DTOs — está em [../architecture/listing-contract.md](../architecture/listing-contract.md) (F2-005, 2026-09-29). Isso fecha a lacuna de design anterior e **não** cria regra de negócio nem decisão de produto.
 
 #### RF-005 — Consulta de anúncios
 
@@ -92,7 +92,7 @@ Nenhum requisito permanece `bloqueado` e **não há mais decisão aberta**. OD-0
 - **Regra de negócio relacionada:** RB-001, RB-005.
 - **Decisão aberta relacionada:** — (OD-04 fechada por [listing-lifecycle.md](listing-lifecycle.md), DEC-027).
 - **Critério de aceite (alto nível):** somente anúncios no estado `published` são consultáveis publicamente; anúncio em qualquer outro estado responde ao público como recurso não disponível, sem revelar existência prévia nem estado interno; listagem e detalhe exibem apenas cidade/UF como localização; telefone/WhatsApp nunca aparece em payload público ou cache público; filtros e ordenação são definidos na fase de implementação.
-- **Status:** definido. Filtros e ordenação são detalhe de implementação, não decisão aberta.
+- **Status:** definido. Filtros e ordenação são detalhe de implementação, não decisão aberta; o contrato técnico de paginação, ordenação e filtros por cidade/UF está em [../architecture/listing-contract.md](../architecture/listing-contract.md), seção 9.
 
 #### RF-006 — Imagens do anúncio
 
