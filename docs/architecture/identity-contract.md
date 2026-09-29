@@ -237,7 +237,7 @@ Estado de `main` em `942bf0d` (2026-09-29). Cada item pertence à issue indicada
 | Login sem limite de tentativas — **resolvido por F2-004 (#42)** | IC-10.2 | #42 |
 | Base de links com fallback `localhost` | IC-12.3 | #41 |
 
-Provas exigidas pelas issues continuam pendentes: credencial e sessões reais em PostgreSQL descartável (#40), envio e verificação reais em `preview` com conta de teste controlada (#41) e login/logout reais em `preview` (#42). Testes simulados não substituem essas provas.
+Provas exigidas pelas issues continuam pendentes: credencial e sessões reais em PostgreSQL descartável (#40), envio e verificação reais em `preview` com conta de teste controlada (#41) e login/logout reais em `preview` (#42). Testes simulados não substituem essas provas. **Atualização de 2026-09-29:** as três provas foram feitas — #40 contra PostgreSQL descartável, #41 e o login/logout de #42 em `preview` (registrados por [#68](https://github.com/BrunoMNoronha/techlab-troq/pull/68)) — e o limite de tentativas de #42 (IC-10.2) foi provado contra PostgreSQL real e em build de produção por [#69](https://github.com/BrunoMNoronha/techlab-troq/pull/69). #39 a #42 estão encerradas.
 
 ## 15. Testes negativos obrigatórios
 
