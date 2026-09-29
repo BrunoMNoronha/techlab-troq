@@ -33,6 +33,19 @@ vi.mock('@/modules/listing/actions', () => ({
   updateListing: vi.fn(),
 }));
 
+const getOwnerListingImages = vi.fn();
+vi.mock('@/modules/media/upload', () => ({
+  getOwnerListingImages: (...args: unknown[]) => getOwnerListingImages(...args),
+}));
+vi.mock('@/modules/media/actions', () => ({
+  requestImageUpload: vi.fn(),
+  requestImageReupload: vi.fn(),
+  confirmImageUpload: vi.fn(),
+  deleteListingImage: vi.fn(),
+  reorderListingImages: vi.fn(),
+  getOwnerListingImages: vi.fn(),
+}));
+
 const validateSession = vi.mocked(identityModule.validateSession);
 const getOwnerListings = vi.mocked(listingModule.getOwnerListings);
 const getListingForEdit = vi.mocked(listingModule.getListingForEdit);
@@ -161,12 +174,20 @@ describe('/anuncios/[id]/editar', () => {
     'estado %s abre o formulario preenchido',
     async (status) => {
       getListingForEdit.mockResolvedValueOnce({ success: true, listing: listing(status) });
+      getOwnerListingImages.mockResolvedValueOnce({
+        success: true,
+        data: { listingStatus: status, editable: true, images: [] },
+      });
 
       render(await EditarAnuncioPage({ params }));
 
       expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Editar anúncio');
       expect(screen.getByLabelText('Título do anúncio')).toHaveValue(`Anúncio ${status}`);
       expect(screen.getByLabelText('UF')).toHaveValue('PE');
+      // Gestao de imagens na area privada; sem botao de publicar (#48).
+      expect(screen.getByRole('heading', { name: 'Imagens do anúncio' })).toBeInTheDocument();
+      expect(screen.getByLabelText('Adicionar fotos')).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /publicar/i })).toBeNull();
     },
   );
 
@@ -182,5 +203,7 @@ describe('/anuncios/[id]/editar', () => {
     expect(screen.getByText(`Anúncio ${status}`)).toBeInTheDocument();
     expect(screen.queryByRole('textbox')).toBeNull();
     expect(screen.queryByRole('button')).toBeNull();
+    expect(screen.queryByLabelText('Adicionar fotos')).toBeNull();
+    expect(getOwnerListingImages).not.toHaveBeenCalled();
   });
 });

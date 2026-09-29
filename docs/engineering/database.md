@@ -405,6 +405,23 @@ F1-004 **não** tem pendência própria. Continuam fora do seu escopo, e registr
 
 Nota de acesso, registrada para não ser reaberta por suposição: o executor só conseguiu configurar a Vercel depois de o CLI da Vercel ser autenticado nesta máquina por Bruno; o token de Vercel presente no ambiente do executor pertence a outro time e o conector Vercel disponível não expõe operação de variáveis de ambiente.
 
-## 16. Revisão
+## 16. Migration `20260929191607_media_pipeline` (F2-008, #46)
+
+Aplica o delta de [../architecture/media-pipeline-contract.md](../architecture/media-pipeline-contract.md), seção 15. Gerada com `prisma migrate dev --create-only` e editada à mão; o que o Prisma Schema não expressa é SQL próprio da migration, e **não** é drift:
+
+| Elemento | Forma | Por quê |
+| --- | --- | --- |
+| Colunas novas de `listing_images` (`source_etag`, `source_confirmed_at`, `upload_generation`, `upload_authorized_at`, `attempts`, `next_attempt_at`, `lease_expires_at`, `failure_code`) | Prisma Schema | Estado técnico da seção 4 do contrato |
+| Enum `media_deletion_reason` e tabela `media_object_deletions` | Prisma Schema | Fila de exclusão (seção 13 do contrato) |
+| Backfill | SQL: `upload_authorized_at = created_at`; linhas `ready` recebem `source_confirmed_at`/`processed_at`; linhas `failed` recebem `failure_code = 'legacy_unknown'` | Satisfazer os `CHECK` novos sobre dados existentes |
+| `UNIQUE (listing_id, position) DEFERRABLE INITIALLY DEFERRED` | SQL: o índice único do Prisma é removido e recriado como restrição adiável | Reordenar seis imagens numa transação. Não pode ser árbitro de `ON CONFLICT`, e nenhum fluxo a usa assim |
+| `CHECK` de consistência de `ready`, `attempts >= 0`, `upload_generation >= 1` e lista fechada de `failure_code` | SQL | Invariantes das seções 4 e 8.4 do contrato |
+| Índices parciais de claim e de limpeza; `UNIQUE (object_key) WHERE completed_at IS NULL` e índice de `due_at` na fila | SQL | Claim e fila idempotente |
+
+A migration **não** inclui os três `ALTER … updated_at DROP DEFAULT` que `migrate dev` propôs: são drift preexistente das tabelas do Better Auth, fora do escopo de #46.
+
+Validação local, em PostgreSQL descartável (seção 12): `migrate deploy` em banco vazio e `migrate status` sem pendência; aplicação sobre banco com dados legados sintéticos, com backfill conferido; introspecção confirmando a restrição adiável; casos negativos (`ready` sem confirmação e `failure_code` fora da lista recusados; troca de posições 1↔2 numa transação aceita; posição duplicada recusada no `COMMIT`; segunda inserção pendente da mesma chave vira no-op). A aplicação ao Neon de `preview` é feita **somente** pelo workflow da seção 15, depois do merge.
+
+## 17. Revisão
 
 Revisado a cada migration nova, quando `production` for provisionado (banco, environment e job com aprovação), quando a Vercel Preview receber `DATABASE_URL`, quando a fronteira de runtime mudar de adapter ou de estratégia de reuso, quando o workflow da seção 15 mudar de contrato, ou quando [../architecture/data-model.md](../architecture/data-model.md) mudar.

@@ -1,8 +1,20 @@
 export {
   requestImageUpload,
-  confirmAndProcessImage,
+  requestImageReupload,
+  confirmImageUpload,
   deleteListingImage,
-  getPublicListingImages,
-} from './service';
+  reorderListingImages,
+  getOwnerListingImages,
+} from './actions';
 
-export type { UploadRequestInput, ImageDerivativeDTO, ListingImageDTO } from './service';
+export { getPublicListingImages } from './public-images';
+export { failureMessage } from './failure-codes';
+
+export type { ImageDerivativeDTO, ListingImageDTO } from './public-images';
+export type {
+  ImageViewState,
+  MediaFailureReason,
+  OwnerImagesView,
+  OwnerImageView,
+  UploadAuthorization,
+} from './upload';
