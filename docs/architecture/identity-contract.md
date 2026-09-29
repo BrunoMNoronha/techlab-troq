@@ -216,6 +216,8 @@ Estado de `main` em `942bf0d` (2026-09-29). Cada item pertence à issue indicada
 
 **Atualização de F2-002 (#40, 2026-09-29):** estão resolvidas as linhas do login próprio com cookie cru, do fallback em `validateSession`, do `logoutUser` por token, do segredo e da URL com fallback em `auth.ts` e da configuração ausente de IC-5.3/IC-2.3. A regra de revogação de IC-5.6 aguarda os fluxos reais de bloqueio e exclusão; até lá o guard nega pelo status atual, o que foi provado. As demais linhas seguem com #41 e #42.
 
+**Atualização de F2-003 (#41, 2026-09-29):** estão resolvidas as linhas do token em claro com `identifier` = email, do reenvio que apagava os tokens anteriores sem limite, do envio que logava destinatário e link e devolvia sucesso sem chave, da resposta de reenvio que revelava a conta, da duplicidade que ignorava `deletion_requested` e da corrida entre cadastros, e da base de links com fallback `localhost`. Tokens crus emitidos antes de F2-003 deixam de valer: o link responde inválido e o usuário pede outro. Em `preview`, `BETTER_AUTH_URL` é fixada por branch no alias da própria branch, que é a forma estática de IC-12.1 (docs/engineering/environments.md, seção 5.5). Resta em #42 o limite de tentativas de login.
+
 | Código atual | Contrato | Issue |
 | --- | --- | --- |
 | `loginUser` verifica a senha por conta própria, cria linha em `sessions` e grava cookie `better-auth.session_token` com o token cru, sem assinatura | Login por `auth.api.signInEmail` + `nextCookies()` (IC-5.1, IC-5.2) | #40 (núcleo) e #42 (action) |
