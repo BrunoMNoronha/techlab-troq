@@ -3,19 +3,33 @@ import { validateSession, logoutUser } from '@/modules/identity';
 
 export const dynamic = 'force-dynamic';
 
-export default async function ContaPage() {
+const LOGIN_REASON = {
+  no_session: 'sessao',
+  blocked: 'bloqueada',
+  deletion_requested: 'excluida',
+  unverified: 'nao_verificada',
+} as const;
+
+export default async function ContaPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
   const sessionResult = await validateSession();
 
   if (!sessionResult.isValid || !sessionResult.user) {
-    redirect('/login');
+    redirect(`/login?motivo=${LOGIN_REASON[sessionResult.reason ?? 'no_session']}`);
   }
+
+  const { erro } = await searchParams;
+  const logoutFailed = erro === 'logout';
 
   const user = sessionResult.user;
 
   async function handleLogout() {
     'use server';
-    await logoutUser();
-    redirect('/login');
+    const result = await logoutUser();
+    redirect(result.success ? '/login?motivo=encerrada' : '/conta?erro=logout');
   }
 
   return (
@@ -94,6 +108,23 @@ export default async function ContaPage() {
           </div>
         </div>
       </div>
+
+      {logoutFailed && (
+        <div
+          role="alert"
+          style={{
+            padding: '12px 16px',
+            backgroundColor: '#fef2f2',
+            border: '1px solid #fecaca',
+            borderRadius: '6px',
+            color: '#991b1b',
+            marginBottom: '16px',
+            fontSize: '14px',
+          }}
+        >
+          Nao foi possivel encerrar a sessao. Tente novamente.
+        </div>
+      )}
 
       <form action={handleLogout}>
         <button

@@ -1,11 +1,24 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { use, useState } from 'react';
 import { loginUser } from '@/modules/identity/actions';
 
-export default function LoginPage() {
-  const router = useRouter();
+// Motivos repassados por redirecionamentos server-side (area da conta e logout).
+const REASON_MESSAGES: Record<string, string> = {
+  sessao: 'Entre com seu e-mail e senha para acessar sua conta.',
+  bloqueada: 'Sua conta esta suspensa ou inativa. Entre em contato com a plataforma.',
+  excluida: 'Esta conta esta em processo de exclusao e nao pode mais ser acessada.',
+  nao_verificada: 'Seu e-mail ainda nao foi verificado. Confira sua caixa de entrada.',
+  encerrada: 'Voce saiu da sua conta.',
+};
+
+export default function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  const { motivo } = use(searchParams);
+  const reasonMessage = typeof motivo === 'string' ? REASON_MESSAGES[motivo] : undefined;
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -16,7 +29,7 @@ export default function LoginPage() {
     setErrorMessage(null);
     setLoading(true);
 
-    const res = await loginUser(email);
+    const res = await loginUser(email, password);
     setLoading(false);
 
     if (!res.success) {
@@ -35,8 +48,26 @@ export default function LoginPage() {
         Informe suas credenciais para acessar sua conta.
       </p>
 
+      {reasonMessage && !errorMessage && (
+        <div
+          role="status"
+          style={{
+            padding: '12px 16px',
+            backgroundColor: '#eff6ff',
+            border: '1px solid #bfdbfe',
+            borderRadius: '6px',
+            color: '#1e3a8a',
+            marginBottom: '16px',
+            fontSize: '14px',
+          }}
+        >
+          {reasonMessage}
+        </div>
+      )}
+
       {errorMessage && (
         <div
+          role="alert"
           style={{
             padding: '12px 16px',
             backgroundColor: '#fef2f2',
@@ -65,6 +96,7 @@ export default function LoginPage() {
           <input
             id="email"
             type="email"
+            autoComplete="email"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -89,6 +121,7 @@ export default function LoginPage() {
           <input
             id="password"
             type="password"
+            autoComplete="current-password"
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}

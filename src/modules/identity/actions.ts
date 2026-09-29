@@ -2,6 +2,7 @@
 
 import { cookies } from 'next/headers';
 import { getPrismaClient } from '@/persistence/prisma';
+import { hashPassword, verifyPassword } from 'better-auth/crypto';
 import { sendVerificationEmail } from './email';
 import crypto from 'crypto';
 
@@ -20,6 +21,15 @@ export interface RegisterResult {
 }
 
 const TERMS_VERSION = '1.0';
+
+// Convencoes do Better Auth para a credencial email/senha: `providerId`
+// 'credential' e `accountId` igual ao id do usuario. O hash usa o mesmo
+// algoritmo do provedor (better-auth/crypto), para que a conta continue valida
+// se o fluxo migrar para `auth.api.signInEmail`.
+const CREDENTIAL_PROVIDER_ID = 'credential';
+const SESSION_COOKIE_NAME = 'better-auth.session_token';
+const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 dias
+const INVALID_CREDENTIALS_ERROR = 'E-mail ou senha invalidos.';
 
 /**
  * Server Action de cadastro de usuario.
@@ -68,7 +78,9 @@ export async function registerUser(input: RegisterInput): Promise<RegisterResult
   }
 
   try {
-    // 1. Criar usuario e aceite de termos em transacao
+    const passwordHash = await hashPassword(password);
+
+    // 1. Criar usuario, credencial e aceite de termos em transacao
     await prisma.$transaction(async (tx) => {
       const newUser = await tx.user.create({
         data: {
@@ -76,6 +88,15 @@ export async function registerUser(input: RegisterInput): Promise<RegisterResult
           email: cleanEmail,
           emailVerified: false,
           status: 'active',
+        },
+      });
+
+      await tx.account.create({
+        data: {
+          userId: newUser.id,
+          accountId: newUser.id,
+          providerId: CREDENTIAL_PROVIDER_ID,
+          password: passwordHash,
         },
       });
 
@@ -230,25 +251,54 @@ export async function resendVerificationToken(
 
 /**
  * Server Action para autenticacao (Login).
- * Valida existencia da conta, se o e-mail foi verificado e se o status e ativo.
- * Cria a sessao no banco de dados e grava o cookie better-auth.session_token.
+ * Exige e-mail E senha: a senha e conferida contra o hash da credencial
+ * persistida (`Account` com providerId 'credential') pelo verificador do
+ * Better Auth. Status e verificacao de e-mail so sao revelados depois da senha
+ * correta, para nao expor quais e-mails existem. So declara sucesso depois de
+ * persistir a sessao e gravar o cookie.
  */
 export async function loginUser(
   email: string,
+  password: string,
 ): Promise<{ success: boolean; error?: string; redirectTo?: string }> {
-  const cleanEmail = email ? email.trim().toLowerCase() : '';
+  const cleanEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
   if (!cleanEmail) {
     return { success: false, error: 'Informe seu e-mail.' };
+  }
+
+  if (typeof password !== 'string' || password.length === 0) {
+    return { success: false, error: 'Informe sua senha.' };
   }
 
   const prisma = getPrismaClient();
 
   const user = await prisma.user.findFirst({
-    where: { email: cleanEmail },
+    where: { email: cleanEmail, status: { not: 'deletion_requested' } },
   });
 
   if (!user) {
-    return { success: false, error: 'E-mail ou credenciais invalidas.' };
+    return { success: false, error: INVALID_CREDENTIALS_ERROR };
+  }
+
+  const credential = await prisma.account.findFirst({
+    where: { userId: user.id, providerId: CREDENTIAL_PROVIDER_ID },
+    select: { password: true },
+  });
+
+  if (!credential?.password) {
+    return { success: false, error: INVALID_CREDENTIALS_ERROR };
+  }
+
+  let passwordMatches = false;
+  try {
+    passwordMatches = await verifyPassword({ hash: credential.password, password });
+  } catch {
+    // Hash corrompido ou em formato desconhecido: tratar como credencial invalida.
+    passwordMatches = false;
+  }
+
+  if (!passwordMatches) {
+    return { success: false, error: INVALID_CREDENTIALS_ERROR };
   }
 
   if (user.status !== 'active') {
@@ -265,33 +315,36 @@ export async function loginUser(
     };
   }
 
-  // Criar registro de sessao no Prisma (Better Auth Session)
   const sessionToken = crypto.randomBytes(32).toString('hex');
-  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 dias
+  const expiresAt = new Date(Date.now() + SESSION_TTL_MS);
 
-  if (prisma.session?.create) {
+  try {
     await prisma.session.create({
       data: {
         userId: user.id,
         token: sessionToken,
         expiresAt,
-        ipAddress: '127.0.0.1',
-        userAgent: 'TROQ App Router',
       },
     });
+  } catch (err) {
+    console.error('[Login Action Error] falha ao persistir sessao', err);
+    return { success: false, error: 'Nao foi possivel iniciar a sessao. Tente novamente.' };
   }
 
   try {
     const cookieStore = await cookies();
-    cookieStore.set('better-auth.session_token', sessionToken, {
+    cookieStore.set(SESSION_COOKIE_NAME, sessionToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       path: '/',
       expires: expiresAt,
     });
-  } catch (_e) {
-    // Tratamento em contextos sem request context ativo (ex: vitest unit)
+  } catch (err) {
+    console.error('[Login Action Error] falha ao gravar cookie de sessao', err);
+    // Sem cookie a sessao ficaria orfa: removida para nao deixar credencial viva.
+    await prisma.session.deleteMany({ where: { token: sessionToken } }).catch(() => undefined);
+    return { success: false, error: 'Nao foi possivel iniciar a sessao. Tente novamente.' };
   }
 
   return { success: true, redirectTo: '/conta' };
@@ -299,23 +352,30 @@ export async function loginUser(
 
 /**
  * Server Action para encerramento de sessao (Logout).
+ * Revoga a sessao no banco (a sessao usada deixa de valer mesmo que o cookie
+ * seja reapresentado) e remove o cookie. Retorna falha se a revogacao nao
+ * puder ser confirmada.
  */
-export async function logoutUser(): Promise<{ success: boolean }> {
+export async function logoutUser(): Promise<{ success: boolean; error?: string }> {
+  let cookieStore: Awaited<ReturnType<typeof cookies>>;
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('better-auth.session_token')?.value;
-
-    if (token) {
-      const prisma = getPrismaClient();
-      if (prisma.session?.deleteMany) {
-        await prisma.session.deleteMany({
-          where: { token },
-        });
-      }
-      cookieStore.delete('better-auth.session_token');
-    }
-    return { success: true };
-  } catch (_e) {
-    return { success: true };
+    cookieStore = await cookies();
+  } catch (err) {
+    console.error('[Logout Action Error] contexto de cookies indisponivel', err);
+    return { success: false, error: 'Nao foi possivel encerrar a sessao. Tente novamente.' };
   }
+
+  const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
+
+  if (token) {
+    try {
+      await getPrismaClient().session.deleteMany({ where: { token } });
+    } catch (err) {
+      console.error('[Logout Action Error] falha ao revogar sessao', err);
+      return { success: false, error: 'Nao foi possivel encerrar a sessao. Tente novamente.' };
+    }
+  }
+
+  cookieStore.delete(SESSION_COOKIE_NAME);
+  return { success: true };
 }
