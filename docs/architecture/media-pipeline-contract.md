@@ -314,14 +314,21 @@ Os derivados têm no máximo 1600 px no lado maior, em WebP qualidade 80. O Rout
 | --- | --- | --- |
 | `draft` | nenhum (seção 9) | mantidos |
 | `paused` | revogado imediatamente | **mantidos**; voltam em T4 sem reprocessar |
-| `closed` | revogado imediatamente | mantidos enquanto o anúncio existir como histórico do dono (DEC-027, seção 3); ver pendência P-1 |
+| `closed` | revogado imediatamente | mantidos em armazenamento **privado** enquanto o anúncio existir como histórico do dono (DEC-027, seção 3; DEC-033, seção 4); expurgo no gatilho definido por DEC-033, que no MVP é a exclusão da conta. Nenhum prazo corre a partir de `closed` |
 | `removed` | revogado imediatamente | mantidos como evidência de moderação pelo prazo de DEC-033, seção 7; depois, expurgo em até 30 dias |
 | Imagem removida pelo dono | a linha deixa de existir; a rota responde 404 | exclusão enfileirada com `dueAt = now()`, salvo retenção legítima (caso de moderação aberto sobre o anúncio ou legal hold, DEC-033 seções 7 e 9) |
 | Exclusão da conta (RF-023) | revogado imediatamente (conta não `active`) | exclusão enfileirada com prazo máximo de 30 dias a partir da solicitação, salvo retenção legítima |
 
 O prazo de 30 dias é **prazo máximo de expurgo** (DEC-033, seção 4); não é período de auditoria nem de disputa, como dizia a versão anterior. A execução é a mesma fila de exclusão, com o job horário.
 
-**Pendência normativa P-1 (não resolvida aqui):** DEC-033 conta os 30 dias a partir da "exclusão da conta ou do expurgo definitivo do anúncio", mas não define quando um anúncio `closed` sofre expurgo definitivo, e DEC-027 o mantém como histórico do dono. Este contrato **não** inventa esse prazo: até decisão de produto, derivados de anúncio `closed` ficam fora do público e são expurgados nos gatilhos já definidos (exclusão de conta, remoção de imagem). Registrada para decisão antes de #47 fechar a parte de expurgo.
+**Anúncio `closed`.** Conforme [data-retention-policy.md](../product/data-retention-policy.md), seção 4 (esclarecimento de DEC-027 e DEC-033, sem regra nova):
+
+- `closed` retira as imagens do público imediatamente;
+- `closed` não é expurgo definitivo do anúncio;
+- os derivados permanecem privados enquanto o anúncio for histórico de conta ativa;
+- o expurgo acontece na exclusão da conta, em até 30 dias, salvo retenção legítima.
+
+Não existe, no MVP, outro gatilho nem recurso de apagar histórico. Remover uma imagem individual segue a linha própria da tabela.
 
 ## 13. Fila de exclusão de objetos
 
@@ -422,7 +429,7 @@ Deve mostrar que o pico de memória, inclusive com duas execuções concorrentes
 | M-2 | "Image Processor Worker" sem mecanismo | Executor no PostgreSQL com claim, lease, fencing e recuo; `after()` + cron | #46 |
 | M-3 | Estados `PUBLISHED`, `DRAFT`, `PAUSED`, `CLOSED`, `REMOVED`, `READY`, `FAILED` | Estados canônicos em minúsculas; semântica técnica da seção 4 | — |
 | M-4 | Revogação por "invalidar chaves nas bordas" | Revogação por verificação a cada requisição; purga de cache rejeitada | #47 |
-| M-5 | Expurgo de 30 dias "respeitando o período de auditoria" | 30 dias como prazo máximo, a partir dos gatilhos de DEC-033; P-1 registrada | #47 |
+| M-5 | Expurgo de 30 dias "respeitando o período de auditoria" | 30 dias como prazo máximo, a partir dos gatilhos de DEC-033; `closed` mantém derivados privados e expurga na exclusão da conta | #47 |
 | M-6 | `images.length + 1` fora de transação | Trava do anúncio + contagem + menor posição livre | #46 |
 | M-7 | Tamanho e tipo do cliente como autoridade | `HeadObject` no servidor; formato pela decodificação | #46 |
 | M-8 | Processamento síncrono na confirmação; `syntheticBuffer` na assinatura pública | Fila + executor; `syntheticBuffer` só em teste | #46 |
@@ -449,7 +456,7 @@ Deve mostrar que o pico de memória, inclusive com duas execuções concorrentes
 | Referência | Relação |
 | --- | --- |
 | DEC-028 / image-policy.md | Preservada literalmente; critérios 1 a 17 mapeados nas seções 5 a 12 |
-| DEC-033 / data-retention-policy.md | 24 h (seção 11) e 30 dias (seção 12) preservados; P-1 registrada |
+| DEC-033 / data-retention-policy.md | 24 h (seção 11) e 30 dias (seção 12) preservados; retenção de `closed` conforme o esclarecimento da seção 4 da política |
 | DEC-027 / listing-lifecycle.md | Visibilidade por estado (seção 9); `paused` sem exclusão |
 | ADR-0003 | Preservado: R2 por API S3; "servidas publicamente" passa a significar entrega ao público pela rota autorizada, não bucket público |
 | ADR-0006 / DEC-038 | Preservado: fila no PostgreSQL, `SKIP LOCKED`, trava de transação, idempotência, `CRON_SECRET`, decisão 11 |
