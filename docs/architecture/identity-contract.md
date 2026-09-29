@@ -179,6 +179,8 @@ Confirmações concorrentes do mesmo token resultam em exatamente uma confirmaç
 
 **IC-10.2 (decisão técnica ajustável).** Limite de **5 falhas de credencial em 15 minutos** por email normalizado. Ao atingir o limite, novas tentativas para aquele email são recusadas sem chamar o provedor, com a mensagem genérica "muitas tentativas; aguarde alguns minutos" até a janela expirar. O contador é chaveado pelo SHA-256 do email normalizado, **exista ou não a conta**, para não revelar existência. Conta como falha apenas `INVALID_EMAIL_OR_PASSWORD`; sucesso zera o contador. Armazenamento persistente no PostgreSQL: linhas `login-failure:<sha256>` em `verifications` com expiração de 15 minutos, ou tabela própria criada por migration aditiva na própria #42. Nenhum IP é usado nem persistido. Justificativa: a janela limita a força bruta online a cerca de 480 tentativas por dia por conta, e o bloqueio temporário, e não permanente, limita o uso do limite para travar a conta de outra pessoa.
 
+**Implementado por F2-004 (#42, 2026-09-29).** `src/modules/identity/login-rate-limit.ts` usa `verifications` sem migration: `identifier` = `login-failure:<sha256(e-mail normalizado)>` e `value` indica apenas o tipo da linha (`reservation` ou `failure`). Cada tentativa reserva uma vaga numa transação curta, serializada por `pg_advisory_xact_lock` do próprio identifier, e só depois chama o provedor, sem transação aberta durante a verificação da senha; reservas pendentes ocupam vaga, então tentativas simultâneas não levam mais de 5 verificações ao provedor. `INVALID_EMAIL_OR_PASSWORD` converte a reserva em falha de 15 min; outros resultados descartam a reserva; sucesso apaga o bucket. Reserva órfã (função interrompida) expira em 120 s. A 6ª tentativa responde "Muitas tentativas. Aguarde alguns minutos e tente novamente." sem chamar o provedor. Todo instante vem do relógio do PostgreSQL.
+
 **IC-10.3 (normativo).** As mensagens de login não revelam existência de conta: email desconhecido, conta sem credencial e senha errada recebem a mesma resposta "email ou senha inválidos". Email não verificado e conta não ativa só são revelados depois da senha correta, que é a ordem do próprio provedor (senha → verificação → criação da sessão, IC-5.3).
 
 ## 11. Dados pessoais, logs e telemetria
@@ -232,7 +234,7 @@ Estado de `main` em `942bf0d` (2026-09-29). Cada item pertence à issue indicada
 | `sendVerificationEmail` registra destinatário e link no console e devolve `true` sem chave; o resultado do envio é ignorado | IC-9.1, IC-9.2 | #41 |
 | Reenvio responde "email não encontrado" / "já verificado" | Resposta genérica (IC-9.3) | #41 |
 | Cadastro verifica duplicado só entre contas não excluídas; corrida entre cadastros vira erro interno | IC-2.5, IC-6.4 | #41 |
-| Login sem limite de tentativas | IC-10.2 | #42 |
+| Login sem limite de tentativas — **resolvido por F2-004 (#42)** | IC-10.2 | #42 |
 | Base de links com fallback `localhost` | IC-12.3 | #41 |
 
 Provas exigidas pelas issues continuam pendentes: credencial e sessões reais em PostgreSQL descartável (#40), envio e verificação reais em `preview` com conta de teste controlada (#41) e login/logout reais em `preview` (#42). Testes simulados não substituem essas provas.

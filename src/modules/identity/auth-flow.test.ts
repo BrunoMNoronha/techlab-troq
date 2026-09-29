@@ -25,6 +25,23 @@ vi.mock('./auth', async (importOriginal) => ({
   getAuth: () => getAuth(),
 }));
 
+// O limite de tentativas (IC-10.2) e simulado aqui para provar QUANDO o
+// provedor e chamado e como cada resultado finaliza a reserva; o limite real
+// contra PostgreSQL esta em login-rate-limit.integration.test.ts.
+const RESERVATION = { identifier: 'login-failure:hash', reservationId: 'r1' };
+const limiter = {
+  reserveLoginAttempt: vi.fn(),
+  recordLoginFailure: vi.fn(),
+  releaseLoginAttempt: vi.fn(),
+  clearLoginFailures: vi.fn(),
+};
+vi.mock('./login-rate-limit', () => ({
+  reserveLoginAttempt: (email: string) => limiter.reserveLoginAttempt(email),
+  recordLoginFailure: (r: unknown) => limiter.recordLoginFailure(r),
+  releaseLoginAttempt: (r: unknown) => limiter.releaseLoginAttempt(r),
+  clearLoginFailures: (r: unknown) => limiter.clearLoginFailures(r),
+}));
+
 const PASSWORD = 'senha-correta-123';
 
 function providerError(status: 'UNAUTHORIZED' | 'FORBIDDEN' | 'BAD_REQUEST', code: string) {
@@ -36,6 +53,73 @@ describe('modulo identity — ponte das actions com o Better Auth (#40)', () => 
     vi.clearAllMocks();
     vi.restoreAllMocks();
     getAuth.mockImplementation(() => ({ api }));
+    limiter.reserveLoginAttempt.mockResolvedValue(RESERVATION);
+    limiter.recordLoginFailure.mockResolvedValue(undefined);
+    limiter.releaseLoginAttempt.mockResolvedValue(undefined);
+    limiter.clearLoginFailures.mockResolvedValue(undefined);
+  });
+
+  describe('loginUser — limite de tentativas (IC-10.2)', () => {
+    it('com o bucket cheio recusa com mensagem generica sem chamar o provedor', async () => {
+      limiter.reserveLoginAttempt.mockResolvedValueOnce(null);
+
+      const res = await loginUser('  Alguem@Troq.App ', PASSWORD);
+
+      expect(res).toEqual({
+        success: false,
+        error: 'Muitas tentativas. Aguarde alguns minutos e tente novamente.',
+      });
+      expect(limiter.reserveLoginAttempt).toHaveBeenCalledWith('alguem@troq.app');
+      expect(api.signInEmail).not.toHaveBeenCalled();
+    });
+
+    it('senha ausente nao consome vaga do bucket', async () => {
+      await loginUser('alguem@troq.app', '');
+      expect(limiter.reserveLoginAttempt).not.toHaveBeenCalled();
+    });
+
+    it('INVALID_EMAIL_OR_PASSWORD registra a falha', async () => {
+      api.signInEmail.mockRejectedValueOnce(
+        providerError('UNAUTHORIZED', 'INVALID_EMAIL_OR_PASSWORD'),
+      );
+
+      await loginUser('alguem@troq.app', 'errada');
+
+      expect(limiter.recordLoginFailure).toHaveBeenCalledWith(RESERVATION);
+      expect(limiter.releaseLoginAttempt).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      ['e-mail nao verificado', providerError('FORBIDDEN', 'EMAIL_NOT_VERIFIED')],
+      ['conta nao ativa', providerError('FORBIDDEN', ACCOUNT_NOT_ACTIVE_CODE)],
+      ['e-mail malformado', providerError('BAD_REQUEST', 'INVALID_EMAIL')],
+      ['erro tecnico', new Error('falha interna')],
+    ])('%s nao conta como falha: a reserva e descartada', async (_caso, err) => {
+      vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      api.signInEmail.mockRejectedValueOnce(err);
+
+      await loginUser('alguem@troq.app', PASSWORD);
+
+      expect(limiter.releaseLoginAttempt).toHaveBeenCalledWith(RESERVATION);
+      expect(limiter.recordLoginFailure).not.toHaveBeenCalled();
+    });
+
+    it('login bem-sucedido zera o bucket', async () => {
+      api.signInEmail.mockResolvedValueOnce({});
+
+      expect((await loginUser('alguem@troq.app', PASSWORD)).success).toBe(true);
+      expect(limiter.clearLoginFailures).toHaveBeenCalledWith(RESERVATION);
+    });
+
+    it('falha do limitador nega o login sem chamar o provedor', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      limiter.reserveLoginAttempt.mockRejectedValueOnce(new Error('banco indisponivel'));
+
+      const res = await loginUser('alguem@troq.app', PASSWORD);
+
+      expect(res.success).toBe(false);
+      expect(api.signInEmail).not.toHaveBeenCalled();
+    });
   });
 
   describe('loginUser', () => {

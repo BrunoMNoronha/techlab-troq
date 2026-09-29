@@ -1,6 +1,6 @@
 'use client';
 
-import { use, useState } from 'react';
+import { use, useEffect, useRef, useState } from 'react';
 import { loginUser } from '@/modules/identity/actions';
 
 // Motivos repassados por redirecionamentos server-side (area da conta e logout).
@@ -26,6 +26,13 @@ export default function LoginPage({
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const errorRef = useRef<HTMLDivElement>(null);
+
+  // O botao fica desabilitado durante o envio e perde o foco; apos um erro
+  // (credencial invalida, limite de tentativas), o foco vai para a mensagem.
+  useEffect(() => {
+    if (errorMessage) errorRef.current?.focus();
+  }, [errorMessage]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -70,6 +77,9 @@ export default function LoginPage({
 
       {errorMessage && (
         <div
+          id="login-error"
+          ref={errorRef}
+          tabIndex={-1}
           role="alert"
           style={{
             padding: '12px 16px',
@@ -101,10 +111,12 @@ export default function LoginPage({
             type="email"
             autoComplete="email"
             required
+            aria-describedby={errorMessage ? 'login-error' : undefined}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             style={{
               width: '100%',
+              boxSizing: 'border-box',
               padding: '10px 12px',
               border: '1px solid #d1d5db',
               borderRadius: '6px',
@@ -126,10 +138,12 @@ export default function LoginPage({
             type="password"
             autoComplete="current-password"
             required
+            aria-describedby={errorMessage ? 'login-error' : undefined}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             style={{
               width: '100%',
+              boxSizing: 'border-box',
               padding: '10px 12px',
               border: '1px solid #d1d5db',
               borderRadius: '6px',
