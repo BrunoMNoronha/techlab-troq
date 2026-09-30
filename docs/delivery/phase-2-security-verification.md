@@ -14,7 +14,7 @@ Cada prova declara a camada em que roda. Nenhuma camada substitui outra.
 | Integração com banco descartável | PostgreSQL real e sessões Better Auth reais, sem R2 | `INTEGRATION_EPHEMERAL_DB=1` ([testing.md](../engineering/testing.md), seção 7) |
 | Integração com R2 real | igual, mais o bucket de `development` | `R2_INTEGRATION=1` |
 | HTTP real | build de produção (`pnpm build` + `pnpm start`) sobre o mesmo banco descartável, com requisições HTML e RSC | `PUBLIC_SURFACE_BASE_URL` e `PRIVATE_SURFACE_BASE_URL` |
-| Preview | deployment da Vercel sobre o Neon de `preview`, sem sessão e só leitura | seção 9 |
+| Preview | deployment da Vercel sobre o Neon de `preview`, sem sessão e só leitura | seção 9: 95 de 96 verificações; a diferença é a falha fechada por configuração ausente |
 
 As suítes de integração **não rodam na CI** (achado A-6).
 
@@ -113,11 +113,21 @@ Nenhum achado crítico ou alto.
 
 ## 9. Prova em Preview
 
-Deployment da branch `test/f2-012-security-verification`, sem sessão, com acesso temporário de compartilhamento da Vercel e somente leitura; resultado na seção 9.1. O Neon de `preview` não tem anúncio publicado nem conta sintética com sessão ativa para esta prova, então a matriz de atores autenticados fica na camada local.
+Deployment `dpl_5MhUGyNvNYGsJHHHpxBVZAmmJGQa` (branch `test/f2-012-security-verification`, commit `1c7a229`), sobre o Neon de `preview`. A prova foi feita sem sessão do TROQ, com acesso temporário de compartilhamento da Vercel e somente leitura. Nada foi gravado. A matriz de atores autenticados fica na camada local (seções 3 e 4): o Preview não tem anúncio publicado nem conta sintética com sessão ativa, e criar uma exigiria a senha do responsável.
 
 ### 9.1 Resultado
 
-Preenchido após o deployment.
+| Verificação | Resultado |
+| --- | --- |
+| `/anuncios`, `/anuncios/novo`, `/conta` e a edição de dois anúncios `closed` reais, de um UUID inexistente e de um malformado; como anônimo e com cookie de sessão forjado | HTML 307 para `/login?motivo=…`; RSC 200 com `NEXT_REDIRECT;replace;/login?motivo=…;307;`; nenhum marcador; cache nunca público |
+| `/api/jobs/media-process` e `/api/jobs/media-cleanup` sem segredo, com segredo errado e com esquema `Basic` | 401, corpo vazio, `no-store` |
+| `POST /api/auth/{sign-in/email, sign-up/email, sign-out, reset-password}` | 404 sem corpo |
+| `GET /api/auth/list-sessions` | 404 |
+| `GET /api/auth/get-session` com cookie forjado | **500 com corpo vazio**, em vez de `null` |
+
+Resultado: 96 verificações, 95 OK.
+
+A diferença está explicada e não é vazamento. O Preview desta branch não tem `BETTER_AUTH_URL` (a consulta às variáveis da branch voltou vazia), e a aplicação falha fechada. O log do deployment registra só `AuthConfigurationError: … BETTER_AUTH_URL ausente…`, sem segredo. As páginas privadas, que capturam o erro, mandaram ao login. `BETTER_AUTH_SECRET` e `BETTER_AUTH_URL` são configurados por branch só nas provas com login ([environments.md](../engineering/environments.md)). Com a configuração presente, a resposta `null` para cookie forjado, revogado ou expirado está provada localmente (seção 4).
 
 ## 10. Execuções
 
