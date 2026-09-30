@@ -160,20 +160,29 @@ async function enqueue(
 
 /**
  * Espera ate que pelo menos `atLeast` pendencias destas chaves tenham sido
- * reclamadas (`attempts > 0`). Estoura com erro explicito se isso nao ocorrer.
+ * reclamadas (`attempts > 0`). Sem prazo proprio: o limite e o timeout do
+ * teste, cujo `signal` e abortado quando ele estoura.
  */
-async function waitUntilClaimed(keys: string[], atLeast: number, timeoutMs = 5000) {
-  const deadline = Date.now() + timeoutMs;
-  for (;;) {
+async function waitUntilClaimed(keys: string[], atLeast: number, signal: AbortSignal) {
+  while (!signal.aborted) {
     const [{ claimed }] = await getPrismaClient().$queryRaw<{ claimed: number }[]>`
       SELECT count(*)::int AS "claimed" FROM "media_object_deletions"
       WHERE "object_key" = ANY(${keys}) AND "attempts" > 0`;
     if (claimed >= atLeast) return;
-    if (Date.now() > deadline) {
-      throw new Error(`segundo consumidor nao reclamou em ${timeoutMs} ms (${claimed} reclamadas)`);
-    }
     await new Promise((r) => setTimeout(r, 10));
   }
+  throw new Error(`espera abortada pelo timeout do teste (${atLeast} reclamacoes esperadas)`);
+}
+
+/**
+ * Abre as conexoes do pool (`max = 10`) antes de uma corrida, para que o
+ * consumidor que chega depois nao dependa de abrir conexao nova durante ela.
+ * Conexoes ociosas duram 10 s no pool.
+ */
+async function warmPool() {
+  await Promise.all(
+    Array.from({ length: 10 }, () => getPrismaClient().$executeRaw`SELECT pg_sleep(0.05)`),
+  );
 }
 
 /** Torna vencidas as pendencias destas chaves (lease/recuo "passou"). */
@@ -464,36 +473,50 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
       expect(store.has(derivativeKey(ready, 1, 'thumb'))).toBe(false);
     });
 
-    it('concorrencia: dois consumidores dividem a fila com SKIP LOCKED e nenhuma chave e apagada duas vezes', async () => {
-      const id = randomUUID();
-      const keys = Array.from({ length: 20 }, (_, i) => `derivatives/${id}/1/v1/k${i}.webp`);
-      await enqueue(keys);
-      // A divisao nao pode depender de o segundo consumidor reclamar antes de o
-      // primeiro esvaziar a fila (~0,7 s): uma pausa do processo de teste ou uma
-      // conexao nova lenta bastava para um levar as 20. O primeiro a apagar
-      // segura o proprio lote (lease ja gravado) ate o banco mostrar que o outro
-      // reclamou um lote diferente; so entao os dois seguem em paralelo.
-      let holding = false;
-      hooks.onDelete = async () => {
-        if (!holding) {
-          holding = true;
-          await waitUntilClaimed(keys, 6);
-        }
-        await new Promise((r) => setTimeout(r, 20));
-      };
+    it(
+      'concorrencia: dois consumidores dividem a fila com SKIP LOCKED e nenhuma chave e apagada duas vezes',
+      { timeout: 20_000 },
+      async ({ signal }) => {
+        const id = randomUUID();
+        const keys = Array.from({ length: 20 }, (_, i) => `derivatives/${id}/1/v1/k${i}.webp`);
+        await enqueue(keys);
+        // A divisao nao pode depender de o segundo consumidor reclamar antes de o
+        // primeiro esvaziar a fila (~0,7 s): uma pausa do processo de teste ou uma
+        // conexao nova lenta bastava para um levar as 20. O primeiro a apagar
+        // segura o proprio lote (lease ja gravado) ate o banco mostrar que o outro
+        // reclamou um lote diferente; so entao os dois seguem em paralelo.
+        // Se a espera falhar, o erro dela e a causa: dentro do DeleteObject ele
+        // viraria so "retried" e a falha apareceria numa assercao posterior.
+        await warmPool();
+        let holding = false;
+        let holdError: unknown;
+        hooks.onDelete = async () => {
+          if (!holding) {
+            holding = true;
+            try {
+              await waitUntilClaimed(keys, 6, signal);
+            } catch (err) {
+              holdError = err;
+              throw err;
+            }
+          }
+          await new Promise((r) => setTimeout(r, 20));
+        };
 
-      const [a, b] = await Promise.all([
-        consumeDeletionQueue({ batchSize: 5 }),
-        consumeDeletionQueue({ batchSize: 5 }),
-      ]);
-      expect(a.claimed + b.claimed).toBe(20);
-      expect(a.claimed).toBeGreaterThan(0);
-      expect(b.claimed).toBeGreaterThan(0);
-      expect(a.completed + b.completed).toBe(20);
-      expect(new Set(deleteCalls).size).toBe(20);
-      expect(deleteCalls).toHaveLength(20);
-      expect(await pending(keys)).toEqual([]);
-    });
+        const [a, b] = await Promise.all([
+          consumeDeletionQueue({ batchSize: 5 }),
+          consumeDeletionQueue({ batchSize: 5 }),
+        ]);
+        expect(holdError).toBeUndefined();
+        expect(a.claimed + b.claimed).toBe(20);
+        expect(a.claimed).toBeGreaterThan(0);
+        expect(b.claimed).toBeGreaterThan(0);
+        expect(a.completed + b.completed).toBe(20);
+        expect(new Set(deleteCalls).size).toBe(20);
+        expect(deleteCalls).toHaveLength(20);
+        expect(await pending(keys)).toEqual([]);
+      },
+    );
 
     it('concorrencia: um segundo executor iniciado DEPOIS do claim do primeiro nao repete o lote (lease)', async () => {
       const id = randomUUID();

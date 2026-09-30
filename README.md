@@ -5,8 +5,8 @@ TROQ é uma plataforma de anúncios entre pessoas em que o contato (WhatsApp/tel
 **Status (reconciliado em 2026-09-29, `main` em `e8ad1ae`):**
 
 - **Fase 0** concluída desde 2026-09-14 e **Fase 1** concluída desde 2026-09-16, com os gates aprovados e registrados em [transição para a Fase 1](docs/delivery/phase-1-transition.md) e [transição para a Fase 2](docs/delivery/phase-2-transition.md). Não há decisão aberta.
-- **Fase 2 (identidade e anúncios) em andamento, com implementação parcial integrada e gate de saída NÃO aprovado.** Existem no código: cadastro com verificação de e-mail, login com senha e logout, rascunhos e edição de anúncios, ações de ciclo de vida do anúncio, serviço de imagens, vitrine e detalhe públicos e a home pública com ofertas (PRs #52, #53, #57, #58 e #60). Falta, entre outras coisas, interface de upload e de publicação, prova em `preview` e provas com banco real. A aprovação do gate registrada em 2026-09-28 foi **retificada em 2026-09-29** e é apenas registro histórico ([transição para a Fase 3](docs/delivery/phase-3-transition.md)). As issues #38 a #51 continuam abertas.
-- **Fase 3 (solicitações, pagamentos e contato) condicionada ao gate da Fase 2 e não implementada.** A entrada da solicitação na home e no detalhe público só verifica login e elegibilidade; **não** cobra, **não** reserva vaga e **não** libera contato. Os módulos de pagamentos e de contato são fronteiras vazias.
+- **Fase 2 (identidade e anúncios) concluída em 2026-09-30, com o gate de saída APROVADO** — G1, G2 e G3 `PASS` ([transição para a Fase 3](docs/delivery/phase-3-transition.md), seção V). Existem no código e foram provados: cadastro 18+ com verificação de e-mail, login com senha e logout, rascunhos e edição, upload e processamento de imagens no R2, publicação e ciclo de vida pelo dono, vitrine e detalhe públicos sem contato e entrega autorizada das imagens. A jornada completa foi feita em `preview` a 375 px, e as suítes com PostgreSQL efêmero e servidor real rodam na CI. A aprovação de 2026-09-28 e a retificação de 2026-09-29 ficam como registro histórico.
+- **Fase 3 (solicitações, pagamentos e contato) liberada para execução pelo gate da Fase 2 e ainda não iniciada** ([#54](https://github.com/BrunoMNoronha/techlab-troq/issues/54)). A entrada da solicitação na home e no detalhe público só verifica login e elegibilidade; **não** cobra, **não** reserva vaga e **não** libera contato. Os módulos de pagamentos e de contato são fronteiras vazias.
 - **Ambientes:** `development` e `preview` foram provisionados na Fase 1 (Neon, Cloudflare R2, Resend e Sentry). O registro de F1-011 é que `production` não existia em nenhum provedor; **isso não foi revalidado**, e este documento não afirma nada sobre produção ou deploy atual.
 - **Validação:** a CI da `main` em `e8ad1ae` está verde, verificada no GitHub. Testes com banco real e provas em navegador citados nas PRs são relatos do autor de cada PR e não foram reexecutados nesta reconciliação.
 
@@ -76,7 +76,7 @@ pnpm run build
 - [Estado do projeto](docs/project-state.md)
 - [Transição para a Fase 1](docs/delivery/phase-1-transition.md)
 - [Transição para a Fase 2](docs/delivery/phase-2-transition.md)
-- [Transição para a Fase 3 — gate da Fase 2 retificado](docs/delivery/phase-3-transition.md)
+- [Transição para a Fase 3 — gate da Fase 2 aprovado](docs/delivery/phase-3-transition.md)
 - [Briefing do projeto](docs/PROJECT.md)
 - [Roadmap](docs/delivery/roadmap.md) e [backlog](docs/delivery/backlog.md)
 - [Ambientes, variáveis e segredos](docs/engineering/environments.md)
