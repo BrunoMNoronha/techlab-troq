@@ -158,6 +158,24 @@ async function enqueue(
   await getPrismaClient().$transaction((tx) => enqueueDeletions(tx, keys, reason));
 }
 
+/**
+ * Espera ate que pelo menos `atLeast` pendencias destas chaves tenham sido
+ * reclamadas (`attempts > 0`). Estoura com erro explicito se isso nao ocorrer.
+ */
+async function waitUntilClaimed(keys: string[], atLeast: number, timeoutMs = 5000) {
+  const deadline = Date.now() + timeoutMs;
+  for (;;) {
+    const [{ claimed }] = await getPrismaClient().$queryRaw<{ claimed: number }[]>`
+      SELECT count(*)::int AS "claimed" FROM "media_object_deletions"
+      WHERE "object_key" = ANY(${keys}) AND "attempts" > 0`;
+    if (claimed >= atLeast) return;
+    if (Date.now() > deadline) {
+      throw new Error(`segundo consumidor nao reclamou em ${timeoutMs} ms (${claimed} reclamadas)`);
+    }
+    await new Promise((r) => setTimeout(r, 10));
+  }
+}
+
 /** Torna vencidas as pendencias destas chaves (lease/recuo "passou"). */
 async function makeDue(keys: string[]) {
   await getPrismaClient().$executeRaw`
@@ -450,7 +468,19 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
       const id = randomUUID();
       const keys = Array.from({ length: 20 }, (_, i) => `derivatives/${id}/1/v1/k${i}.webp`);
       await enqueue(keys);
-      hooks.onDelete = () => new Promise((r) => setTimeout(r, 20));
+      // A divisao nao pode depender de o segundo consumidor reclamar antes de o
+      // primeiro esvaziar a fila (~0,7 s): uma pausa do processo de teste ou uma
+      // conexao nova lenta bastava para um levar as 20. O primeiro a apagar
+      // segura o proprio lote (lease ja gravado) ate o banco mostrar que o outro
+      // reclamou um lote diferente; so entao os dois seguem em paralelo.
+      let holding = false;
+      hooks.onDelete = async () => {
+        if (!holding) {
+          holding = true;
+          await waitUntilClaimed(keys, 6);
+        }
+        await new Promise((r) => setTimeout(r, 20));
+      };
 
       const [a, b] = await Promise.all([
         consumeDeletionQueue({ batchSize: 5 }),

@@ -68,11 +68,11 @@ src/generated/prisma/                         Prisma Client gerado — artefato 
 src/persistence/
   prisma.ts                                   fronteira de runtime: PrismaClient + PrismaPg (secao 13)
   prisma.test.ts                              unitario: carregamento, erro sem DATABASE_URL, reuso
-  prisma.integration.test.ts                  integracao contra PostgreSQL real (npm run test:integration)
+  prisma.integration.test.ts                  integracao contra PostgreSQL real (pnpm test:integration)
 vitest.integration.config.mts                 config da suite de integracao (fora de test:ci)
 ```
 
-- `src/generated/prisma/` está em `.gitignore`, `.prettierignore` e nos `ignores` do ESLint. Ele é recriado por `npx prisma generate` e **não** entra em commit. Desde F1-003, o script `postinstall` do `package.json` executa `prisma generate` ao fim de `npm ci`/`npm install`: como a fronteira de runtime (seção 13) importa o client gerado, `typecheck`, `test:ci` e `build` passaram a depender dele, e o CI e a Vercel instalam a partir de um checkout sem o artefato. `prisma generate` não toca o banco e não exige `DATABASE_URL` nem `DIRECT_URL` (seção 4.1); é exatamente o uso que [ADR-0005](../adr/0005-prisma-orm-migrations.md) admite no build/`postinstall`, enquanto `migrate deploy` continua fora dele. O script `build` também executa `prisma generate` antes de `next build`: na Vercel, quando o cache de build é restaurado, o `pnpm install` não reinstala nada e o `postinstall` não roda, e o build falhava por não encontrar `@/generated/prisma/client` (deployment `dpl_2UrwuA8dyZ39wEQzTSJLRc7Z7jHs`, 2026-09-29; também no commit `906cccd`).
+- `src/generated/prisma/` está em `.gitignore`, `.prettierignore` e nos `ignores` do ESLint. Ele é recriado por `pnpm exec prisma generate` e **não** entra em commit. Desde F1-003, o script `postinstall` do `package.json` executa `prisma generate` ao fim de `pnpm install`: como a fronteira de runtime (seção 13) importa o client gerado, `typecheck`, `test:ci` e `build` passaram a depender dele, e o CI e a Vercel instalam a partir de um checkout sem o artefato. `prisma generate` não toca o banco e não exige `DATABASE_URL` nem `DIRECT_URL` (seção 4.1); é exatamente o uso que [ADR-0005](../adr/0005-prisma-orm-migrations.md) admite no build/`postinstall`, enquanto `migrate deploy` continua fora dele. O script `build` também executa `prisma generate` antes de `next build`: na Vercel, quando o cache de build é restaurado, o `pnpm install` não reinstala nada e o `postinstall` não roda, e o build falhava por não encontrar `@/generated/prisma/client` (deployment `dpl_2UrwuA8dyZ39wEQzTSJLRc7Z7jHs`, 2026-09-29; também no commit `906cccd`).
 - O `datasource` do schema declara apenas `provider = "postgresql"`; a URL vive exclusivamente em `prisma.config.ts` (regra da linha 7).
 - Migrations são **imutáveis depois de aplicadas em ambiente compartilhado** (ADR-0005, decisão 5). A migration inicial **é imutável desde 2026-09-15**, quando a primeira execução bem-sucedida do workflow da seção 15 a aplicou ao Neon de `preview` (seção 15.6); corrigir qualquer coisa nela significa **nova** migration. F1-004 não a alterou, o que foi conferido por hash.
 
@@ -184,15 +184,15 @@ Pré-requisito: `DIRECT_URL` apontando para um PostgreSQL **local ou descartáve
 
 | Comando | Toca o banco? | Uso |
 | --- | --- | --- |
-| `npx prisma format` / `npx prisma format --check` | Não | Formatar o schema; `--check` falha se houver divergência (adequado a CI) |
-| `npx prisma validate` | Não | Validar o schema |
-| `npx prisma generate` | Não | Regenerar `src/generated/prisma/`. Também executado automaticamente pelo `postinstall` (seção 5) |
-| `npx prisma migrate status` | Sim (leitura) | Comparar o histórico versionado com `_prisma_migrations` |
-| `npx prisma migrate dev --create-only --name <nome>` | Sim (shadow database) | Gerar uma migration **sem aplicar**, para revisão e customização |
-| `npx prisma migrate dev` | Sim | Aplicar migrations pendentes ao banco descartável (e gerar o client) |
-| `npx prisma migrate reset --force` | Sim, **destrutivo** | Recriar o banco descartável do zero e reaplicar o histórico. O CLI 7.10 exige consentimento humano explícito quando detecta execução por agente de IA; a alternativa equivalente é recriar o banco descartável e rodar `migrate dev` |
-| `npx prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --script` | Sim (leitura) | Conferir drift entre o banco e o schema |
-| `npx prisma migrate deploy` | Sim | Aplicar o histórico a um banco **vazio ou já migrado**. Em desenvolvimento, apenas para provar reprodutibilidade em banco descartável; em `preview`/`production`, apenas pelo job de CI/CD |
+| `pnpm exec prisma format` / `pnpm exec prisma format --check` | Não | Formatar o schema; `--check` falha se houver divergência (adequado a CI) |
+| `pnpm exec prisma validate` | Não | Validar o schema |
+| `pnpm exec prisma generate` | Não | Regenerar `src/generated/prisma/`. Também executado automaticamente pelo `postinstall` (seção 5) |
+| `pnpm exec prisma migrate status` | Sim (leitura) | Comparar o histórico versionado com `_prisma_migrations` |
+| `pnpm exec prisma migrate dev --create-only --name <nome>` | Sim (shadow database) | Gerar uma migration **sem aplicar**, para revisão e customização |
+| `pnpm exec prisma migrate dev` | Sim | Aplicar migrations pendentes ao banco descartável (e gerar o client) |
+| `pnpm exec prisma migrate reset --force` | Sim, **destrutivo** | Recriar o banco descartável do zero e reaplicar o histórico. O CLI 7.10 exige consentimento humano explícito quando detecta execução por agente de IA; a alternativa equivalente é recriar o banco descartável e rodar `migrate dev` |
+| `pnpm exec prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --script` | Sim (leitura) | Conferir drift entre o banco e o schema |
+| `pnpm exec prisma migrate deploy` | Sim | Aplicar o histórico a um banco **vazio ou já migrado**. Em desenvolvimento, apenas para provar reprodutibilidade em banco descartável; em `preview`/`production`, apenas pelo job de CI/CD |
 
 ## 11. O que ainda não está implementado
 
@@ -203,7 +203,7 @@ Pré-requisito: `DIRECT_URL` apontando para um PostgreSQL **local ou descartáve
 | `DATABASE_URL` e `APP_ENV=preview` no escopo Preview da Vercel | **concluído por F1-004** | Seção 15.2. Somente Preview; nada em Production; sem `DIRECT_URL` |
 | Runtime: instância do Prisma Client com driver adapter, singleton, leitura de `DATABASE_URL` | **concluído por F1-003** | `src/persistence/prisma.ts` (seção 13). Provado contra banco descartável; a prova contra o Neon é executada pelo workflow da seção 15 |
 | Workflow controlado executando `prisma migrate deploy` em `preview`, serializado, somente a partir de `main` | **concluído por F1-004; primeira execução aprovada** | `.github/workflows/migrate-preview.yml` (seção 15.3); evidência na seção 15.6. O equivalente de `production`, com aprovação (ADR-0005, decisão 7), depende do provisionamento desse ambiente |
-| Validação de migration e execução de `npm run test:integration` em CI de PR contra banco efêmero | **não iniciado** | [testing.md](testing.md), seção 7. A suíte de integração existe (seção 13.7) e roda pós-merge contra o Neon (seção 15); falta o job de PR que sobe um banco efêmero |
+| Validação de migration e execução de `pnpm test:integration` em CI de PR contra banco efêmero | **concluído por F2-013 (#51)** | Job `Integração (PostgreSQL efêmero)` de `.github/workflows/ci.yml`: PostgreSQL 17 de serviço, `prisma migrate deploy` do histórico inteiro num banco vazio e as suítes que escrevem, mais as provas HTTP ([testing.md](testing.md), seção 7). Não é required check do ruleset `Protect main`: torná-lo obrigatório é decisão do responsável pelo repositório. A suíte somente leitura continua rodando pós-merge contra o Neon (seção 15) |
 | Integrações: Better Auth (e suas tabelas), R2, Resend, Mercado Pago | **não iniciado** | Fases 2 e 3 |
 | Módulos de domínio de AR-3.3 e repositórios da camada de persistência | **não iniciado** | Fase 1, E-1. O que existe da camada de persistência é apenas a fronteira de obtenção do client (seção 13) |
 
@@ -214,8 +214,8 @@ Consequência: **E-5 está concluído** — schema, migration, runtime, Neon de 
 Executado integralmente em 2026-09-14 por F1-002 e reexecutável por qualquer pessoa desenvolvedora. Só dados sintéticos; nenhum dado pessoal real; nenhum banco de projeto, `preview` ou `production`.
 
 1. **Subir PostgreSQL descartável** (Docker é o caminho preferencial), por exemplo `postgres:17-alpine`, com usuário, senha e banco criados só para a validação e porta local livre. Definir `DIRECT_URL` correspondente em `.env.local`.
-2. **Schema:** `npx prisma format --check`, `npx prisma validate`, `npx prisma generate`. Conferir que `src/generated/prisma/` continua fora do Git (`git status`).
-3. **Migration:** `npx prisma migrate dev` aplica o histórico; `npx prisma migrate status` deve responder que o banco está atualizado.
+2. **Schema:** `pnpm exec prisma format --check`, `pnpm exec prisma validate`, `pnpm exec prisma generate`. Conferir que `src/generated/prisma/` continua fora do Git (`git status`).
+3. **Migration:** `pnpm exec prisma migrate dev` aplica o histórico; `pnpm exec prisma migrate status` deve responder que o banco está atualizado.
 4. **Prova das invariantes por caso negativo**, via `psql` no contêiner, com fixtures temporários (usuários, um anúncio `published`). Mínimo exigido e resultado observado nesta entrega:
 
    | Caso | Esperado | Observado em 2026-09-14 |
@@ -239,8 +239,8 @@ Executado integralmente em 2026-09-14 por F1-002 e reexecutável por qualquer pe
    | Email repetido entre contas ativas; repetido após a anterior pedir exclusão | falha; permitido | `users_email_active_key` |
    | Denúncia repetida por (denunciante, anúncio); contestação repetida por decisão; decisão de ofício sem origem; segunda liberação para a mesma negociação | falha | `reports_reporter_id_listing_id_key`; `appeals_moderation_decision_id_key`; `moderation_decisions_origin_check`; `contact_releases_negotiation_id_key` |
 
-5. **Reprodutibilidade:** criar um segundo banco vazio no mesmo contêiner e executar `npx prisma migrate deploy` contra ele com `DIRECT_URL` apontando para o novo banco; `migrate status` deve reportar o histórico aplicado. Em seguida recriar o banco de desenvolvimento (`DROP DATABASE`/`CREATE DATABASE` no contêiner, ou `prisma migrate reset --force` com consentimento humano) e reaplicar com `migrate dev`. Nesta entrega os dois caminhos terminaram com 24 tabelas, 18 enums, 4 índices únicos parciais, 10 `CHECK`s e 3 triggers, e a prova do item 4 foi reexecutada com o mesmo resultado no banco recriado.
-6. **Runtime (desde F1-003):** com `DATABASE_URL` apontando para o **mesmo** banco descartável já migrado, executar `npm run test:integration`. A suíte abre conexão pela fronteira da seção 13, executa `SELECT 1`, confere em `_prisma_migrations` que a migration inicial está aplicada e faz `count()` em tabelas do schema, sem escrever nada. Sem `DATABASE_URL` a suíte **falha** (não é pulada). Resultado em 2026-09-14: 5 de 5 casos aprovados sobre PostgreSQL 17.11, depois de `migrate deploy` em banco vazio.
+5. **Reprodutibilidade:** criar um segundo banco vazio no mesmo contêiner e executar `pnpm exec prisma migrate deploy` contra ele com `DIRECT_URL` apontando para o novo banco; `migrate status` deve reportar o histórico aplicado. Em seguida recriar o banco de desenvolvimento (`DROP DATABASE`/`CREATE DATABASE` no contêiner, ou `prisma migrate reset --force` com consentimento humano) e reaplicar com `migrate dev`. Nesta entrega os dois caminhos terminaram com 24 tabelas, 18 enums, 4 índices únicos parciais, 10 `CHECK`s e 3 triggers, e a prova do item 4 foi reexecutada com o mesmo resultado no banco recriado.
+6. **Runtime (desde F1-003):** com `DATABASE_URL` apontando para o **mesmo** banco descartável já migrado, executar `pnpm test:integration`. A suíte abre conexão pela fronteira da seção 13, executa `SELECT 1`, confere em `_prisma_migrations` que a migration inicial está aplicada e faz `count()` em tabelas do schema, sem escrever nada. Sem `DATABASE_URL` a suíte **falha** (não é pulada). Resultado em 2026-09-14: 5 de 5 casos aprovados sobre PostgreSQL 17.11, depois de `migrate deploy` em banco vazio.
 7. **Encerrar e remover** o contêiner e seu volume ao final. Nada da validação é versionado além deste registro.
 
 Prisma Migrate não possui migration `down` como fluxo oficial do projeto; **nenhum rollback produtivo foi implementado**. Reverter uma mudança em ambiente compartilhado é uma **nova** migration, por expand/contract (ADR-0005, decisão 9).
@@ -289,7 +289,7 @@ A fronteira **não** carrega `.env*`: em `development`, o próprio Next.js carre
 
 ### 13.4 Inicialização lazy e comportamento sem `DATABASE_URL`
 
-- **Importar o módulo não exige a variável e não toca o banco.** `npm run build`, `lint`, `typecheck`, `test:ci` e `prisma generate` rodam sem `DATABASE_URL` (comprovado na validação de F1-003). Isso não é um parser geral de variáveis de ambiente, que continua fora de escopo.
+- **Importar o módulo não exige a variável e não toca o banco.** `pnpm build`, `lint`, `typecheck`, `test:ci` e `prisma generate` rodam sem `DATABASE_URL` (comprovado na validação de F1-003). Isso não é um parser geral de variáveis de ambiente, que continua fora de escopo.
 - **A variável só é lida quando um client é pedido.** `getPrismaClient()` sem `DATABASE_URL` lança `Error` cuja mensagem **nomeia a variável e nunca o valor** ("`DATABASE_URL` nao definida: o runtime nao pode abrir conexao com o PostgreSQL ..."). Nenhuma connection string atravessa erro ou log ([environments.md](environments.md), seção 6.5).
 - **Chamar `getPrismaClient()` não abre conexão.** O `PrismaPg` só cria o `pg.Pool` no primeiro `connect()` interno do Prisma, e a primeira conexão TCP só é aberta na primeira consulta — fato conferido no código do adapter 7.10.0.
 
@@ -308,18 +308,18 @@ O módulo lê um segredo e abre TCP; ele **não pode** ser importado por Client 
 
 | Arquivo | Nível | Roda em | O que prova |
 | --- | --- | --- | --- |
-| `src/persistence/prisma.test.ts` | unitário, sem banco | `npm run test:ci` | importar sem `DATABASE_URL` não lança; pedir o client sem a variável falha com erro controlado que não contém connection string; duas chamadas devolvem a mesma instância; a instância sobrevive à reavaliação do módulo |
-| `src/persistence/prisma.integration.test.ts` | integração, PostgreSQL real | `npm run test:integration`, com `DATABASE_URL` para banco descartável migrado | conexão real, `SELECT 1`, migration inicial em `_prisma_migrations`, `count()` em `users`, `listings` e `contact_requests` sem escrever, reuso entre consultas |
-| `src/modules/identity/auth-flow.integration.test.ts` | integração, PostgreSQL real, **escreve** | `npm run test:integration` com `INTEGRATION_EPHEMERAL_DB=1` e `DATABASE_URL` para banco efêmero; pulada sem a variável | credencial persistida com hash do Better Auth, login exige senha correta, logout revoga a sessão no banco (cookie reapresentado é negado), sessão expirada, sessão antiga após bloqueio/exclusão, isolamento entre usuários por ID adulterado; dados sintéticos removidos ao final |
+| `src/persistence/prisma.test.ts` | unitário, sem banco | `pnpm test:ci` | importar sem `DATABASE_URL` não lança; pedir o client sem a variável falha com erro controlado que não contém connection string; duas chamadas devolvem a mesma instância; a instância sobrevive à reavaliação do módulo |
+| `src/persistence/prisma.integration.test.ts` | integração, PostgreSQL real | `pnpm test:integration`, com `DATABASE_URL` para banco descartável migrado | conexão real, `SELECT 1`, migration inicial em `_prisma_migrations`, `count()` em `users`, `listings` e `contact_requests` sem escrever, reuso entre consultas |
+| `src/modules/identity/auth-flow.integration.test.ts` | integração, PostgreSQL real, **escreve** | `pnpm test:integration` com `INTEGRATION_EPHEMERAL_DB=1` e `DATABASE_URL` para banco efêmero; pulada sem a variável | credencial persistida com hash do Better Auth, login exige senha correta, logout revoga a sessão no banco (cookie reapresentado é negado), sessão expirada, sessão antiga após bloqueio/exclusão, isolamento entre usuários por ID adulterado; dados sintéticos removidos ao final |
 
-`npm run test:integration` usa `vitest.integration.config.mts` (ambiente `node`, sem jsdom, arquivos em série). A suíte de integração fica **fora** de `test:ci` para que o CI atual continue determinístico sem banco ([testing.md](testing.md), seção 7); quando o job de banco efêmero existir (seção 11), é esse comando que ele executará. Sem `DATABASE_URL`, a suíte de integração **falha explicitamente** — não é pulada.
+`pnpm test:integration` usa `vitest.integration.config.mts` (ambiente `node`, sem jsdom, arquivos em série). A suíte de integração fica **fora** de `test:ci` para que o CI atual continue determinístico sem banco ([testing.md](testing.md), seção 7); quando o job de banco efêmero existir (seção 11), é esse comando que ele executará. Sem `DATABASE_URL`, a suíte de integração **falha explicitamente** — não é pulada.
 
 ## 14. Rastreabilidade
 
 | Item | Efeito deste documento |
 | --- | --- |
 | F1-002 | Entrega: Prisma 7.10.0 pinado, `prisma.config.ts`, `schema.prisma`, migration inicial, este documento |
-| F1-003 | Entrega: `@prisma/adapter-pg` e `pg` pinados, fronteira `src/persistence/prisma.ts`, testes unitários e de integração, `npm run test:integration`, seção 13 deste documento |
+| F1-003 | Entrega: `@prisma/adapter-pg` e `pg` pinados, fronteira `src/persistence/prisma.ts`, testes unitários e de integração, `pnpm test:integration`, seção 13 deste documento |
 | F1-004 | Entrega: Neon de `preview` provisionado (São Paulo, PostgreSQL 17, branch `preview`, database `troq`), GitHub Environment `preview` restrito a `main` com os secrets `DIRECT_URL` e `DATABASE_URL`, `DATABASE_URL` e `APP_ENV` no escopo Preview da Vercel, workflow `.github/workflows/migrate-preview.yml` com a primeira execução aprovada, seção 15 deste documento |
 | E-5 ([../delivery/phase-1-transition.md](../delivery/phase-1-transition.md), seção 10) | **Concluído**: schema, migration e runtime do Prisma Client (F1-002 e F1-003), Neon de `preview`, custódia das conexões e workflow de `migrate deploy` com a migration inicial aplicada (F1-004). Produção continua fora: não há banco nem job de `production` |
 | [../architecture/data-model.md](../architecture/data-model.md) | Materializado; I-1, I-2, I-5, I-6 e I-8 como garantias reais de banco (seção 7.1); nenhuma entidade `Interest` |
@@ -367,14 +367,14 @@ Fato verificado em 2026-09-15 sobre o driver: o `pg` 8.23 trata `sslmode=require
 | Item | Contrato |
 | --- | --- |
 | Nome | `Migrations de preview (Neon)`; job `Aplicar migrations no Neon de preview`. Nomes distintos do required status check, que **não** muda |
-| Gatilhos | `push` em `main`, filtrado por caminho (migrations, `schema.prisma`, `prisma.config.ts`, `package.json`, `package-lock.json`, `src/persistence/**`, `vitest.integration.config.mts` e o próprio workflow) e `workflow_dispatch`. **Nenhum** gatilho de Pull Request |
+| Gatilhos | `push` em `main`, filtrado por caminho (migrations, `schema.prisma`, `prisma.config.ts`, `package.json`, `pnpm-lock.yaml`, `src/persistence/**`, `vitest.integration.config.mts` e o próprio workflow) e `workflow_dispatch`. **Nenhum** gatilho de Pull Request |
 | Guarda | `if: github.ref == 'refs/heads/main'` no job, além do gatilho e da política do environment |
 | Permissões | `contents: read` |
 | Environment | `preview` — origem exclusiva de `DIRECT_URL` e `DATABASE_URL`, expostas como variáveis do job |
 | Serialização | grupo de concorrência `migrate-preview`, `cancel-in-progress: false`: uma execução por vez, nunca cancelada por outra |
-| Runner e toolchain | `ubuntu-latest`, `actions/checkout@v5`, `actions/setup-node@v5` com Node.js 24 e cache npm, `npm ci` — os mesmos do CI de validação |
+| Runner e toolchain | `ubuntu-latest`, `actions/checkout@v5`, `pnpm/action-setup@v4`, `actions/setup-node@v5` com Node.js 24 e cache do pnpm, `pnpm install --frozen-lockfile` — os mesmos do CI de validação |
 | Limite | `timeout-minutes: 15` |
-| Passos, nesta ordem | verificação de presença dos dois secrets (nome e status, nunca o valor); `npm ci`; `npx prisma migrate deploy`; `npx prisma migrate status`; `npm run test:integration`. Qualquer falha falha o job; sem `continue-on-error`, sem retry |
+| Passos, nesta ordem | verificação de presença dos dois secrets (nome e status, nunca o valor); `pnpm install --frozen-lockfile`; `pnpm exec prisma migrate deploy`; `pnpm exec prisma migrate status`; `pnpm test:integration`. Qualquer falha falha o job; sem `continue-on-error`, sem retry |
 | O que não contém | comando de desenvolvimento do Prisma Migrate, `db push`, SQL destrutivo, seed, credencial literal, conexão de produção, migration em build ou em Pull Request |
 
 O workflow **não** é required status check: ele executa depois do merge e não substitui o CI da PR ([testing.md](testing.md), seção 7). Torná-lo obrigatório bloquearia toda PR à espera de um check que só existe em `main`.

@@ -267,7 +267,10 @@ describe.skipIf(!enabled)('consulta publica contra banco real (#49)', () => {
     const json = JSON.stringify({ feed, detail });
     for (const forbidden of [
       PHONE_MARKER,
-      '90000',
+      // O numero em outras grafias. '90000' sozinho nao serve: aparece por
+      // acaso em UUID aleatorio (CI de F2-013: id terminado em "…90000").
+      '90000-0000',
+      '11900000000',
       '@example.test',
       active,
       'ownerId',

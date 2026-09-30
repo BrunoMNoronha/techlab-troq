@@ -47,3 +47,88 @@ jobs:
 
       - name: Build
         run: pnpm run build
+
+  # Suites de integracao que ESCREVEM (INTEGRATION_EPHEMERAL_DB=1) contra um
+  # PostgreSQL efemero do proprio job, mais as provas HTTP contra um servidor
+  # Next.js real ligado ao mesmo banco (docs/engineering/testing.md, secao 7).
+  # Nenhum secret de ambiente real: BETTER_AUTH_SECRET e CRON_SECRET sao
+  # gerados aqui e mascarados. As suites que exigem o R2 real
+  # (R2_INTEGRATION=1) ficam de fora e se declaram puladas.
+  integration:
+    name: Integração (PostgreSQL efêmero)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: troq
+          POSTGRES_PASSWORD: troq-ci
+          POSTGRES_DB: troq_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U troq -d troq_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DIRECT_URL: postgresql://troq:troq-ci@localhost:5432/troq_ci
+      DATABASE_URL: postgresql://troq:troq-ci@localhost:5432/troq_ci
+      INTEGRATION_EPHEMERAL_DB: '1'
+      APP_ENV: development
+      BETTER_AUTH_URL: http://localhost:3100
+      PUBLIC_SURFACE_BASE_URL: http://localhost:3100
+      PRIVATE_SURFACE_BASE_URL: http://localhost:3100
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js 24
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Gerar segredos sintéticos do job
+        run: |
+          for name in BETTER_AUTH_SECRET CRON_SECRET; do
+            value="$(openssl rand -base64 32)"
+            echo "::add-mask::$value"
+            echo "$name=$value" >> "$GITHUB_ENV"
+          done
+
+      - name: Instalar dependências
+        run: pnpm install --frozen-lockfile
+
+      - name: Aplicar migrations no banco efêmero
+        run: pnpm exec prisma migrate deploy
+
+      - name: Build
+        run: pnpm run build
+
+      - name: Iniciar servidor da prova HTTP
+        run: |
+          nohup pnpm start -p 3100 > next-start.log 2>&1 &
+          for attempt in $(seq 1 60); do
+            if curl -fsS -o /dev/null http://localhost:3100/; then
+              echo "servidor pronto"
+              exit 0
+            fi
+            sleep 1
+          done
+          cat next-start.log
+          exit 1
+
+      - name: Suítes de integração e provas HTTP
+        run: pnpm run test:integration
+
+      - name: Log do servidor em caso de falha
+        if: failure()
+        run: cat next-start.log || true

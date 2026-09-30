@@ -161,7 +161,7 @@ O check obrigatório é, no estado atual, exatamente:
 
 `Validação (format, lint, typecheck, test, build)`
 
-Ele corresponde ao job definido em [../../.github/workflows/ci.yml](../../.github/workflows/ci.yml), que executa `npm ci` seguido de `npm run format:check`, `npm run lint`, `npm run typecheck`, `npm run test:ci` e `npm run build`. Os contratos desses comandos estão em [conventions.md](conventions.md), seção 5.1, e a estratégia de testes em [testing.md](testing.md); este documento não os replica.
+Ele corresponde ao job definido em [../../.github/workflows/ci.yml](../../.github/workflows/ci.yml), que executa `pnpm install --frozen-lockfile` seguido de `pnpm run format:check`, `pnpm run lint`, `pnpm run typecheck`, `pnpm run test:ci` e `pnpm run build`. Os contratos desses comandos estão em [conventions.md](conventions.md), seção 5.1, e a estratégia de testes em [testing.md](testing.md); este documento não os replica.
 
 A proteção usa **política estrita** de required status checks. Em termos operacionais: quando `main` avança e o GitHub considera a PR desatualizada, a branch precisa ser atualizada e o CI precisa voltar a ficar verde antes do merge. Isso não se contorna por merge administrativo nem por bypass.
 

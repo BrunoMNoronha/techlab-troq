@@ -2,7 +2,7 @@
 //
 // Testes unitarios da fronteira de persistencia: carregamento, erro controlado
 // sem `DATABASE_URL` e reuso da instancia. Nao tocam banco: a prova de conexao
-// real esta em prisma.integration.test.ts (`npm run test:integration`).
+// real esta em prisma.integration.test.ts (`pnpm test:integration`).
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Placeholder obviamente ficticio (host `example.invalid`, RFC 2606). Nenhuma
