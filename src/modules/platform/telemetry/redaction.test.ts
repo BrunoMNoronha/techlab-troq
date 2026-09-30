@@ -107,6 +107,21 @@ describe('redactText', () => {
     expect(redactText('Authorization: Bearer abcdef0123456789')).not.toContain('abcdef0123456789');
   });
 
+  it('redige cookie de sessao e cabecalho cookie ecoados em texto livre (#50)', () => {
+    const token = '3NfTTsXNwzQcLsT96r3yBkJmM7HVujwc.S6mMPiZdXY1xrHZXKhCirJMv8E1';
+    expect(redactText(`cookie better-auth.session_token=${token}`)).toBe(
+      'cookie better-auth.session_token=[redacted]',
+    );
+    expect(redactText(`__Secure-better-auth.session_token=${token}; path=/`)).not.toContain(token);
+    expect(redactText(`falha: Cookie: a=1; better-auth.session_data=${token}`)).toBe(
+      'falha: Cookie: [redacted]',
+    );
+    expect(redactText(`set-cookie: better-auth.session_token=${token}; HttpOnly`)).not.toContain(
+      token,
+    );
+    expect(redactText(`?code=1&auth_code=${token}&x=2`)).not.toContain(token);
+  });
+
   it('nao destroi texto sem dado proibido', () => {
     expect(redactText('falha ao aplicar transicao de anuncio')).toBe(
       'falha ao aplicar transicao de anuncio',
