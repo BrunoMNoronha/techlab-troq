@@ -1,17 +1,14 @@
 import Link from 'next/link';
 import type { PublicListingFeedItem } from '@/modules/listing';
+import { derivativeSrcSet, listingImageAlt, pickDerivative } from './listing-image';
 
 // Card de oferta publica, compartilhado pela home e por /explorar. Recebe apenas
 // a projecao publica do anuncio (sem dono, sem contato).
 export function ListingCard({ item }: { item: PublicListingFeedItem }) {
   // Imagem pela rota autorizada /media (sem Image Optimization: o cache
   // transformado sobreviveria a revogacao; media-pipeline-contract.md, 9.2).
-  const coverImage =
-    item.images.length > 0
-      ? (item.images[0].derivatives.find((d) => d.kind === 'medium') ??
-        item.images[0].derivatives[0] ??
-        null)
-      : null;
+  const cover = item.images[0];
+  const coverImage = cover ? pickDerivative(cover.derivatives, 'medium') : null;
 
   return (
     <Link
@@ -38,13 +35,15 @@ export function ListingCard({ item }: { item: PublicListingFeedItem }) {
           justifyContent: 'center',
         }}
       >
-        {coverImage ? (
+        {cover && coverImage ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={coverImage.url}
+            srcSet={derivativeSrcSet(cover.derivatives)}
+            sizes="(min-width: 1040px) 330px, (min-width: 600px) 50vw, 100vw"
             width={coverImage.width}
             height={coverImage.height}
-            alt={item.title}
+            alt={listingImageAlt(item.title, 0, item.images.length)}
             loading="lazy"
             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
           />

@@ -27,8 +27,16 @@ export type {
   ListingDTO,
   ListingFailureReason,
   ListingMutationResult,
+  PublicFeedPage,
   PublicListingFeedItem,
 } from './actions';
+
+export {
+  PUBLIC_FEED_DEFAULT_LIMIT,
+  PUBLIC_FEED_MAX_LIMIT,
+  normalizePage,
+  normalizePublicFeedQuery,
+} from './public-query';
 
 export { LISTING_FIELDS, validateListingContent, validateListingPatch } from './validation';
 export type { ListingField, ListingFieldErrors } from './validation';

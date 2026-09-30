@@ -6,6 +6,7 @@ import { getPrismaClient } from '@/persistence/prisma';
 import type { ListingStatus } from '@/generated/prisma/client';
 import { isUuid } from './ids';
 import { transitionListing, type LifecycleResult } from './lifecycle';
+import { normalizePublicFeedQuery } from './public-query';
 import {
   validateListingContent,
   validateListingPatch,
@@ -325,19 +326,38 @@ export interface PublicListingFeedItem {
   }[];
 }
 
+export interface PublicFeedPage {
+  listings: PublicListingFeedItem[];
+  /** Somente anuncios visiveis (secao 7), com os mesmos filtros. */
+  total: number;
+  /** Valores aplicados apos a normalizacao (9.3). */
+  page: number;
+  limit: number;
+}
+
+const MAX_PUBLIC_FEED_OFFSET = 2_147_483_647;
+
 /**
  * Retorna o feed publico de anuncios (somente PUBLISHED de contas ACTIVE).
  * Garantia estrita RF-014: zero vazamento de dados de contato ou identificadores privados.
+ *
+ * Os parametros sao normalizados AQUI (listing-contract.md, secao 9.1), e nao so
+ * na pagina: esta funcao e exportada de um modulo 'use server' e pode ser
+ * chamada como Server Action com argumentos arbitrarios. A resposta devolve
+ * `page`/`limit` efetivamente aplicados (9.3).
  */
 export async function getPublicFeed(options?: {
   page?: number;
   limit?: number;
   city?: string;
   state?: string;
-}): Promise<{ listings: PublicListingFeedItem[]; total: number }> {
-  const page = options?.page || 1;
-  const limit = options?.limit || 20;
-  const skip = (page - 1) * limit;
+}): Promise<PublicFeedPage> {
+  const { page, limit, city, state } = normalizePublicFeedQuery(options);
+
+  // UF fora do formato de duas letras nao corresponde a nenhum anuncio (9.1).
+  if (state === null) {
+    return { listings: [], total: 0, page, limit };
+  }
 
   const prisma = getPrismaClient();
 
@@ -351,19 +371,28 @@ export async function getPublicFeed(options?: {
     owner: { status: 'active' },
   };
 
-  if (options?.city) {
-    whereClause.city = { equals: options.city.trim(), mode: 'insensitive' };
+  if (city !== undefined) {
+    whereClause.city = { equals: city, mode: 'insensitive' };
   }
 
-  if (options?.state) {
-    whereClause.uf = { equals: options.state.trim().toUpperCase(), mode: 'insensitive' };
+  if (state !== undefined) {
+    whereClause.uf = { equals: state, mode: 'insensitive' };
+  }
+
+  // Deslocamento acima de int32 esta, por construcao, alem da ultima pagina:
+  // basta a contagem, sem mandar ao banco um OFFSET que ele poderia recusar.
+  if (page - 1 > Math.floor(MAX_PUBLIC_FEED_OFFSET / limit)) {
+    const total = await prisma.listing.count({ where: whereClause });
+    return { listings: [], total, page, limit };
   }
 
   const [dbListings, total] = await prisma.$transaction([
     prisma.listing.findMany({
       where: whereClause,
-      orderBy: { createdAt: 'desc' },
-      skip,
+      // Ordem total e deterministica (9.2): o desempate por id impede que a
+      // paginacao repita ou omita anuncios com o mesmo createdAt.
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      skip: (page - 1) * limit,
       take: limit,
       select: {
         id: true,
@@ -411,7 +440,7 @@ export async function getPublicFeed(options?: {
     })),
   }));
 
-  return { listings, total };
+  return { listings, total, page, limit };
 }
 
 /**
