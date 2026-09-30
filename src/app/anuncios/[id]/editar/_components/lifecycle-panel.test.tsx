@@ -1,5 +1,6 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { startTransition, Suspense, use, useEffect, useState } from 'react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { LISTING_COMPLIANCE_DECLARATION } from '@/modules/listing/compliance';
 import { LifecyclePanel } from './lifecycle-panel';
 
@@ -140,4 +141,88 @@ describe('LifecyclePanel', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('estado atual');
     expect(refresh).toHaveBeenCalled();
   });
+});
+
+// Defeito V7 da transicao para a Fase 3 (phase-3-transition.md): no Preview, a
+// mensagem "Anuncio pausado" aparecia enquanto o cabecalho e os botoes seguiam
+// no estado anterior, porque a resposta da Server Action e a pagina atualizada
+// chegam em duas idas ao servidor. Aqui o roteador e emulado como o do Next 16
+// (app-router-instance.js e use-action-queue.js): `refresh()` poe o estado da
+// pagina numa transicao como promessa pendente, lida com `use()`, e a pagina
+// nova so existe quando essa promessa resolve.
+type PanelStatus = 'published' | 'paused';
+const pageRouter: { setPage: (next: PanelStatus | Promise<PanelStatus>) => void } = {
+  setPage: () => {},
+};
+
+function EditPage({ initial }: { initial: PanelStatus }) {
+  const [page, setPage] = useState<PanelStatus | Promise<PanelStatus>>(initial);
+  useEffect(() => {
+    pageRouter.setPage = setPage;
+  }, []);
+  const status = typeof page === 'string' ? page : use(page);
+  return (
+    <>
+      <p>Estado atual: {status === 'published' ? 'Publicado' : 'Pausado'}</p>
+      <LifecyclePanel listingId={LISTING} status={status} readyImageCount={1} />
+    </>
+  );
+}
+
+describe('LifecyclePanel dentro da pagina, com a latencia do refresh', () => {
+  afterEach(() => refresh.mockReset());
+
+  it.each([
+    {
+      action: 'pauseListing' as const,
+      from: 'published' as const,
+      to: 'paused' as const,
+      click: 'Pausar anúncio',
+      busy: 'Pausando…',
+      header: 'Estado atual: Pausado',
+      done: 'Anúncio pausado. Ele saiu da oferta pública.',
+      next: 'Reativar anúncio',
+    },
+    {
+      action: 'reactivateListing' as const,
+      from: 'paused' as const,
+      to: 'published' as const,
+      click: 'Reativar anúncio',
+      busy: 'Reativando…',
+      header: 'Estado atual: Publicado',
+      done: 'Anúncio reativado. Ele voltou à oferta pública.',
+      next: 'Pausar anúncio',
+    },
+  ])(
+    '$action: mensagem, cabecalho e botoes mudam juntos, so com a pagina nova',
+    async ({ action, from, to, click, busy, header, done, next }) => {
+      actions[action].mockResolvedValue({ success: true, status: to, changed: true });
+      let arrive!: (s: PanelStatus) => void;
+      refresh.mockImplementation(() =>
+        startTransition(() => pageRouter.setPage(new Promise<PanelStatus>((r) => (arrive = r)))),
+      );
+
+      render(
+        <Suspense fallback={<p>carregando</p>}>
+          <EditPage initial={from} />
+        </Suspense>,
+      );
+      fireEvent.click(screen.getByRole('button', { name: click }));
+      await waitFor(() => expect(refresh).toHaveBeenCalledTimes(1));
+
+      // A action ja respondeu, a pagina nova ainda nao chegou: nada de
+      // mensagem de sucesso sobre um cabecalho antigo, e nada de repetir a acao.
+      expect(screen.getByRole('status')).toBeEmptyDOMElement();
+      expect(screen.getByRole('button', { name: busy })).toBeDisabled();
+      expect(screen.getByRole('button', { name: 'Encerrar anúncio' })).toBeDisabled();
+      expect(screen.queryByText('carregando')).toBeNull();
+
+      await act(async () => arrive(to));
+
+      expect(screen.getByText(header)).toBeInTheDocument();
+      expect(screen.getByRole('status')).toHaveTextContent(done);
+      expect(screen.getByRole('button', { name: next })).toBeEnabled();
+      expect(screen.queryByRole('button', { name: click })).toBeNull();
+    },
+  );
 });

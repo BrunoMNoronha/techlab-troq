@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useId, useRef, useState } from 'react';
+import { startTransition, useEffect, useId, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   closeListing,
@@ -142,8 +142,9 @@ export function LifecyclePanel({
     setPending(action);
     setError(null);
     setDone(null);
+    let res: LifecycleResult;
     try {
-      const res =
+      res =
         action === 'publish'
           ? await publishListing(listingId, complianceAccepted)
           : action === 'discard'
@@ -153,18 +154,27 @@ export function LifecyclePanel({
               : action === 'reactivate'
                 ? await reactivateListing(listingId)
                 : await closeListing(listingId);
-      if (res.success) {
+    } catch {
+      setError('Não foi possível concluir a operação. Verifique a conexão e tente novamente.');
+      setPending(null);
+      return;
+    }
+    if (res.success) {
+      // O novo estado (cabecalho, `status` e botoes) so chega com o
+      // `router.refresh()`, uma segunda ida ao servidor. A mensagem e o fim do
+      // "em andamento" entram na MESMA transicao do refresh: o React so os
+      // mostra junto com a pagina nova, e o botao do estado anterior nao volta
+      // a ficar clicavel no meio (V7 de phase-3-transition.md).
+      startTransition(() => {
+        setPending(null);
         setConfirming(null);
         setDone(DONE[action]);
         router.refresh();
-      } else {
-        setError(errorMessage(res));
-        if (res.reason === 'invalid_transition') router.refresh();
-      }
-    } catch {
-      setError('Não foi possível concluir a operação. Verifique a conexão e tente novamente.');
-    } finally {
+      });
+    } else {
       setPending(null);
+      setError(errorMessage(res));
+      if (res.reason === 'invalid_transition') router.refresh();
     }
   }
 
