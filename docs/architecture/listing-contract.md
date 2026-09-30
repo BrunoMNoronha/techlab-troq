@@ -391,4 +391,14 @@ Mudanças em relação à versão anterior (criada em [#52](https://github.com/B
 
 ### 15.3 Prova em Preview
 
-Registrada depois da execução no deployment de preview da branch desta entrega.
+Deployment `dpl_EtNnj2TESSMUToYP5enpYqghX5oB` (alias da branch `feat/f2-010-listing-lifecycle`, commit `c6e4c37`), com `BETTER_AUTH_URL` restrito à branch só para a prova. Conta sintética `@resend.dev`, cuja senha foi digitada pelo responsável. As superfícies públicas foram conferidas por HTTP **sem sessão do TROQ**, com acesso temporário de compartilhamento da Vercel.
+
+| Passo | Resultado |
+| --- | --- |
+| Publicar rascunho com imagem pronta e aceite | `Publicado`; detalhe 200, `/media` 200 (`private, no-store`), presente em `/explorar` e na home |
+| Pausar | detalhe e `/media` 404 na mesma URL, fora de `/explorar` e da home; o dono ainda recebe a miniatura (200) |
+| Reativar | de volta a 200 e às listagens |
+| Encerrar | a confirmação recebe o foco; antes de confirmar o anúncio segue publicado; depois, 404 e página somente leitura |
+| Rascunho novo: publicar sem aceite e depois sem imagem | alerta focado com `compliance_required`; depois `no_ready_image` |
+| Descartar: cancelar e depois confirmar | cancelar devolve o foco e mantém o rascunho; confirmar grava `closed` |
+| Neon de `preview` (consulta somente leitura) | anúncio do ciclo: `draft>published, published>paused, paused>published, published>closed`; auditoria `listing.published(T1)` e `listing.closed(T5)`; um aceite `DEC-031/2026-09-14/declaracao-1` no mesmo instante da auditoria; `removed_at` nulo. Rascunho descartado: `draft>closed`, sem auditoria |
