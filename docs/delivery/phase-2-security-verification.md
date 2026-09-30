@@ -16,7 +16,7 @@ Cada prova declara a camada em que roda. Nenhuma camada substitui outra.
 | HTTP real | build de produção (`pnpm build` + `pnpm start`) sobre o mesmo banco descartável, com requisições HTML e RSC | `PUBLIC_SURFACE_BASE_URL` e `PRIVATE_SURFACE_BASE_URL` |
 | Preview | deployment da Vercel sobre o Neon de `preview`, sem sessão e só leitura | seção 9: 95 de 96 verificações; a diferença é a falha fechada por configuração ausente |
 
-As suítes de integração **não rodam na CI** (achado A-6).
+As suítes de integração **não rodavam na CI** (achado A-6). Desde F2-013 (#51), o job `Integração (PostgreSQL efêmero)` roda as que não exigem o R2 real, inclusive as três desta verificação.
 
 Três suítes novas desta entrega foram submetidas a mutação: o defeito introduzido de propósito em cada uma foi detectado, e o código foi restaurado em seguida.
 
@@ -107,7 +107,7 @@ Nem os envelopes nem os logs capturados (`console.error`, `warn` e `log`, que v�
 | A-3 | baixa | `listing-contract.md` mostrava D-5 como aberta, mas a trava e a prova de concorrência existem desde #46 | `src/modules/media/upload.ts` (`FOR UPDATE`); teste "sexta e sétima concorrentes" | **corrigido** no contrato |
 | A-4 | baixa | Testes antigos sensíveis a tempo falham de forma intermitente na rodada completa e passam isolados: `media-pipeline` (`after()` real disputa a imagem), `email-verification` (compara relógio do banco com o do host, linha ~220) e `media-cleanup` (asserção de divisão entre consumidores concorrentes). Em cada rodada completa desta entrega, 1 teste desses falhou, e as suítes novas passaram em todas | logs das rodadas (seção 10) | tarefas separadas; nada foi pulado nem mascarado |
 | A-5 | informativo | No Next 16.3.5, redirecionamento e 404 no canal RSC respondem HTTP 200, com o marcador no payload | seção 4; [listing-contract.md](../architecture/listing-contract.md), 16.3 | comportamento do framework, sem vazamento; registrado |
-| A-6 | média (governança) | As suítes de integração não rodam na CI de PR nem no pós-merge com escrita; o G3 depende de execução local | [testing.md](../engineering/testing.md), seção 7; [database.md](../engineering/database.md), seção 11 | **recomendação para #51**: job de CI com PostgreSQL de serviço para as suítes sem R2 |
+| A-6 | média (governança) | As suítes de integração não rodam na CI de PR nem no pós-merge com escrita; o G3 depende de execução local | [testing.md](../engineering/testing.md), seção 7; [database.md](../engineering/database.md), seção 11 | **resolvido por F2-013 (#51)**: job `Integração (PostgreSQL efêmero)` em `.github/workflows/ci.yml`, em toda PR e todo push em `main`, com as suítes sem R2 e as provas HTTP ([testing.md](../engineering/testing.md), seção 7). Tornar o job required check fica com o responsável pelo repositório |
 
 Nenhum achado crítico ou alto.
 

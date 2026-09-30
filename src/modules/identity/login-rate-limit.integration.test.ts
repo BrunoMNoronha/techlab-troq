@@ -72,6 +72,18 @@ function sessionsOf(userId: string) {
   return prisma().session.count({ where: { userId } });
 }
 
+/**
+ * Abre as 10 conexoes do pool (`pg`, `max = 10`) antes da rajada. Sem isso, a
+ * rajada abre ~9 conexoes novas ao mesmo tempo, e cada transacao precisa da
+ * sua dentro do `maxWait` do Prisma (2 s): uma demora na abertura de conexao
+ * (Docker Desktop, rodada completa) derrubava as transacoes ainda sem conexao
+ * com P2028 antes de chegarem ao limitador — o teste media a abertura de
+ * conexoes, nao a concorrencia na trava. Conexoes ociosas duram 10 s no pool.
+ */
+async function warmPool() {
+  await Promise.all(Array.from({ length: 10 }, () => prisma().$executeRaw`SELECT pg_sleep(0.05)`));
+}
+
 describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
   'limite de tentativas de login (IC-10.2) contra PostgreSQL descartavel',
   () => {
@@ -248,6 +260,7 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
     });
 
     it('10 tentativas simultaneas: no maximo 5 chegam ao provedor e nenhuma sessao e criada', async () => {
+      await warmPool();
       const { userEmail, id } = await createUser('concorrente');
 
       const results = await Promise.all(
@@ -264,6 +277,7 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
 
     it('10 tentativas simultaneas para e-mail inexistente respeitam o mesmo limite', async () => {
       const ghost = email('fantasma-concorrente');
+      await warmPool();
 
       const results = await Promise.all(Array.from({ length: 10 }, () => loginUser(ghost, WRONG)));
 

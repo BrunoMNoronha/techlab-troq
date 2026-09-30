@@ -4,7 +4,7 @@ import { defineConfig } from 'vitest/config';
 // Testes de integracao com PostgreSQL real e descartavel (docs/engineering/
 // testing.md, secao 2.2). Separados da suite padrao porque exigem
 // `DATABASE_URL` apontando para um banco efemero ja migrado; `test:ci` continua
-// deterministico e sem banco. Executar com `npm run test:integration`.
+// deterministico e sem banco. Executar com `pnpm test:integration`.
 export default defineConfig({
   resolve: {
     alias: {

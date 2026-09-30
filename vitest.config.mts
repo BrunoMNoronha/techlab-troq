@@ -14,7 +14,7 @@ export default defineConfig({
     setupFiles: ['./vitest.setup.ts'],
     include: ['src/**/*.{test,spec}.{ts,tsx}'],
     // Integracao com PostgreSQL real fica fora da suite padrao: exige banco
-    // descartavel e roda por `npm run test:integration`.
+    // descartavel e roda por `pnpm test:integration`.
     exclude: [...configDefaults.exclude, 'src/**/*.integration.test.ts'],
     css: false,
   },

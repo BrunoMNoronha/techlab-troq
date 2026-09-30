@@ -2,7 +2,7 @@
 //
 // Prova de integracao da fronteira de persistencia contra PostgreSQL REAL e
 // descartavel, ja migrado por `prisma migrate deploy` (docs/engineering/
-// database.md, secao 12). Executada por `npm run test:integration`, fora de
+// database.md, secao 12). Executada por `pnpm test:integration`, fora de
 // `test:ci`, porque exige `DATABASE_URL` apontando para um banco efemero.
 //
 // Somente leitura: nenhuma linha e escrita. Nao usa mock — a garantia que se

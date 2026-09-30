@@ -24,7 +24,8 @@ Documento irmão: [testing.md](testing.md), que normatiza a estratégia de teste
 ### 1.1 Versionamento e reprodutibilidade
 
 - A linha de Node é declarada no repositório (por exemplo, `engines` e arquivo de versão de runtime) e é a mesma usada localmente, no CI e na plataforma de deploy. Divergência de linha maior entre esses ambientes é defeito, não detalhe de configuração.
-- **Lockfile é versionado e obrigatório.** Instalações em CI usam o modo determinístico do gerenciador (`npm ci` ou equivalente), nunca resolução livre de versões.
+- **O gerenciador de pacotes é o pnpm**, com a versão fixada em `packageManager` do `package.json`; `npm`, `npx` e `yarn` não fazem parte do fluxo. Scripts rodam por `pnpm <script>` e binários locais por `pnpm exec <binário>`.
+- **Lockfile é versionado e obrigatório** (`pnpm-lock.yaml`). Instalações em CI usam o modo determinístico, `pnpm install --frozen-lockfile`, nunca resolução livre de versões.
 - Dependências que participam de regra crítica — Prisma, framework, runtime — são **pinadas em versão exata**, sem `^` nem `~`. Para Prisma isso já é decisão vigente e obrigatória ([ADR-0005](../adr/0005-prisma-orm-migrations.md), decisão 3), inclusive a proibição de instalar por `@latest`.
 - Para as demais dependências, o intervalo pode ser mais frouxo, mas o lockfile continua sendo a fonte da verdade do que foi efetivamente instalado.
 - Atualização de dependência é mudança com diff próprio, não efeito colateral de outra PR.
@@ -156,14 +157,14 @@ O scaffold deve implementar exatamente estes comandos. Eles são o contrato entr
 
 | Comando | Contrato |
 | --- | --- |
-| `npm run format` | Aplica a formatação (Prettier) ao repositório. Escreve arquivos |
-| `npm run format:check` | Verifica formatação sem escrever. Falha se houver divergência. Adequado a CI |
-| `npm run lint` | Executa ESLint. Falha em erro; avisos não podem acumular indefinidamente |
-| `npm run typecheck` | Verificação de tipos sem emitir artefato. Falha em qualquer erro de tipo |
-| `npm run test` | Suíte de testes em modo de desenvolvimento |
-| `npm run test:ci` | Suíte de testes em modo não interativo e determinístico, adequado a CI |
-| `npm run test:integration` | Testes de integração contra PostgreSQL real e descartável, fora de `test:ci`; exige `DATABASE_URL` para um banco efêmero já migrado ([database.md](database.md), seção 13.7). Adicionado por F1-003 |
-| `npm run build` | Build de produção da aplicação |
+| `pnpm format` | Aplica a formatação (Prettier) ao repositório. Escreve arquivos |
+| `pnpm format:check` | Verifica formatação sem escrever. Falha se houver divergência. Adequado a CI |
+| `pnpm lint` | Executa ESLint. Falha em erro; avisos não podem acumular indefinidamente |
+| `pnpm typecheck` | Verificação de tipos sem emitir artefato. Falha em qualquer erro de tipo |
+| `pnpm test` | Suíte de testes em modo de desenvolvimento |
+| `pnpm test:ci` | Suíte de testes em modo não interativo e determinístico, adequado a CI |
+| `pnpm test:integration` | Testes de integração contra PostgreSQL real e descartável, fora de `test:ci`; exige `DATABASE_URL` para um banco efêmero já migrado ([database.md](database.md), seção 13.7). Adicionado por F1-003 |
+| `pnpm build` | Build de produção da aplicação |
 
 ### 5.2 Divisão de responsabilidade entre Prettier e ESLint
 
