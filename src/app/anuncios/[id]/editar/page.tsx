@@ -5,6 +5,7 @@ import { getOwnerListingImages } from '@/modules/media/upload';
 import { ListingForm } from '../../_components/listing-form';
 import { isEditableStatus, LISTING_STATUS_LABELS } from '../../_components/listing-status';
 import { ImageManager } from './_components/image-manager';
+import { LifecyclePanel } from './_components/lifecycle-panel';
 
 export const dynamic = 'force-dynamic';
 // Server Actions desta pagina (confirmacao do upload) agendam o processamento
@@ -111,6 +112,18 @@ export default async function EditarAnuncioPage({ params }: { params: Promise<{ 
         <p role="alert" style={{ marginTop: '24px', color: '#991b1b', fontSize: '14px' }}>
           Não foi possível carregar as imagens. Recarregue a página.
         </p>
+      ) : null}
+
+      {listing.status === 'draft' ||
+      listing.status === 'published' ||
+      listing.status === 'paused' ? (
+        <LifecyclePanel
+          listingId={listing.id}
+          status={listing.status}
+          readyImageCount={
+            images?.success ? images.data.images.filter((i) => i.state === 'ready').length : 0
+          }
+        />
       ) : null}
 
       {editable ? null : (

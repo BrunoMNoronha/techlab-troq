@@ -159,7 +159,7 @@ describe('Audit de Segurança Integrada, RF-014 e Resiliência (F2-012 - Issue #
 
       const res = await publishListing(listingId, true);
       expect(res.success).toBe(false);
-      expect(res.error).toContain('Não autorizado');
+      expect(res).toMatchObject({ reason: 'unauthenticated' });
     });
 
     it('proteção contra IDOR: Usuário B não pode editar anúncio do Usuário A', async () => {
@@ -207,19 +207,22 @@ describe('Audit de Segurança Integrada, RF-014 e Resiliência (F2-012 - Issue #
         isValid: true,
       });
 
-      const mockFindUnique = vi.fn().mockResolvedValueOnce({
-        id: listingId,
-        ownerId: userAId,
-        status: 'published',
-      });
+      // A busca travada exige owner_id = B; o anuncio de A nao casa (nenhuma linha).
+      const queryRaw = vi.fn().mockResolvedValue([]);
+      const executeRaw = vi.fn();
 
       vi.spyOn(prismaModule, 'getPrismaClient').mockReturnValue({
-        listing: { findUnique: mockFindUnique },
+        $transaction: vi.fn(async (fn: (tx: unknown) => Promise<unknown>) =>
+          fn({ $queryRaw: queryRaw, $executeRaw: executeRaw }),
+        ),
       } as unknown as prismaModule.PrismaClient);
 
-      const resClose = await closeListing(listingId);
+      const resClose = await closeListing(privateListingId);
       expect(resClose.success).toBe(false);
-      expect(resClose.error).toContain('não autorizado');
+      // Anuncio alheio responde como inexistente, sem revelar que o ID existe.
+      expect(resClose).toMatchObject({ reason: 'not_found', error: 'Anúncio não encontrado.' });
+      expect(JSON.stringify(queryRaw.mock.calls[0])).toContain(userBId);
+      expect(executeRaw).not.toHaveBeenCalled();
     });
 
     it('bloqueia transição de estado inválida: tentar pausar anúncio no status DRAFT', async () => {
@@ -234,19 +237,21 @@ describe('Audit de Segurança Integrada, RF-014 e Resiliência (F2-012 - Issue #
         isValid: true,
       });
 
-      const mockFindUnique = vi.fn().mockResolvedValueOnce({
-        id: listingId,
-        ownerId: userAId,
-        status: 'draft', // Status e draft, nao publicado
-      });
-
+      const executeRaw = vi.fn();
       vi.spyOn(prismaModule, 'getPrismaClient').mockReturnValue({
-        listing: { findUnique: mockFindUnique },
+        $transaction: vi.fn(async (fn: (tx: unknown) => Promise<unknown>) =>
+          fn({
+            // Status e draft, nao publicado.
+            $queryRaw: vi.fn().mockResolvedValue([{ id: privateListingId, status: 'draft' }]),
+            $executeRaw: executeRaw,
+          }),
+        ),
       } as unknown as prismaModule.PrismaClient);
 
-      const res = await pauseListing(listingId);
+      const res = await pauseListing(privateListingId);
       expect(res.success).toBe(false);
-      expect(res.error).toContain('Apenas anúncios publicados podem ser pausados');
+      expect(res).toMatchObject({ reason: 'invalid_transition', status: 'draft' });
+      expect(executeRaw).not.toHaveBeenCalled();
     });
 
     it('bloqueia edição de anúncio encerrado (CLOSED)', async () => {
@@ -288,13 +293,6 @@ describe('Audit de Segurança Integrada, RF-014 e Resiliência (F2-012 - Issue #
         isValid: true,
       });
 
-      const mockFindUnique = vi.fn().mockResolvedValueOnce({
-        id: listingId,
-        ownerId: userAId,
-        status: 'draft',
-        images: [{ id: 'img-1', status: 'ready' }],
-      });
-
       // Simula erro no $transaction (ex: timeout de conexao ou constraint no DB)
       const mockTransaction = vi
         .fn()
@@ -303,11 +301,15 @@ describe('Audit de Segurança Integrada, RF-014 e Resiliência (F2-012 - Issue #
         );
 
       vi.spyOn(prismaModule, 'getPrismaClient').mockReturnValue({
-        listing: { findUnique: mockFindUnique },
         $transaction: mockTransaction,
       } as unknown as prismaModule.PrismaClient);
+      const logSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
 
-      await expect(publishListing(listingId, true)).rejects.toThrow();
+      const res = await publishListing(privateListingId, true);
+      expect(res).toMatchObject({ success: false, reason: 'error' });
+      expect(JSON.stringify(res)).not.toContain('secret');
+      expect(JSON.stringify(logSpy.mock.calls)).not.toContain('secret');
+      expect(JSON.stringify(logSpy.mock.calls)).not.toContain('postgresql://');
     });
   });
 });
