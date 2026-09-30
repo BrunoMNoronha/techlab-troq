@@ -31,6 +31,11 @@ vi.mock('@/modules/listing', () => ({
 vi.mock('@/modules/listing/actions', () => ({
   createDraftListing: vi.fn(),
   updateListing: vi.fn(),
+  publishListing: vi.fn(),
+  discardDraft: vi.fn(),
+  pauseListing: vi.fn(),
+  reactivateListing: vi.fn(),
+  closeListing: vi.fn(),
 }));
 
 const getOwnerListingImages = vi.fn();
@@ -168,6 +173,9 @@ describe('/anuncios/[id]/editar', () => {
 
     expect(screen.getByRole('alert')).toHaveTextContent('Não foi possível carregar o anúncio');
     expect(screen.queryByRole('textbox')).toBeNull();
+    // Terminal: nenhuma acao de ciclo de vida (closed/removed nao tem saida).
+    expect(screen.queryByRole('heading', { name: 'Situação do anúncio' })).toBeNull();
+    expect(screen.queryByRole('button')).toBeNull();
   });
 
   it.each(['draft', 'published', 'paused'] as const)(
@@ -184,10 +192,22 @@ describe('/anuncios/[id]/editar', () => {
       expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Editar anúncio');
       expect(screen.getByLabelText('Título do anúncio')).toHaveValue(`Anúncio ${status}`);
       expect(screen.getByLabelText('UF')).toHaveValue('PE');
-      // Gestao de imagens na area privada; sem botao de publicar (#48).
+      // Gestao de imagens e situacao do anuncio na area privada (#46, #48).
       expect(screen.getByRole('heading', { name: 'Imagens do anúncio' })).toBeInTheDocument();
       expect(screen.getByLabelText('Adicionar fotos')).toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: /publicar/i })).toBeNull();
+      expect(screen.getByRole('heading', { name: 'Situação do anúncio' })).toBeInTheDocument();
+      const actionsByStatus: Record<string, string[]> = {
+        draft: ['Publicar anúncio', 'Descartar rascunho'],
+        published: ['Pausar anúncio', 'Encerrar anúncio'],
+        paused: ['Reativar anúncio', 'Encerrar anúncio'],
+      };
+      for (const name of actionsByStatus[status]) {
+        expect(screen.getByRole('button', { name })).toBeInTheDocument();
+      }
+      const others = Object.values(actionsByStatus)
+        .flat()
+        .filter((name) => !actionsByStatus[status].includes(name));
+      for (const name of others) expect(screen.queryByRole('button', { name })).toBeNull();
     },
   );
 
