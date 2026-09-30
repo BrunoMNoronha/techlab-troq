@@ -127,6 +127,16 @@ const VALUE_RULES: ReadonlyArray<{ readonly pattern: RegExp; readonly replacemen
     pattern: /\beyJ[A-Za-z0-9_-]{4,}\.[A-Za-z0-9_-]{4,}\.[A-Za-z0-9_-]{4,}\b/g,
     replacement: '[redacted:token]',
   },
+  // Cabeçalho de cookie inteiro ecoado em texto livre (`cookie: a=1; b=2`).
+  { pattern: /\b((?:set-)?cookie)\s*:\s*[^\r\n]+/gi, replacement: '$1: [redacted]' },
+  // Par de cookie ou parâmetro cujo NOME indica credencial
+  // (`better-auth.session_token=…`, `__Secure-authjs.session=…`). A regra de
+  // palavra-chave abaixo não alcança `session_token`: `_` é caractere de
+  // palavra, então não há fronteira antes de `token` (achado de #50).
+  {
+    pattern: /\b([A-Za-z0-9_.-]*(?:token|session|secret|auth)[A-Za-z0-9_.-]*)=([^;\s"'&]+)/gi,
+    replacement: '$1=[redacted]',
+  },
   // Credencial em texto livre.
   { pattern: /\bBearer\s+[A-Za-z0-9._~+/=-]{8,}/gi, replacement: '[redacted:token]' },
   {
