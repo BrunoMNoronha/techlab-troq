@@ -10,11 +10,13 @@ Fontes: [../product/mvp-scope.md](../product/mvp-scope.md), [../product/requirem
 | --- | --- | --- |
 | 0 | Descoberta e definição | concluída |
 | 1 | Fundação técnica | concluída |
-| 2 | Identidade e anúncios | em andamento — implementação parcial integrada; gate de saída **não aprovado** |
-| 3 | Solicitações, pagamentos e contato | condicionada ao gate da Fase 2; não implementada |
+| 2 | Identidade e anúncios | concluída — gate de saída **aprovado** em 2026-09-30 |
+| 3 | Solicitações, pagamentos e contato | liberada para execução pelo gate da Fase 2; não iniciada |
 | 4 | Encerramento, avaliações e moderação | não iniciada |
 | 5 | Hardening e lançamento | não iniciada |
 | — | Pós-MVP (candidatos) | não planejado |
+
+**Estado em 2026-09-30.** A **Fase 2 está concluída**: o seu gate de saída foi reverificado por F2-013 (Issue #51) e **APROVADO** em 2026-09-30, com G1, G2 e G3 `PASS` ([phase-3-transition.md](phase-3-transition.md), seção V). A **Fase 3 está liberada para execução** e ainda não foi iniciada; o seu acompanhamento está em [#54](https://github.com/BrunoMNoronha/techlab-troq/issues/54). Nada neste roadmap afirma produção ou deploy atual. O parágrafo seguinte é o registro de 2026-09-29.
 
 **Estado em 2026-09-29.** A **Fase 0 está concluída**: o seu gate de saída foi verificado item a item por F0-023 em [phase-1-transition.md](phase-1-transition.md). A **Fase 1 está concluída**: o seu gate de saída foi verificado e aprovado por F1-011 em [phase-2-transition.md](phase-2-transition.md). A **Fase 2 está em andamento**: há implementação parcial integrada (PRs #52, #53, #57, #58 e #60), mas o **gate de saída não está aprovado**. A aprovação registrada em 2026-09-28 por F2-013 (Issue #51) foi **retificada em 2026-09-29** em [phase-3-transition.md](phase-3-transition.md): G1 `NÃO ATENDIDO`, G2 `NÃO COMPROVADO`, G3 `PARCIAL`, sem nenhum `PASS`, e, das issues #38 a #51, só #39 a #42 (identidade) foram encerradas, em 2026-09-29. A **Fase 3 permanece condicionada ao gate** e não está implementada; o seu acompanhamento está em [#54](https://github.com/BrunoMNoronha/techlab-troq/issues/54). Nada neste roadmap afirma produção ou deploy atual.
 
@@ -94,7 +96,9 @@ Fontes: [../product/mvp-scope.md](../product/mvp-scope.md), [../product/requirem
 - Nenhum payload público contém telefone/WhatsApp (RF-014 verificado por teste).
 - Testes automatizados cobrindo autenticação e publicação.
 
-**Estado do gate — NÃO APROVADO em 2026-09-29.** A verificação de 2026-09-28 (F2-013) declarou os três critérios aprovados; a retificação de 2026-09-29 retirou essa aprovação como estado vigente, porque as evidências citadas eram testes simulados e a fase tinha uma falha de autenticação, depois corrigida por #57 e #58. Resultado vigente, sem nenhum `PASS`: **G1** (fluxo em `preview`) `NÃO ATENDIDO`, porque publicar e enviar imagem não têm caminho na interface e não há prova em `preview`; **G2** (nenhum payload público com contato) `NÃO COMPROVADO`, com evidência apenas parcial; **G3** (testes automatizados de autenticação e publicação) `PARCIAL`, com CI verde mas provas de banco real só para autenticação e fora da CI. Matriz, evidências e o que falta estão em [phase-3-transition.md](phase-3-transition.md). Os critérios acima ficam preservados como o que é exigido; a revalidação é o escopo de [#51](https://github.com/BrunoMNoronha/techlab-troq/issues/51), que segue aberta.
+**Estado do gate — APROVADO em 2026-09-30.** F2-013 (#51) reverificou os três critérios com evidência verificável e todos resultaram `PASS`: **G1** pela jornada completa, a 375 px, no deployment de `preview` `dpl_GGU1oNG7CGQ48V93Gn5gupZTsEqS`, cujo código é idêntico ao de `main` em `eedd686`; **G2** pelas suítes de PostgreSQL efêmero e servidor real que rodam na CI desde a PR #85, mais a consulta anônima ao Preview; **G3** pela CI verde em `main` (`validate` e `integration`, run `36785554918`) e por cinco rodadas locais completas seguidas com R2 real e provas HTTP. Matriz e evidências em [phase-3-transition.md](phase-3-transition.md), seção V. O parágrafo seguinte é o registro de 2026-09-29.
+
+**Estado do gate em 2026-09-29 — NÃO APROVADO.** A verificação de 2026-09-28 (F2-013) declarou os três critérios aprovados; a retificação de 2026-09-29 retirou essa aprovação como estado vigente, porque as evidências citadas eram testes simulados e a fase tinha uma falha de autenticação, depois corrigida por #57 e #58. Resultado vigente, sem nenhum `PASS`: **G1** (fluxo em `preview`) `NÃO ATENDIDO`, porque publicar e enviar imagem não têm caminho na interface e não há prova em `preview`; **G2** (nenhum payload público com contato) `NÃO COMPROVADO`, com evidência apenas parcial; **G3** (testes automatizados de autenticação e publicação) `PARCIAL`, com CI verde mas provas de banco real só para autenticação e fora da CI. Matriz, evidências e o que falta estão em [phase-3-transition.md](phase-3-transition.md). Os critérios acima ficam preservados como o que é exigido; a revalidação era o escopo de [#51](https://github.com/BrunoMNoronha/techlab-troq/issues/51).
 
 ## Fase 3 — Solicitações, pagamentos e contato
 
@@ -112,7 +116,7 @@ Fontes: [../product/mvp-scope.md](../product/mvp-scope.md), [../product/requirem
 - Autorização server-side e liberação de contato ao escolhido com pagamento aprovado, com auditoria (RF-014, RF-015, RF-022).
 - Design de pagamentos e de liberação de contato implementados conforme `architecture/payments-design.md` e `architecture/contact-release.md`.
 
-**Dependências:** gate da Fase 2; OD-07 e OD-08 fechadas e ADR-0004 (gateway) aceito. **O gate da Fase 2 não está aprovado (ver a Fase 2 acima), portanto a execução da Fase 3 permanece condicionada a ele; o planejamento pode avançar em [#54](https://github.com/BrunoMNoronha/techlab-troq/issues/54).** As decisões estão **satisfeitas:** OD-08 está fechada e [ADR-0004](../adr/0004-mercado-pago-pix.md) aceito (DEC-036), OD-07 está fechada por [../product/payment-exceptions.md](../product/payment-exceptions.md) (DEC-037), OD-06 por [../product/reselection-policy.md](../product/reselection-policy.md) e OD-12 por [../product/interest-flow.md](../product/interest-flow.md).
+**Dependências:** gate da Fase 2; OD-07 e OD-08 fechadas e ADR-0004 (gateway) aceito. **O gate da Fase 2 foi aprovado em 2026-09-30 (ver a Fase 2 acima): a execução da Fase 3 está liberada e é acompanhada em [#54](https://github.com/BrunoMNoronha/techlab-troq/issues/54).** As decisões estão **satisfeitas:** OD-08 está fechada e [ADR-0004](../adr/0004-mercado-pago-pix.md) aceito (DEC-036), OD-07 está fechada por [../product/payment-exceptions.md](../product/payment-exceptions.md) (DEC-037), OD-06 por [../product/reselection-policy.md](../product/reselection-policy.md) e OD-12 por [../product/interest-flow.md](../product/interest-flow.md).
 
 **Gate de saída:**
 
