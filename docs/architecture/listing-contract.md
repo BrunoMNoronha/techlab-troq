@@ -4,6 +4,8 @@ Contrato técnico canônico do anúncio no MVP: campos, validação do formulár
 
 **Reconciliado em 2026-09-29** sobre `main` em `7296cb3`. A versão anterior deste documento divergia das fontes normativas (máximo de 5 imagens, estados `DRAFT`/`PUBLISHED`/`INACTIVE` e contato por "aceite mútuo"); a seção 14 registra o que mudou.
 
+**Atualização de F2-010 ([#48](https://github.com/BrunoMNoronha/techlab-troq/issues/48), 2026-09-30).** As transições T1 a T6 pelo dono foram implementadas conforme as seções 4.3, 4.4 e 5, com interface na edição privada. As divergências D-1 a D-4 e a parte de #48 em D-6 foram resolvidas (seção 12). Estado, decisões e provas estão na seção 15.
+
 ## 1. Escopo e hierarquia
 
 Este documento **não** cria regra de negócio, decisão de produto nem decisão aberta. Ele consolida, em forma de contrato técnico, o que já está definido em:
@@ -55,6 +57,8 @@ O histórico de transições (`ListingTransition`: ator, origem, destino, instan
 ### 2.3 Metadados de conformidade
 
 A declaração de conformidade com [prohibited-items.md](../product/prohibited-items.md) **não** é campo do anúncio: é um registro `TermsAcceptance` do tipo `listing_compliance`, criado na publicação (seção 4.4), com `userId`, `listingId`, `termsVersion` e `acceptedAt`. É dado de auditoria, nunca público e nunca editável pelo usuário.
+
+**`termsVersion` (F2-010).** Identifica o texto efetivamente aceito, no formato `DEC-031/<data da revisão de prohibited-items.md>/declaracao-<n>`; valor atual `DEC-031/2026-09-14/declaracao-1`. O texto exibido e a versão gravada vêm da mesma constante (`src/modules/listing/compliance.ts`), e um teste fixa o hash do texto: mudar a declaração ou a política exige nova versão. É decisão técnica de rastreabilidade, sem regra nova.
 
 ### 2.4 Imagens: entidade separada
 
@@ -121,7 +125,7 @@ A publicação é **sempre uma transição explícita** do dono. Pré-condiçõe
 5. **aceitação expressa** da declaração de conformidade com [prohibited-items.md](../product/prohibited-items.md) (seção 5, item 1), registrada como `TermsAcceptance` `listing_compliance` com **instante** (`acceptedAt`) e **versão** (`termsVersion`) do texto aceito;
 6. ausência de restrição ou bloqueio de publicação vigente ([prohibited-items.md](../product/prohibited-items.md), seção 10), quando as sanções existirem (Fase 4).
 
-Efeitos, na **mesma transação**: `status = published`, `publishedAt`, o registro de aceitação e a linha de `ListingTransition`. Repetir a publicação de anúncio já `published` não gera novo aceite nem nova transição ([listing-lifecycle.md](../product/listing-lifecycle.md), seção 4, idempotência).
+Efeitos, na **mesma transação**: `status = published`, `publishedAt`, o registro de aceitação, a linha de `ListingTransition` e o evento de auditoria `listing.published` ([data-model.md](data-model.md), DM-11.1; AR-9.4). Repetir a publicação de anúncio já `published` não gera novo aceite nem nova transição ([listing-lifecycle.md](../product/listing-lifecycle.md), seção 4, idempotência).
 
 Validações preventivas de conteúdo podem existir e são **auxiliares**; uma publicação barrada por elas não é decisão de moderação nem conta para reincidência ([prohibited-items.md](../product/prohibited-items.md), seção 5).
 
@@ -149,7 +153,7 @@ Não existe estado `INACTIVE`, "inativo", "vendido", "expirado" ou "em análise"
 | T6 | `paused` → `closed` | dono | Encerrar, com confirmação explícita |
 | T7–T9 | `draft`/`published`/`paused` → `removed` | **somente moderação** | Nenhuma ação do dono produz `removed` |
 
-**Divergência conhecida:** a implementação atual de descarte de rascunho grava `draft` → `removed`. Isso contraria T2; a correção pertence a [#48](https://github.com/BrunoMNoronha/techlab-troq/issues/48) (seção 12).
+**Divergência resolvida em 2026-09-30 (F2-010):** o descarte de rascunho gravava `draft` → `removed`, contrariando T2; agora grava `draft` → `closed` (seção 12, D-1).
 
 ## 6. Contratos de saída e de entrada
 
@@ -310,16 +314,16 @@ Requisitos proporcionais ao contrato, sem redesign; o nível formal de acessibil
 
 ## 12. Divergências da implementação atual e destino
 
-Conferência feita em `7296cb3`. Nenhuma foi corrigida por F2-005, que é documental; cada uma segue na issue indicada. D-7 a D-9 foram corrigidas depois, por F2-006 ([#44](https://github.com/BrunoMNoronha/techlab-troq/issues/44)).
+Conferência feita em `7296cb3`. Nenhuma foi corrigida por F2-005, que é documental; cada uma segue na issue indicada. D-7 a D-9 foram corrigidas depois, por F2-006 ([#44](https://github.com/BrunoMNoronha/techlab-troq/issues/44)); D-1 a D-4 e a parte de publicação de D-6, por F2-010 ([#48](https://github.com/BrunoMNoronha/techlab-troq/issues/48)).
 
 | # | Contrato | Implementação atual | Destino |
 | --- | --- | --- | --- |
-| D-1 | Descarte de rascunho é T2 `draft` → `closed` (seção 5) | `discardDraft` grava `removed` e `removedAt` ([`actions.ts`](../../src/modules/listing/actions.ts)) | [#48](https://github.com/BrunoMNoronha/techlab-troq/issues/48) |
-| D-2 | Pré-condições de T1 verificadas na mesma transação do efeito; campos revalidados; versão do termo vinculada ao texto aceito (seção 4.4) | `publishListing` lê estado e imagens antes da transação, não revalida campos, grava `termsVersion: '1.0'` fixo e responde erro à repetição sobre anúncio já `published` | [#48](https://github.com/BrunoMNoronha/techlab-troq/issues/48) |
-| D-3 | T4 exige pelo menos 1 imagem `ready` (seção 4.3) | `reactivateListing` não verifica imagens | [#48](https://github.com/BrunoMNoronha/techlab-troq/issues/48) |
-| D-4 | Ações de ciclo de vida acessíveis pela interface, com confirmação em T2/T5/T6 | Ações existem sem tela que as chame | [#48](https://github.com/BrunoMNoronha/techlab-troq/issues/48) |
+| D-1 | Descarte de rascunho é T2 `draft` → `closed` (seção 5) | **Corrigida em 2026-09-30.** O descarte grava `closed` e `closedAt`, nunca `removed`. Antes, `discardDraft` gravava `removed` e `removedAt` | [#48](https://github.com/BrunoMNoronha/techlab-troq/issues/48) |
+| D-2 | Pré-condições de T1 verificadas na mesma transação do efeito; campos revalidados; versão do termo vinculada ao texto aceito (seção 4.4) | **Corrigida em 2026-09-30.** Estado, conteúdo e imagens prontas são lidos sob a trava do anúncio, na transação do efeito; `termsVersion` segue a seção 2.3; a repetição é idempotente. Antes, `publishListing` lia tudo fora da transação, não revalidava campos, gravava `'1.0'` fixo e dava erro à repetição | [#48](https://github.com/BrunoMNoronha/techlab-troq/issues/48) |
+| D-3 | T4 exige pelo menos 1 imagem `ready` (seção 4.3) | **Corrigida em 2026-09-30.** A reativação exige imagem `ready` e conteúdo válido, sob a trava. Antes, `reactivateListing` não verificava imagens | [#48](https://github.com/BrunoMNoronha/techlab-troq/issues/48) |
+| D-4 | Ações de ciclo de vida acessíveis pela interface, com confirmação em T2/T5/T6 | **Corrigida em 2026-09-30.** Painel "Situação do anúncio" na edição privada, com confirmação explícita em T2/T5/T6. Antes, as ações não tinham tela | [#48](https://github.com/BrunoMNoronha/techlab-troq/issues/48) |
 | D-5 | Máximo de 6 imagens mesmo sob concorrência; posições consistentes | Limite de 6 existe, mas a posição é `images.length + 1` fora de transação ([`media/service.ts`](../../src/modules/media/service.ts)) | [#46](https://github.com/BrunoMNoronha/techlab-troq/issues/46) |
-| D-6 | Remover imagem de anúncio `published` não pode deixar zero `ready`; `closed`/`removed` não são editáveis | `deleteListingImage` não verifica o estado do anúncio nem a última imagem pronta | [#46](https://github.com/BrunoMNoronha/techlab-troq/issues/46), com a invariante de publicação em [#48](https://github.com/BrunoMNoronha/techlab-troq/issues/48) |
+| D-6 | Remover imagem de anúncio `published` não pode deixar zero `ready`; `closed`/`removed` não são editáveis | **Corrigida.** A remoção recusa a última `ready` de anúncio `published` (#46, `last_ready_image`); publicação e reativação usam a mesma trava do anúncio e releem as imagens prontas, e a corrida com a remoção foi provada em 2026-09-30 (#48). Antes, `deleteListingImage` não verificava o estado nem a última imagem pronta | [#46](https://github.com/BrunoMNoronha/techlab-troq/issues/46), com a invariante de publicação em [#48](https://github.com/BrunoMNoronha/techlab-troq/issues/48) |
 | D-7 | Descrição obrigatória após `trim`; mesmas regras na criação e na edição; UF com duas letras `A`–`Z` (seção 3) | **Corrigida em 2026-09-29.** Criação e edição usam a mesma validação (`src/modules/listing/validation.ts`). Antes, a criação aceitava descrição só com espaços e UF de dois caracteres quaisquer, e a edição não validava cidade nem UF | [#44](https://github.com/BrunoMNoronha/techlab-troq/issues/44) |
 | D-8 | Anúncio alheio indistinguível de inexistente na área privada (seção 7) | **Corrigida em 2026-09-29.** A busca e o `UPDATE` são filtrados pelo dono da sessão, e alheio, inexistente e ID malformado dão a mesma resposta `not_found`. Antes, a resposta era "sem permissão" | [#44](https://github.com/BrunoMNoronha/techlab-troq/issues/44) (correção) e [#50](https://github.com/BrunoMNoronha/techlab-troq/issues/50) (verificação abrangente) |
 | D-9 | Erro por campo, foco em erro e dados preservados (seção 11) | **Corrigida em 2026-09-29.** O formulário marca o campo com `aria-invalid` e associa a mensagem, foca o primeiro erro, preserva os valores e bloqueia envio duplicado. Antes, havia só um aviso geral | [#44](https://github.com/BrunoMNoronha/techlab-troq/issues/44) |
@@ -357,3 +361,34 @@ Mudanças em relação à versão anterior (criada em [#52](https://github.com/B
 - "campos incompletos são permitidos no rascunho" deixou de valer: o rascunho exige os campos textuais válidos e dispensa apenas imagens;
 - a ordenação "mais antigos" saiu do MVP; ficam uma ordenação determinística e os filtros por cidade/UF;
 - a seção sobre home e entrada da solicitação ([#59](https://github.com/BrunoMNoronha/techlab-troq/issues/59)) foi preservada, distribuída entre as seções 8, 9.4 e 9.5.
+
+## 15. Estado da implementação de #48 (F2-010)
+
+### 15.1 O que existe
+
+| Mecanismo | Onde |
+| --- | --- |
+| Transições T1 a T6 numa transação, sob `SELECT … FOR UPDATE` do anúncio filtrado pelo dono (a mesma trava da gestão de imagens) | `src/modules/listing/lifecycle.ts`; Server Actions finas em `src/modules/listing/actions.ts` |
+| Auditoria transacional mínima: `listing.published` (T1, com o aceite) e `listing.closed` (T5/T6), no mesmo `now()` da transação | `recordAuditEvent` em `src/modules/audit/index.ts` |
+| Declaração de conformidade e `termsVersion` (seção 2.3) | `src/modules/listing/compliance.ts` |
+| Política de itens proibidos acessível pelo aceite: títulos e fundamentos das 12 categorias e a leitura dos três fundamentos, copiados literalmente de [prohibited-items.md](../product/prohibited-items.md), com link para o texto completo | `/politica/itens-proibidos` (`src/app/politica/itens-proibidos/page.tsx`); um teste compara a página com o documento |
+| Painel "Situação do anúncio" (publicar com aceite, pausar, reativar, encerrar, descartar), com confirmação em linha para T2/T5/T6, foco gerenciado, erros anunciados e bloqueio de envio duplicado | `src/app/anuncios/[id]/editar/_components/lifecycle-panel.tsx` |
+
+**Regras aplicadas.** Anúncio alheio, inexistente ou com ID malformado recebe a mesma resposta `not_found`. Sessão sem e-mail verificado ou com conta não `active` é recusada (`unauthenticated`). Se o anúncio já está no estado de destino, a resposta é sucesso sem efeito (`changed: false`) e sem novo aceite, transição ou auditoria. Transição fora da matriz é recusada com `invalid_transition` e o estado atual. T1 e T4 revalidam o conteúdo (seção 3) e exigem ao menos uma imagem `ready`. O dono nunca produz `removed`. Códigos fechados: `unauthenticated`, `not_found`, `invalid_transition`, `compliance_required`, `validation`, `no_ready_image`, `error`.
+
+**Decisões de detalhe, sem efeito contratual.** T4 não altera `publishedAt`, que guarda a primeira publicação. O instante do efeito, da transição, do aceite e da auditoria é o `now()` do banco na transação: o `@default(now())` do Prisma é preenchido no cliente, consulta a consulta, e produziu instantes diferentes na primeira prova. Nenhuma migration foi necessária.
+
+**Dados legados.** Consulta agregada em 2026-09-30: nem `troq_dev` nem o Neon de `preview` tinham anúncio gravado como `removed` pelo descarte antigo (0 em ambos); nada a corrigir.
+
+### 15.2 Provas
+
+| Camada | O que provou |
+| --- | --- |
+| Unitário (transação simulada) | matriz T1–T6 sem `removed`; eventos auditados; sessão e ID malformado sem tocar no banco; cada pré-condição de T1/T4; idempotência sem gravação; terminais; erro de banco sem detalhe cru; hash da declaração ↔ versão; painel (aceite, confirmação, cancelar sem chamada e com foco devolvido, alerta focado, envio duplicado bloqueado); página da política igual ao documento |
+| PostgreSQL descartável + Better Auth real | 20 cenários: T1 com transição, aceite versionado e auditoria no mesmo instante; repetição sem duplicar; sem aceite, sem imagem pronta e só com imagem `uploaded`/`failed`; conteúdo revalidado; duas publicações simultâneas (um efeito); **corridas determinísticas por trava**: remoção da única imagem pronta × publicação e × reativação (a ação espera o COMMIT e recusa); publicação × remoção pela action real em 8 rodadas, nunca publicado sem imagem pronta; T2 grava `closed`; terminais; T3/T4 preservando `publishedAt`; T5/T6 auditados; encerramento × pausa; **rollback real** por restrição temporária em `audit_events` (encerramento e publicação desfeitos por inteiro, sem aceite órfão); anúncio alheio igual a inexistente; sem sessão, e-mail não verificado e conta bloqueada. **Mutação:** sem `FOR UPDATE`, 5 cenários falham; sem a checagem de idempotência, 6 falham |
+| Build de produção local + HTTP real + navegador a 375 px | publicar sem aceite → alerta focado; publicar → detalhe, home e `/explorar` com o anúncio e `/media` anônimo 200 (`private, no-store`); pausar → detalhe e `/media` anônimos 404 na mesma URL, fora de home e `/explorar`, dono ainda vê a miniatura; reativar → 200; encerrar pelo teclado na confirmação → 404 e página somente leitura; descartar outro rascunho, com cancelar antes → `closed`, sem `removed_at`. No banco: T1, T3, T4 e T5; auditoria só em T1 e T5; um aceite com a versão atual. Sem rolagem horizontal |
+| Vercel Preview | ver a seção 15.3 |
+
+### 15.3 Prova em Preview
+
+Registrada depois da execução no deployment de preview da branch desta entrega.
