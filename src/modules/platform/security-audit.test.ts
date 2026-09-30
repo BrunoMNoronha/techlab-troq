@@ -14,7 +14,13 @@ import * as identityModule from '@/modules/identity';
 import * as prismaModule from '@/persistence/prisma';
 import type { UserStatus } from '@/generated/prisma/client';
 
-describe('Audit de Segurança Integrada, RF-014 e Resiliência (F2-012 - Issue #50)', () => {
+// Camada UNITARIA, com Prisma e sessao simulados: prova a forma das respostas,
+// nao o comportamento em banco, HTTP, RSC ou cache. As provas reais de #50 sao
+// authorization-matrix.integration.test.ts, telemetry-redaction.integration.test.ts,
+// src/app/private-surface.http.integration.test.ts e
+// src/app/public-surface.http.integration.test.ts
+// (docs/delivery/phase-2-security-verification.md).
+describe('Auditoria de segurança SIMULADA (unitária): RF-014, autorização e erros (#50)', () => {
   const userAId = 'user-a-1111-1111-1111-111111111111';
   const userBId = 'user-b-2222-2222-2222-222222222222';
   const listingId = 'listing-sec-100';
