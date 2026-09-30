@@ -375,7 +375,10 @@ export async function requestImageReupload(
 }
 
 /** Posicoes voltam a 1..N na ordem atual; conferidas no COMMIT (DEFERRABLE). */
-async function compactPositions(tx: Prisma.TransactionClient, listingId: string): Promise<void> {
+export async function compactPositions(
+  tx: Prisma.TransactionClient,
+  listingId: string,
+): Promise<void> {
   await tx.$executeRaw`
     UPDATE "listing_images" li SET "position" = r."rn", "updated_at" = now()
     FROM (

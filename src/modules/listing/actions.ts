@@ -1,6 +1,7 @@
 'use server';
 
 import { validateSession } from '@/modules/identity';
+import { mediaPath } from '@/modules/media/media-path';
 import { getPrismaClient } from '@/persistence/prisma';
 import type { ListingStatus } from '@/generated/prisma/client';
 import { isUuid } from './ids';
@@ -570,7 +571,6 @@ export async function getPublicFeed(options?: {
   const skip = (page - 1) * limit;
 
   const prisma = getPrismaClient();
-  const mediaBaseUrl = process.env.NEXT_PUBLIC_MEDIA_BASE_URL || 'https://media.example.invalid';
 
   const whereClause: {
     status: 'published';
@@ -612,7 +612,6 @@ export async function getPublicFeed(options?: {
             derivatives: {
               select: {
                 kind: true,
-                objectKey: true,
                 width: true,
                 height: true,
               },
@@ -636,7 +635,7 @@ export async function getPublicFeed(options?: {
       position: img.position,
       derivatives: img.derivatives.map((d) => ({
         kind: d.kind as 'thumb' | 'medium' | 'large',
-        url: `${mediaBaseUrl}/${d.objectKey}`,
+        url: mediaPath(img.id, d.kind),
         width: d.width,
         height: d.height,
       })),
@@ -660,7 +659,6 @@ export async function getPublicListingDetail(
   }
 
   const prisma = getPrismaClient();
-  const mediaBaseUrl = process.env.NEXT_PUBLIC_MEDIA_BASE_URL || 'https://media.example.invalid';
 
   const item = await prisma.listing.findFirst({
     where: {
@@ -684,7 +682,6 @@ export async function getPublicListingDetail(
           derivatives: {
             select: {
               kind: true,
-              objectKey: true,
               width: true,
               height: true,
             },
@@ -710,7 +707,7 @@ export async function getPublicListingDetail(
       position: img.position,
       derivatives: img.derivatives.map((d) => ({
         kind: d.kind as 'thumb' | 'medium' | 'large',
-        url: `${mediaBaseUrl}/${d.objectKey}`,
+        url: mediaPath(img.id, d.kind),
         width: d.width,
         height: d.height,
       })),

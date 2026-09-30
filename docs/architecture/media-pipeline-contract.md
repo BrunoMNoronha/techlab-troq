@@ -8,6 +8,8 @@ Este documento **não** implementa nada, **não** altera schema nem cria migrati
 
 **Atualização de F2-008 ([#46](https://github.com/BrunoMNoronha/techlab-troq/issues/46), 2026-09-29).** Upload, confirmação, processamento, reenvio, remoção e reordenação foram implementados conforme as seções 5 a 8, 10 e 15. O que foi provado, o que divergiu por prova e os dois bloqueios operacionais (CORS dos buckets e agendamento do cron) estão na seção 20. As seções 9 e 11 a 13 continuam contrato de #47.
 
+**Atualização de F2-009 ([#47](https://github.com/BrunoMNoronha/techlab-troq/issues/47), 2026-09-29).** Entrega autorizada (seção 9), limpeza de originais (seção 11), retenção (seção 12) e fila de exclusão (seção 13) foram implementadas. Estado, provas, decisões de detalhe e bloqueios estão na seção 21.
+
 ## 1. Fontes e hierarquia
 
 | Fonte | O que determina aqui |
@@ -436,10 +438,10 @@ Deve mostrar que o pico de memória, inclusive com duas execuções concorrentes
 | M-7 | Tamanho e tipo do cliente como autoridade | `HeadObject` no servidor; formato pela decodificação | #46 |
 | M-8 | Processamento síncrono na confirmação; `syntheticBuffer` na assinatura pública | Fila + executor; `syntheticBuffer` só em teste | #46 |
 | M-9 | `imageDerivative.create` em rerun; `ready` antes de confirmar derivados | `upsert` e `ready` na transação final com fencing | #46 |
-| M-10 | `deleteR2Object` engole o erro | Fila de exclusão com retentativa visível | #47 |
+| M-10 | `deleteR2Object` engole o erro | Fila de exclusão com retentativa visível | #47 — **feito** (seção 21) |
 | M-11 | Upload a anúncio alheio responde "sem permissão" | `not_found` uniforme | #46 (verificação em #50) |
-| M-12 | `NEXT_PUBLIC_MEDIA_BASE_URL/objectKey` no DTO (`listing/actions.ts`, `media/service.ts`) | URL relativa da rota de mídia; variável aposentada | #47 |
-| M-13 | Limpeza de 24 h "automática", sem mecanismo | Job horário + teto de 20 h + lifecycle de 1 dia como fallback; dependência de plano registrada | #47 |
+| M-12 | `NEXT_PUBLIC_MEDIA_BASE_URL/objectKey` no DTO (`listing/actions.ts`, `media/service.ts`) | URL relativa da rota de mídia; variável aposentada | #47 — **feito** (seção 21) |
+| M-13 | Limpeza de 24 h "automática", sem mecanismo | Job horário + teto de 20 h + lifecycle de 1 dia como fallback; dependência de plano registrada | #47 — job e teto **feitos**; agendamento e lifecycle bloqueados (21.4) |
 | M-14 | [payments-design.md](payments-design.md), PD-3.4, punha a expurgação de originais na higiene **diária** | Originais e fila de exclusão saem da higiene diária e seguem o job horário da seção 11; PD-3.4 corrigido nesta entrega (cadência é design, sem nova decisão) | #47 |
 
 ## 18. Riscos
@@ -498,3 +500,59 @@ Divergências de detalhe, sem efeito contratual: o claim só seleciona linhas co
 
 1. **CORS dos buckets.** Nenhum dos buckets (`development`, `preview`) tem política CORS, e o navegador recusa o `PUT` no preflight. O token de `development` não tem permissão de configuração de bucket (mínimo privilégio; `403` em `GetBucketCors`), e o painel da Cloudflare não está acessível ao agente. O `PUT` foi provado por cliente HTTP (20.2). **Ação do responsável pela conta:** aplicar a cada bucket os `AllowedOrigins` da seção 5.2, `AllowedMethods = PUT` e `AllowedHeaders = content-type, if-none-match`. Até lá, o upload pelo navegador não funciona em nenhum ambiente. Bucket público não é alternativa (MP-3.1).
 2. **Agendamento da recuperação.** A rota existe e está protegida, mas **nenhum cron foi configurado** (`vercel.json` sem `crons`): no Hobby o cron é diário (V-4), e declarar a cadência de 5 min faria o deployment falhar. Sem agendador, só o caminho rápido processa; uma imagem que ele não conclua fica em `uploaded` até uma chamada autorizada à rota. A cadência contratual de 5 min **não** foi enfraquecida; a dependência de plano é a de ADR-0006, decisão 11, e precisa ser resolvida antes de a Fase 2 depender da recuperação.
+
+## 21. Estado da implementação de #47 (F2-009)
+
+### 21.1 O que existe
+
+| Mecanismo | Onde |
+| --- | --- |
+| Rota `GET /media/{imageId}/{kind}` (Node.js, dinâmica, sem cache) | `src/app/media/[imageId]/[kind]/route.ts` → `src/modules/media/delivery.ts` |
+| Endereço público único `/media/{imageId}/{kind}` | `src/modules/media/media-path.ts`, usado por `getPublicFeed`, `getPublicListingDetail` e `getPublicListingImages`; nenhum DTO seleciona `objectKey` |
+| Leitura em stream do derivado | `getDerivativeStream` em `src/modules/media/s3.ts` (objeto ausente → `null`; o resto propaga) |
+| Job de limpeza `GET /api/jobs/media-cleanup` (`CRON_SECRET`, tempo constante, `401` sem corpo) | `src/app/api/jobs/media-cleanup/route.ts` → `runMediaCleanup` em `src/modules/media/cleanup.ts`; autorização compartilhada com `/api/jobs/media-process` em `src/app/api/jobs/_lib/cron-auth.ts` |
+| Expurgo por exclusão de conta (fronteira de mídia, sem a jornada RF-023) | `enqueueAccountMediaPurge` em `src/modules/media/retention.ts` |
+| Renderização | `<img>` com `width`/`height` do DTO na home, em `/explorar` e no detalhe; miniatura do dono na edição privada pela mesma rota. Nenhum `next/image` otimizado para imagem de anúncio |
+| `NEXT_PUBLIC_MEDIA_BASE_URL` | nenhum consumidor; `.env.example` a marca como aposentada |
+
+**Rota de mídia.** Uma consulta seleciona só a chave do derivado, o estado do anúncio, o dono e o estado da conta, exigindo imagem `ready` e o `ImageDerivative` do `kind`. Público: anúncio `published` e conta `active`. Sem isso, só a sessão válida do **dono** (conta `active` e e-mail verificado, pela fronteira de identidade) recebe o derivado, em qualquer estado do anúncio. Toda recusa, inclusive falha do banco ou do R2, é o mesmo `404` (`Not Found`, `text/plain`, `private, no-store`, `nosniff`). O sucesso leva `image/webp`, `private, no-store`, `nosniff` e `Content-Length`, sem ETag nem cabeçalho do provedor.
+
+**Decisões de detalhe, sem efeito contratual:**
+
+- **Lease da fila.** A tabela não tem coluna de lease, e #47 não cria migration. O claim incrementa `attempts` (token de fencing) e empurra `due_at` por 360 s. Assim, outro executor não repete a pendência depois do commit do claim, e a queda do executor a devolve à fila quando o prazo vence. Falha grava `last_error_code` e move `due_at` pelo recuo de 1, 5, 15 e 60 min; da 5ª falha em diante são 60 min, sem desistir. Com isso `due_at` passa a ser o próximo instante elegível; a prova de prazo é `created_at` + `reason`.
+- **Barreira contra chave viva.** Antes de apagar, a pendência é conferida. Um `ImageDerivative` que referencia a chave a torna viva. Também é viva a chave cuja geração ainda pode usá-la: derivado de geração não `failed`, ou original de geração `uploaded`/`processing`. Imagem inexistente e geração `failed` são terminais. Chave viva não é apagada: a pendência fica com `last_error_code = 'live_reference'` e é reconferida a cada 24 h, convergindo quando a referência some.
+- **Códigos fechados** de `last_error_code`: `r2_throttled`, `r2_unavailable`, `timeout`, `network`, `r2_denied` (401/403), `r2_rejected` (outro 4xx; o R2 responde `400` para chave de acesso inexistente) e `live_reference`. Objeto ausente é sucesso.
+- **Retenção de `removed`.** Nada expurga automaticamente os derivados de anúncio `removed`: eles são evidência de moderação (DEC-033, seção 7), e o modelo ainda não tem o fluxo que encerra o caso e inicia os 24 meses. O fim dessa retenção é integração da **Fase 4**.
+- **Retenção na exclusão de conta.** `enqueueAccountMediaPurge` exige conta `deletion_requested` com solicitação registrada. Conserva anúncios `removed` e anúncios com denúncia `recebida` (caso aberto). Para o resto, enfileira com `dueAt = now()` (dentro dos 30 dias) o original, os derivados conhecidos e os da geração corrente, e remove as linhas de imagem na mesma transação. Legal hold ainda não tem registro no modelo.
+- **Remoção de imagem com caso aberto** (seção 12, linha "Imagem removida pelo dono"). Hoje não há fluxo de denúncia, então o caso não pode ocorrer; a verificação entra com a moderação da Fase 4.
+
+### 21.2 Provas
+
+| Camada | O que provou |
+| --- | --- |
+| Unitário (mock) | recusas que não tocam banco nem R2 (UUID e `kind` inválidos, injeção no ID); 404 idêntico em falha do banco e do R2, sem mensagem crua no log; público sem consultar sessão; endereço relativo; classificação dos erros de exclusão; rota de limpeza (`401` sem segredo, com segredo errado, com esquema errado e com só cookie de sessão; recusa idêntica com e sem segredo configurado; resumo só com contagens; orçamento de 180 s) |
+| PostgreSQL descartável | 12 cenários: 59 min não abandona; mais de 1 h abandona, compacta e enfileira; abaixo de 20 h não expira; acima vira `failed`/`expired`, inclusive `processing` com lease vivo, cujo executor fica cercado; `ready` e `failed` intocados; prazo futuro intocado (`due_at` ≤ `created_at` + 30 dias); objeto ausente conclui; falha no primeiro item não impede o segundo; recuo 1/5/15/60/60 min; `429`/`403`/`400` com código próprio; banco falhando **depois** do `DeleteObject` (restrição temporária real) não conclui, e a repetição após o lease converge; barreira de chave viva (5 vivas protegidas, 5 terminais apagadas); dois consumidores simultâneos sem exclusão dupla; segundo executor depois do claim não repete o lote; três limpezas simultâneas sem corrupção; `paused`, `closed` e `removed` fora da fila; exclusão de conta conservando `removed` e caso aberto. **Mutação:** sem o lease, 4 cenários falham; sem a barreira, 1 falha |
+| R2 real de `development` + PostgreSQL + Better Auth reais | 8 cenários: bytes idênticos ao objeto nos três `kind`; cabeçalhos sem ETag, `s-maxage`, `public`, `immutable` ou cabeçalho de CDN; matriz de 14 casos (anônimo, outro usuário e dono × `published`, `draft`, `paused`, `closed`, `removed`); conta `blocked_admin` e `deletion_requested` negadas até ao dono; `processing`, `failed`, UUID inexistente/inválido, `kind` inválido e objeto ausente com o mesmo 404; revogação na mesma URL depois de duas respostas 200 (`paused` → 404, republicação → 200, `closed` → 404 permanente, `removed` → 404); fila apagando objetos reais, credencial recusada mantendo a pendência (`r2_rejected`), repetição convergindo; derivado vivo protegido. **Mutação:** conceder a exceção privada a qualquer sessão válida faz a matriz falhar |
+| Build de produção local + HTTP real | 200 com bytes idênticos e `private, no-store`/`nosniff`; mesma URL → 404 idêntico após `paused`, de volta a 200 após republicar, 404 após `closed`; home, `/explorar`, detalhe e RSC do detalhe com `/media/…` e sem `derivatives/`, `originals/`, bucket, host do R2, `r2.dev`, `objectKey` ou `/_next/image`; `GET` direto sem assinatura no endpoint do R2 → `400`; `/api/jobs/media-cleanup`: `401` sem cabeçalho e com segredo errado, `200 no-store` com o segredo (1 reserva abandonada, 1 imagem expirada, 6 objetos apagados no R2, derivados vivos preservados), repetição sem trabalho |
+| Navegador local a 375 px | home, `/explorar`, detalhe e gestão privada com imagens prontas: imagens pela rota `/media`, dimensões reservadas, `alt` presente, sem rolagem horizontal, sem chave no DOM e sem otimizador; a miniatura do dono responde 200 com sessão e 404 na mesma URL sem cookie |
+| Vercel Preview | **não executado** nesta entrega |
+
+Achado durante a prova: suítes com `afterAll` perto do limite padrão de 10 s dos hooks deixaram 39 objetos sintéticos no bucket de `development` quando estouraram o tempo. A suíte de #46 mediu 8,5 s. Os objetos foram removidos, as duas suítes de R2 passaram a declarar limite de hook explícito e o bucket terminou vazio.
+
+### 21.3 Retenção por estado, como implementada
+
+| Estado ou evento | Acesso | Objetos |
+| --- | --- | --- |
+| `draft` | só o dono | mantidos |
+| `published` | público (conta `active`) e dono | mantidos |
+| `paused` | só o dono; público revogado | mantidos; voltam em T4 sem reprocessar |
+| `closed` | só o dono; público revogado | mantidos; nenhum prazo começa |
+| `removed` | só o dono; público revogado | mantidos como evidência; fim da retenção na Fase 4 |
+| Conta não `active` | ninguém | mantidos até a exclusão de conta chamar `enqueueAccountMediaPurge` |
+| Original processado, falho, abandonado ou expirado | nunca servido | apagado pela fila no job seguinte |
+
+### 21.4 Bloqueios operacionais
+
+1. **Agendamento.** Nem a limpeza horária nem a recuperação de 5 min têm cron configurado (`vercel.json` sem `crons`; ADR-0006, decisão 11). As duas rotas foram provadas por chamada autenticada. Sem agendador, o prazo de 24 h do original **não** é garantido em ambiente hospedado. A cadência contratual não foi enfraquecida.
+2. **Lifecycle do R2** (fallback de `originals/` com 1 dia). **Não configurado.** O token de `development` recebe `403` até na leitura da configuração (`GetBucketLifecycleConfiguration` e `GetBucketCors`), e o painel da Cloudflare não está acessível ao agente (Claude in Chrome desconectado nesta execução). A credencial não foi ampliada. A autoridade continua sendo a limpeza da aplicação.
+3. **CORS** (bloqueio de [#46](https://github.com/BrunoMNoronha/techlab-troq/issues/46), seção 20.3): segue sem política nos buckets; #46 continua aberta. #47 não depende do upload pelo navegador: suas provas semeiam derivados diretamente no R2.

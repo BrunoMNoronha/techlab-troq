@@ -37,6 +37,10 @@ vi.mock('@/modules/identity/email', () => ({
 
 const enabled = process.env.INTEGRATION_EPHEMERAL_DB === '1' && process.env.R2_INTEGRATION === '1';
 
+// A limpeza final faz dezenas de idas ao R2 real (~8,5 s medidos), perto do
+// limite padrao de 10 s dos hooks: intermitencia corrigida em F2-009.
+vi.setConfig({ testTimeout: 120_000, hookTimeout: 120_000 });
+
 const RUN_ID = `${Date.now()}-${randomBytes(3).toString('hex')}`;
 const PASSWORD = 'senha-sintetica-123';
 const email = `it-r2-${RUN_ID}@example.test`;

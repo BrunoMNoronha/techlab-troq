@@ -1,13 +1,14 @@
 import { getPrismaClient } from '@/persistence/prisma';
+import { mediaPath, type MediaKind } from './media-path';
 
-// Consulta publica das imagens de um anuncio. Fronteira de F2-009 (#47):
-// esta entrega (F2-008) NAO a altera. A #47 troca a URL montada com
-// NEXT_PUBLIC_MEDIA_BASE_URL pela rota autorizada `/media/{imageId}/{kind}`
-// (media-pipeline-contract.md, secao 9). O bucket e privado: a URL abaixo nao
-// da acesso a objeto nenhum.
+// Consulta publica das imagens de um anuncio. Cada derivado aponta para a rota
+// autorizada `/media/{imageId}/{kind}` (media-pipeline-contract.md, secao 9):
+// o DTO nunca carrega chave de objeto, bucket, host do R2 nem URL assinada, e
+// a rota reconfere a autorizacao a cada requisicao — filtrar o DTO sozinho nao
+// revogaria uma URL ja conhecida.
 
 export interface ImageDerivativeDTO {
-  kind: 'thumb' | 'medium' | 'large';
+  kind: MediaKind;
   url: string;
   width: number;
   height: number;
@@ -26,16 +27,21 @@ export interface ListingImageDTO {
  */
 export async function getPublicListingImages(listingId: string): Promise<ListingImageDTO[]> {
   const prisma = getPrismaClient();
-  const mediaBaseUrl = process.env.NEXT_PUBLIC_MEDIA_BASE_URL || 'https://media.example.invalid';
 
   const listing = await prisma.listing.findUnique({
     where: { id: listingId },
-    include: {
+    select: {
+      status: true,
       owner: { select: { status: true } },
       images: {
         where: { status: 'ready' },
         orderBy: { position: 'asc' },
-        include: { derivatives: true },
+        select: {
+          id: true,
+          position: true,
+          status: true,
+          derivatives: { select: { kind: true, width: true, height: true } },
+        },
       },
     },
   });
@@ -49,8 +55,8 @@ export async function getPublicListingImages(listingId: string): Promise<Listing
     position: img.position,
     status: img.status,
     derivatives: img.derivatives.map((d) => ({
-      kind: d.kind as 'thumb' | 'medium' | 'large',
-      url: `${mediaBaseUrl}/${d.objectKey}`,
+      kind: d.kind,
+      url: mediaPath(img.id, d.kind),
       width: d.width,
       height: d.height,
     })),

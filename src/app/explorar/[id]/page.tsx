@@ -42,10 +42,12 @@ export default async function DetalheAnuncioPublicoPage({
     notFound();
   }
 
+  // Imagem pela rota autorizada /media, sem Image Optimization (9.2).
   const coverImage =
     listing.images.length > 0
-      ? listing.images[0].derivatives.find((d) => d.kind === 'large')?.url ||
-        listing.images[0].derivatives[0]?.url
+      ? (listing.images[0].derivatives.find((d) => d.kind === 'large') ??
+        listing.images[0].derivatives[0] ??
+        null)
       : null;
 
   return (
@@ -80,7 +82,9 @@ export default async function DetalheAnuncioPublicoPage({
         {coverImage ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={coverImage}
+            src={coverImage.url}
+            width={coverImage.width}
+            height={coverImage.height}
             alt={listing.title}
             style={{ width: '100%', height: '100%', objectFit: 'contain' }}
           />
