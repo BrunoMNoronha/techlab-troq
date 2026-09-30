@@ -5,6 +5,7 @@ import { mediaPath } from '@/modules/media/media-path';
 import { getPrismaClient } from '@/persistence/prisma';
 import type { ListingStatus } from '@/generated/prisma/client';
 import { isUuid } from './ids';
+import { transitionListing, type LifecycleResult } from './lifecycle';
 import {
   validateListingContent,
   validateListingPatch,
@@ -271,270 +272,38 @@ export async function getListingForEdit(listingId: string): Promise<{
   }
 }
 
-/**
- * Publica um anuncio em rascunho (T1: draft -> published).
- * Exige aceite de termos de conformidade e pelo menos 1 imagem pronta.
+/*
+ * Ciclo de vida pelo dono, T1 a T6 (F2-010, #48). Toda regra -- sessao, posse,
+ * trava, estado, conteudo, imagem pronta, aceite e auditoria -- vive em
+ * lifecycle.ts; aqui so ha a fronteira chamavel pelo cliente.
  */
+
+/** T1 `draft` -> `published`, com o aceite expresso da declaracao de conformidade. */
 export async function publishListing(
   listingId: string,
   complianceAccepted: boolean,
-): Promise<{ success: boolean; error?: string }> {
-  if (!complianceAccepted) {
-    return {
-      success: false,
-      error: 'É necessário declarar conformidade com os Termos e Itens Proibidos.',
-    };
-  }
-
-  const sessionResult = await validateSession();
-  if (!sessionResult.isValid || !sessionResult.user) {
-    return { success: false, error: 'Não autorizado.' };
-  }
-
-  const prisma = getPrismaClient();
-
-  const listing = await prisma.listing.findUnique({
-    where: { id: listingId },
-    include: { images: { where: { status: 'ready' } } },
-  });
-
-  if (!listing) {
-    return { success: false, error: 'Anúncio não encontrado.' };
-  }
-
-  if (listing.ownerId !== sessionResult.user.id) {
-    return { success: false, error: 'Não autorizado.' };
-  }
-
-  if (listing.status !== 'draft') {
-    return { success: false, error: 'Apenas rascunhos podem ser publicados.' };
-  }
-
-  if (listing.images.length === 0) {
-    return {
-      success: false,
-      error: 'É necessário ter pelo menos uma imagem processada para publicar o anúncio.',
-    };
-  }
-
-  const now = new Date();
-
-  await prisma.$transaction([
-    prisma.listing.update({
-      where: { id: listingId },
-      data: {
-        status: 'published',
-        publishedAt: now,
-      },
-    }),
-    prisma.termsAcceptance.create({
-      data: {
-        userId: sessionResult.user.id,
-        listingId,
-        type: 'listing_compliance',
-        termsVersion: '1.0',
-        acceptedAt: now,
-      },
-    }),
-    prisma.listingTransition.create({
-      data: {
-        listingId,
-        actorId: sessionResult.user.id,
-        fromStatus: 'draft',
-        toStatus: 'published',
-        occurredAt: now,
-      },
-    }),
-  ]);
-
-  return { success: true };
+): Promise<LifecycleResult> {
+  return transitionListing(listingId, 'publish', { complianceAccepted });
 }
 
-/**
- * Pausa um anuncio publicado (T3: published -> paused).
- */
-export async function pauseListing(
-  listingId: string,
-): Promise<{ success: boolean; error?: string }> {
-  const sessionResult = await validateSession();
-  if (!sessionResult.isValid || !sessionResult.user) {
-    return { success: false, error: 'Não autorizado.' };
-  }
-
-  const prisma = getPrismaClient();
-
-  const listing = await prisma.listing.findUnique({
-    where: { id: listingId },
-  });
-
-  if (!listing || listing.ownerId !== sessionResult.user.id) {
-    return { success: false, error: 'Anúncio não encontrado ou acesso não autorizado.' };
-  }
-
-  if (listing.status !== 'published') {
-    return { success: false, error: 'Apenas anúncios publicados podem ser pausados.' };
-  }
-
-  const now = new Date();
-
-  await prisma.$transaction([
-    prisma.listing.update({
-      where: { id: listingId },
-      data: { status: 'paused', pausedAt: now },
-    }),
-    prisma.listingTransition.create({
-      data: {
-        listingId,
-        actorId: sessionResult.user.id,
-        fromStatus: 'published',
-        toStatus: 'paused',
-        occurredAt: now,
-      },
-    }),
-  ]);
-
-  return { success: true };
+/** T3 `published` -> `paused`. */
+export async function pauseListing(listingId: string): Promise<LifecycleResult> {
+  return transitionListing(listingId, 'pause');
 }
 
-/**
- * Reativa um anuncio pausado (T4: paused -> published).
- */
-export async function reactivateListing(
-  listingId: string,
-): Promise<{ success: boolean; error?: string }> {
-  const sessionResult = await validateSession();
-  if (!sessionResult.isValid || !sessionResult.user) {
-    return { success: false, error: 'Não autorizado.' };
-  }
-
-  const prisma = getPrismaClient();
-
-  const listing = await prisma.listing.findUnique({
-    where: { id: listingId },
-  });
-
-  if (!listing || listing.ownerId !== sessionResult.user.id) {
-    return { success: false, error: 'Anúncio não encontrado ou acesso não autorizado.' };
-  }
-
-  if (listing.status !== 'paused') {
-    return { success: false, error: 'Apenas anúncios pausados podem ser reativados.' };
-  }
-
-  const now = new Date();
-
-  await prisma.$transaction([
-    prisma.listing.update({
-      where: { id: listingId },
-      data: { status: 'published' },
-    }),
-    prisma.listingTransition.create({
-      data: {
-        listingId,
-        actorId: sessionResult.user.id,
-        fromStatus: 'paused',
-        toStatus: 'published',
-        occurredAt: now,
-      },
-    }),
-  ]);
-
-  return { success: true };
+/** T4 `paused` -> `published`; exige ao menos uma imagem pronta. */
+export async function reactivateListing(listingId: string): Promise<LifecycleResult> {
+  return transitionListing(listingId, 'reactivate');
 }
 
-/**
- * Encerra um anuncio (T5: published/paused -> closed).
- */
-export async function closeListing(
-  listingId: string,
-): Promise<{ success: boolean; error?: string }> {
-  const sessionResult = await validateSession();
-  if (!sessionResult.isValid || !sessionResult.user) {
-    return { success: false, error: 'Não autorizado.' };
-  }
-
-  const prisma = getPrismaClient();
-
-  const listing = await prisma.listing.findUnique({
-    where: { id: listingId },
-  });
-
-  if (!listing || listing.ownerId !== sessionResult.user.id) {
-    return { success: false, error: 'Anúncio não encontrado ou acesso não autorizado.' };
-  }
-
-  if (listing.status !== 'published' && listing.status !== 'paused') {
-    return {
-      success: false,
-      error: 'Apenas anúncios publicados ou pausados podem ser encerrados.',
-    };
-  }
-
-  const now = new Date();
-
-  await prisma.$transaction([
-    prisma.listing.update({
-      where: { id: listingId },
-      data: { status: 'closed', closedAt: now },
-    }),
-    prisma.listingTransition.create({
-      data: {
-        listingId,
-        actorId: sessionResult.user.id,
-        fromStatus: listing.status,
-        toStatus: 'closed',
-        occurredAt: now,
-      },
-    }),
-  ]);
-
-  return { success: true };
+/** T5/T6 `published`|`paused` -> `closed`. Irreversivel; a tela exige confirmacao. */
+export async function closeListing(listingId: string): Promise<LifecycleResult> {
+  return transitionListing(listingId, 'close');
 }
 
-/**
- * Descarta um rascunho de anuncio (T2: draft -> removed).
- */
-export async function discardDraft(
-  listingId: string,
-): Promise<{ success: boolean; error?: string }> {
-  const sessionResult = await validateSession();
-  if (!sessionResult.isValid || !sessionResult.user) {
-    return { success: false, error: 'Não autorizado.' };
-  }
-
-  const prisma = getPrismaClient();
-
-  const listing = await prisma.listing.findUnique({
-    where: { id: listingId },
-  });
-
-  if (!listing || listing.ownerId !== sessionResult.user.id) {
-    return { success: false, error: 'Anúncio não encontrado ou acesso não autorizado.' };
-  }
-
-  if (listing.status !== 'draft') {
-    return { success: false, error: 'Apenas rascunhos podem ser descartados.' };
-  }
-
-  const now = new Date();
-
-  await prisma.$transaction([
-    prisma.listing.update({
-      where: { id: listingId },
-      data: { status: 'removed', removedAt: now },
-    }),
-    prisma.listingTransition.create({
-      data: {
-        listingId,
-        actorId: sessionResult.user.id,
-        fromStatus: 'draft',
-        toStatus: 'removed',
-        occurredAt: now,
-      },
-    }),
-  ]);
-
-  return { success: true };
+/** T2 `draft` -> `closed` (descarte). Irreversivel; a tela exige confirmacao. */
+export async function discardDraft(listingId: string): Promise<LifecycleResult> {
+  return transitionListing(listingId, 'discard');
 }
 
 export interface PublicListingFeedItem {

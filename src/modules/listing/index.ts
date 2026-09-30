@@ -14,6 +14,13 @@ export {
 
 export { isListingOwnedBy } from './ownership';
 
+export type { LifecycleAction, LifecycleFailureReason, LifecycleResult } from './lifecycle';
+export {
+  LISTING_COMPLIANCE_DECLARATION,
+  LISTING_COMPLIANCE_TERMS_VERSION,
+  PROHIBITED_ITEMS_POLICY_PATH,
+} from './compliance';
+
 export type {
   CreateListingInput,
   UpdateListingInput,
