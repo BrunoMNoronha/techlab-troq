@@ -72,6 +72,19 @@ function tokenRows(userId: string) {
   });
 }
 
+/**
+ * Validade de cada emissao julgada pelo relogio do banco, o mesmo que grava
+ * `expires_at` (verification.ts). Comparar com `Date.now()` do host misturaria
+ * dois relogios: o do container pode estar alguns ms a frente.
+ */
+async function tokenValidity(userId: string) {
+  const rows = await prisma().$queryRaw<{ valid: boolean }[]>`
+    SELECT ("expires_at" > now()) AS "valid" FROM "verifications"
+    WHERE "identifier" = ${`email-verification:${userId}`}
+    ORDER BY "created_at" ASC`;
+  return rows.map((row) => row.valid);
+}
+
 /** Desloca as emissoes da conta para o passado, simulando a passagem do tempo. */
 async function ageEmissions(userId: string, seconds: number) {
   await prisma().$executeRaw`
@@ -216,8 +229,8 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
         expect(res).toEqual({ success: true, emailPending: userEmail, emailDelivery: 'failed' });
         const user = await prisma().user.findFirstOrThrow({ where: { email: userEmail } });
         expect(user.emailVerified).toBe(false);
-        const [row] = await tokenRows(user.id);
-        expect(row.expiresAt.getTime()).toBeLessThanOrEqual(Date.now());
+        // A unica emissao ja expirou pelo relogio do banco.
+        expect(await tokenValidity(user.id)).toEqual([false]);
         expect(await confirmEmailToken(lastTokenSentTo(userEmail))).toMatchObject({
           success: false,
         });
@@ -467,10 +480,7 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
         for (const res of results) expect(res).toEqual({ success: true, message: GENERIC });
         expect(sendVerificationEmail).toHaveBeenCalledTimes(1);
         expect(await tokenRows(user.id)).toHaveLength(2);
-        const valid = (await tokenRows(user.id)).filter(
-          (row) => row.expiresAt.getTime() > Date.now(),
-        );
-        expect(valid).toHaveLength(1);
+        expect((await tokenValidity(user.id)).filter(Boolean)).toHaveLength(1);
       });
 
       it('falha do provedor no reenvio e informada e o novo token fica inutilizavel', async () => {
