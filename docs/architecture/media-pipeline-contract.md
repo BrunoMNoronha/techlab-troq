@@ -10,6 +10,8 @@ Este documento **não** implementa nada, **não** altera schema nem cria migrati
 
 **Atualização de F2-009 ([#47](https://github.com/BrunoMNoronha/techlab-troq/issues/47), 2026-09-29).** Entrega autorizada (seção 9), limpeza de originais (seção 11), retenção (seção 12) e fila de exclusão (seção 13) foram implementadas. Estado, provas, decisões de detalhe e bloqueios estão na seção 21.
 
+**Atualização de 2026-09-30 ([#46](https://github.com/BrunoMNoronha/techlab-troq/issues/46)).** A política CORS da seção 5.2 foi aplicada aos buckets de `development` e de `preview`, e o upload pelo navegador foi comprovado. Configuração, provas e controles negativos estão na seção 20.4. O agendamento (20.3, item 2; 21.4, item 1) e o lifecycle do R2 (21.4, item 2) **continuam bloqueados**.
+
 ## 1. Fontes e hierarquia
 
 | Fonte | O que determina aqui |
@@ -117,7 +119,7 @@ Limite de abuso: a emissão de autorizações de upload tem limite por usuário 
 | Validade | **900 s (15 min)**, preservada da versão anterior; não há evidência que justifique outro valor |
 | Cabeçalhos assinados | `Content-Type` igual ao tipo declarado (R2-1), `Content-Length` igual ao tamanho declarado (1 byte a 10 MB, validado no servidor antes da reserva) e `If-None-Match: *`, para que a URL só crie o objeto e não o sobrescreva (R2-2). **Provados contra o R2 de `development` em #46** (seção 20.2): tipo, tamanho ou `If-None-Match` diferentes → `403`; reuso da URL depois de o objeto existir → `412`. O SDK AWS 3.x **não** assina `Content-Type` por padrão (`X-Amz-SignedHeaders=host`): é preciso `signableHeaders` explícito, sem o qual o R2 aceita qualquer tipo |
 | Endpoint | domínio da API S3 do R2 (R2-1); presigned URL não funciona em custom domain |
-| CORS | política no bucket de cada ambiente: `AllowedOrigins` = origens TROQ daquele ambiente (development: `http://localhost:3000`; preview: padrão dos domínios de preview do projeto, com no máximo um `*` — R2-3); `AllowedMethods` = `PUT`; `AllowedHeaders` = `content-type` e `if-none-match` (`Content-Length` é definido pelo próprio navegador e não passa por CORS). CORS **não** é controle de acesso — a assinatura é —, apenas viabiliza o navegador |
+| CORS | política no bucket de cada ambiente: `AllowedOrigins` = origens TROQ daquele ambiente (development: `http://localhost:3000`; preview: padrão dos domínios de preview do projeto, com no máximo um `*` — R2-3); `AllowedMethods` = `PUT`; `AllowedHeaders` = `content-type` e `if-none-match` (`Content-Length` é definido pelo próprio navegador e não passa por CORS). CORS **não** é controle de acesso — a assinatura é —, apenas viabiliza o navegador. **Aplicada em 2026-09-30** (seção 20.4); a origem de preview é `https://techlab-troq-*-bruno-m-noronha.vercel.app` |
 | Sigilo | a URL é credencial temporária (R2-1): nunca registrada em log, telemetria, auditoria ou mensagem de erro, nem persistida no banco |
 
 O binário **nunca** atravessa o corpo de uma Vercel Function (V-1, DEC-028 seção 5).
@@ -452,7 +454,7 @@ Deve mostrar que o pico de memória, inclusive com duas execuções concorrentes
 | Plano sem cron de minutos não cumpre 24 h | Dependência já registrada por ADR-0006, decisão 11; lifecycle como fallback |
 | Custo de entrega sem CDN | Aceito no MVP (9.3); medir em #47 |
 | PUT de até 5 GiB antes da confirmação | `Content-Length` assinado com o tamanho declarado (≤ 10 MB) recusa outro tamanho já no `PUT` (provado em #46); confirmação recusa > 10 MB e enfileira a exclusão; abandono limpo em até 1 h + cadência; limite de autorizações por usuário |
-| CORS de preview com curinga | Assinatura é o controle de acesso; curinga restrito ao padrão de domínio do projeto (R2-3) |
+| CORS de preview com curinga | Assinatura é o controle de acesso; curinga restrito ao padrão de domínio do projeto (R2-3). O padrão aplicado (seção 20.4) também casaria com outro host `*.vercel.app` que comece com `techlab-troq-` e termine com `-bruno-m-noronha`; isso não concede escrita, porque o `PUT` continua exigindo a URL assinada |
 | Mudança de limites dos provedores | Reconferir a seção 2 em #46/#47 |
 
 ## 19. Rastreabilidade
@@ -498,8 +500,36 @@ Divergências de detalhe, sem efeito contratual: o claim só seleciona linhas co
 
 ### 20.3 Bloqueios operacionais registrados
 
-1. **CORS dos buckets.** Nenhum dos buckets (`development`, `preview`) tem política CORS, e o navegador recusa o `PUT` no preflight. O token de `development` não tem permissão de configuração de bucket (mínimo privilégio; `403` em `GetBucketCors`), e o painel da Cloudflare não está acessível ao agente. O `PUT` foi provado por cliente HTTP (20.2). **Ação do responsável pela conta:** aplicar a cada bucket os `AllowedOrigins` da seção 5.2, `AllowedMethods = PUT` e `AllowedHeaders = content-type, if-none-match`. Até lá, o upload pelo navegador não funciona em nenhum ambiente. Bucket público não é alternativa (MP-3.1).
-2. **Agendamento da recuperação.** A rota existe e está protegida, mas **nenhum cron foi configurado** (`vercel.json` sem `crons`): no Hobby o cron é diário (V-4), e declarar a cadência de 5 min faria o deployment falhar. Sem agendador, só o caminho rápido processa; uma imagem que ele não conclua fica em `uploaded` até uma chamada autorizada à rota. A cadência contratual de 5 min **não** foi enfraquecida; a dependência de plano é a de ADR-0006, decisão 11, e precisa ser resolvida antes de a Fase 2 depender da recuperação.
+1. **CORS dos buckets — resolvido em 2026-09-30 (seção 20.4).** Registro de 2026-09-29, mantido como histórico: nenhum dos buckets (`development`, `preview`) tinha política CORS, e o navegador recusava o `PUT` no preflight. O token de `development` não tem permissão de configuração de bucket (mínimo privilégio; `403` em `GetBucketCors`), e o painel da Cloudflare não estava acessível ao agente. O `PUT` foi provado por cliente HTTP (20.2). A ação pedida ao responsável pela conta era aplicar a cada bucket os `AllowedOrigins` da seção 5.2, `AllowedMethods = PUT` e `AllowedHeaders = content-type, if-none-match`. Bucket público não é alternativa (MP-3.1).
+2. **Agendamento da recuperação.** A rota existe e está protegida, mas **nenhum cron foi configurado** (`vercel.json` sem `crons`): no Hobby o cron é diário (V-4), e declarar a cadência de 5 min faria o deployment falhar. Sem agendador, só o caminho rápido processa; uma imagem que ele não conclua fica em `uploaded` até uma chamada autorizada à rota. A cadência contratual de 5 min **não** foi enfraquecida; a dependência de plano é a de ADR-0006, decisão 11, e precisa ser resolvida antes de a Fase 2 depender da recuperação. **Continua bloqueado em 2026-09-30.**
+
+### 20.4 CORS aplicado e upload pelo navegador (2026-09-30)
+
+**Configuração.** Aplicada pelo painel da Cloudflare, com sessão administrativa do responsável pela conta. Os tokens de runtime da aplicação **não** foram ampliados e continuam sem permissão de configuração de bucket. Antes da mudança, nenhum dos buckets tinha política CORS. Depois dela, a política foi lida de novo, após recarregar a página, para confirmar a persistência:
+
+| Bucket (jurisdição padrão, ENAM) | `AllowedOrigins` | `AllowedMethods` | `AllowedHeaders` |
+| --- | --- | --- | --- |
+| `troq-media-development` | `http://localhost:3000` | `PUT` | `content-type`, `if-none-match` |
+| `troq-media-preview` | `https://techlab-troq-*-bruno-m-noronha.vercel.app` | `PUT` | `content-type`, `if-none-match` |
+
+Não há `ExposeHeaders` nem `MaxAgeSeconds`: a confirmação usa `HeadObject` no servidor (seção 6), e o cliente não lê cabeçalho da resposta do R2. Os dois buckets continuam privados: `r2.dev` desativado, sem Custom Domain e sem acesso anônimo.
+
+**Origem de preview.** Os deployments de preview do projeto usam os hosts `techlab-troq-<hash>-bruno-m-noronha.vercel.app` (URL do deployment) e `techlab-troq-git-<branch>-bruno-m-noronha.vercel.app` (alias da branch), conferidos pela API da Vercel. O R2 aceita um único `*` por origem, e esse `*` pode atravessar pontos. Por isso o padrão fixa o prefixo do projeto e o sufixo do time. O risco residual está na seção 18.
+
+**Fatos reconferidos na documentação oficial em 2026-09-30** ([Configure CORS](https://developers.cloudflare.com/r2/buckets/cors/)): presigned URL no navegador exige CORS; `AllowedOrigins` sem caminho e com no máximo um `*`; porta sem curinga; propagação em até 30 s; resposta de erro de presigned URL expirada vem **sem** cabeçalhos CORS, então o JavaScript não lê o corpo do erro.
+
+**Provas:**
+
+| Camada | O que provou |
+| --- | --- |
+| Configuração Cloudflare | política lida antes (ausente) e depois (igual à tabela acima) nos dois buckets |
+| Navegador local (`development`, `http://localhost:3000`, `main` em `f070883`) | conta sintética verificada; rascunho novo; JPEG sintético de 800×600 escolhido no seletor da edição privada; reserva; `PUT` por XHR direto ao host do bucket `troq-media-development` com resposta `200` (a URL assinada não foi registrada); confirmação; caminho rápido concluído; imagem `ready` com `thumb` 320×240, `medium` 768×576 e `large` 800×600 (sem ampliar); miniatura do dono servida por `/media/{imageId}/thumb` com `200`, `image/webp`, `private, no-store` e `nosniff`; sem erro no console |
+| Navegador em `preview` | ver a linha acrescentada depois da prova no deployment de preview |
+| Preflight (HTTP cru, sem URL assinada) | `development`: `204` com `Access-Control-Allow-Origin` igual à origem exata (nunca `*`), `Allow-Methods: PUT` e `Allow-Headers: content-type, if-none-match` só para `http://localhost:3000` com `PUT`; `403` para `http://localhost:3001`, `https://evil.example`, host de preview, `DELETE`, `GET` com cabeçalho extra e `PUT` com `x-amz-meta-foo`. `preview`: `204` para o alias de branch e para a URL de deployment do projeto; `403` para `http://localhost:3000`, `https://techlab-troq.vercel.app`, outro projeto do time, host de outro time e `DELETE` |
+| Controles negativos no navegador | a partir de `https://example.com`, `PUT` com os cabeçalhos do contrato é bloqueado no preflight; a partir de `localhost:3000`, `DELETE`, `GET` e `PUT` com cabeçalho extra são bloqueados, e o `PUT` sem assinatura é recusado pelo R2 |
+| Leitura pública | `GET` e listagem sem assinatura no endpoint S3 → `400` nos dois buckets; `r2.dev` desativado nos dois; `/media/{imageId}/thumb` de rascunho sem cookie → `404` |
+
+Automatizado, integração com R2 e build **não** foram reexecutados: nenhuma linha de código mudou. As provas de 20.2 e 21.2 continuam valendo para a lógica.
 
 ## 21. Estado da implementação de #47 (F2-009)
 
@@ -555,4 +585,4 @@ Achado durante a prova: suítes com `afterAll` perto do limite padrão de 10 s d
 
 1. **Agendamento.** Nem a limpeza horária nem a recuperação de 5 min têm cron configurado (`vercel.json` sem `crons`; ADR-0006, decisão 11). As duas rotas foram provadas por chamada autenticada. Sem agendador, o prazo de 24 h do original **não** é garantido em ambiente hospedado. A cadência contratual não foi enfraquecida.
 2. **Lifecycle do R2** (fallback de `originals/` com 1 dia). **Não configurado.** O token de `development` recebe `403` até na leitura da configuração (`GetBucketLifecycleConfiguration` e `GetBucketCors`), e o painel da Cloudflare não está acessível ao agente (Claude in Chrome desconectado nesta execução). A credencial não foi ampliada. A autoridade continua sendo a limpeza da aplicação.
-3. **CORS** (bloqueio de [#46](https://github.com/BrunoMNoronha/techlab-troq/issues/46), seção 20.3): segue sem política nos buckets; #46 continua aberta. #47 não depende do upload pelo navegador: suas provas semeiam derivados diretamente no R2.
+3. **CORS** (bloqueio de [#46](https://github.com/BrunoMNoronha/techlab-troq/issues/46), seção 20.3): **resolvido em 2026-09-30** (seção 20.4). O registro de 2026-09-29 dizia que os buckets seguiam sem política. #47 não depende do upload pelo navegador: suas provas semeiam derivados diretamente no R2. Em 2026-09-30, a política CORS foi aplicada pelo painel com sessão administrativa, mas o lifecycle (item 2) **não** foi configurado nem provado, e o agendamento (item 1) continua bloqueado.
