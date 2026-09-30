@@ -446,4 +446,15 @@ A home não mudou: continua na primeira página com `limit = 12` (seção 9.5), 
 
 ### 16.5 Prova em Preview
 
-Pendente de execução nesta entrega.
+Deployment `dpl_EDzuWuXqsJdCHKvmEg1Fnr2GYyMG` (branch `feat/f2-011-public-listing`, commit `2f77128`), sobre o Neon de `preview`. As requisições foram feitas **sem sessão do TROQ**, com acesso temporário de compartilhamento da Vercel e somente leitura. Nenhum dado foi gravado no banco compartilhado. O banco tinha dois anúncios, ambos `closed` (um com imagem pronta), e nenhum publicado.
+
+| Verificação | Resultado |
+| --- | --- |
+| `/`, `/explorar`, `/explorar?page=2` e `/explorar?city=Recife&state=PE`, em HTML e RSC | 200; RSC `text/x-component`; nenhum marcador privado; `Cache-Control` `private, no-cache, no-store, max-age=0, must-revalidate` |
+| Estados vazios | home sem oferta fictícia; `/explorar` vazio sem filtro; com filtro, sugere remover; UF `XX1` não corresponde; formulário `GET` com rótulos |
+| Detalhe dos dois anúncios `closed`, de um UUID inexistente e de um ID malformado | HTML 404 idêntico após normalização; RSC 200 com o marcador de 404 e conteúdo idêntico; nenhum marcador privado |
+| `/media` da imagem pronta do anúncio `closed` (`thumb`, `medium`, `large`) | 404 com `private, no-store` |
+
+Resultado: 71 verificações, 0 falhas.
+
+**Limite.** Paginação com dados, detalhe visível e retirada após T3/T5 **não** foram exercitados no Preview, porque não havia anúncio publicado, e publicar exigiria escrever no banco compartilhado com a conta do responsável. Essas provas estão na seção 16.4, sobre build de produção local, com banco descartável e R2 de `development`.
