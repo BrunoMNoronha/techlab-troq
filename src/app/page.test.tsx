@@ -61,7 +61,12 @@ describe('LatestOffers', () => {
   });
 
   it('consulta a primeira página do feed público com o limite da home', async () => {
-    getPublicFeed.mockResolvedValueOnce({ listings: [], total: 0 });
+    getPublicFeed.mockResolvedValueOnce({
+      listings: [],
+      total: 0,
+      page: 1,
+      limit: HOME_OFFERS_LIMIT,
+    });
 
     render(await LatestOffers());
 
@@ -72,6 +77,8 @@ describe('LatestOffers', () => {
     getPublicFeed.mockResolvedValueOnce({
       listings: [offer('a1', 'Bicicleta aro 29'), offer('b2', 'Mesa de madeira')],
       total: 2,
+      page: 1,
+      limit: HOME_OFFERS_LIMIT,
     });
 
     render(await LatestOffers());
@@ -88,7 +95,12 @@ describe('LatestOffers', () => {
   });
 
   it('oferece a página completa quando há mais ofertas que o limite da home', async () => {
-    getPublicFeed.mockResolvedValueOnce({ listings: [offer('a1', 'Bicicleta')], total: 30 });
+    getPublicFeed.mockResolvedValueOnce({
+      listings: [offer('a1', 'Bicicleta')],
+      total: 30,
+      page: 1,
+      limit: HOME_OFFERS_LIMIT,
+    });
 
     render(await LatestOffers());
 
@@ -99,7 +111,12 @@ describe('LatestOffers', () => {
   });
 
   it('mostra estado vazio sem inventar ofertas', async () => {
-    getPublicFeed.mockResolvedValueOnce({ listings: [], total: 0 });
+    getPublicFeed.mockResolvedValueOnce({
+      listings: [],
+      total: 0,
+      page: 1,
+      limit: HOME_OFFERS_LIMIT,
+    });
 
     render(await LatestOffers());
 

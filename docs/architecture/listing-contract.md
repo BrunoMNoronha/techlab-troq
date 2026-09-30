@@ -6,6 +6,8 @@ Contrato técnico canônico do anúncio no MVP: campos, validação do formulár
 
 **Atualização de F2-010 ([#48](https://github.com/BrunoMNoronha/techlab-troq/issues/48), 2026-09-30).** As transições T1 a T6 pelo dono foram implementadas conforme as seções 4.3, 4.4 e 5, com interface na edição privada. As divergências D-1 a D-4 e a parte de #48 em D-6 foram resolvidas (seção 12). Estado, decisões e provas estão na seção 15.
 
+**Atualização de F2-011 ([#49](https://github.com/BrunoMNoronha/techlab-troq/issues/49), 2026-09-30).** A vitrine pública (`/explorar`, `/explorar/[id]` e home) passou a cumprir as seções 9 e 11: parâmetros normalizados no servidor, ordem total, paginação e filtro pela URL, galeria completa no detalhe e prova por HTTP real de que nenhuma superfície pública carrega contato ou dado privado. D-10 a D-12 foram resolvidas, e a parte pública de D-13 também (seção 12). Estado, decisões e provas estão na seção 16.
+
 ## 1. Escopo e hierarquia
 
 Este documento **não** cria regra de negócio, decisão de produto nem decisão aberta. Ele consolida, em forma de contrato técnico, o que já está definido em:
@@ -271,6 +273,7 @@ Uma única ordenação no MVP: **mais recentes primeiro**, por `createdAt` decre
 - Devolve o mesmo DTO público (seção 6.1), com todas as imagens `ready` em ordem.
 - Identificador que não seja UUID é tratado como anúncio inexistente (404), sem erro de consulta; anúncio não visível também é 404 (seção 7).
 - A metadata usa somente campos do DTO público (título, cidade e UF); anúncio indisponível recebe metadata genérica.
+- Na navegação pelo cliente (payload RSC), o Next.js 16.3.5 responde **HTTP 200** com o marcador de "não encontrado" no conteúdo, e não 404: é o comportamento do framework para qualquer página que chame `notFound()`, inclusive rota inexistente. O requisito "da mesma forma" vale nesse canal também: o conteúdo é o mesmo para todo anúncio indisponível (seção 16.3).
 
 ### 9.5 Home (`/`)
 
@@ -314,7 +317,7 @@ Requisitos proporcionais ao contrato, sem redesign; o nível formal de acessibil
 
 ## 12. Divergências da implementação atual e destino
 
-Conferência feita em `7296cb3`. Nenhuma foi corrigida por F2-005, que é documental; cada uma segue na issue indicada. D-7 a D-9 foram corrigidas depois, por F2-006 ([#44](https://github.com/BrunoMNoronha/techlab-troq/issues/44)); D-1 a D-4 e a parte de publicação de D-6, por F2-010 ([#48](https://github.com/BrunoMNoronha/techlab-troq/issues/48)).
+Conferência feita em `7296cb3`. Nenhuma foi corrigida por F2-005, que é documental; cada uma segue na issue indicada. D-7 a D-9 foram corrigidas depois, por F2-006 ([#44](https://github.com/BrunoMNoronha/techlab-troq/issues/44)); D-1 a D-4 e a parte de publicação de D-6, por F2-010 ([#48](https://github.com/BrunoMNoronha/techlab-troq/issues/48)); D-10 a D-12 e a parte pública de D-13, por F2-011 ([#49](https://github.com/BrunoMNoronha/techlab-troq/issues/49)).
 
 | # | Contrato | Implementação atual | Destino |
 | --- | --- | --- | --- |
@@ -327,10 +330,10 @@ Conferência feita em `7296cb3`. Nenhuma foi corrigida por F2-005, que é docume
 | D-7 | Descrição obrigatória após `trim`; mesmas regras na criação e na edição; UF com duas letras `A`–`Z` (seção 3) | **Corrigida em 2026-09-29.** Criação e edição usam a mesma validação (`src/modules/listing/validation.ts`). Antes, a criação aceitava descrição só com espaços e UF de dois caracteres quaisquer, e a edição não validava cidade nem UF | [#44](https://github.com/BrunoMNoronha/techlab-troq/issues/44) |
 | D-8 | Anúncio alheio indistinguível de inexistente na área privada (seção 7) | **Corrigida em 2026-09-29.** A busca e o `UPDATE` são filtrados pelo dono da sessão, e alheio, inexistente e ID malformado dão a mesma resposta `not_found`. Antes, a resposta era "sem permissão" | [#44](https://github.com/BrunoMNoronha/techlab-troq/issues/44) (correção) e [#50](https://github.com/BrunoMNoronha/techlab-troq/issues/50) (verificação abrangente) |
 | D-9 | Erro por campo, foco em erro e dados preservados (seção 11) | **Corrigida em 2026-09-29.** O formulário marca o campo com `aria-invalid` e associa a mensagem, foca o primeiro erro, preserva os valores e bloqueia envio duplicado. Antes, havia só um aviso geral | [#44](https://github.com/BrunoMNoronha/techlab-troq/issues/44) |
-| D-10 | `page` e `limit` validados, teto de 50, resposta com `page`/`limit` (seção 9) | `getPublicFeed` aceita qualquer `page`/`limit` sem validação nem teto e não devolve os valores aplicados | [#49](https://github.com/BrunoMNoronha/techlab-troq/issues/49) |
-| D-11 | Desempate por `id` (seção 9.2) | Ordena só por `createdAt` | [#49](https://github.com/BrunoMNoronha/techlab-troq/issues/49) |
-| D-12 | `/explorar` pagina e filtra por cidade/UF, com estados de carregamento e erro | Lê só `city`/`state` da URL, sem `page`, sem controles de navegação ou filtro, sem estado de erro próprio; `city` só com espaços vira filtro vazio | [#49](https://github.com/BrunoMNoronha/techlab-troq/issues/49) |
-| D-13 | Ausência de contato e de dados privados provada em HTML/RSC/JSON/metadata/erros/cache | Projeções explícitas existem; a prova sobre HTTP real e cache aquecido não | [#49](https://github.com/BrunoMNoronha/techlab-troq/issues/49) e [#50](https://github.com/BrunoMNoronha/techlab-troq/issues/50) |
+| D-10 | `page` e `limit` validados, teto de 50, resposta com `page`/`limit` (seção 9) | **Corrigida em 2026-09-30.** `getPublicFeed` normaliza `page`, `limit`, `city` e `state` na própria função, inclusive quando chamada como Server Action com argumentos arbitrários, e responde `{ listings, total, page, limit }` (`src/modules/listing/public-query.ts`). Antes, aceitava qualquer `page`/`limit`, sem teto, e não devolvia os valores aplicados | [#49](https://github.com/BrunoMNoronha/techlab-troq/issues/49) |
+| D-11 | Desempate por `id` (seção 9.2) | **Corrigida em 2026-09-30.** Ordem `createdAt desc, id desc`; paginar 25 anúncios com o mesmo `createdAt` não repete nem omite nenhum (banco real). Antes, ordenava só por `createdAt` | [#49](https://github.com/BrunoMNoronha/techlab-troq/issues/49) |
+| D-12 | `/explorar` pagina e filtra por cidade/UF, com estados de carregamento e erro | **Corrigida em 2026-09-30.** `/explorar` lê `page`, `city` e `state`; tem filtro por formulário `GET`, paginação por links que preservam o filtro, estados de carregamento, vazio (com e sem filtro), página além da última e erro com nova tentativa. Antes, lia só `city`/`state`, sem paginação, filtro nem erro, e `city` só com espaços virava filtro vazio | [#49](https://github.com/BrunoMNoronha/techlab-troq/issues/49) |
+| D-13 | Ausência de contato e de dados privados provada em HTML/RSC/JSON/metadata/erros/cache | **Superfícies públicas provadas em 2026-09-30** por HTTP real contra build de produção, com banco descartável e R2 de `development`: home, `/explorar` e detalhe, em HTML e RSC, para anônimo, dono e terceiro; 404 uniforme; `Cache-Control` nunca público; retirada imediata após T3/T5 com cache aquecido (seção 16). **Segue na #50** a verificação abrangente: rotas e actions privadas, identidade (#41/#42), concorrência de mídia (#46) e corpo de erros das superfícies restritas | [#49](https://github.com/BrunoMNoronha/techlab-troq/issues/49) e [#50](https://github.com/BrunoMNoronha/techlab-troq/issues/50) |
 | D-14 | URL de derivado revogável e retirada imediata do público ao sair de `published`; contrato em [media-pipeline-contract.md](media-pipeline-contract.md), seção 9 (rota `/media/{imageId}/{kind}`, bucket privado, `private, no-store`) | **Resolvida por F2-009:** DTO com `/media/{imageId}/{kind}`, rota com revogação por requisição, `private, no-store` ([media-pipeline-contract.md](media-pipeline-contract.md), seção 21) | [#47](https://github.com/BrunoMNoronha/techlab-troq/issues/47) |
 | D-15 | Publicação respeita restrição/bloqueio de publicação (seção 4.4, item 6) | Sanções de moderação não implementadas | Fase 4 ([#55](https://github.com/BrunoMNoronha/techlab-troq/issues/55)) |
 
@@ -402,3 +405,56 @@ Deployment `dpl_EtNnj2TESSMUToYP5enpYqghX5oB` (alias da branch `feat/f2-010-list
 | Rascunho novo: publicar sem aceite e depois sem imagem | alerta focado com `compliance_required`; depois `no_ready_image` |
 | Descartar: cancelar e depois confirmar | cancelar devolve o foco e mantém o rascunho; confirmar grava `closed` |
 | Neon de `preview` (consulta somente leitura) | anúncio do ciclo: `draft>published, published>paused, paused>published, published>closed`; auditoria `listing.published(T1)` e `listing.closed(T5)`; um aceite `DEC-031/2026-09-14/declaracao-1` no mesmo instante da auditoria; `removed_at` nulo. Rascunho descartado: `draft>closed`, sem auditoria |
+
+## 16. Estado da implementação de #49 (F2-011)
+
+### 16.1 O que existe
+
+| Mecanismo | Onde |
+| --- | --- |
+| Normalização de `page`, `limit`, `city` e `state` (seção 9.1), independente do tipo declarado | `src/modules/listing/public-query.ts` |
+| `getPublicFeed` com ordem total, resposta `{ listings, total, page, limit }`, UF inválida sem consulta e deslocamento acima de int32 respondido só com a contagem | `src/modules/listing/actions.ts` |
+| `/explorar`: formulário `GET` com rótulos, paginação por links (`aria-current` na posição, alvos de 44 px), estados de carregamento, vazio com e sem filtro, página além da última e erro com nova tentativa | `src/app/explorar/page.tsx`, `explorar-results.tsx` e `explorar-query.ts` |
+| Detalhe com todas as imagens `ready` em ordem, `width`/`height`, `srcset`/`sizes` entre os três derivados e `alt` "Imagem i de n: título"; card com o mesmo `alt` e `srcset` | `src/app/explorar/[id]/page.tsx`, `src/app/_components/listing-card.tsx` e `listing-image.ts` |
+
+A home não mudou: continua na primeira página com `limit = 12` (seção 9.5), agora recebendo `page`/`limit` aplicados. Nenhuma migration nem dependência nova.
+
+### 16.2 Decisões técnicas
+
+- **Carregamento sem amolecer o 404.** Não há `loading.tsx` em `/explorar`: ele envolveria `/explorar/[id]` e faria o `notFound()` do detalhe responder 200 (doc do Next, `loading.md`, Status Codes). O estado de carregamento é um `Suspense` **dentro** de `/explorar/page.tsx`, com chave pela URL. O erro é tratado no próprio componente, como na home, sem `error.tsx`.
+- **Normalização fora de `actions.ts`.** Um módulo `'use server'` só exporta funções assíncronas. Por isso as funções puras ficam em `public-query.ts`, e `getPublicFeed` as aplica sobre o argumento recebido, sem confiar no tipo.
+- **Texto da URL.** `/explorar` aceita `page` só com dígitos. `"1e3"`, `"2.0"` e `"-1"` valem 1. `limit` nunca é lido da URL.
+- **Imagens.** Continuam sendo `<img>` pela rota `/media`, sem Image Optimization (media-pipeline-contract.md, 9.2). O `srcset` usa a largura real de cada derivado.
+
+### 16.3 Comportamento do Next.js observado na prova
+
+- **Payload RSC.** No Next 16.3.5, a requisição de navegação (`RSC: 1`) precisa do parâmetro `_rsc`, que é o hash dos cabeçalhos de roteamento: sem nenhum deles, o valor é vazio, e sem o parâmetro a resposta é 307 para `?_rsc`.
+- **404 em RSC.** Para uma página que chama `notFound()`, a resposta RSC é **HTTP 200** com a linha `E{"digest":"NEXT_HTTP_ERROR_FALLBACK;404"}`. Rota inexistente se comporta igual. Em HTML, o status é 404 real.
+- **Diferenças que não carregam dado.** O que muda entre duas respostas 404 é só isto: o próprio ID pedido (eco da URL); a posição dessa linha no stream (ID malformado é recusado antes da consulta, e a linha sai mais cedo); chaves por requisição derivadas do `requestId` nos elementos de metadata; e os rastros do Sentry. A prova normaliza exatamente isso e compara o resto byte a byte (no RSC, o conjunto de linhas).
+
+### 16.4 Provas
+
+| Camada | O que provou |
+| --- | --- |
+| Unitário (Prisma e consulta simulados) | tabela de normalização (`page`, `limit`, cidade e UF, inclusive `NaN`, `Infinity`, `2^60`, texto e não objeto); `orderBy` com desempate; `skip`/`take`; chamada como Server Action com valores arbitrários; UF inválida sem banco; deslocamento enorme só com contagem; allowlist. `/explorar`: links que preservam o filtro, `aria-current`, limites da paginação, vazio com e sem filtro, página além da última, erro sem detalhe interno, formulário `GET` rotulado. Detalhe: todas as imagens em ordem, `alt` posicional, dimensões, `srcset`, 404 e metadata genérica |
+| PostgreSQL descartável (`public-listing.integration.test.ts`) | só `published` de dono `active` (4 estados ocultos e 3 contas não elegíveis); 25 anúncios com o mesmo `createdAt` paginados de 10 em 10 cobrem todos uma única vez, em `id` decrescente; página repetida estável; página além da última com deslocamentos até `Number.MAX_SAFE_INTEGER`; `limit` 10 000 → 50; filtros; detalhe só com imagens `ready` em ordem; DTO sem marcador de contato, email, dono ou estado |
+| Build de produção + HTTP real (`public-surface.http.integration.test.ts`, com R2 de `development`) | home, `/explorar` (filtro e duas páginas) e detalhe em HTML e RSC, para anônimo, terceiro e dono: 200, sem telefone, email, ids de usuário, ids de anúncios ocultos, imagem `uploaded`, `ownerId`, `termsVersion`, `updatedAt`, `publishedAt`, chaves de objeto ou estado; `Cache-Control` `private, no-cache, no-store`; paginação real com 20 + 3 anúncios distintos; 404 idêntico em HTML (e marcador idêntico em RSC) para `draft`, `paused`, `closed`, `removed`, as três contas não elegíveis, inexistente e malformado, inclusive para o dono; detalhe e `/media` aquecidos (200, bytes reais do R2) → pausa e encerramento pelas actions do dono → detalhe 404, RSC com o marcador, fora de `/explorar`, `/media` 404 `private, no-store`. Estável em 5 execuções seguidas; banco e bucket limpos ao final |
+| Navegador a 375 px | `/explorar` com filtro sem rolagem horizontal; ordem de foco: voltar, cidade, UF, Filtrar, limpar filtro e ação do estado vazio |
+| Vercel Preview | ver a seção 16.5 |
+
+**Limites.** O erro de carregamento de `/explorar` e da home é provado só com consulta simulada: não há como derrubar o banco sob o servidor de prova sem afetar as demais suítes. A verificação abrangente das superfícies restritas continua na [#50](https://github.com/BrunoMNoronha/techlab-troq/issues/50).
+
+### 16.5 Prova em Preview
+
+Deployment `dpl_EDzuWuXqsJdCHKvmEg1Fnr2GYyMG` (branch `feat/f2-011-public-listing`, commit `2f77128`), sobre o Neon de `preview`. As requisições foram feitas **sem sessão do TROQ**, com acesso temporário de compartilhamento da Vercel e somente leitura. Nenhum dado foi gravado no banco compartilhado. O banco tinha dois anúncios, ambos `closed` (um com imagem pronta), e nenhum publicado.
+
+| Verificação | Resultado |
+| --- | --- |
+| `/`, `/explorar`, `/explorar?page=2` e `/explorar?city=Recife&state=PE`, em HTML e RSC | 200; RSC `text/x-component`; nenhum marcador privado; `Cache-Control` `private, no-cache, no-store, max-age=0, must-revalidate` |
+| Estados vazios | home sem oferta fictícia; `/explorar` vazio sem filtro; com filtro, sugere remover; UF `XX1` não corresponde; formulário `GET` com rótulos |
+| Detalhe dos dois anúncios `closed`, de um UUID inexistente e de um ID malformado | HTML 404 idêntico após normalização; RSC 200 com o marcador de 404 e conteúdo idêntico; nenhum marcador privado |
+| `/media` da imagem pronta do anúncio `closed` (`thumb`, `medium`, `large`) | 404 com `private, no-store` |
+
+Resultado: 71 verificações, 0 falhas.
+
+**Limite.** Paginação com dados, detalhe visível e retirada após T3/T5 **não** foram exercitados no Preview, porque não havia anúncio publicado, e publicar exigiria escrever no banco compartilhado com a conta do responsável. Essas provas estão na seção 16.4, sobre build de produção local, com banco descartável e R2 de `development`.

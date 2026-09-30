@@ -5,6 +5,7 @@ import { cache } from 'react';
 import { getPublicListingDetail } from '@/modules/listing';
 import { getContactRequestEntry } from '@/modules/request';
 import { HowItWorks } from '../../_components/how-it-works';
+import { derivativeSrcSet, listingImageAlt, pickDerivative } from '../../_components/listing-image';
 import { ContactRequestEntry } from './contact-request-entry';
 
 export const dynamic = 'force-dynamic';
@@ -42,13 +43,9 @@ export default async function DetalheAnuncioPublicoPage({
     notFound();
   }
 
-  // Imagem pela rota autorizada /media, sem Image Optimization (9.2).
-  const coverImage =
-    listing.images.length > 0
-      ? (listing.images[0].derivatives.find((d) => d.kind === 'large') ??
-        listing.images[0].derivatives[0] ??
-        null)
-      : null;
+  // Imagens pela rota autorizada /media, sem Image Optimization (9.2): todas as
+  // `ready`, na ordem de `position` (listing-contract.md, 9.4).
+  const images = listing.images;
 
   return (
     <main
@@ -66,32 +63,66 @@ export default async function DetalheAnuncioPublicoPage({
         ← Ver todas as ofertas
       </Link>
 
-      <div
-        style={{
-          marginTop: '16px',
-          width: '100%',
-          height: '320px',
-          backgroundColor: '#f3f4f6',
-          borderRadius: '8px',
-          overflow: 'hidden',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        {coverImage ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={coverImage.url}
-            width={coverImage.width}
-            height={coverImage.height}
-            alt={listing.title}
-            style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-          />
-        ) : (
-          <span style={{ fontSize: '48px', color: '#9ca3af' }}>📷</span>
-        )}
-      </div>
+      {images.length > 0 ? (
+        <ul
+          aria-label="Imagens do anúncio"
+          style={{
+            listStyle: 'none',
+            margin: '16px 0 0',
+            padding: 0,
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(min(140px, 100%), 1fr))',
+            gap: '8px',
+          }}
+        >
+          {images.map((image, index) => {
+            const src = pickDerivative(image.derivatives, index === 0 ? 'large' : 'medium');
+            if (!src) return null;
+            return (
+              <li key={image.id} style={index === 0 ? { gridColumn: '1 / -1' } : undefined}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={src.url}
+                  srcSet={derivativeSrcSet(image.derivatives)}
+                  sizes={
+                    index === 0
+                      ? '(min-width: 672px) 640px, 100vw'
+                      : '(min-width: 672px) 210px, 50vw'
+                  }
+                  width={src.width}
+                  height={src.height}
+                  alt={listingImageAlt(listing.title, index, images.length)}
+                  loading={index === 0 ? 'eager' : 'lazy'}
+                  style={{
+                    display: 'block',
+                    width: '100%',
+                    height: 'auto',
+                    backgroundColor: '#f3f4f6',
+                    borderRadius: '8px',
+                  }}
+                />
+              </li>
+            );
+          })}
+        </ul>
+      ) : (
+        <div
+          style={{
+            marginTop: '16px',
+            width: '100%',
+            height: '200px',
+            backgroundColor: '#f3f4f6',
+            borderRadius: '8px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <span aria-hidden="true" style={{ fontSize: '48px', color: '#9ca3af' }}>
+            📷
+          </span>
+        </div>
+      )}
 
       <div style={{ marginTop: '24px' }}>
         <h1
