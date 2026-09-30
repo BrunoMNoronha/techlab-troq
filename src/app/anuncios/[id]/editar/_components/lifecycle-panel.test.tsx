@@ -60,21 +60,26 @@ describe('LifecyclePanel', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Publicar anúncio' }));
     const alert = await screen.findByRole('alert');
     expect(alert).toHaveTextContent('Campos a corrigir: UF.');
-    expect(alert).toHaveFocus();
+    // O foco e aplicado num efeito depois da renderizacao do alerta.
+    await waitFor(() => expect(alert).toHaveFocus());
     expect(actions.publishListing).toHaveBeenCalledWith(LISTING, false);
     expect(refresh).not.toHaveBeenCalled();
   });
 
-  it('descartar exige confirmacao explicita; cancelar nao chama o servidor e devolve o foco', () => {
+  it('descartar exige confirmacao explicita; cancelar nao chama o servidor e devolve o foco', async () => {
     render(<LifecyclePanel listingId={LISTING} status="draft" readyImageCount={0} />);
     const opener = screen.getByRole('button', { name: 'Descartar rascunho' });
     fireEvent.click(opener);
     const dialog = screen.getByRole('group', { name: 'Descartar este rascunho?' });
     expect(dialog).toHaveAccessibleDescription(/não pode ser desfeita/);
-    expect(screen.getByRole('heading', { name: 'Descartar este rascunho?' })).toHaveFocus();
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: 'Descartar este rascunho?' })).toHaveFocus(),
+    );
     fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
     expect(actions.discardDraft).not.toHaveBeenCalled();
-    expect(screen.getByRole('button', { name: 'Descartar rascunho' })).toHaveFocus();
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Descartar rascunho' })).toHaveFocus(),
+    );
   });
 
   it('confirmar o descarte chama o servidor', async () => {
