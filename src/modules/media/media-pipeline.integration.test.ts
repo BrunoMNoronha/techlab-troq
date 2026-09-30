@@ -14,7 +14,7 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { S3ServiceException } from '@aws-sdk/client-s3';
 import sharp from 'sharp';
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest';
 import type { ListingStatus } from '@/generated/prisma/client';
 import { registerUser } from '@/modules/identity/actions';
 import { getAuth } from '@/modules/identity/auth';
@@ -164,6 +164,26 @@ async function uploadConfirmed(listingId: string, data: Buffer = jpeg): Promise<
 
 function image(id: string) {
   return getPrismaClient().listingImage.findUniqueOrThrow({ where: { id } });
+}
+
+/**
+ * Captura o registro de falha inesperada do executor (processor.ts registra
+ * so o nome do erro), sem silenciar o console. Uma linha que fica em
+ * `processing` depois de o executor terminar so pode vir daqui (desfecho
+ * `fenced` por excecao) ou de OUTRO executor no mesmo banco (`attempts` e
+ * `failureCode` da linha mostram isso).
+ */
+function watchUnexpectedFailures() {
+  const spy = vi.spyOn(console, 'error');
+  onTestFinished(() => spy.mockRestore());
+  return () =>
+    spy.mock.calls
+      .filter(([message]) => message === '[media] falha inesperada no processamento')
+      .map(([, detail]) => detail);
+}
+
+function outcomeOf(row: { status: string; attempts: number; failureCode: string | null }) {
+  return { status: row.status, attempts: row.attempts, failureCode: row.failureCode };
 }
 
 function pendingDeletions(keys: string[]) {
@@ -483,12 +503,27 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
 
       it('se after() nao rodar, a recuperacao periodica reclama a mesma imagem', async () => {
         const listing = await listingOf(userA);
-        const id = await uploadConfirmed(listing); // nenhum caminho rapido chamado
+        // O nucleo de upload.ts nao agenda after() (so actions.ts agenda, e
+        // fora de uma requisicao do Next o after() lanca): nenhum caminho
+        // rapido existe aqui.
+        const id = await uploadConfirmed(listing);
+        const unexpectedFailures = watchUnexpectedFailures();
 
         const summary = await processPendingImages();
+        const row = await image(id);
 
+        // Uma so assercao com o diagnostico inteiro: se falhar, o diff mostra
+        // se o proprio executor caiu (fenced/erro) ou se outro a reclamou.
+        expect({
+          fenced: summary.fenced,
+          errors: unexpectedFailures(),
+          image: outcomeOf(row),
+        }).toEqual({
+          fenced: 0,
+          errors: [],
+          image: { status: 'ready', attempts: 1, failureCode: null },
+        });
         expect(summary.ready).toBeGreaterThanOrEqual(1);
-        expect(await image(id)).toMatchObject({ status: 'ready' });
       });
 
       it('repetir o processamento e seguro: nada novo e reclamado, derivados nao duplicam', async () => {
@@ -508,10 +543,26 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
           await uploadConfirmed(listing),
         ];
 
-        await Promise.all(ids.map(() => processPendingImages({ maxImages: 1 })));
+        const unexpectedFailures = watchUnexpectedFailures();
 
-        for (const id of ids)
-          expect(await image(id)).toMatchObject({ status: 'ready', attempts: 1 });
+        const summaries = await Promise.all(ids.map(() => processPendingImages({ maxImages: 1 })));
+        const rows = await Promise.all(ids.map(image));
+
+        // Cada executor reclamou e concluiu exatamente uma; as tres sao as
+        // deste teste, cada uma numa unica tentativa.
+        expect({
+          executors: summaries.map((s) => ({
+            claimed: s.claimed,
+            ready: s.ready,
+            fenced: s.fenced,
+          })),
+          errors: unexpectedFailures(),
+          images: rows.map(outcomeOf),
+        }).toEqual({
+          executors: ids.map(() => ({ claimed: 1, ready: 1, fenced: 0 })),
+          errors: [],
+          images: ids.map(() => ({ status: 'ready', attempts: 1, failureCode: null })),
+        });
       });
 
       it('objeto substituido depois da confirmacao: 412, falha fechada, bytes novos nunca processados', async () => {
