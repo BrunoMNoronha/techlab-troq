@@ -1,5 +1,7 @@
 import { redirect } from 'next/navigation';
+import { getOwnContactStatus } from '@/modules/contact';
 import { validateSession, logoutUser, loginRedirectPath } from '@/modules/identity';
+import { ContactForm } from './contact-form';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,6 +20,11 @@ export default async function ContaPage({
   const logoutFailed = erro === 'logout';
 
   const user = sessionResult.user;
+  // So o booleano do proprio dono; o numero nunca chega a esta pagina (CR-2.5).
+  const contactStatus = await getOwnContactStatus();
+  if (!contactStatus) {
+    redirect(loginRedirectPath('no_session'));
+  }
 
   async function handleLogout() {
     'use server';
@@ -103,6 +110,8 @@ export default async function ContaPage({
           </dd>
         </div>
       </dl>
+
+      <ContactForm hasContact={contactStatus.hasContact} />
 
       {logoutFailed && (
         <div

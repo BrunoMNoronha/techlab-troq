@@ -1,5 +1,6 @@
 import { render, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import * as contactModule from '@/modules/contact';
 import * as identityModule from '@/modules/identity';
 import * as listingModule from '@/modules/listing';
 import MeusAnunciosPage from './page';
@@ -22,6 +23,8 @@ vi.mock('@/modules/identity', () => ({
   validateSession: vi.fn(),
   loginRedirectPath: (reason?: string) => `/login?motivo=${reason ?? 'sessao'}`,
 }));
+
+vi.mock('@/modules/contact', () => ({ getOwnContactStatus: vi.fn() }));
 
 vi.mock('@/modules/listing', () => ({
   getOwnerListings: vi.fn(),
@@ -57,6 +60,7 @@ vi.mock('@/modules/media/actions', () => ({
 const validateSession = vi.mocked(identityModule.validateSession);
 const getOwnerListings = vi.mocked(listingModule.getOwnerListings);
 const getListingForEdit = vi.mocked(listingModule.getListingForEdit);
+const getOwnContactStatus = vi.mocked(contactModule.getOwnContactStatus);
 
 const LISTING_ID = '22222222-2222-4222-8222-222222222222';
 
@@ -85,6 +89,7 @@ beforeEach(() => {
     },
     isValid: true,
   });
+  getOwnContactStatus.mockResolvedValue({ hasContact: true });
 });
 
 describe('/anuncios — Meus anúncios', () => {
@@ -124,6 +129,37 @@ describe('/anuncios — Meus anúncios', () => {
     }
     // Nenhuma acao de ciclo de vida nesta entrega (#48).
     expect(screen.queryByRole('button')).toBeNull();
+  });
+
+  it('sem contato e com anuncio publicado, orienta o cadastro em /conta (DEC-040)', async () => {
+    getOwnContactStatus.mockResolvedValueOnce({ hasContact: false });
+    getOwnerListings.mockResolvedValueOnce({
+      success: true,
+      listings: [listing('draft'), listing('published')],
+    });
+
+    render(await MeusAnunciosPage());
+
+    expect(screen.getByRole('status')).toHaveTextContent(/não estão aceitando solicitações/i);
+    expect(screen.getByRole('link', { name: 'Cadastrar contato' })).toHaveAttribute(
+      'href',
+      '/conta',
+    );
+  });
+
+  it.each([
+    ['com contato cadastrado', true, ['published'] as const],
+    ['sem anuncio publicado', false, ['draft', 'paused', 'closed'] as const],
+  ])('%s, nenhum aviso de contato', async (_c, has, statuses) => {
+    getOwnContactStatus.mockResolvedValueOnce({ hasContact: has });
+    getOwnerListings.mockResolvedValueOnce({
+      success: true,
+      listings: statuses.map((status) => listing(status)),
+    });
+
+    render(await MeusAnunciosPage());
+
+    expect(screen.queryByText(/não estão aceitando solicitações/i)).toBeNull();
   });
 
   it('lista vazia fala de anuncios, nao de publicacao', async () => {

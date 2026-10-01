@@ -1,12 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import * as contactModule from '@/modules/contact';
 import * as identityModule from '@/modules/identity';
 import * as listingModule from '@/modules/listing';
 import { getContactRequestEntry } from './entry';
 
+vi.mock('@/modules/contact', () => ({ hasContact: vi.fn() }));
 vi.mock('@/modules/identity', () => ({ validateSession: vi.fn() }));
 vi.mock('@/modules/listing', () => ({
   getPublicListingDetail: vi.fn(),
-  isListingOwnedBy: vi.fn(),
+  getListingOwnerId: vi.fn(),
 }));
 
 const queryRaw = vi.fn();
@@ -16,7 +18,8 @@ vi.mock('@/persistence/prisma', () => ({
 
 const validateSession = vi.mocked(identityModule.validateSession);
 const getPublicListingDetail = vi.mocked(listingModule.getPublicListingDetail);
-const isListingOwnedBy = vi.mocked(listingModule.isListingOwnedBy);
+const getListingOwnerId = vi.mocked(listingModule.getListingOwnerId);
+const hasContact = vi.mocked(contactModule.hasContact);
 
 const LISTING_ID = '0b6f2d9e-3c4a-4e8b-9f1a-2d3c4b5a6e7f';
 const listing = {
@@ -28,6 +31,7 @@ const listing = {
   createdAt: new Date(),
   images: [],
 };
+const OWNER_ID = '1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d';
 const user = {
   id: '9d8c7b6a-5f4e-4d3c-8b2a-1f0e9d8c7b6a',
   email: 'pessoa@example.test',
@@ -40,7 +44,8 @@ describe('getContactRequestEntry — entrada da solicitacao de desbloqueio (#59)
   beforeEach(() => {
     vi.resetAllMocks();
     getPublicListingDetail.mockResolvedValue(listing);
-    isListingOwnedBy.mockResolvedValue(false);
+    getListingOwnerId.mockResolvedValue(OWNER_ID);
+    hasContact.mockResolvedValue(true);
   });
 
   it('anuncio indisponivel (rascunho, pausado, conta inelegivel) nao abre a jornada', async () => {
@@ -78,10 +83,21 @@ describe('getContactRequestEntry — entrada da solicitacao de desbloqueio (#59)
 
   it('anunciante nao solicita o proprio contato', async () => {
     validateSession.mockResolvedValue({ user, isValid: true });
-    isListingOwnedBy.mockResolvedValue(true);
+    getListingOwnerId.mockResolvedValue(user.id);
 
     expect(await getContactRequestEntry(LISTING_ID)).toBe('own_listing');
-    expect(isListingOwnedBy).toHaveBeenCalledWith(LISTING_ID, user.id);
+    expect(getListingOwnerId).toHaveBeenCalledWith(LISTING_ID);
+    expect(hasContact).not.toHaveBeenCalled();
+  });
+
+  it('anunciante sem contato cadastrado nao aceita solicitacao (DEC-040)', async () => {
+    validateSession.mockResolvedValue({ user, isValid: true });
+    hasContact.mockResolvedValue(false);
+
+    expect(await getContactRequestEntry(LISTING_ID)).toBe('not_accepting');
+    // A verificacao e sobre o DONO do anuncio, nunca sobre quem visita.
+    expect(hasContact).toHaveBeenCalledWith(expect.anything(), OWNER_ID);
+    expect(queryRaw).not.toHaveBeenCalled();
   });
 
   it.each([

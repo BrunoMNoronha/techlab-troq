@@ -52,6 +52,8 @@ O motivo é estrutural, não estilístico: a falha mais comum e mais difícil de
 3. devolve apenas **confirmação** — sucesso, e se o contato existe — e **nunca** o número, nem inteiro nem mascarado. A interface informa que há contato cadastrado e oferece substituí-lo; ela não exibe dígitos. Exibir o número, ainda que parcialmente, ao próprio dono seria uma terceira operação que CR-2.2 não prevê, e por isso não é adotada aqui;
 4. não grava o número em log, telemetria, auditoria ou mensagem de erro (CR-6.1); se o evento for auditado, a auditoria registra apenas que o contato foi registrado ou alterado.
 
+_Atualização de 2026-10-01 (F3-002, [#92](https://github.com/BrunoMNoronha/techlab-troq/issues/92); decisão do Bruno)._ Além das duas operações de CR-2.2, o módulo expõe uma **leitura booleana** — "este usuário tem contato cadastrado?" — que **nunca** devolve o número, nem inteiro nem mascarado. Ela tem dois usos, e só esses: a área privada mostra ao **próprio dono** que há contato cadastrado (o titular vem da sessão), e o módulo `request` verifica, sob a trava do anúncio e pela fronteira de `contact`, se o anunciante tem contato antes de aceitar nova solicitação ([../product/advertiser-contact.md](../product/advertiser-contact.md), DEC-040). Como não revela o dado protegido, ela não é uma terceira operação de acesso ao contato no sentido de CR-2.2; a invariante "nenhum módulo além de `contact` lê `UserContact`" continua valendo e é verificada por teste de fronteira (`src/modules/contact/boundary.test.ts`). O registro e a alteração do contato **não** são auditados, porque [data-model.md](data-model.md), DM-11.1 não os lista.
+
 ## 3. Autorizar
 
 ### 3.1 `ContactRelease`

@@ -37,6 +37,9 @@ vi.setConfig({ testTimeout: 180_000, hookTimeout: 180_000 });
 const RUN_ID = `${Date.now()}-${randomBytes(3).toString('hex')}`;
 const PASSWORD = 'senha-sintetica-123';
 const PHONE = '+55 11 90000-0000';
+// Forma canonica que `contact` grava (DM-4.5): e ela que o banco guarda (F3-002, #92).
+const PHONE_E164 = '+5511900000000';
+const PHONE_MARKERS = [PHONE, PHONE_E164, PHONE_E164.slice(1), '11900000000', '90000-0000'];
 
 type Kind =
   | 'anonimo'
@@ -73,7 +76,7 @@ async function createVerifiedUser(email: string): Promise<string> {
     where: { id },
     data: { emailVerified: true, emailVerifiedAt: new Date() },
   });
-  await prisma.userContact.create({ data: { userId: id, phoneNumber: PHONE } });
+  await prisma.userContact.create({ data: { userId: id, phoneNumber: PHONE_E164 } });
   userIds.push(id);
   return id;
 }
@@ -260,7 +263,7 @@ describe.skipIf(!enabled)('superficies restritas por HTTP real (#50)', () => {
   /** Marcadores proibidos para quem pede como `viewer`. */
   function expectClean(label: string, page: Page, viewer: Actor, requested = '') {
     const body = requested ? page.body.split(requested).join('<ID>') : page.body;
-    for (const marker of [PHONE, '90000-0000', 'originals/', 'X-Amz-Signature', ...secrets]) {
+    for (const marker of [...PHONE_MARKERS, 'originals/', 'X-Amz-Signature', ...secrets]) {
       expect(body.includes(marker), `${label} contem segredo ou contato`).toBe(false);
     }
     for (const other of actors.values()) {
@@ -360,6 +363,10 @@ describe.skipIf(!enabled)('superficies restritas por HTTP real (#50)', () => {
         expectClean(label, page, owner);
       }
     }
+    // CR-2.5: /conta sabe que ha contato e oferece substituir, sem exibir digitos.
+    const account = await fetchPage('/conta', owner.cookie);
+    expect(account.body).toContain('Você tem um contato cadastrado');
+    expect(account.body).toContain('Substituir contato');
     const edit = await fetchPage(`/anuncios/${ownerDraft}/editar`, owner.cookie);
     expect(edit.body).toContain(`Rascunho do dono ${RUN_ID}`);
     expect(edit.body).not.toContain(thirdDraft);
@@ -443,12 +450,7 @@ describe.skipIf(!enabled)('superficies restritas por HTTP real (#50)', () => {
     expect(own.status).toBe(200);
     expect(own.headers.get('cache-control') ?? '').not.toMatch(/public|s-maxage/);
     expect(ownBody).toContain(actors.get('dono')!.email);
-    for (const marker of [
-      PHONE,
-      '90000-0000',
-      PASSWORD,
-      ...secrets.filter((s) => s.includes(':')),
-    ]) {
+    for (const marker of [...PHONE_MARKERS, PASSWORD, ...secrets.filter((s) => s.includes(':'))]) {
       expect(ownBody.includes(marker), 'get-session contem contato ou hash').toBe(false);
     }
     for (const other of actors.values()) {

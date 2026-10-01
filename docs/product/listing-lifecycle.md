@@ -21,7 +21,7 @@ Cinco estados. O identificador técnico é a forma canônica para modelo de dado
 | Identificador técnico | Nome | Público? | Reversível? | Significado |
 | --- | --- | --- | --- | --- |
 | `draft` | rascunho | não | sim | Anúncio criado pelo anunciante e ainda não publicado. Existe apenas para o próprio anunciante. |
-| `published` | publicado | **sim** | sim | Anúncio ativo e consultável por qualquer usuário. Único estado que aceita novos interesses e novas solicitações de desbloqueio. |
+| `published` | publicado | **sim** | sim | Anúncio ativo e consultável por qualquer usuário. Único estado que aceita novos interesses e novas solicitações de desbloqueio; a solicitação exige ainda que o dono tenha contato cadastrado ([advertiser-contact.md](advertiser-contact.md), DEC-040), sem que isso mude o estado ou a visibilidade do anúncio. |
 | `paused` | pausado | não | sim | Suspensão temporária e voluntária pelo anunciante. O anúncio deixa de ser consultável publicamente, mas continua existindo e pode voltar a `published`. |
 | `closed` | encerrado | não | **não** | Encerramento definitivo pelo anunciante. O anúncio deixa de ser consultável e não volta a ser público. |
 | `removed` | removido | não | **não** | Remoção administrativa por moderação (RB-006). O anúncio deixa de ser consultável e não volta a ser público. |

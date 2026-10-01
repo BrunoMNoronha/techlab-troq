@@ -61,7 +61,7 @@ Nenhum item exige alterar RB-001 a RB-006, DEC-027 a DEC-038 ou as ADRs. As corr
 | DV-14 | Limite de reservas não pagas | DECISÃO PENDENTE | **OD-14**; nota de DM-6.11 | #93 |
 | DV-15 | `force-dynamic`, `runtime = 'nodejs'`, sem `revalidate`, `Cache-Control: private, no-store` explícito em route handler, sem `unstable_cache`/`'use cache'` | DECISÃO TÉCNICA | CR-7.4 | #100 |
 | DV-19 | E.164 brasileiro normalizado no servidor; a escrita devolve só confirmação e a interface não exibe dígitos | DECISÃO TÉCNICA | DM-4.5, CR-2.5 | #92 |
-| DV-1 | Contato como pré-condição | DECISÃO PENDENTE | **OD-13** | #92 |
+| DV-1 | Contato como pré-condição | DECISÃO (2026-10-01) | OD-13 fechada por **DEC-040** ([../product/advertiser-contact.md](../product/advertiser-contact.md)): exigido antes de aceitar nova solicitação, não na publicação | #92 |
 
 ## 3. Decisões pendentes e pré-requisitos externos
 
@@ -88,7 +88,7 @@ Nenhum item exige alterar RB-001 a RB-006, DEC-027 a DEC-038 ou as ADRs. As corr
 | ID | Issue | Entrega | Dependências | Testes do contrato | Prova | Estado |
 | --- | --- | --- | --- | --- | --- | --- |
 | F3-001 | [#91](https://github.com/BrunoMNoronha/techlab-troq/issues/91) | Reconciliar os contratos da Fase 3 com o código da Fase 2 | — | — | Documental | concluído (2026-10-01, seção 2.1) |
-| F3-002 | [#92](https://github.com/BrunoMNoronha/techlab-troq/issues/92) | Cadastrar e proteger o contato do anunciante | #91; OD-13 (só a pré-condição) | C-1 | PostgreSQL efêmero + HTTP | próximo |
+| F3-002 | [#92](https://github.com/BrunoMNoronha/techlab-troq/issues/92) | Cadastrar e proteger o contato do anunciante | #91; OD-13 (só a pré-condição) | C-1 | PostgreSQL efêmero + HTTP | concluído (2026-10-01; OD-13 fechada por DEC-040) |
 | F3-003 | [#93](https://github.com/BrunoMNoronha/techlab-troq/issues/93) | Solicitação com reserva atômica e limite de três | #91; OD-14 (só o limite) | T-1 | PostgreSQL efêmero, concorrente | concluído (2026-10-01; limite de OD-14 pendente) |
 | F3-004 | [#94](https://github.com/BrunoMNoronha/techlab-troq/issues/94) | Adaptador do Mercado Pago | #91; PX-2 (opcional) | Contrato do adaptador | Simulado; sandbox opcional | concluído (2026-10-01; abriu OD-16) |
 | F3-005 | [#95](https://github.com/BrunoMNoronha/techlab-troq/issues/95) | Cobrança Pix de R$ 0,99 | #93, #94 | T-15 | PostgreSQL efêmero + simulado | concluído (2026-10-01) |
@@ -155,7 +155,7 @@ Cada teste do contrato pertence a exatamente uma issue executora; F3-014 reexecu
 | --- | --- | --- |
 | [#86](https://github.com/BrunoMNoronha/techlab-troq/issues/86) — contato no título e na descrição | **RECOMENDAÇÃO: condição do gate** (F3-015), não da implementação | Contato escrito no texto público contorna a liberação paga e anula RB-001 na prática (R-03). Pode correr em paralelo desde já. A issue não foi alterada |
 | [#59](https://github.com/BrunoMNoronha/techlab-troq/issues/59) — home e entrada da solicitação | **Acompanha** | A entrada já está em `main` (PR #60); a jornada completa é entregue e fechada por F3-012 (#102) |
-| [#76](https://github.com/BrunoMNoronha/techlab-troq/issues/76) — três alternativas de troca | Fora do gate | Muda as pré-condições de publicação. Coordenar com F3-002 se DP-1 também alterar a publicação (`lifecycle.ts`, `validation.ts`) |
+| [#76](https://github.com/BrunoMNoronha/techlab-troq/issues/76) — três alternativas de troca | Fora do gate | Muda as pré-condições de publicação. Sem conflito com F3-002: DEC-040 não alterou a publicação (`lifecycle.ts`, `validation.ts`) |
 | [#89](https://github.com/BrunoMNoronha/techlab-troq/issues/89) — categoria do produto | Fora do gate | Campo novo de anúncio; mesmo ponto de conflito de arquivos que #76 |
 | [#90](https://github.com/BrunoMNoronha/techlab-troq/issues/90) — UF em lista | Fora do gate | Validação e formulário de anúncio; sem efeito sobre pagamento ou contato |
 | [#81](https://github.com/BrunoMNoronha/techlab-troq/issues/81) — login com Google | Fora do gate | Identidade; a Fase 3 depende apenas da sessão Better Auth existente |

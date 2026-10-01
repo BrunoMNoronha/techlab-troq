@@ -82,6 +82,14 @@ function EntryMessage({
           Este anúncio é seu. Você não pode solicitar o próprio contato.
         </p>
       );
+    case 'not_accepting':
+      // Anunciante sem contato cadastrado (DEC-040): o motivo nao e exposto.
+      return (
+        <p role="status" style={{ margin: 0 }}>
+          Este anúncio não está aceitando solicitações no momento. Nenhuma solicitação foi criada e
+          nada foi cobrado.
+        </p>
+      );
     case 'request_available':
       return (
         <p role="status" style={{ margin: 0 }}>

@@ -16,6 +16,7 @@ import { createServer, type IncomingMessage, type Server, type ServerResponse } 
 import type { AddressInfo } from 'node:net';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ListingStatus } from '@/generated/prisma/client';
+import { registerOwnContact } from '@/modules/contact';
 import { registerUser } from '@/modules/identity/actions';
 import { getAuth } from '@/modules/identity/auth';
 import { createDraftListing, pauseListing } from '@/modules/listing/actions';
@@ -238,6 +239,11 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
         await createUser(tag);
         cookies[tag] = await signIn(tag);
       }
+      // DEC-040: sem contato do anunciante, o anuncio nao aceita solicitacao.
+      expect(await as('owner', () => registerOwnContact({ phone: '(11) 91234-5678' }))).toEqual({
+        success: true,
+        hasContact: true,
+      });
     });
 
     beforeEach(() => {
@@ -270,6 +276,7 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
         },
       });
       await prisma().termsAcceptance.deleteMany({ where: { userId: { in: userIds } } });
+      await prisma().userContact.deleteMany({ where: { userId: { in: userIds } } });
       await prisma().user.deleteMany({ where: { id: { in: userIds } } });
       await prisma().$disconnect();
       vi.unstubAllEnvs();

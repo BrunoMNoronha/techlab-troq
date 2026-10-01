@@ -21,6 +21,7 @@ import { randomBytes, randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import type { ListingStatus, Prisma } from '@/generated/prisma/client';
 import { closeListing } from '@/app/anuncios/actions';
+import { registerOwnContact } from '@/modules/contact';
 import { registerUser } from '@/modules/identity/actions';
 import { getAuth } from '@/modules/identity/auth';
 import { createDraftListing, pauseListing } from '@/modules/listing/actions';
@@ -91,9 +92,11 @@ function as<T>(tag: string, fn: () => Promise<T>): Promise<T> {
   return cookieStore.run(cookies[tag] ?? '', fn);
 }
 
+const OWNER_PHONE = '(11) 91234-5678';
+
 /** Anuncio do dono no estado pedido, pelo caminho legal do gatilho (T1, T3, T5). */
-async function listingIn(status: ListingStatus = 'published'): Promise<string> {
-  const res = await as('owner', () =>
+async function listingIn(status: ListingStatus = 'published', owner = 'owner'): Promise<string> {
+  const res = await as(owner, () =>
     createDraftListing({
       title: 'Bicicleta sintetica',
       description: 'Anuncio sintetico de integracao.',
@@ -138,10 +141,19 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
       vi.stubEnv('BETTER_AUTH_SECRET', randomBytes(32).toString('base64'));
       vi.stubEnv('BETTER_AUTH_URL', 'http://localhost:3000');
 
-      for (const tag of ['owner', ...requesters, 'unverified', 'blocked']) {
+      for (const tag of ['owner', 'no-contact', 'late-contact', ...requesters]) {
         await createUser(tag);
         cookies[tag] = await signIn(tag);
       }
+      for (const tag of ['unverified', 'blocked']) {
+        await createUser(tag);
+        cookies[tag] = await signIn(tag);
+      }
+      // DEC-040: o dono principal tem contato; `no-contact` e `late-contact`, nao.
+      expect(await as('owner', () => registerOwnContact({ phone: OWNER_PHONE }))).toEqual({
+        success: true,
+        hasContact: true,
+      });
       // Sessoes validas emitidas antes; a conta perde a condicao depois do login.
       const [unverifiedId, blockedId] = userIds.slice(-2);
       await prisma().user.update({
@@ -175,6 +187,7 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
         },
       });
       await prisma().termsAcceptance.deleteMany({ where: { userId: { in: userIds } } });
+      await prisma().userContact.deleteMany({ where: { userId: { in: userIds } } });
       await prisma().user.deleteMany({ where: { id: { in: userIds } } });
       await prisma().$disconnect();
       vi.unstubAllEnvs();
@@ -235,6 +248,61 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
           where: { listingId, status: { in: ['reserved', 'paid'] } },
         });
         expect(occupied).toBe(3);
+      });
+    });
+
+    describe('DEC-040: contato do anunciante como pre-condicao da solicitacao (OD-13)', () => {
+      it('dono sem contato: anuncio segue publicado, mas a reserva e recusada sem criar nada', async () => {
+        const listingId = await listingIn('published', 'no-contact');
+
+        expect(await as('r0', () => getContactRequestEntry(listingId))).toBe('not_accepting');
+        const res = await as('r0', () => createContactRequest(listingId));
+        expect(res).toMatchObject({ success: false, reason: 'not_accepting' });
+        // A mensagem nao revela o motivo ao solicitante.
+        expect(JSON.stringify(res)).not.toMatch(/contato do anunciante|cadastr/i);
+        expect(await requestsOf(listingId)).toHaveLength(0);
+        // Continua visivel: nenhuma transicao de estado (D2).
+        const listing = await prisma().listing.findUniqueOrThrow({ where: { id: listingId } });
+        expect(listing.status).toBe('published');
+        expect(await prisma().listingTransition.count({ where: { listingId } })).toBe(0);
+        // O proprio dono continua vendo `own_listing`, nao `not_accepting`.
+        expect(await as('no-contact', () => getContactRequestEntry(listingId))).toBe('own_listing');
+      });
+
+      it('a verificacao acontece sob a trava: contato cadastrado enquanto a reserva espera vale', async () => {
+        const listingId = await listingIn('published', 'late-contact');
+        expect(await as('r0', () => createContactRequest(listingId))).toMatchObject({
+          reason: 'not_accepting',
+        });
+
+        let pending!: Promise<ContactRequestResult>;
+        let waiting = 0;
+        await prisma().$transaction(
+          async (tx: Prisma.TransactionClient) => {
+            await tx.$queryRaw`SELECT "id" FROM "listings" WHERE "id" = ${listingId}::uuid FOR UPDATE`;
+            pending = as('r0', () => createContactRequest(listingId));
+            for (let i = 0; i < 100 && waiting < 1; i++) {
+              await new Promise((resolve) => setTimeout(resolve, 100));
+              const [{ count }] = await tx.$queryRaw<{ count: number }[]>`
+                SELECT count(*)::int AS "count" FROM pg_stat_activity
+                WHERE "datname" = current_database()
+                  AND "wait_event_type" = 'Lock'
+                  AND "pid" <> pg_backend_pid()`;
+              waiting = count;
+            }
+            // A reserva ja passou da sessao e esta parada na trava; o dono
+            // cadastra o contato por outra conexao, que confirma antes da soltura.
+            expect(
+              await as('late-contact', () => registerOwnContact({ phone: OWNER_PHONE })),
+            ).toEqual({ success: true, hasContact: true });
+          },
+          { timeout: 30_000, maxWait: 10_000 },
+        );
+
+        expect(waiting).toBe(1);
+        // Se o contato fosse lido antes da trava, a resposta seria `not_accepting`.
+        expect(await pending).toMatchObject({ success: true });
+        expect(await requestsOf(listingId)).toHaveLength(1);
       });
     });
 

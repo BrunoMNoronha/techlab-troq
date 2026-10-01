@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import { getOwnContactStatus } from '@/modules/contact';
 import { validateSession, loginRedirectPath } from '@/modules/identity';
 import { getOwnerListings } from '@/modules/listing';
 import { isEditableStatus, LISTING_STATUS_LABELS } from './_components/listing-status';
@@ -37,6 +38,13 @@ export default async function MeusAnunciosPage() {
     redirect(loginRedirectPath('no_session'));
   }
 
+  // DEC-040: anuncio publicado de dono sem contato continua visivel, mas nao
+  // aceita solicitacao. O painel orienta o cadastro; so o booleano e lido.
+  const contactStatus = await getOwnContactStatus();
+  const missingContact =
+    contactStatus?.hasContact === false &&
+    (result.listings ?? []).some((item) => item.status === 'published');
+
   return (
     <main
       style={{ maxWidth: '640px', margin: '24px auto', padding: '16px', fontFamily: 'sans-serif' }}
@@ -61,6 +69,32 @@ export default async function MeusAnunciosPage() {
           + Novo anúncio
         </a>
       </div>
+
+      {missingContact && (
+        <div
+          role="status"
+          style={{
+            padding: '16px',
+            marginBottom: '24px',
+            backgroundColor: '#fffbeb',
+            border: '1px solid #fde68a',
+            borderRadius: '8px',
+            color: '#92400e',
+            fontSize: '14px',
+          }}
+        >
+          <p style={{ margin: '0 0 8px', fontWeight: '600' }}>
+            Seus anúncios publicados não estão aceitando solicitações.
+          </p>
+          <p style={{ margin: '0 0 12px' }}>
+            Cadastre seu telefone ou WhatsApp para receber solicitações. Ele fica protegido e só é
+            entregue a quem você escolher.
+          </p>
+          <a href="/conta" style={{ color: '#92400e', fontWeight: '600' }}>
+            Cadastrar contato
+          </a>
+        </div>
+      )}
 
       {!result.success || !result.listings ? (
         <div

@@ -4,13 +4,19 @@
 import { getPrismaClient } from '@/persistence/prisma';
 import { isUuid } from './ids';
 
-export async function isListingOwnedBy(listingId: string, userId: string): Promise<boolean> {
-  if (!isUuid(listingId) || !isUuid(userId)) {
-    return false;
+/**
+ * Dono do anuncio, ou `null` para identificador malformado ou inexistente.
+ * `request` usa para recusar o proprio anuncio e para verificar, pela
+ * fronteira de `contact`, se o anunciante tem contato (DEC-040).
+ */
+export async function getListingOwnerId(listingId: string): Promise<string | null> {
+  if (!isUuid(listingId)) {
+    return null;
   }
 
-  const count = await getPrismaClient().listing.count({
-    where: { id: listingId, ownerId: userId },
+  const listing = await getPrismaClient().listing.findUnique({
+    where: { id: listingId },
+    select: { ownerId: true },
   });
-  return count > 0;
+  return listing?.ownerId ?? null;
 }
