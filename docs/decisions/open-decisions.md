@@ -1,6 +1,6 @@
 # Decisões abertas
 
-Registro das questões que **ainda não foram decididas** (criado na Fase 0; reaberto com OD-13 a OD-15 na Fase 3). Nenhum item desta lista deve ser tratado como homologado. Uma decisão aberta só é fechada quando um documento próprio (ADR ou documento de produto) a registrar e este arquivo for atualizado.
+Registro das questões que **ainda não foram decididas** (criado na Fase 0; reaberto com OD-13 a OD-16 na Fase 3). Nenhum item desta lista deve ser tratado como homologado. Uma decisão aberta só é fechada quando um documento próprio (ADR ou documento de produto) a registrar e este arquivo for atualizado.
 
 ## Como distinguir decisão aberta de decisão vigente
 
@@ -11,7 +11,7 @@ Registro das questões que **ainda não foram decididas** (criado na Fase 0; rea
 
 ## Lista de decisões abertas
 
-**Três decisões abertas desde 2026-10-01**, registradas por F3-001 ([#91](https://github.com/BrunoMNoronha/techlab-troq/issues/91)) a partir do inventário de [../delivery/phase-3-plan.md](../delivery/phase-3-plan.md). Nenhuma delas reabre decisão vigente: cada uma é uma questão que as fontes atuais não respondem e que muda o que a Fase 3 implementa ou como o seu gate é provado. Todas são do Bruno.
+**Quatro decisões abertas desde 2026-10-01**: OD-13 a OD-15, registradas por F3-001 ([#91](https://github.com/BrunoMNoronha/techlab-troq/issues/91)) a partir do inventário de [../delivery/phase-3-plan.md](../delivery/phase-3-plan.md), e OD-16, registrada por F3-004 ([#94](https://github.com/BrunoMNoronha/techlab-troq/issues/94)). Nenhuma delas reabre decisão vigente: cada uma é uma questão que as fontes atuais não respondem e que muda o que a Fase 3 implementa ou como o seu gate é provado. Todas são do Bruno.
 
 ### OD-13 — Contato do anunciante como pré-condição
 
@@ -33,6 +33,16 @@ Registro das questões que **ainda não foram decididas** (criado na Fase 0; rea
 - **O que falta decidir:** se o gate da Fase 3 aceita a convergência provada por invocação autenticada dos trabalhos em `preview`, mais os testes T-5 e T-18 sobre banco real, deixando o plano pago para a preparação de produção, ou se o plano pago é contratado agora.
 - **Recomendação (F3-000):** aceitar a invocação autenticada para o gate da Fase 3. A cadência real só existe em produção, de modo que contratar o plano agora não tornaria o `preview` agendado. Isso não enfraquece PD-3.4 nem dispensa o plano pago antes do lançamento.
 - **Bloqueia:** a homologação de [#102](https://github.com/BrunoMNoronha/techlab-troq/issues/102) (F3-012) e o gate em [#105](https://github.com/BrunoMNoronha/techlab-troq/issues/105) (F3-015). Não bloqueia a implementação.
+
+### OD-16 — Fonte do instante de acreditação autoritativo
+
+- **Contexto:** a tempestividade do pagamento compara o **instante de acreditação autoritativo** com o fim da reserva (PE-4.1, PE-4.2; CI-4; [../architecture/data-model.md](../architecture/data-model.md), DM-7.5; [../architecture/payments-design.md](../architecture/payments-design.md), PD-6.6 passo 4). F3-004 ([#94](https://github.com/BrunoMNoronha/techlab-troq/issues/94)) verificou em 2026-10-01 que a **Orders API não documenta** esse instante no pagamento da order: os tipos do SDK oficial trazem `created_date` e `last_updated_date` da order e `date_of_expiration` do pagamento, mas não `date_approved`, que pertence à **Payments API**. [../adr/0004-mercado-pago-pix.md](../adr/0004-mercado-pago-pix.md), decisão 3, exige ADR própria para usar a Payments API como superfície principal. `last_updated_date` não serve, porque muda em qualquer atualização posterior. O adaptador hoje devolve o instante como indisponível e não adivinha campo.
+- **O que falta decidir:** de onde vem o instante autoritativo. Opções identificadas:
+  1. ADR complementar que autorize **ler** `GET /v1/payments/{id}` apenas para obter `date_approved`, mantendo a Orders API como superfície principal. Depende de confirmar com credencial de teste (PX-2) que o identificador do pagamento da order é consultável ali; o spike já leu `GET /v1/payments/{id}` com credencial de teste para obter tarifas;
+  2. confirmar com PX-2 se `GET /v1/orders/{id}` devolve, na prática, um campo de aprovação não documentado — opção frágil, porque dependeria de comportamento fora do contrato;
+  3. usar como cota superior o primeiro instante em que o TROQ **observou** a acreditação. Isso prova a tempestividade quando a observação ocorre dentro da janela, mas transforma em exceção técnica a acreditação tempestiva reconhecida tarde (T-6), o que **altera o efeito de PE-4.2** e por isso exige decisão de negócio.
+- **Recomendação (F3-004):** opção 1, validada com PX-2 antes de F3-006. A opção 3 só como regime provisório, se o Bruno aceitar o efeito sobre PE-4.2.
+- **Bloqueia:** a verificação de tempestividade da confirmação em [#96](https://github.com/BrunoMNoronha/techlab-troq/issues/96) (F3-006) e, por consequência, T-5 a T-8. Não bloqueia F3-005 nem o adaptador.
 
 **Fora desta lista, por ser configuração e não decisão de produto ou de arquitetura:** o alvo do webhook do Mercado Pago em `preview` (DP-4 de F3-000), registrado como pré-requisito pendente em [../engineering/environments.md](../engineering/environments.md), seção 5.6.
 
