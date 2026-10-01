@@ -82,6 +82,7 @@ pnpm run build
 - [Ambientes, variáveis e segredos](docs/engineering/environments.md)
 - [Banco de dados: Prisma, schema físico e migrations](docs/engineering/database.md)
 - [ADR-0007 — observabilidade com Sentry](docs/adr/0007-observability-sentry.md)
+- [ADR-0008 — instante de acreditação pela Payments API](docs/adr/0008-accreditation-instant-payments-api.md)
 - [Visão geral da arquitetura](docs/architecture/overview.md)
 - [Modelo de dados](docs/architecture/data-model.md)
 - [Desenho de pagamentos](docs/architecture/payments-design.md)
