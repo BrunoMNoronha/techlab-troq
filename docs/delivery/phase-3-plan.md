@@ -91,7 +91,7 @@ Nenhum item exige alterar RB-001 a RB-006, DEC-027 a DEC-038 ou as ADRs. As corr
 | F3-002 | [#92](https://github.com/BrunoMNoronha/techlab-troq/issues/92) | Cadastrar e proteger o contato do anunciante | #91; OD-13 (só a pré-condição) | C-1 | PostgreSQL efêmero + HTTP | próximo |
 | F3-003 | [#93](https://github.com/BrunoMNoronha/techlab-troq/issues/93) | Solicitação com reserva atômica e limite de três | #91; OD-14 (só o limite) | T-1 | PostgreSQL efêmero, concorrente | concluído (2026-10-01; limite de OD-14 pendente) |
 | F3-004 | [#94](https://github.com/BrunoMNoronha/techlab-troq/issues/94) | Adaptador do Mercado Pago | #91; PX-2 (opcional) | Contrato do adaptador | Simulado; sandbox opcional | concluído (2026-10-01; abriu OD-16) |
-| F3-005 | [#95](https://github.com/BrunoMNoronha/techlab-troq/issues/95) | Cobrança Pix de R$ 0,99 | #93, #94 | T-15 | PostgreSQL efêmero + simulado | próximo |
+| F3-005 | [#95](https://github.com/BrunoMNoronha/techlab-troq/issues/95) | Cobrança Pix de R$ 0,99 | #93, #94 | T-15 | PostgreSQL efêmero + simulado | concluído (2026-10-01) |
 | F3-006 | [#96](https://github.com/BrunoMNoronha/techlab-troq/issues/96) | Webhook e confirmação autoritativa | #95; OD-16 | T-2, T-3, T-4, T-6, T-10, T-11, T-12, T-13, T-14 | PostgreSQL efêmero + HTTP | bloqueado |
 | F3-007 | [#97](https://github.com/BrunoMNoronha/techlab-troq/issues/97) | Duplicidade, fora da janela e reembolso técnico | #96 | T-7, T-8, T-9, T-16 | PostgreSQL efêmero + simulado | bloqueado |
 | F3-008 | [#98](https://github.com/BrunoMNoronha/techlab-troq/issues/98) | Reconciliação periódica e retentativa de reembolso | #97 | T-5, T-18 | PostgreSQL efêmero; `preview` por invocação | bloqueado |

@@ -21,6 +21,16 @@ export {
 } from './attempt';
 export type { CreatedPaymentAttempt } from './attempt';
 
+// F3-005 (#95): passos 2 e 3 de PD-4.1 (cobranca e registro da order).
+export { chargeForReservation, REQUEST_PRICE_CENTS } from './charge';
+export type {
+  ChargeContext,
+  ChargeDeps,
+  ChargeOrigin,
+  ChargeOutcome,
+  PixPaymentDetails,
+} from './charge';
+
 // F3-004 (#94): adaptador do Mercado Pago. O dominio recebe snapshot e veredito
 // em termos do TROQ; o vocabulario do provedor fica em ./mercado-pago.
 export {

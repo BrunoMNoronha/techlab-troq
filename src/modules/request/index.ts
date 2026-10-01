@@ -17,7 +17,9 @@
 // direcional: `request` -> `listing`, `payments`; nunca o inverso.
 export { getContactRequestEntry } from './entry';
 export type { ContactRequestEntryState } from './entry';
-export { requestContactUnlock } from './actions';
+export { getPixPayment, requestContactUnlock } from './actions';
+export { getPixPaymentFlow, requestContactUnlockFlow } from './charge-flow';
+export type { PixChargeFailureReason, PixChargeResult } from './charge-flow';
 export { createContactRequest, RESERVATION_WINDOW_MS } from './reservation';
 export type { ContactRequestFailureReason, ContactRequestResult } from './reservation';
 export { endOpenReservationsOnListingClosure } from './closure';
