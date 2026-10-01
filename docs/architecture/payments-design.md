@@ -8,6 +8,8 @@ Não implementa nada: nenhum endpoint, nenhum SDK, nenhum schema, nenhuma migrat
 
 Os itens são identificados como `PD-x`.
 
+**Atualização de 2026-10-01 ([F3-001](https://github.com/BrunoMNoronha/techlab-troq/issues/91)).** Reconciliação com o código entregue pela Fase 2, sem alterar regra de negócio nem decisão vigente: trava e relógio (PD-4.6), registro da notificação rejeitada (PD-6.2), identificação da aplicação antes do HMAC (PD-6.10), reserva durante a pausa do anúncio (PD-6.11), cancelamento da cobrança de reserva encerrada antes da janela (PD-8.10) e reclamação de trabalho (PD-10.7). Inventário em [../delivery/phase-3-plan.md](../delivery/phase-3-plan.md), seção 2.1.
+
 ## 1. A regra que governa todo o desenho
 
 **PD-1.1 (normativa).** A notificação do provedor é **gatilho de processamento**. O estado autoritativo é o que o Mercado Pago reporta em consulta direta à order. Estado incerto **nunca** produz aprovação local (PE-1.1 a PE-1.6).
@@ -131,6 +133,8 @@ Persiste o identificador da order e move a tentativa para `aguardando_pagamento`
 
 **PD-4.5 (normativa).** O valor é exatamente `0.99`, sem arredondamento, agregação ou ajuste (ADR-0004, decisão 5; RB-004), representado internamente sem ponto flutuante (DM-1.3).
 
+**PD-4.6 (decisão técnica, F3-001, DV-6 e DV-7).** "A trava de escopo de transação do anúncio" do passo 1 — e da transação de efeito de PD-6.6, passo 4 — é a **trava de linha** `SELECT … FOR UPDATE` sobre o anúncio, a mesma das transições do ciclo de vida, e não `pg_advisory_xact_lock` ([data-model.md](data-model.md), DM-6.12). Todos os instantes do passo 1 (`reservedFrom`, `reservedUntil` = `reservedFrom` + 30 minutos, a expiração das reservas vencidas) vêm do `now()` do banco, lido uma vez na transação; o `expiration_time` do passo 2 é exatamente o `reservedUntil` persistido.
+
 ## 5. Identidade e idempotência
 
 **PD-5.1 (decisão arquitetural).** A chave de idempotência é derivada de forma **determinística** da identidade da tentativa, por função de hash sobre um espaço de nomes fixo do TROQ concatenado ao identificador da tentativa. Propriedades exigidas:
@@ -164,6 +168,8 @@ O registro de `PaymentNotification` serve à auditoria e ao diagnóstico, não �
 3. **Só então processar.**
 
 **PD-6.2 (invariante).** Notificação que não passe na validação **não** produz efeito algum, **não** marca pagamento como aprovado e **não** altera estado. Registra-se apenas o mínimo de segurança (PE-6.1 a PE-6.3).
+
+_Atualização de 2026-10-01 (F3-001, DV-5)._ O "mínimo de segurança" é um evento na trilha única `AuditEvent`, como DM-11.1 já previa ("rejeição de notificação por autenticidade"): tipo, instante, motivo codificado (por exemplo, aplicação divergente, assinatura ausente, manifesto inválido), ator nulo e correlação técnica limitada ao `x-request-id` e ao `data.id` recebidos. **Nunca** a assinatura, o `ts` combinado com o HMAC, o corpo, cabeçalhos completos ou qualquer segredo. `PaymentNotification` continua reservada à notificação **validada** (PD-2.4). Como o receptor é público, a quantidade desses eventos é sinal de abuso a observar em F3-013 e a verificar em F3-014; nenhum caminho pode transformar o volume de rejeições em efeito de negócio.
 
 **PD-6.3 (decisão arquitetural — o que o receptor faz depois de validar).** O receptor **não** decide a verdade. Ele, em uma transação curta: registra a `PaymentNotification`, correlaciona com a tentativa pelo identificador da order, marca a tentativa como pendente de reconciliação — movendo-a para `em_confirmacao` quando ela estiver em `aguardando_pagamento` — e commita. Em seguida, **se houver orçamento de tempo**, executa a rotina de confirmação (6.2) na mesma invocação; caso contrário, deixa para o trabalho periódico. Em ambos os casos responde `HTTP 200`.
 
@@ -201,6 +207,15 @@ O registro de `PaymentNotification` serve à auditoria e ao diagnóstico, não �
 **PD-6.8 (invariante).** Se o gateway confirmou e a persistência local falhou, a **mesma** operação é retomada, pela mesma identidade de tentativa, até que o efeito local corresponda ao autoritativo. **Não** se cobra de novo e **não** se cria order nova (PE-6.7 a PE-6.10). Enquanto o efeito não estiver persistido, nenhum direito é concedido (PE-6.11).
 
 **PD-6.9 (invariante).** Indisponibilidade da consulta mantém a tentativa pendente e sob reconciliação. **Nunca** converte incerteza em aprovação (PE-6.12 a PE-6.14).
+
+**PD-6.10 (decisão técnica, F3-001, DV-12 — identificar a aplicação).** O passo 1 de PD-6.1 inclui conferir que a notificação pertence à **aplicação** do Mercado Pago configurada no ambiente, **antes** do HMAC (ADR-0004, decisão 8). F0-010 comprovou que a chave secreta é por aplicação e que só a chave da aplicação que assinou valida a notificação ([spike](../delivery/spikes/f0-010-mercado-pago-pix-r099.md)); notificação de outra aplicação é rejeitada por PD-6.2, com motivo próprio. O identificador da aplicação do ambiente é configuração server-side e não segredo; o seu nome de variável é definido por F3-004 em [environments.md](../engineering/environments.md), seção 5.6. Fato registrado para a prova: o simulador do painel assina o manifesto com o `data.id` no caixa original, enquanto o tráfego real segue a regra de minúsculas; um validador correto **rejeita** o simulador quando o `data.id` tem maiúsculas, e isso não é defeito nem motivo para variante de manifesto (ADR-0004, decisão 9).
+
+**PD-6.11 (resolvido pelas fontes, F3-001, DV-3 — reserva viva durante a pausa).** [listing-lifecycle.md](../product/listing-lifecycle.md), seção 5, diz que, em T3, solicitações iniciadas e não pagas "não avançam enquanto pausado", e não as encerra — ao contrário de T5 a T9, que as encerram e liberam a vaga. A leitura coerente com as demais fontes é:
+
+1. **"Não avançar" alcança os passos acionados pelo TROQ ou pelo solicitante:** nova reserva, criação da cobrança (passo 2 de PD-4.1) e reapresentação do QR Code são recusadas enquanto o anúncio estiver `paused` ([listing-lifecycle.md](../product/listing-lifecycle.md), seção 9: "qualquer tentativa de interesse, solicitação, pagamento ou escolha em anúncio que não esteja `published` é rejeitada no servidor" — tentativa de **iniciar** pagamento).
+2. **Reconhecer um pagamento já acreditado não é avançar.** Se a acreditação autoritativa ocorreu dentro da janela, PE-4.1 e PE-4.2 determinam que a solicitação se torna paga válida e consome a vaga — a reserva continuava válida, pois a pausa não a encerra ("nada existente é perdido", mesma seção 9).
+3. **A leitura alternativa é excluída**, não apenas preterida: recusar a confirmação deixaria dinheiro acreditado contra reserva válida sem nenhuma das hipóteses exaustivas de reembolso (PE-7.2; RT-3 exige reserva **não** vigente), o que PE-12.2 proíbe ("o TROQ não pode reter dinheiro que recebeu por erro técnico"), e não há quarta saída. Por isso esta questão **não** foi aberta como decisão.
+4. A transação de efeito de PD-6.6, passo 4, portanto **não** consulta o estado do anúncio; ela continua exigindo `reserved` e acreditação ≤ `reservedUntil`. A pausa não cancela a order (PD-8.10 trata só das transições que **encerram** a reserva).
 
 ## 7. Duplicidade e eleição do pagamento canônico
 
@@ -249,6 +264,8 @@ A regra é determinística, total e não depende de ordem de chegada, de ordem d
 
 **PD-8.8 (normativa).** **Não** geram reembolso: não ter sido escolhido (RB-004 literal), desistência, reseleção, encerramento da negociação, anúncio pausado, encerrado ou removido, bloqueio cautelar etário, insatisfação e arrependimento (PE-7.5). Nenhum caminho deste desenho os alcança.
 
+**PD-8.10 (decisão arquitetural, F3-001, DV-2 — cobrança de reserva encerrada antes da janela).** Quando T5/T6 (pelo dono) ou T7 a T9 (pela moderação) encerram uma reserva `reserved` antes de `reservedUntil` ([data-model.md](data-model.md), DM-6.10), a order Pix dela continuaria pagável até o `expiration_time`. Para que a cobrança não sobreviva à reserva (PE-4.5), a tentativa não terminal sem acreditação segue o caminho de **cancelamento** de PD-8.3 — fora da transação do ciclo de vida, que só encerra a reserva e marca a tentativa para o trabalho de PD-10. O cancelamento é defesa adicional, não garantia: se a acreditação ocorrer mesmo assim, a confirmação encontra a solicitação fora de `reserved` e aplica RT-3 (PD-6.6, passo 5). Cancelamento **não** é reembolso e **não** é exceção técnica (PE-7.4).
+
 **PD-8.9 (invariante).** Nenhuma superfície de cliente aciona reembolso, reconciliação ou resolução de inconsistência. Todos são server-side e autorizados (PE-11.5, CI-11). Não existe rota, ação ou parâmetro que permita a uma pessoa usuária final disparar qualquer um deles.
 
 ## 9. Reversões posteriores
@@ -286,6 +303,8 @@ A regra é determinística, total e não depende de ordem de chegada, de ordem d
 **PD-10.5 (invariante).** Situação não coberta pela política vai para `inconsistente`, com registro, e **não** recebe tratamento por analogia nem concessão de direito (PE-9.6, CI-9).
 
 **PD-10.6 (decisão arquitetural).** Cada execução do trabalho tem **orçamento de tempo** e processa em lotes, terminando com o que couber e deixando o resto para a execução seguinte. Um trabalho que tenta esgotar a fila a qualquer custo colide com o limite de duração da função e é interrompido no meio — o que, num trabalho não retentado pela plataforma (AR-15.2), é pior do que terminar cedo de propósito.
+
+**PD-10.7 (confirmado, F3-001, DV-8 e DV-9).** Os trabalhos de pagamento seguem PD-10.3 (`FOR UPDATE SKIP LOCKED` em lotes, dentro de transação), e **não** o lease por instante de vencimento usado pelos trabalhos de mídia da Fase 2 ([media-pipeline-contract.md](media-pipeline-contract.md)). A diferença é deliberada: o efeito de pagamento acontece dentro da transação que reclamou o caso, enquanto o trabalho de mídia faz E/S longa no R2 fora dela. As rotas ficam em `src/app/api/jobs/` e usam o mesmo `cron-auth` com `CRON_SECRET` (PD-11.4). **Agendamento:** não há cron configurado — no Hobby a cadência de 5 minutos é impossível e o cron só dispara no deployment de produção ([ADR-0006](../adr/0006-async-work-scheduling-concurrency.md), V-4, V-5 e decisão 11). O critério de prova da Fase 3 sem agendamento é a decisão aberta **OD-15** ([../decisions/open-decisions.md](../decisions/open-decisions.md)); as cadências de PD-3.4 **não** são enfraquecidas.
 
 ## 11. Segurança
 
@@ -388,3 +407,5 @@ Os doze critérios necessários de DEC-037, seção 18, e onde este desenho os s
 ## 16. Revisão
 
 Revisado quando o Mercado Pago alterar estados, endpoints, prazos ou política de notificações; quando DEC-037 for revisada; quando a medição da Fase 3 indicar que uma cadência ou a janela de 30 minutos precisa mudar; ou antes do lançamento comercial, junto com a conferência da tarifa contratada prevista em R-01.
+
+Revisado em 2026-10-01 por F3-001 ([#91](https://github.com/BrunoMNoronha/techlab-troq/issues/91)), antes do início da implementação da Fase 3: PD-4.6, a nota de PD-6.2, PD-6.10, PD-6.11, PD-8.10 e PD-10.7. Nenhuma regra de negócio, decisão registrada ou teste de PD-13 foi alterado.

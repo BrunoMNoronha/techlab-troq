@@ -2,7 +2,7 @@
 
 Documento produzido por **F3-000** em 2026-10-01, sobre `main` em `2a50712`. Decompõe a Fase 3 ([roadmap.md](roadmap.md)) em issues executoras e registra o desvio entre os contratos da fase e o código entregue pela Fase 2. Acompanhamento em [#54](https://github.com/BrunoMNoronha/techlab-troq/issues/54).
 
-**Esta entrega é planejamento.** Não altera código, schema, migration, contrato de arquitetura, regra de negócio, ambiente nem provedor. A Fase 3 continua **não iniciada**; a próxima entrega é [#91](https://github.com/BrunoMNoronha/techlab-troq/issues/91) (F3-001).
+**Esta entrega é planejamento.** Não altera código, schema, migration, contrato de arquitetura, regra de negócio, ambiente nem provedor. A Fase 3 continua **não iniciada**; a próxima entrega era [#91](https://github.com/BrunoMNoronha/techlab-troq/issues/91) (F3-001), concluída em 2026-10-01 (seção 2.1); agora F3-002, F3-003 e F3-004 podem correr em paralelo.
 
 Classificação usada: **CONFIRMADO** (verificado no código ou documento citado), **AMBIGUIDADE** (as fontes admitem mais de uma leitura), **DECISÃO PENDENTE** (escolha do Bruno, não do agente), **RECOMENDAÇÃO** (proposta sem efeito até ser adotada).
 
@@ -42,9 +42,30 @@ Classificação usada: **CONFIRMADO** (verificado no código ou documento citado
 
 Nenhum item exige alterar RB-001 a RB-006, DEC-027 a DEC-038 ou as ADRs. As correções de contrato ficam para F3-001; esta entrega não as aplica.
 
+### 2.1 Desfechos de F3-001 (2026-10-01)
+
+[#91](https://github.com/BrunoMNoronha/techlab-troq/issues/91) encerrou os itens que lhe cabiam. Nenhuma regra de negócio, decisão registrada ou teste de contrato foi alterado, e **nenhuma migration** se mostrou necessária.
+
+| # | Desfecho | Classificação | Onde ficou | Issue afetada |
+| --- | --- | --- | --- | --- |
+| DV-2 | DM-6.10 já cobria o encerramento das reservas em T5 a T9. Faltava o destino da order ainda pagável: cancelamento por PD-8.3, fora da transação do ciclo de vida, com RT-3 se a acreditação ocorrer mesmo assim | DECISÃO TÉCNICA (mecanismo, por PE-4.5) | [payments-design.md](../architecture/payments-design.md), PD-8.10 | #93, #97 |
+| DV-3 | Resolvido pelas fontes: a pausa recusa nova reserva, nova cobrança e reapresentação do QR, mas a acreditação tempestiva de reserva viva é confirmada e consome a vaga. A leitura oposta deixaria dinheiro retido sem hipótese de reembolso (PE-7.2, PE-12.2). Por isso **DP-2 não foi aberta** | CONFIRMADO | PD-6.11 | #93, #95, #96 |
+| DV-4 | `ContactAccessEvent` só registra entregas efetivas; as negativas vão para `AuditEvent`. Sem migration | DECISÃO TÉCNICA | [data-model.md](../architecture/data-model.md), notas de DM-4.4 e DM-11.3; [contact-release.md](../architecture/contact-release.md), nota de CR-5.5 | #100 |
+| DV-5 | DM-11.1 já previa a "rejeição de notificação por autenticidade" na trilha: evento `AuditEvent` mínimo, sem assinatura nem corpo | CONFIRMADO | Nota de PD-6.2; nota de DM-11.3 | #96, #103, #104 |
+| DV-6 | A trava do anúncio é a de linha (`FOR UPDATE`), e não `pg_advisory_xact_lock` como dizia DM-6.3: duas travas diferentes não serializariam alocação e encerramento | DECISÃO TÉCNICA | DM-6.3, DM-6.12; PD-4.6 | #93, #96, #99 |
+| DV-7 | Relógio do banco (`now()` da transação) para janela, expiração e tempestividade | DECISÃO TÉCNICA | DM-6.12, PD-4.6 | #93, #96 |
+| DV-8 | Trabalhos de pagamento com `FOR UPDATE SKIP LOCKED`, diferentes do lease da mídia | CONFIRMADO | PD-10.7 | #98, #101 |
+| DV-9 | Sem cron; critério de prova virou decisão aberta | DECISÃO PENDENTE | PD-10.7; **OD-15** | #98, #101, #102, #105 |
+| DV-12 | Conferir a aplicação antes do HMAC; o simulador é rejeitado quando `data.id` tem maiúsculas | DECISÃO TÉCNICA | PD-6.10 | #94, #96 |
+| DV-13 | C-5 provado por ator autenticado sem relação com a negociação, com reexecução por moderador real na Fase 4 | DECISÃO TÉCNICA | Nota da seção 10 de contact-release | #100, #55 |
+| DV-14 | Limite de reservas não pagas | DECISÃO PENDENTE | **OD-14**; nota de DM-6.11 | #93 |
+| DV-15 | `force-dynamic`, `runtime = 'nodejs'`, sem `revalidate`, `Cache-Control: private, no-store` explícito em route handler, sem `unstable_cache`/`'use cache'` | DECISÃO TÉCNICA | CR-7.4 | #100 |
+| DV-19 | E.164 brasileiro normalizado no servidor; a escrita devolve só confirmação e a interface não exibe dígitos | DECISÃO TÉCNICA | DM-4.5, CR-2.5 | #92 |
+| DV-1 | Contato como pré-condição | DECISÃO PENDENTE | **OD-13** | #92 |
+
 ## 3. Decisões pendentes e pré-requisitos externos
 
-**Decisões do Bruno.** Nenhuma foi tomada por esta entrega.
+**Decisões do Bruno.** Nenhuma foi tomada por esta entrega. _Atualização de F3-001 (2026-10-01):_ DP-1, DP-5 e DP-3 foram registradas em [../decisions/open-decisions.md](../decisions/open-decisions.md) como **OD-13**, **OD-14** e **OD-15**. DP-2 **não** foi aberta, porque as fontes resolvem a questão (PD-6.11). DP-4 é configuração e foi registrada como pré-requisito em [../engineering/environments.md](../engineering/environments.md), seção 5.6.
 
 | # | Decisão | Por que é do Bruno | Efeito sobre as issues | Recomendação |
 | --- | --- | --- | --- | --- |
@@ -66,10 +87,10 @@ Nenhum item exige alterar RB-001 a RB-006, DEC-027 a DEC-038 ou as ADRs. As corr
 
 | ID | Issue | Entrega | Dependências | Testes do contrato | Prova | Estado |
 | --- | --- | --- | --- | --- | --- | --- |
-| F3-001 | [#91](https://github.com/BrunoMNoronha/techlab-troq/issues/91) | Reconciliar os contratos da Fase 3 com o código da Fase 2 | — | — | Documental | próximo |
-| F3-002 | [#92](https://github.com/BrunoMNoronha/techlab-troq/issues/92) | Cadastrar e proteger o contato do anunciante | #91; DP-1 | C-1 | PostgreSQL efêmero + HTTP | bloqueado |
-| F3-003 | [#93](https://github.com/BrunoMNoronha/techlab-troq/issues/93) | Solicitação com reserva atômica e limite de três | #91; DP-5 | T-1 | PostgreSQL efêmero, concorrente | bloqueado |
-| F3-004 | [#94](https://github.com/BrunoMNoronha/techlab-troq/issues/94) | Adaptador do Mercado Pago | #91; PX-2 (opcional) | Contrato do adaptador | Simulado; sandbox opcional | bloqueado |
+| F3-001 | [#91](https://github.com/BrunoMNoronha/techlab-troq/issues/91) | Reconciliar os contratos da Fase 3 com o código da Fase 2 | — | — | Documental | concluído (2026-10-01, seção 2.1) |
+| F3-002 | [#92](https://github.com/BrunoMNoronha/techlab-troq/issues/92) | Cadastrar e proteger o contato do anunciante | #91; OD-13 (só a pré-condição) | C-1 | PostgreSQL efêmero + HTTP | próximo |
+| F3-003 | [#93](https://github.com/BrunoMNoronha/techlab-troq/issues/93) | Solicitação com reserva atômica e limite de três | #91; OD-14 (só o limite) | T-1 | PostgreSQL efêmero, concorrente | próximo |
+| F3-004 | [#94](https://github.com/BrunoMNoronha/techlab-troq/issues/94) | Adaptador do Mercado Pago | #91; PX-2 (opcional) | Contrato do adaptador | Simulado; sandbox opcional | próximo |
 | F3-005 | [#95](https://github.com/BrunoMNoronha/techlab-troq/issues/95) | Cobrança Pix de R$ 0,99 | #93, #94 | T-15 | PostgreSQL efêmero + simulado | bloqueado |
 | F3-006 | [#96](https://github.com/BrunoMNoronha/techlab-troq/issues/96) | Webhook e confirmação autoritativa | #95 | T-2, T-3, T-4, T-6, T-10, T-11, T-12, T-13, T-14 | PostgreSQL efêmero + HTTP | bloqueado |
 | F3-007 | [#97](https://github.com/BrunoMNoronha/techlab-troq/issues/97) | Duplicidade, fora da janela e reembolso técnico | #96 | T-7, T-8, T-9, T-16 | PostgreSQL efêmero + simulado | bloqueado |
@@ -77,10 +98,10 @@ Nenhum item exige alterar RB-001 a RB-006, DEC-027 a DEC-038 ou as ADRs. As corr
 | F3-009 | [#99](https://github.com/BrunoMNoronha/techlab-troq/issues/99) | Escolha, negociação e autorização | #92, #96 | C-9 | PostgreSQL efêmero, concorrente | bloqueado |
 | F3-010 | [#100](https://github.com/BrunoMNoronha/techlab-troq/issues/100) | Entrega do contato ao escolhido | #99 | C-2 a C-7, C-11 | PostgreSQL efêmero + HTTP + componentes | bloqueado |
 | F3-011 | [#101](https://github.com/BrunoMNoronha/techlab-troq/issues/101) | Reversões e seus efeitos | #98, #100 | T-17, C-10 | PostgreSQL efêmero; `preview` por invocação | bloqueado |
-| F3-012 | [#102](https://github.com/BrunoMNoronha/techlab-troq/issues/102) | Jornada de interface e homologação em `preview` | #98, #100; PX-2, PX-3, DP-3, DP-4 | — | `preview` + sandbox do Mercado Pago | bloqueado |
+| F3-012 | [#102](https://github.com/BrunoMNoronha/techlab-troq/issues/102) | Jornada de interface e homologação em `preview` | #98, #100; PX-2, PX-3, OD-15, DP-4 | — | `preview` + sandbox do Mercado Pago | bloqueado |
 | F3-013 | [#103](https://github.com/BrunoMNoronha/techlab-troq/issues/103) | E-mails transacionais e observabilidade | #96, #99 | — | Simulado + Sentry de `preview` | bloqueado |
 | F3-014 | [#104](https://github.com/BrunoMNoronha/techlab-troq/issues/104) | Verificação de segurança e revisão reforçada | #101, #102, #103 | C-8 (e reexecução de todos) | PostgreSQL efêmero + `preview` | bloqueado |
-| F3-015 | [#105](https://github.com/BrunoMNoronha/techlab-troq/issues/105) | Gate de saída da Fase 3 | #104; DP-3; RECOMENDAÇÃO #86 | — | Auditoria por SHA | bloqueado |
+| F3-015 | [#105](https://github.com/BrunoMNoronha/techlab-troq/issues/105) | Gate de saída da Fase 3 | #104; OD-15; RECOMENDAÇÃO #86 | — | Auditoria por SHA | bloqueado |
 
 **Ordem por dependência.** O grafo é acíclico: toda dependência aponta para uma issue de número menor.
 

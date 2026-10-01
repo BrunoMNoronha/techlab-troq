@@ -6,6 +6,8 @@ Modelo **lógico** de dados do MVP, suficiente para orientar o schema e as migra
 
 Os itens são identificados como `DM-x`.
 
+**Atualização de 2026-10-01 ([F3-001](https://github.com/BrunoMNoronha/techlab-troq/issues/91)).** Reconciliação com o código entregue pela Fase 2, sem alterar regra de negócio: a trava do anúncio e o relógio da alocação (DM-6.3, DM-6.12), o formato do contato (DM-4.5) e o papel de `ContactAccessEvent` diante das negativas (DM-4.4, DM-11.3). Cada ponto tem nota datada no próprio item; o inventário completo está em [../delivery/phase-3-plan.md](../delivery/phase-3-plan.md), seção 2.1.
+
 ## 1. Convenções
 
 **DM-1.1.** Identificador: toda entidade tem identificador interno, opaco, gerado pela aplicação, estável e **não sequencial adivinhável**. Identificador de recurso exposto em URL pública nunca revela volume nem ordem.
@@ -103,6 +105,10 @@ Modeladas em [contact-release.md](contact-release.md), CR-3 e CR-4. Em resumo, p
 
 **DM-4.4.** Autorizar e entregar são fatos distintos e entidades distintas, de propósito. A separação é o que permite auditar quantas vezes o dado foi efetivamente divulgado, sem duplicar a autorização e sem sugerir que a autorização possa ser desfeita.
 
+_Atualização de 2026-10-01 (F3-001, DV-4)._ `ContactAccessEvent` registra **somente entregas efetivas**: ator, autorização (da qual a negociação deriva, pois a autorização é única por negociação, DM-8.8) e instante. O resultado é implícito — toda linha é uma entrega. Tentativas **negadas** não têm, em geral, autorização a referenciar (falha em A2 ou A3 de [contact-release.md](contact-release.md), CR-5.2) e vão para a trilha única `AuditEvent` como evento de segurança (CR-5.5, DM-11.3). Por isso o schema atual (`contactReleaseId`, `actorId`, `accessedAt`) **não** precisa de migration.
+
+**DM-4.5 (decisão técnica, F3-001, DV-19).** "Número em formato canônico" é o telefone brasileiro em **E.164**: `+55`, DDD de dois dígitos (cada um de 1 a 9) e assinante de 9 dígitos começando por `9` (celular) ou de 8 dígitos começando por 2 a 5 (fixo) — RB-001 fala em "WhatsApp/telefone", e nenhuma decisão restringe o contato a celular. A entrada aceita espaços, parênteses, pontos, hífens e o prefixo `+55` ou `55` opcional; a normalização acontece **no servidor**, antes da validação e da escrita. Qualquer outra forma é recusada com erro de campo. Esta regra é de formato, não de verificação de titularidade: o MVP não verifica posse do número, e nenhuma decisão vigente o exige.
+
 ## 5. Anúncio e imagens
 
 ### 5.1 `Listing`
@@ -182,7 +188,7 @@ Consequências, todas garantidas pelo PostgreSQL e não pela aplicação:
 
 **DM-6.3 (invariante, transação).** A expiração **não** pode ser condição do índice: uma restrição de banco não pode depender do relógio. Portanto a liberação da vaga expirada é resolvida **no ato da alocação**, e não por trabalho periódico (AR-15.3). A transação que aloca vaga executa, em ordem, em uma única transação:
 
-1. adquire trava de **escopo de transação** derivada do identificador do anúncio (`pg_advisory_xact_lock`), serializando as alocações daquele anúncio e apenas daquele anúncio;
+1. adquire a **trava do anúncio**, de escopo de transação, serializando as alocações daquele anúncio e apenas daquele anúncio — desde F3-001, a trava de linha de DM-6.12, e não mais `pg_advisory_xact_lock`;
 2. move para `expired` as linhas daquele anúncio em `reserved` cuja janela já terminou **e** que não possuam pagamento acreditado tempestivo reconhecido;
 3. calcula o menor `slotIndex` livre entre 1, 2 e 3;
 4. insere a nova solicitação em `reserved` com esse índice;
@@ -205,6 +211,15 @@ Se não houver índice livre, a transação termina recusando a solicitação �
 **DM-6.10 (invariante, transação).** Quando o anúncio vai para `closed` ou `removed`, as solicitações em `reserved` são encerradas sem cobrança e as vagas liberadas; as solicitações `paid` são preservadas e a cobrança permanece definitiva (DEC-027 seção 5, DEC-031 seção 8.2).
 
 **DM-6.11.** Não há restrição de unicidade entre solicitante e anúncio: o modelo **não** proíbe que a mesma pessoa tenha duas solicitações no mesmo anúncio, porque nenhuma decisão vigente proíbe isso. O que existe é o limite de três vagas por anúncio (RB-003) e o limite de uma escolha por solicitação (DM-8.3). Criar a proibição seria inventar requisito ausente.
+
+_Atualização de 2026-10-01 (F3-001)._ A consequência — uma conta pode ocupar as três vagas com reservas não pagas, repetidamente — foi registrada como decisão aberta **OD-14** em [../decisions/open-decisions.md](../decisions/open-decisions.md). Até o seu fechamento, DM-6.11 vale como está.
+
+**DM-6.12 (decisão técnica, F3-001, DV-6 e DV-7 — a trava e o relógio).**
+
+1. **A trava do anúncio é a trava de linha** `SELECT … FROM listings WHERE id = … FOR UPDATE`, a mesma que a Fase 2 adotou nas transições do dono e na gestão de imagens (`src/modules/listing/lifecycle.ts`, `src/modules/media/upload.ts`). Alocação de vaga (DM-6.3), confirmação (DM-6.6), transições T5 a T9 (DM-6.10) e escolha (DM-8) adquirem **essa mesma** trava.
+2. **Por que não `pg_advisory_xact_lock`**, como dizia o texto original de DM-6.3: duas travas diferentes não se excluem. Se a alocação usasse a trava consultiva e o encerramento do anúncio a de linha, uma reserva poderia ser criada concorrentemente a T5 sobre um anúncio que acabou de sair de `published` — exatamente o que DM-6.9 e DM-6.10 proíbem. Com uma trava só, ler o estado do anúncio, alocar e encerrar ficam serializados. A trava de linha também é de escopo de transação, logo DM-6.5 continua atendida e funciona no endpoint pooled do Neon.
+3. **A garantia continua sendo DM-6.2** (DM-6.4): a trava serializa comportamento; o índice único parcial impede a quarta vaga mesmo sem ela.
+4. **O relógio é o do banco.** `reservedFrom`, `reservedUntil`, a expiração do passo 2 de DM-6.3 e a comparação de tempestividade de DM-6.6 usam o `now()` do PostgreSQL **dentro** da transação, lido uma vez e reutilizado em todas as escritas daquele efeito (padrão de `lifecycle.ts`). Os valores `@default(now())` e `@updatedAt` do Prisma são preenchidos **no cliente**, consulta a consulta, e **não** servem para esses campos.
 
 ## 7. Pagamento
 
@@ -351,6 +366,8 @@ Consequência: se o trabalho periódico não disparar — e ele é best effort (
 **DM-11.2 (invariante, aplicação).** Nenhum evento contém telefone/WhatsApp em texto claro fora da própria liberação autorizada, nem segredo, nem payload capaz de reconstituí-lo (AR-9.5, PE-6.3, PE-10.2).
 
 **DM-11.3.** O evento de acesso ao contato é modelado como `ContactAccessEvent` (DM-4.4) **e** referenciado na trilha única. A entidade especializada existe porque a liberação tem retenção e campos próprios (DEC-033, seção 6); a referência na trilha existe para que a auditoria seja consultável por um único caminho.
+
+_Atualização de 2026-10-01 (F3-001, DV-4 e DV-5)._ Dois eventos da tabela de DM-11.1 ficam **apenas** em `AuditEvent`, sem entidade especializada: a **tentativa negada** de acesso ao contato (evento de segurança de CR-5.5, sem o número e sem identificar o titular além do necessário) e a **rejeição de notificação por autenticidade** (PD-2.4, PD-6.2: ocorrência, instante, motivo e correlação técnica, sem assinatura, sem segredo e sem corpo). Ambos têm ator nulo ou o ator autenticado da requisição, nunca um identificador fornecido pelo cliente tomado como identidade.
 
 ## 12. Quadro de invariantes críticas
 
