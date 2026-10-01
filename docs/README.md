@@ -28,7 +28,7 @@ Ponto de partida: [project-state.md](project-state.md), cuja seção 3.3 traz o 
 
 | Documento | Status | Conteúdo |
 | --- | --- | --- |
-| [decisions/open-decisions.md](decisions/open-decisions.md) | existente | Questões ainda não decididas, separadas das decisões vigentes. **OD-13 a OD-15 abertas em 2026-10-01** por F3-001 (#91), para decisão do Bruno; as da Fase 0 foram todas fechadas, a última (OD-07) por [product/payment-exceptions.md](product/payment-exceptions.md) (DEC-037) |
+| [decisions/open-decisions.md](decisions/open-decisions.md) | existente | Questões ainda não decididas, separadas das decisões vigentes. **OD-13 a OD-16 abertas em 2026-10-01** por F3-001 (#91) e F3-004 (#94), para decisão do Bruno; as da Fase 0 foram todas fechadas, a última (OD-07) por [product/payment-exceptions.md](product/payment-exceptions.md) (DEC-037) |
 | [decisions/decision-log.md](decisions/decision-log.md) | existente | Registro conciso das decisões vigentes DEC-001 a DEC-039, com fonte oficial e impacto |
 
 ### architecture — visão de arquitetura e design técnico

@@ -79,6 +79,13 @@ Efeitos concretos:
 
 **PD-3.2 (detalhe de implementação).** Se a operação futura demonstrar, com dados, que 30 minutos é curto demais para o comportamento real do Pix do público-alvo, aumentar a janela é ajuste de design, não decisão aberta — desde que o `expiration_time` continue igual ao fim da janela e o piso de 30 minutos seja respeitado.
 
+_Atualização de 2026-10-01 (F3-004, [#94](https://github.com/BrunoMNoronha/techlab-troq/issues/94)) — CONFIRMADO, com efeito sobre PD-3.1._ `transactions.payments[].expiration_time` é uma **duração** ISO 8601 contada **da criação do pagamento**, com mínimo documentado de 30 minutos (MP-1; documentação vigente conferida em 2026-10-01; spike F0-010, experimento 6). Os tipos do SDK oficial descrevem o campo como "duração ou data-hora", mas a documentação e o spike só sustentam a duração, e o adaptador envia duração. Consequências:
+
+1. "`expiration_time` = `reservedUntil`" **não é literalmente realizável**: a cobrança criada δ depois de `reservedFrom` (passo 2 de PD-4.1) expira δ depois da reserva, e δ nunca pode ser compensado reduzindo a duração abaixo de 30 minutos.
+2. O adaptador recebe o prazo em milissegundos e envia `PT…` arredondado para cima, **nunca** abaixo de `PT30M`. A janela de 30 minutos, PE-4.4 e PD-3.1 **não** foram alterados.
+3. O resíduo δ não cria direito: a tempestividade é verificada pelo próprio TROQ contra `reservedUntil` (PE-4.6), e pagamento acreditado depois dele é RT-2 (T-7). O provedor também devolve `date_of_expiration` absoluto, que permite medir δ por cobrança.
+4. **RECOMENDAÇÃO para F3-005 ([#95](https://github.com/BrunoMNoronha/techlab-troq/issues/95)):** executar o passo 2 imediatamente após o commit do passo 1, enviar `reservedUntil − agora` (que o adaptador eleva ao mínimo), persistir o `date_of_expiration` devolvido e registrar δ. Se a medição mostrar δ material, ajustar PD-3.1 é decisão a levar ao Bruno, não ajuste silencioso.
+
 ### 3.2 Estados da tentativa
 
 Os estados são os de DEC-037, seção 15, sem acréscimo, sem renomeação e sem estado intermediário novo:
@@ -202,6 +209,8 @@ _Atualização de 2026-10-01 (F3-001, DV-5)._ O "mínimo de segurança" é um ev
    - commita.
 5. Falhando qualquer das duas verificações do passo 4, o pagamento é **exceção técnica**: não cria solicitação paga, não consome vaga e entra em reembolso técnico (seção 8).
 
+_Atualização de 2026-10-01 (F3-004) — DECISÃO PENDENTE, OD-16._ A Orders API **não documenta** um instante de aprovação ou acreditação no pagamento da order: os tipos do SDK oficial (`src/clients/order/commonTypes.ts`, revisão de 2026-08-26) trazem `created_date` e `last_updated_date` da order e `date_of_expiration` do pagamento, mas nenhum `date_approved`, que existe na **Payments API**. ADR-0004, decisão 3, exige ADR própria para usar a Payments API como superfície principal. Por isso o adaptador devolve `accreditedAt = null` e **não** adivinha campo; `last_updated_date` **não** é tratado como acreditação, porque muda em qualquer atualização posterior, inclusive reembolso. A fonte do instante autoritativo de PE-4.1, CI-4 e DM-7.5 foi aberta como **OD-16** em [../decisions/open-decisions.md](../decisions/open-decisions.md) e **bloqueia** a verificação de tempestividade do passo 4 em F3-006 ([#96](https://github.com/BrunoMNoronha/techlab-troq/issues/96)).
+
 **PD-6.7 (invariante).** A comparação de tempestividade usa o instante de **acreditação**, jamais o de chegada da notificação nem o de processamento (PE-4.1). Confirmação atrasada de pagamento feito a tempo **vale** (PE-4.2); pagamento acreditado depois do fim da janela **não** ressuscita a reserva (PE-4.3).
 
 **PD-6.8 (invariante).** Se o gateway confirmou e a persistência local falhou, a **mesma** operação é retomada, pela mesma identidade de tentativa, até que o efeito local corresponda ao autoritativo. **Não** se cobra de novo e **não** se cria order nova (PE-6.7 a PE-6.10). Enquanto o efeito não estiver persistido, nenhum direito é concedido (PE-6.11).
@@ -257,6 +266,8 @@ A regra é determinística, total e não depende de ordem de chegada, de ordem d
 | Fora do prazo de 180 dias | `pendente_operacional` imediatamente. Retentar é inútil: a condição não volta a ser verdadeira |
 | `order_not_found` | Abre `inconsistente`. Nunca se conclui daí que não havia dinheiro |
 | Erro não mapeado | Abre `inconsistente` (PE-9.6) |
+
+_Atualização de 2026-10-01 (F3-004) — códigos confirmados e não confirmados._ O adaptador mapeia apenas o que tem fonte: `order_already_refunded` (HTTP 409) como **sucesso** e `order_not_found` (ou HTTP 404) como "não encontrada" (MP-5; referência oficial conferida em 2026-10-01). Os códigos de **saldo insuficiente** e de **prazo de 180 dias** não foram encontrados na documentação vigente nem nos tipos do SDK oficial; até serem confirmados com credencial de teste (PX-2), chegam ao domínio como `rejected` com o código bruto do provedor e caem na linha "erro não mapeado" desta tabela, que abre `inconsistente`. Isso é conservador — nunca fecha caso nem retém dinheiro em silêncio —, e F3-007 ([#97](https://github.com/BrunoMNoronha/techlab-troq/issues/97)) refina o mapeamento quando os códigos forem observados.
 
 **PD-8.6 (invariante).** Falha de reembolso **não** é ocultada, **não** é encerrada sem desfecho real e **nunca** vira receita reconhecida, vaga, elegibilidade ou silêncio (PE-7.9, PE-7.10). O caso permanece em AR-14.3.
 
@@ -409,3 +420,5 @@ Os doze critérios necessários de DEC-037, seção 18, e onde este desenho os s
 Revisado quando o Mercado Pago alterar estados, endpoints, prazos ou política de notificações; quando DEC-037 for revisada; quando a medição da Fase 3 indicar que uma cadência ou a janela de 30 minutos precisa mudar; ou antes do lançamento comercial, junto com a conferência da tarifa contratada prevista em R-01.
 
 Revisado em 2026-10-01 por F3-001 ([#91](https://github.com/BrunoMNoronha/techlab-troq/issues/91)), antes do início da implementação da Fase 3: PD-4.6, a nota de PD-6.2, PD-6.10, PD-6.11, PD-8.10 e PD-10.7. Nenhuma regra de negócio, decisão registrada ou teste de PD-13 foi alterado.
+
+Revisado em 2026-10-01 por F3-004 ([#94](https://github.com/BrunoMNoronha/techlab-troq/issues/94)), com a implementação do adaptador: notas em PD-3.2 (expiração por duração), antes de PD-6.7 (instante de acreditação, OD-16) e antes de PD-8.6 (códigos de reembolso). Nenhuma regra, janela ou teste de PD-13 foi alterado.

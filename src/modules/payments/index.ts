@@ -20,3 +20,27 @@ export {
   readPersistedIdempotencyKey,
 } from './attempt';
 export type { CreatedPaymentAttempt } from './attempt';
+
+// F3-004 (#94): adaptador do Mercado Pago. O dominio recebe snapshot e veredito
+// em termos do TROQ; o vocabulario do provedor fica em ./mercado-pago.
+export {
+  createMercadoPagoClient,
+  MercadoPagoConfigError,
+  readWebhookConfig,
+  verifyNotification,
+} from './mercado-pago';
+export type {
+  AuthoritativeState,
+  CreatePixChargeInput,
+  GatewayFailure,
+  GatewayResult,
+  MercadoPagoClient,
+  NotificationInput,
+  NotificationRejection,
+  NotificationVerification,
+  OrderSnapshot,
+  PixChargeCreated,
+  PixInstructions,
+  ProviderPaymentFact,
+  RefundOutcome,
+} from './mercado-pago';
