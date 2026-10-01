@@ -252,6 +252,8 @@ As entidades desta seção são especificadas em [payments-design.md](payments-d
 
 **DM-7.5 (invariante, restrição de banco).** O instante de **acreditação autoritativo** e o instante de **reconhecimento pelo TROQ** são campos distintos e ambos persistidos (CI-4). Confundi-los destruiria a regra de tempestividade de PE-4.1 e PE-4.2.
 
+_Atualização de 2026-10-01 (DEC-043)._ A fonte do instante de acreditação autoritativo é a `date_approved` lida da Payments API conforme [../adr/0008-accreditation-instant-payments-api.md](../adr/0008-accreditation-instant-payments-api.md); o instante de reconhecimento continua sendo o `now()` do banco na transação de efeito.
+
 **DM-7.6 (invariante, aplicação).** `ReconciliationCase` em `reembolso_pendente` ou `inconsistente` **nunca** confere direito de negócio e **não** pode ser fechado sem desfecho real (PE-7.9, PE-7.10, PE-9.5, CI-7).
 
 **DM-7.7 (invariante, aplicação).** Os metadados financeiros mínimos são retidos por 5 anos após a transação e **não** justificam conservar telefone, WhatsApp, descrição de anúncio, imagens ou conteúdo pessoal não relacionado (DEC-033, seção 8).

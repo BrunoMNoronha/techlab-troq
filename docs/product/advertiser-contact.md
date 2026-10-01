@@ -26,7 +26,7 @@ RB-001 libera ao escolhido, com pagamento aprovado, o contato do anunciante. At�
 
 - Reservas e solicitações pagas já existentes não são afetadas. Hoje não existe operação de remoção do contato pela pessoa usuária, só de substituição (CR-2.2); a eliminação na exclusão de conta segue DEC-033.
 - A escolha, a negociação e a liberação (F3-009 e F3-010) não ganham pré-condição nova: a solicitação só existe se o contato existia quando a vaga foi reservada.
-- RB-001 a RB-006, o limite de três vagas e as decisões abertas OD-14 a OD-16.
+- RB-001 a RB-006 e o limite de três vagas. As decisões OD-14 a OD-16, abertas quando este documento foi escrito, foram fechadas depois por DEC-041 a DEC-043.
 - Nenhum evento novo de auditoria: [../architecture/data-model.md](../architecture/data-model.md), DM-11.1 não lista a recusa por falta de contato nem o cadastro do contato.
 
 ## 4. Alternativas rejeitadas
