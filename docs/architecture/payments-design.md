@@ -140,6 +140,14 @@ Persiste o identificador da order e move a tentativa para `aguardando_pagamento`
 
 **PD-4.5 (normativa).** O valor é exatamente `0.99`, sem arredondamento, agregação ou ajuste (ADR-0004, decisão 5; RB-004), representado internamente sem ponto flutuante (DM-1.3).
 
+**PD-4.7 (implementação, F3-005, [#95](https://github.com/BrunoMNoronha/techlab-troq/issues/95), 2026-10-01).** Como os passos 2 e 3 ficaram no código:
+
+1. **Quem autoriza e quem cobra.** `request` (`src/modules/request/charge-flow.ts`) decide, numa transação curta sob a trava do anúncio, se a reserva ainda admite cobrança: do próprio solicitante, `reserved`, `reservedUntil` acima do `now()` do banco e anúncio `published` (PD-6.11, item 1). Depois do COMMIT, `payments` (`src/modules/payments/charge.ts`) cobra **fora de transação**. Não há trava segurada durante a chamada de rede. A brecha entre a autorização e a chamada (por exemplo, uma pausa nesse intervalo) é aceita: nada se concede por ela, e a confirmação segue PD-6.11, item 2.
+2. **Passo 3 idempotente.** `UPDATE … WHERE status = 'tentativa_criada'`. Se outra execução concorrente já gravou a **mesma** order, é sucesso; order diferente não sobrescreve nada e é auditada como falha.
+3. **Recuperação.** Falha no passo 2 (incluindo resposta perdida depois de o provedor criar a order) ou no passo 3 deixa a tentativa em `tentativa_criada`. A operação do solicitante que reapresenta o Pix refaz o passo 2 com a **mesma** chave, recebe a **mesma** order e conclui o passo 3. Com a tentativa já em `aguardando_pagamento`, ela consulta a order (`GET`) e devolve as instruções enquanto o provedor as fornecer.
+4. **Sem migration.** O copia e cola, o QR e o link **não** são persistidos: vêm do provedor na criação e, depois, por consulta, enquanto não há acreditação (spike F0-010, exp. 4). O δ de PD-3.2 (`date_of_expiration − reservedUntil`) fica na auditoria `payment.charge_created`, que nunca contém instruções Pix nem email. O email da conta só segue no corpo enviado ao provedor (PD-11.2).
+5. **Falha do provedor**, inclusive credencial ausente, não prorroga a reserva, não aprova nada e é auditada como `payment.charge_failed`, com o tipo e o código, sem mensagem do provedor.
+
 **PD-4.6 (decisão técnica, F3-001, DV-6 e DV-7).** "A trava de escopo de transação do anúncio" do passo 1 — e da transação de efeito de PD-6.6, passo 4 — é a **trava de linha** `SELECT … FOR UPDATE` sobre o anúncio, a mesma das transições do ciclo de vida, e não `pg_advisory_xact_lock` ([data-model.md](data-model.md), DM-6.12). Todos os instantes do passo 1 (`reservedFrom`, `reservedUntil` = `reservedFrom` + 30 minutos, a expiração das reservas vencidas) vêm do `now()` do banco, lido uma vez na transação; o `expiration_time` do passo 2 é exatamente o `reservedUntil` persistido.
 
 ## 5. Identidade e idempotência
