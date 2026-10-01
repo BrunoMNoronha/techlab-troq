@@ -82,6 +82,9 @@ jobs:
       BETTER_AUTH_URL: http://localhost:3100
       PUBLIC_SURFACE_BASE_URL: http://localhost:3100
       PRIVATE_SURFACE_BASE_URL: http://localhost:3100
+      # Aplicacao sintetica do receptor de webhook do Mercado Pago (F3-006, #96).
+      # Nao e segredo (PD-6.10); a chave do webhook e gerada abaixo por job.
+      MERCADO_PAGO_APPLICATION_ID: '9900000000000099'
 
     steps:
       - name: Checkout
@@ -98,7 +101,7 @@ jobs:
 
       - name: Gerar segredos sintéticos do job
         run: |
-          for name in BETTER_AUTH_SECRET CRON_SECRET; do
+          for name in BETTER_AUTH_SECRET CRON_SECRET MERCADO_PAGO_WEBHOOK_SECRET; do
             value="$(openssl rand -base64 32)"
             echo "::add-mask::$value"
             echo "$name=$value" >> "$GITHUB_ENV"

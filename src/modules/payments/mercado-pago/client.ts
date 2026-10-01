@@ -1,3 +1,4 @@
+import { toSearchedPayments, type SearchedPayment } from './accreditation';
 import {
   pixInstructions,
   toOrderSnapshot,
@@ -9,6 +10,8 @@ import { centsToDecimal, toIsoDuration } from './values';
 
 // Cliente HTTP da Orders API (ADR-0004, decisoes 3, 5, 7 e 11; payments-design.md,
 // PD-4.1 passo 2, PD-5.3, PD-8.3 a PD-8.5, PD-6.9). `fetch` nativo, sem SDK.
+// Unica leitura fora da Orders API: a busca de pagamentos da Payments API, so
+// para o instante de acreditacao (ADR-0008).
 //
 // - Toda escrita leva `X-Idempotency-Key` RECEBIDA do chamador: a chave e da
 //   tentativa persistida (PD-5.2) e nunca e gerada aqui.
@@ -181,6 +184,25 @@ export function createMercadoPagoClient(options: MercadoPagoClientOptions = {}) 
         ok: true,
         value: { snapshot: snapshot.value, instructions: pixInstructions(raw.body) },
       };
+    },
+
+    /**
+     * `GET /v1/payments/search?external_reference=...`: SO LEITURA, so para o
+     * instante de acreditacao (ADR-0008, decisao 2). O veredito e de
+     * `classifyAccreditation`; aqui so se traduz a resposta.
+     */
+    async findPaymentAccreditation(
+      externalReference: string,
+    ): Promise<GatewayResult<SearchedPayment[]>> {
+      const query = new URLSearchParams({ external_reference: externalReference });
+      const raw = await call('GET', `/v1/payments/search?${query.toString()}`, null);
+      if (isFailure(raw)) return raw;
+      if (raw.status !== 200) return fail(raw);
+      const payments = toSearchedPayments(raw.body);
+      // 200 sem lista de resultados nao e resposta interpretavel: nunca aprova.
+      if (!payments)
+        return { ok: false, kind: 'rejected', httpStatus: raw.status, code: 'unmapped' };
+      return { ok: true, value: payments };
     },
 
     /** `POST /v1/orders/{id}/cancel`: so sem acreditacao (PD-8.3, MP-6). Nao e reembolso. */

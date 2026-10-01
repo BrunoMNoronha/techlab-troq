@@ -11,8 +11,9 @@
 // externos importam `@/modules/payments`; nunca um caminho interno do modulo.
 //
 // F1-005 materializou a fronteira. F3-003 (#93) acrescenta a criacao da
-// tentativa com a chave de idempotencia persistida (PD-2.1, PD-5); a cobranca,
-// a confirmacao e o reembolso vem nas issues seguintes da Fase 3.
+// tentativa com a chave de idempotencia persistida (PD-2.1, PD-5); F3-005 (#95)
+// a cobranca; F3-006 (#96) a notificacao e a confirmacao. O reembolso vem em
+// F3-007 (#97).
 export {
   createPaymentAttempt,
   deriveIdempotencyKey,
@@ -31,6 +32,30 @@ export type {
   PixPaymentDetails,
 } from './charge';
 
+// F3-006 (#96): notificacao, estado autoritativo e transicoes da tentativa.
+// `request` aplica o efeito sobre a vaga chamando as transicoes `*InTx` dentro
+// da sua transacao, sob a trava do anuncio (AR-3.5, PD-6.6 passo 4).
+export {
+  classifyPaymentExceptionInTx,
+  confirmPaymentInTx,
+  forwardCaseInTx,
+  markInconsistentInTx,
+  markNotificationProcessed,
+  observeAttempt,
+  readAttemptStatusInTx,
+  recordNotAccreditedInTx,
+  recordRejectedNotification,
+  registerNotification,
+  returnToAwaitingPaymentInTx,
+} from './confirmation';
+export type {
+  ConfirmationDeps,
+  ObservedAttempt,
+  PaymentFact,
+  RecognitionOrigin,
+  RegisteredNotification,
+} from './confirmation';
+
 // F3-004 (#94): adaptador do Mercado Pago. O dominio recebe snapshot e veredito
 // em termos do TROQ; o vocabulario do provedor fica em ./mercado-pago.
 export {
@@ -40,6 +65,7 @@ export {
   verifyNotification,
 } from './mercado-pago';
 export type {
+  AccreditationVerdict,
   AuthoritativeState,
   CreatePixChargeInput,
   GatewayFailure,

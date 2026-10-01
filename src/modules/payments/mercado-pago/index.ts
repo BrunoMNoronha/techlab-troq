@@ -13,6 +13,13 @@ export {
   type RefundOutcome,
 } from './client';
 export {
+  classifyAccreditation,
+  toSearchedPayments,
+  type AccreditationDivergence,
+  type AccreditationVerdict,
+  type SearchedPayment,
+} from './accreditation';
+export {
   classifyState,
   toOrderSnapshot,
   type AuthoritativeState,
@@ -28,4 +35,11 @@ export {
   type NotificationRejection,
   type NotificationVerification,
 } from './signature';
-export { centsToDecimal, decimalToCents, MIN_EXPIRATION_MS, toIsoDuration } from './values';
+export {
+  amountToCents,
+  centsToDecimal,
+  decimalToCents,
+  MIN_EXPIRATION_MS,
+  parseZonedInstant,
+  toIsoDuration,
+} from './values';
