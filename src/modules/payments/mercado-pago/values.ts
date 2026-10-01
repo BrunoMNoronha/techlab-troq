@@ -51,3 +51,26 @@ export function parseInstant(value: unknown): Date | null {
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? null : date;
 }
+
+/** Data-hora completa com fuso explicito (`Z` ou `+hh:mm`), como `date_approved`. */
+const ZONED_INSTANT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:\d{2})$/;
+
+/**
+ * Instante autoritativo do provedor -> Date, so se vier com data, hora e fuso.
+ * Diferente de `parseInstant`: uma data sem hora ou sem fuso NAO e aceita,
+ * porque seria interpretada em fuso arbitrario (ADR-0008, decisao 3).
+ */
+export function parseZonedInstant(value: unknown): Date | null {
+  if (typeof value !== 'string' || !ZONED_INSTANT.test(value)) return null;
+  return parseInstant(value);
+}
+
+/**
+ * Valor numerico da Payments API (`transaction_amount: 0.99`) -> centavos.
+ * `null` se nao for um valor exato em centavos: nunca arredonda um valor torto.
+ */
+export function amountToCents(value: unknown): number | null {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) return null;
+  const cents = Math.round(value * 100);
+  return Math.abs(cents - value * 100) < 1e-6 && Number.isSafeInteger(cents) ? cents : null;
+}

@@ -236,6 +236,30 @@ _Atualização de 2026-10-01 (DEC-043, fecha OD-16)._ [../adr/0008-accreditation
 3. **A leitura alternativa é excluída**, não apenas preterida: recusar a confirmação deixaria dinheiro acreditado contra reserva válida sem nenhuma das hipóteses exaustivas de reembolso (PE-7.2; RT-3 exige reserva **não** vigente), o que PE-12.2 proíbe ("o TROQ não pode reter dinheiro que recebeu por erro técnico"), e não há quarta saída. Por isso esta questão **não** foi aberta como decisão.
 4. A transação de efeito de PD-6.6, passo 4, portanto **não** consulta o estado do anúncio; ela continua exigindo `reserved` e acreditação ≤ `reservedUntil`. A pausa não cancela a order (PD-8.10 trata só das transições que **encerram** a reserva).
 
+**PD-6.12 (implementação, F3-006, [#96](https://github.com/BrunoMNoronha/techlab-troq/issues/96), 2026-10-01).** Como a seção 6 foi materializada, sem alterar regra:
+
+1. **Receptor:** `POST /api/webhooks/mercadopago` (`src/app/api/webhooks/mercadopago/`). Respostas sempre sem corpo:
+   - `401` para aplicação divergente ou assinatura ausente, malformada ou inválida;
+   - `400` para corpo que não identifica notificação;
+   - `200` para tópico diferente de `order` (ignorado, sem reenvio);
+   - `503` sem configuração (falha fechada);
+   - `500` se o registro da notificação válida falhar (o provedor reenvia);
+   - `200` depois de registrar a notificação válida.
+
+   Toda rejeição grava só `payment.notification_rejected` (nota de PD-6.2). A order é correlacionada sem diferenciar maiúsculas de minúsculas, como o manifesto.
+2. **Orçamento:** a confirmação na mesma invocação tem orçamento de 10 s, com tempo limite de 4 s por consulta ao provedor. Esgotado o orçamento, o receptor responde `200` e a notificação fica com resultado `deferred`; a rotina, idempotente, termina sozinha ou é retomada pela reconciliação (PD-6.5).
+3. **Divisão de responsabilidades (AR-3.5):**
+   - `payments` (`src/modules/payments/confirmation.ts`) lê o estado autoritativo fora de transação, espelha `Payment` por `INSERT … ON CONFLICT` no id do provedor e expõe as transições da tentativa;
+   - `request` (`src/modules/request/payment-confirmation.ts`) relê a solicitação sob a trava do anúncio e decide o efeito sobre a vaga;
+   - a mesma rotina (`confirmPaymentFlow`) serve ao receptor (`notificacao`) e à reconciliação de F3-008 (`reconciliacao`).
+4. **Encaminhamentos para F3-007** ([#97](https://github.com/BrunoMNoronha/techlab-troq/issues/97)):
+   - acreditação fora da janela ou sem reserva `reserved`: a tentativa vai a `reembolso_pendente` e a hipótese fica **persistida** no ato (PD-8.2) num `ReconciliationCase` `reembolso_pendente` com motivo `rt_2` ou `rt_3`, os dois instantes e o estado da solicitação. Na RT-2, a reserva sai da vaga (`expired`). O `TechnicalRefund` e o reembolso são de F3-007;
+   - dois ou mais pagamentos acreditados abrem caso `divergencia` / `multiple_accredited`, sem aprovação nem eleição (PD-7 é de F3-007);
+   - reversão observada antes da confirmação abre caso `divergencia` / `reversed_before_confirmation`, para F3-011.
+5. **Desconhecido ou contraditório:** a tentativa vai a `inconsistente`, com caso aberto uma única vez por motivo. Inclui order não encontrada, referência ou valor divergentes, busca contraditória e pagamento de outra tentativa. Order acreditada com a busca ainda vazia é **indisponibilidade** (ADR-0008, decisão 4).
+
+**Achado de F3-006 (risco registrado, sem decisão nova).** DM-6.3 expira, no ato da alocação, a reserva vencida sem pagamento acreditado tempestivo **reconhecido**. Se um Pix pago dentro da janela ainda não foi reconhecido quando outra pessoa solicita no mesmo anúncio depois do fim da janela, a reserva é expirada e a vaga pode ser realocada. O reconhecimento tardio encontra a solicitação fora de `reserved` e aplica RT-3 (reembolso), e **não** PE-4.2. Isso segue DM-6.3 e RB-003 ao pé da letra; a janela de exposição é o atraso entre a acreditação e o reconhecimento, que a reconciliação de 5 minutos (F3-008) e a notificação reduzem. Mudar esse comportamento, por exemplo consultando o provedor antes de expirar, seria decisão do Bruno.
+
 ## 7. Duplicidade e eleição do pagamento canônico
 
 **PD-7.1 (decisão arquitetural).** Havendo dois ou mais pagamentos acreditados para a mesma reserva, o canônico é eleito por esta regra, nesta ordem:

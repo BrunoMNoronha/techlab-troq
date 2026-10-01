@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { centsToDecimal, decimalToCents, MIN_EXPIRATION_MS, toIsoDuration } from './values';
+import {
+  amountToCents,
+  centsToDecimal,
+  decimalToCents,
+  MIN_EXPIRATION_MS,
+  parseZonedInstant,
+  toIsoDuration,
+} from './values';
 
 describe('centavos <-> decimal do provedor (DM-1.3, PD-4.5)', () => {
   it.each([
@@ -45,4 +52,39 @@ describe('toIsoDuration (expiration_time; MP-1, spike F0-010 exp. 6)', () => {
   it('recusa duracao nao finita', () => {
     expect(() => toIsoDuration(Number.POSITIVE_INFINITY)).toThrow(RangeError);
   });
+});
+
+describe('instante autoritativo com fuso (ADR-0008, decisao 3)', () => {
+  it.each([
+    ['2026-10-01T12:29:46.000-04:00', '2026-10-01T16:29:46.000Z'],
+    ['2026-10-01T16:29:46Z', '2026-10-01T16:29:46.000Z'],
+    ['2026-10-01T16:29:46.123456+00:00', '2026-10-01T16:29:46.123Z'],
+  ])('%s -> %s', (raw, iso) => {
+    expect(parseZonedInstant(raw)?.toISOString()).toBe(iso);
+  });
+
+  it.each(['2026-10-01', '2026-10-01T12:29:46', '2026-10-01 12:29:46Z', 'ontem', '', null, 0])(
+    'sem data, hora e fuso completos: null (%j)',
+    (raw) => {
+      expect(parseZonedInstant(raw)).toBeNull();
+    },
+  );
+});
+
+describe('valor numerico da Payments API -> centavos', () => {
+  it.each([
+    [0.99, 99],
+    [0.01, 1],
+    [50, 5000],
+    [1.1, 110],
+  ])('%s -> %s', (value, cents) => {
+    expect(amountToCents(value)).toBe(cents);
+  });
+
+  it.each([0.991, -1, Number.NaN, Number.POSITIVE_INFINITY, '0.99', null])(
+    'valor que nao e centavo exato: null (%j)',
+    (value) => {
+      expect(amountToCents(value)).toBeNull();
+    },
+  );
 });

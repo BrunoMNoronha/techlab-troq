@@ -8,10 +8,12 @@
 //
 // Prova o que o servidor simulado de client.test.ts nao prova: que o provedor
 // aceita o corpo exato, repete a mesma order para a mesma chave e cancela uma
-// order sem acreditacao.
+// order sem acreditacao; e (F3-006, ADR-0008) que a busca da Payments API por
+// `external_reference` devolve o instante de acreditacao da order acreditada.
 import { randomUUID } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
-import { createMercadoPagoClient } from './client';
+import { classifyAccreditation } from './accreditation';
+import { createMercadoPagoClient, MERCADO_PAGO_API_BASE_URL } from './client';
 
 const enabled =
   process.env.MERCADO_PAGO_INTEGRATION === '1' && process.env.APP_ENV === 'development';
@@ -58,4 +60,54 @@ describe.skipIf(!enabled)('Mercado Pago sandbox: Orders API real (PX-2)', () => 
       value: { state: { kind: 'not_accredited_terminal', outcome: 'canceled' } },
     });
   }, 60_000);
+
+  it('ADR-0008: a busca por external_reference devolve date_approved da order acreditada', async () => {
+    const externalReference = `troq-sandbox-${randomUUID()}`;
+    // O adaptador nao envia nome do pagador; o sandbox so aprova sozinho com o
+    // pagador de teste `APRO` documentado (spike F0-010, G2). Esta criacao e so
+    // a preparacao; o que se prova e a consulta e a busca do cliente real.
+    const res = await fetch(`${MERCADO_PAGO_API_BASE_URL}/v1/orders`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${process.env.MERCADO_PAGO_ACCESS_TOKEN}`,
+        'Content-Type': 'application/json',
+        'X-Idempotency-Key': randomUUID(),
+      },
+      body: JSON.stringify({
+        type: 'online',
+        processing_mode: 'automatic',
+        external_reference: externalReference,
+        total_amount: '0.99',
+        payer: { email: TEST_PAYER, first_name: 'APRO' },
+        transactions: {
+          payments: [
+            {
+              amount: '0.99',
+              payment_method: { id: 'pix', type: 'bank_transfer' },
+              expiration_time: 'PT30M',
+            },
+          ],
+        },
+      }),
+    });
+    expect(res.status).toBe(201);
+    const orderId = ((await res.json()) as { id: string }).id;
+    let accredited = false;
+
+    // O sandbox acredita sozinho (spike F0-010, experimento 4).
+    for (let i = 0; i < 24 && !accredited; i++) {
+      await new Promise((resolve) => setTimeout(resolve, 5_000));
+      const read = await client.getOrder(orderId);
+      accredited = read.ok && read.value.state.kind === 'accredited';
+    }
+    expect(accredited).toBe(true);
+
+    const search = await client.findPaymentAccreditation(externalReference);
+    if (!search.ok) throw new Error(`falha: ${JSON.stringify(search)}`);
+    const verdict = classifyAccreditation(search.value, { externalReference, amountCents: 99 });
+    expect(verdict).toMatchObject({ kind: 'approved' });
+    if (verdict.kind === 'approved') {
+      expect(verdict.accreditedAt.getTime()).toBeLessThanOrEqual(Date.now());
+    }
+  }, 180_000);
 });

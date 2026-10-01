@@ -30,9 +30,9 @@ export interface ProviderPaymentFact {
   providerStatus: string;
   providerStatusDetail: string | null;
   /**
-   * Instante de acreditacao AUTORITATIVO. Sempre `null` hoje: a Orders API nao
-   * documenta campo de data de aprovacao no pagamento da order (OD-16, aberta
-   * por F3-004). O adaptador nao adivinha nome de campo.
+   * Sempre `null` na order: a Orders API nao traz data de aprovacao no
+   * pagamento (ADR-0008). O instante autoritativo vem da busca da Payments API
+   * (`classifyAccreditation`), nunca de campo adivinhado aqui.
    */
   accreditedAt: null;
 }

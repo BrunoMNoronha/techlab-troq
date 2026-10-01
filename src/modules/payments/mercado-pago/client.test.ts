@@ -307,6 +307,79 @@ describe('refundOrder (POST /v1/orders/{id}/refund) — PD-8.5', () => {
   });
 });
 
+describe('findPaymentAccreditation (GET /v1/payments/search) — ADR-0008', () => {
+  const REF = 'troq-pa-1';
+
+  it('so leitura: GET sem chave de idempotencia, filtrando pela external_reference', async () => {
+    respond = (_req, res) =>
+      json(res, 200, {
+        paging: { total: 1 },
+        results: [
+          {
+            id: 180819249321,
+            status: 'approved',
+            status_detail: 'accredited',
+            external_reference: REF,
+            transaction_amount: 0.99,
+            date_approved: '2026-10-01T12:29:46.000-04:00',
+          },
+        ],
+      });
+
+    const result = await client().findPaymentAccreditation(REF);
+
+    expect(received).toHaveLength(1);
+    expect(received[0].method).toBe('GET');
+    expect(received[0].url).toBe('/v1/payments/search?external_reference=troq-pa-1');
+    expect(received[0].headers['x-idempotency-key']).toBeUndefined();
+    expect(received[0].headers.authorization).toBe(`Bearer ${TOKEN}`);
+    expect(result).toEqual({
+      ok: true,
+      value: [
+        {
+          providerPaymentId: '180819249321',
+          status: 'approved',
+          statusDetail: 'accredited',
+          externalReference: REF,
+          amountCents: 99,
+          approvedAt: new Date('2026-10-01T16:29:46.000Z'),
+        },
+      ],
+    });
+  });
+
+  it('referencia com caracteres especiais e codificada na query', async () => {
+    respond = (_req, res) => json(res, 200, { results: [] });
+    await client().findPaymentAccreditation('troq-pa-a&b=c');
+    expect(received[0].url).toBe('/v1/payments/search?external_reference=troq-pa-a%26b%3Dc');
+  });
+
+  it('200 sem lista de resultados nao e interpretado', async () => {
+    respond = (_req, res) => json(res, 200, { paging: {} });
+    expect(await client().findPaymentAccreditation(REF)).toEqual({
+      ok: false,
+      kind: 'rejected',
+      httpStatus: 200,
+      code: 'unmapped',
+    });
+  });
+
+  it('5xx e timeout: unavailable, nunca aprovacao', async () => {
+    respond = (_req, res) => json(res, 500, {});
+    expect(await client().findPaymentAccreditation(REF)).toMatchObject({
+      ok: false,
+      kind: 'unavailable',
+    });
+    respond = () => undefined;
+    const fast = createMercadoPagoClient({ baseUrl, timeoutMs: 100 });
+    expect(await fast.findPaymentAccreditation(REF)).toEqual({
+      ok: false,
+      kind: 'unavailable',
+      reason: 'timeout',
+    });
+  });
+});
+
 describe('indisponibilidade nunca e aprovacao (PD-6.9)', () => {
   it('5xx: unavailable', async () => {
     respond = (_req, res) => json(res, 503, { errors: [{ code: 'internal_error' }] });
