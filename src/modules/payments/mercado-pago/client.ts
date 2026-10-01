@@ -166,6 +166,23 @@ export function createMercadoPagoClient(options: MercadoPagoClientOptions = {}) 
       return snapshotOf(raw);
     },
 
+    /**
+     * `GET /v1/orders/{id}` com as instrucoes Pix, para reapresenta-las ao
+     * solicitante. O provedor so as devolve antes da acreditacao (spike, exp. 4);
+     * depois, `instructions` e `null`.
+     */
+    async getPixCharge(providerOrderId: string): Promise<GatewayResult<PixChargeCreated>> {
+      const raw = await call('GET', `/v1/orders/${encodeURIComponent(providerOrderId)}`, null);
+      if (isFailure(raw)) return raw;
+      if (raw.status !== 200) return fail(raw);
+      const snapshot = snapshotOf(raw);
+      if (!snapshot.ok) return snapshot;
+      return {
+        ok: true,
+        value: { snapshot: snapshot.value, instructions: pixInstructions(raw.body) },
+      };
+    },
+
     /** `POST /v1/orders/{id}/cancel`: so sem acreditacao (PD-8.3, MP-6). Nao e reembolso. */
     async cancelOrder(
       providerOrderId: string,

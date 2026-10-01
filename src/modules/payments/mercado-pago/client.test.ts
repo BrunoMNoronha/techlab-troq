@@ -212,6 +212,45 @@ describe('getOrder (GET /v1/orders/{id})', () => {
   });
 });
 
+describe('getPixCharge (GET /v1/orders/{id} com instrucoes)', () => {
+  it('reapresenta as instrucoes enquanto a order nao foi acreditada', async () => {
+    respond = (_req, res) => json(res, 200, ORDER);
+    const result = await client().getPixCharge(ORDER.id);
+    expect(received[0]).toMatchObject({ method: 'GET', url: `/v1/orders/${ORDER.id}` });
+    expect(received[0].headers['x-idempotency-key']).toBeUndefined();
+    expect(result).toMatchObject({
+      ok: true,
+      value: {
+        snapshot: { state: { kind: 'pending' } },
+        instructions: { qrCode: '00020126BRCODE' },
+      },
+    });
+  });
+
+  it('depois da acreditacao o provedor nao devolve o QR: instructions null', async () => {
+    const accredited = {
+      ...ORDER,
+      status: 'processed',
+      status_detail: 'accredited',
+      transactions: {
+        payments: [
+          {
+            id: 'PAY1',
+            status: 'processed',
+            status_detail: 'accredited',
+            payment_method: { id: 'pix', type: 'bank_transfer' },
+          },
+        ],
+      },
+    };
+    respond = (_req, res) => json(res, 200, accredited);
+    expect(await client().getPixCharge(ORDER.id)).toMatchObject({
+      ok: true,
+      value: { instructions: null },
+    });
+  });
+});
+
 describe('cancelOrder (POST /v1/orders/{id}/cancel)', () => {
   it('envia a chave de idempotencia recebida e devolve o snapshot', async () => {
     respond = (_req, res) =>

@@ -138,8 +138,21 @@ const SLOT_COLLISION = Symbol('slot-collision');
 export async function createContactRequest(listingId: string): Promise<ContactRequestResult> {
   const session = await validateSession();
   if (!session.isValid || !session.user) return sessionFailure(session.reason);
-  const requesterId = session.user.id;
+  return reserveForRequester(listingId, session.user.id);
+}
 
+/** Recusa de sessao no vocabulario da solicitacao (para quem ja validou a sessao). */
+export function sessionFailureResult(
+  reason: SessionValidationResult['reason'],
+): Extract<ContactRequestResult, { success: false }> {
+  return sessionFailure(reason) as Extract<ContactRequestResult, { success: false }>;
+}
+
+/** Passo 1 de PD-4.1 para quem ja teve a sessao validada pelo chamador. */
+export async function reserveForRequester(
+  listingId: string,
+  requesterId: string,
+): Promise<ContactRequestResult> {
   // Com a trava, duas alocacoes do mesmo anuncio nao colidem no indice. Se uma
   // colisao escapar mesmo assim (DM-6.4), a transacao inteira e refeita: a
   // releitura ve a vaga ja ocupada e escolhe outra ou recusa por falta de vaga.
