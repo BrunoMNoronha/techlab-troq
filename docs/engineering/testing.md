@@ -163,6 +163,22 @@ Regras e expectativas:
   - os desfechos de PD-8.5 e o cancelamento depois de T5.
 
   Os ids sintéticos da Payments API são únicos por execução, porque `payments.provider_payment_id` é único no banco. A suíte opcional de sandbox ganhou o reembolso real de uma order `APRO` e a retentativa.
+- Reconciliação periódica e retentativa de reembolso (#98 / F3-008): `src/modules/request/payment-reconciliation.integration.test.ts` exige `INTEGRATION_EPHEMERAL_DB=1`, usa o Better Auth real e o provedor **simulado** com a busca de orders por `external_reference`, consulta indisponível por order, criação com resposta derrubada e reembolso indisponível, `429` ou com código não documentado. Cobre:
+  - **T-5:** nenhuma notificação é entregue (zero `PaymentNotification`), e só a reconciliação leva a `paid` com o instante de acreditação;
+  - **T-18 durante a reclamação:** a primeira execução segura a transação de reclamação aberta (gancho de teste `onClaimed`) enquanto a segunda reclama. A segunda termina sem nenhuma espera de trava em `pg_stat_activity`, os conjuntos são disjuntos e há um efeito por caso: duas aprovações, um reembolso e um cancelamento;
+  - **T-18 depois do commit:** quem reclama enquanto a outra execução ainda processa não recebe os mesmos casos;
+  - indisponibilidade sem mudança e com convergência posterior;
+  - o cancelamento pendente de PD-8.10, inclusive com acreditação (RT-3);
+  - `tentativa_criada` viva (não busca), órfã achada e confirmada, e órfã não achada (nada inventado);
+  - `inconsistente` só reobservado;
+  - recuo exponencial persistido até `pendente_operacional` com caso aberto, o `429` documentado e o código não documentado.
+
+  As provas comuns usam `park` para tirar da elegibilidade tudo o que não é da prova, porque os trabalhos são globais. Com `PRIVATE_SURFACE_BASE_URL` e `CRON_SECRET` iguais no servidor e no teste, quatro provas usam a **rota real**:
+  - recusa sem segredo, com segredo errado e com esquema errado, sem efeito;
+  - reclamação autorizada com falha fechada, porque o servidor não tem `MERCADO_PAGO_ACCESS_TOKEN`;
+  - resposta só de contagens.
+
+  A prova por mutação é local e está na PR de F3-008: reclamar sem `SKIP LOCKED`, não avançar o próximo instante, fechar caso por esgotamento e aceitar requisição sem segredo.
 - Adaptador do Mercado Pago (#94 / F3-004): os testes de `src/modules/payments/mercado-pago/` rodam na suíte padrão (`test:ci`), sem rede externa. O contrato HTTP é conferido contra um servidor **simulado** local (`node:http`), que recebe o que o adaptador envia e devolve cada resposta documentada. A assinatura usa segredo sintético gerado por execução. `src/modules/payments/mercado-pago/mercado-pago-sandbox.integration.test.ts` é **opcional**: exige `MERCADO_PAGO_INTEGRATION=1`, `APP_ENV=development` e Access Token **de teste**, cria orders reais de R$ 0,99 no sandbox e **não** roda na CI, no mesmo padrão de `R2_INTEGRATION`.
 - Vitrine pública (#49 / F2-011), duas suítes:
   - `src/modules/listing/public-listing.integration.test.ts` exige `INTEGRATION_EPHEMERAL_DB=1` e prova a consulta pública contra o banco: visibilidade, desempate por `id`, limites e filtros. Isola os próprios dados por uma cidade única da execução e não fala com o R2.

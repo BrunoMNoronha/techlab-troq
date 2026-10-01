@@ -107,6 +107,14 @@ Os estados são os de DEC-037, seção 15, sem acréscimo, sem renomeação e se
 
 **PD-3.5 (decisão arquitetural).** Um caso em `reembolso_pendente` **nunca** é encerrado por esgotamento de tentativas. Depois de um número de tentativas automáticas sem sucesso, ele passa a `pendente_operacional` e **permanece aberto e visível** (AR-14.3), porque continua sendo dinheiro que o TROQ não tem direito de reter (PE-7.10).
 
+_Atualização de 2026-10-01 (F3-008, [#98](https://github.com/BrunoMNoronha/techlab-troq/issues/98)) — número de tentativas e recuo._
+
+- **Recuo:** depois da k-ésima falha transitória, a próxima tentativa fica para 2^(k−1) horas depois (1 h, 2 h, 4 h, 8 h, 16 h e, daí em diante, 24 h).
+- **Onde fica gravado:** em `technical_refunds.next_attempt_at`, no mesmo `UPDATE` que registra a falha.
+- **N = 8 tentativas automáticas,** contando a primeira, feita logo depois da classificação. Elas cobrem cerca de 79 horas desde a primeira. É mais que um fim de semana para repor saldo (PE-7.8) e muito mais que um incidente típico do provedor, e ainda fica longe do prazo de 180 dias (PD-8.7).
+- **Depois da oitava falha:** o reembolso passa a `pendente_operacional` no mesmo `UPDATE`, sem `next_attempt_at`. O caso `reembolso_pendente` **continua aberto**, sem desfecho, e a tentativa continua `reembolso_pendente`.
+- **Ajuste:** N e o recuo são design ajustável por medição (ADR-0006, decisão 12).
+
 **PD-3.6 (decisão arquitetural).** Nenhum limite de tempo, esgotamento de tentativas ou conveniência operacional converte estado incerto em aprovado (PE-6.16). Não existe, em nenhum ponto deste desenho, um caminho que leve a `pagamento_confirmado` sem um estado autoritativo `processed`/`accredited` observado por consulta.
 
 ## 4. Criar a solicitação e a cobrança
@@ -303,6 +311,23 @@ A regra é determinística, total e não depende de ordem de chegada, de ordem d
 
 _Atualização de 2026-10-01 (F3-004) — códigos confirmados e não confirmados._ O adaptador mapeia apenas o que tem fonte: `order_already_refunded` (HTTP 409) como **sucesso** e `order_not_found` (ou HTTP 404) como "não encontrada" (MP-5; referência oficial conferida em 2026-10-01). Os códigos de **saldo insuficiente** e de **prazo de 180 dias** não foram encontrados na documentação vigente nem nos tipos do SDK oficial; até serem confirmados com credencial de teste (PX-2), chegam ao domínio como `rejected` com o código bruto do provedor e caem na linha "erro não mapeado" desta tabela, que abre `inconsistente`. Isso é conservador — nunca fecha caso nem retém dinheiro em silêncio —, e F3-007 ([#97](https://github.com/BrunoMNoronha/techlab-troq/issues/97)) refina o mapeamento quando os códigos forem observados.
 
+_Atualização de 2026-10-01 (F3-008, [#98](https://github.com/BrunoMNoronha/techlab-troq/issues/98)) — códigos de saldo e de 180 dias: NÃO CONFIRMADOS._ A lista de erros da referência oficial de `POST /v1/orders/{id}/refund`, conferida em 2026-10-01 no navegador, documenta:
+
+| HTTP | Códigos documentados |
+| --- | --- |
+| 400 | `empty_required_header`, `invalid_idempotency_key_length`, `invalid_path_param`, `refund_amount_exceeds` |
+| 403 | `forbidden`, `pa_unauthorized_result_from_policies` |
+| 404 | `order_not_found`, `transaction_not_found` |
+| 409 | `idempotency_key_already_used`, `order_already_refunded`, `cannot_refund_order`, `order_refund_already_in_process` |
+| 429 | `too_many_requests`, `usage_quota_exceeded` |
+| 500 | `idempotency_validation_failed`, `internal_error` |
+
+**Nenhum** código de saldo insuficiente ou de prazo de 180 dias consta dela. Por isso, as linhas "Saldo insuficiente" e "Fora do prazo de 180 dias" da tabela acima **continuam sem mapeamento próprio**: esses casos caem em "erro não mapeado" (`pendente_operacional` com caso `inconsistente`), que é conservador, e o critério correspondente de #98 fica **não cumprido** até haver fonte.
+
+Dois transitórios **documentados** passaram a retentar (`falhou_retentando`, com recuo), em vez de abrir inconsistência:
+- HTTP `429` (`too_many_requests`, `usage_quota_exceeded`), cuja própria referência manda repetir com recuo;
+- `409 order_refund_already_in_process`.
+
 **PD-8.6 (invariante).** Falha de reembolso **não** é ocultada, **não** é encerrada sem desfecho real e **nunca** vira receita reconhecida, vaga, elegibilidade ou silêncio (PE-7.9, PE-7.10). O caso permanece em AR-14.3.
 
 **PD-8.7 (fato externo).** Os dois limites são do provedor e não estão sob controle do TROQ: prazo de **180 dias** a partir da aprovação e exigência de **saldo suficiente** (MP-5). Ambos já estão registrados como R-11.
@@ -367,6 +392,48 @@ _Atualização de 2026-10-01 (F3-004) — códigos confirmados e não confirmado
 **PD-10.6 (decisão arquitetural).** Cada execução do trabalho tem **orçamento de tempo** e processa em lotes, terminando com o que couber e deixando o resto para a execução seguinte. Um trabalho que tenta esgotar a fila a qualquer custo colide com o limite de duração da função e é interrompido no meio — o que, num trabalho não retentado pela plataforma (AR-15.2), é pior do que terminar cedo de propósito.
 
 **PD-10.7 (confirmado, F3-001, DV-8 e DV-9).** Os trabalhos de pagamento seguem PD-10.3 (`FOR UPDATE SKIP LOCKED` em lotes, dentro de transação), e **não** o lease por instante de vencimento usado pelos trabalhos de mídia da Fase 2 ([media-pipeline-contract.md](media-pipeline-contract.md)). A diferença é deliberada: o efeito de pagamento acontece dentro da transação que reclamou o caso, enquanto o trabalho de mídia faz E/S longa no R2 fora dela. As rotas ficam em `src/app/api/jobs/` e usam o mesmo `cron-auth` com `CRON_SECRET` (PD-11.4). **Agendamento:** não há cron configurado — no Hobby a cadência de 5 minutos é impossível e o cron só dispara no deployment de produção ([ADR-0006](../adr/0006-async-work-scheduling-concurrency.md), V-4, V-5 e decisão 11). O critério de prova da Fase 3 sem agendamento foi decidido em 2026-10-01 por **DEC-042** (fecha OD-15; [../delivery/phase-3-plan.md](../delivery/phase-3-plan.md), seção 5.1): invocação autenticada em `preview` mais T-5 e T-18 sobre banco real; as cadências de PD-3.4 **não** são enfraquecidas.
+
+_Atualização de 2026-10-01 (F3-008, [#98](https://github.com/BrunoMNoronha/techlab-troq/issues/98)) — DECISÃO TÉCNICA: reclamar, commitar e só então processar._ A frase "o efeito de pagamento acontece dentro da transação que reclamou o caso" é **incompatível** com o que F3-006 e F3-007 entregaram, conferido no código:
+
+1. **Rede e efeito são etapas separadas.** `confirmPaymentFlow` lê o estado autoritativo **fora** de transação (`observeAttempt`) e só depois abre a transação de efeito. O reembolso e o cancelamento também chamam o provedor fora de transação.
+2. **O efeito trava o anúncio antes da tentativa.** A transação de efeito faz `lockListingForRequest` (`FOR UPDATE` no anúncio) e só depois o `UPDATE` em `payment_attempts`.
+3. **O espelho e o cancelamento escrevem em outra conexão.** `mirrorPayments` insere em `payments` pela FK para `payment_attempts`, o que exige `FOR KEY SHARE` na tentativa. `cancelUnaccreditedCharge` grava a chave na tentativa.
+
+Segurar a tentativa com `FOR UPDATE` durante a rede e chamar os fluxos existentes leva a uma de duas falhas:
+- **a execução trava a si mesma:** o espelho, o cancelamento e o efeito esperam, em outra conexão, a linha que a própria execução segura, até o tempo limite da transação;
+- **ou as travas se invertem:** se o efeito fosse feito dentro da transação de reclamação, a ordem seria tentativa → anúncio, contra anúncio → tentativa do webhook, e o resultado seria impasse (deadlock).
+
+Por isso os trabalhos de pagamento seguem PD-10.3 assim:
+
+1. **Reclamar:** em lotes, com `FOR UPDATE SKIP LOCKED`, numa transação **curta**. Na mesma instrução, cada linha reclamada tem o próximo instante empurrado para o futuro (`payment_attempts.next_reconcile_at`, `technical_refunds.next_attempt_at`), e então vem o commit. A seleção travada fica numa CTE `MATERIALIZED`. Na forma `UPDATE … FROM (SELECT … LIMIT … FOR UPDATE SKIP LOCKED)`, o PostgreSQL pode reavaliar a subconsulta como lado interno de um *nested loop* (visto com `EXPLAIN` em 2026-10-01) e reclamar mais que o lote.
+2. **Processar depois,** fora da transação de reclamação, pelos fluxos existentes, que tomam a trava do **anúncio** na sua própria transação curta.
+
+**Por que é seguro:**
+- duas execuções sobrepostas são disjuntas: pelo `SKIP LOCKED` durante a reclamação e pelo instante já no futuro depois do commit;
+- uma execução que morra no meio só atrasa o caso até o instante reclamado;
+- reprocessar é seguro, porque todos os efeitos são idempotentes (PD-10.4).
+
+**O que não muda:** a regra de PD-10.3, a recusa ao lease por instante de vencimento **como garantia** e a proibição de `pg_advisory_lock` de sessão (DEC-038, decisão 6). O instante reclamado não substitui o `SKIP LOCKED`, e a corretude continua nas transições condicionadas.
+
+**PD-10.8 (implementação, F3-008, [#98](https://github.com/BrunoMNoronha/techlab-troq/issues/98), 2026-10-01).** Como a seção 10 foi materializada:
+
+1. **Rotas:** `GET /api/jobs/payments-reconcile` e `GET /api/jobs/payments-refund-retry`, descritas em [environments.md](../engineering/environments.md), seção 5.7.
+   - `runtime nodejs` e `maxDuration` de 300 s;
+   - param de reclamar lotes novos aos 180 s e de começar casos já reclamados aos 240 s;
+   - o que sobra volta no instante reclamado.
+2. **Reconciliação** (`src/modules/request/reconciliation.ts`; a reclamação é de `payments`). Elegíveis: `tentativa_criada`, `aguardando_pagamento`, `em_confirmacao`, `inconsistente` e qualquer tentativa com caso `pendente`, `divergencia` ou `inconsistente` aberto. A tentativa ativa volta em 4 minutos, para caber na cadência de 5; a apenas reobservada volta em 1 hora. Cada estado segue um caminho:
+   - **aberta:** `confirmPaymentFlow` com origem `reconciliacao`, a mesma rotina do webhook (T-5);
+   - **aberta de solicitação `failed`:** cancelamento de PD-8.10. Se a order já acreditou, a confirmação aplica RT-3;
+   - **`tentativa_criada` de reserva viva:** nada; o solicitante retoma;
+   - **`tentativa_criada` com a janela vencida:** busca **só de leitura** por `GET /v1/orders?begin_date&end_date&external_reference`, que a referência oficial da Orders API documenta (conferida em 2026-10-01). Exatamente uma order dessa referência é registrada como o passo 3 faria e segue a confirmação. Mais de uma, ou order de outra tentativa, abre `inconsistente`. Sem resultado, nada é inventado: a order é procurada de novo de hora em hora no primeiro dia e, depois, diariamente;
+   - **`inconsistente` ou com caso aberto:** só reobserva (`observeAttempt`) e grava `last_reconcile_result`. Nunca transita, elege, aprova ou fecha caso.
+
+   `reembolso_pendente` é tratado pela retentativa de reembolso. A varredura de reversões é de F3-011.
+3. **Limites da busca de orders:**
+   - **Credencial de teste:** a referência registra `invalid_credentials` para credencial de teste, e a busca **não** foi exercitada na sandbox nesta entrega. Na prova, o contrato foi conferido contra o provedor simulado.
+   - **Atraso de indexação:** é desconhecido. Erro ou falta de resultado só adiam a busca e nunca concluem que a order não existe.
+   - **Volume:** tentativas `tentativa_criada` abandonadas sem order continuam sendo procuradas uma vez por dia, sem prazo final. Encerrar essa procura exige decisão (Fase 4 ou F3-013).
+4. **Retentativa:** recuo e N em PD-3.5, códigos em PD-8.5.
 
 ## 11. Segurança
 

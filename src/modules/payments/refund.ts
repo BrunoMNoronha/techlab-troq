@@ -32,11 +32,31 @@ import {
 export type RefundRunOutcome =
   'concluded' | 'already_concluded' | 'retrying' | 'operational' | 'inconsistent' | 'not_found';
 
+// Retentativa automatica (F3-008, #98; PD-3.4, PD-3.5). Depois da k-esima falha
+// transitoria, a proxima tentativa fica para 2^(k-1) horas depois (1 h, 2 h,
+// 4 h, 8 h, 16 h e, dai em diante, 24 h), gravado em `next_attempt_at` no mesmo
+// UPDATE que registra a falha. Na REFUND_MAX_ATTEMPTS-esima tentativa sem
+// sucesso, o reembolso vai a `pendente_operacional` e o caso `reembolso_pendente`
+// continua ABERTO: esgotar tentativas nunca fecha caso (PD-3.5, PE-7.10).
+//
+// 8 tentativas cobrem ~79 h (1+2+4+8+16+24+24) desde a primeira: mais que um
+// fim de semana para reposicao de saldo (PE-7.8) e muito mais que um incidente
+// tipico do provedor, ainda longe do prazo de 180 dias (PD-8.7). Ajustavel por
+// medicao, sem nova decisao (ADR-0006, decisao 12).
+export const REFUND_MAX_ATTEMPTS = 8;
+export const REFUND_BACKOFF_CAP_HOURS = 24;
+
+/** Recuo depois da k-esima falha (k >= 1), em horas. */
+export function refundBackoffHours(failures: number): number {
+  return Math.min(2 ** Math.max(failures - 1, 0), REFUND_BACKOFF_CAP_HOURS);
+}
+
 interface RefundRow {
   id: string;
   status: string;
   hypothesis: string;
   idempotencyKey: string;
+  attemptCount: number;
   providerPaymentId: string;
   amountCents: number;
   isCanonical: boolean;
@@ -49,6 +69,7 @@ async function readRefund(refundId: string): Promise<RefundRow | null> {
   const [row] = await getPrismaClient().$queryRaw<RefundRow[]>`
     SELECT tr."id"::text AS "id", tr."status"::text AS "status",
            tr."hypothesis"::text AS "hypothesis", tr."idempotency_key" AS "idempotencyKey",
+           tr."attempt_count" AS "attemptCount",
            p."provider_payment_id" AS "providerPaymentId", p."amount_cents" AS "amountCents",
            p."is_canonical" AS "isCanonical",
            pa."id"::text AS "attemptId", pa."status"::text AS "attemptStatus",
@@ -64,27 +85,42 @@ type Next = 'concluido' | 'falhou_retentando' | 'pendente_operacional';
 
 /**
  * Registra UMA tentativa e o desfecho, condicionado a o reembolso ainda estar
- * aberto: execucoes concorrentes nao reabrem um reembolso concluido.
+ * aberto: execucoes concorrentes nao reabrem um reembolso concluido. Falha
+ * transitoria grava o proximo instante (recuo exponencial) e, na ultima
+ * tentativa automatica, vira `pendente_operacional` no MESMO UPDATE. Devolve o
+ * estado gravado, ou `null` se o reembolso ja nao estava aberto.
  */
 async function recordAttempt(
   refund: RefundRow,
   next: Next,
   result: string,
   extra: { providerRefundId?: string | null; inconsistency?: string } = {},
-): Promise<boolean> {
+): Promise<Next | null> {
   return getPrismaClient().$transaction(async (tx) => {
     const [{ at }] = await tx.$queryRaw<{ at: Date }[]>`SELECT now() AS "at"`;
-    const updated = await tx.$executeRaw`
+    const [row] = await tx.$queryRaw<{ status: Next; exhausted: boolean }[]>`
       UPDATE "technical_refunds"
-      SET "status" = ${next}::"technical_refund_status",
+      SET "status" = (CASE
+            WHEN ${next}::text = 'falhou_retentando'
+              AND "attempt_count" + 1 >= ${REFUND_MAX_ATTEMPTS}::int
+              THEN 'pendente_operacional'
+            ELSE ${next}::text END)::"technical_refund_status",
           "attempt_count" = "attempt_count" + 1,
           "last_attempt_at" = ${at},
           "last_attempt_result" = ${result.slice(0, 64)},
+          "next_attempt_at" = (CASE
+            WHEN ${next}::text = 'falhou_retentando'
+              AND "attempt_count" + 1 < ${REFUND_MAX_ATTEMPTS}::int
+              THEN ${at}::timestamptz + make_interval(
+                hours => LEAST(power(2, LEAST("attempt_count", 5))::int, ${REFUND_BACKOFF_CAP_HOURS}::int))
+            ELSE NULL END),
           "provider_refund_id" = COALESCE(${extra.providerRefundId ?? null}, "provider_refund_id"),
           "concluded_at" = ${next === 'concluido' ? at : null},
           "updated_at" = ${at}
-      WHERE "id" = ${refund.id}::uuid AND "status" IN ('pendente', 'falhou_retentando')`;
-    if (updated === 0) return false;
+      WHERE "id" = ${refund.id}::uuid AND "status" IN ('pendente', 'falhou_retentando')
+      RETURNING "status"::text AS "status",
+                (${next}::text = 'falhou_retentando' AND "status" = 'pendente_operacional') AS "exhausted"`;
+    if (!row) return null;
     await recordAuditEvent(tx, {
       eventType: 'payment.refund_attempted',
       actorId: null,
@@ -92,7 +128,12 @@ async function recordAttempt(
       targetId: refund.id,
       result: next === 'concluido' ? 'success' : 'failure',
       occurredAt: at,
-      details: { hypothesis: refund.hypothesis, status: next, result: result.slice(0, 64) },
+      details: {
+        hypothesis: refund.hypothesis,
+        status: row.status,
+        result: result.slice(0, 64),
+        ...(row.exhausted ? { exhausted: true, maxAttempts: REFUND_MAX_ATTEMPTS } : {}),
+      },
     });
     if (extra.inconsistency) {
       await openCaseInTx(tx, {
@@ -103,8 +144,17 @@ async function recordAttempt(
       });
     }
     if (next === 'concluido') await settleAttempt(tx, refund, at);
-    return true;
+    return row.status;
   });
+}
+
+/** Falha transitoria: retenta com recuo, ou escala se esta era a ultima tentativa. */
+async function recordTransientFailure(
+  refund: RefundRow,
+  result: string,
+): Promise<RefundRunOutcome> {
+  const status = await recordAttempt(refund, 'falhou_retentando', result);
+  return status === 'pendente_operacional' ? 'operational' : 'retrying';
 }
 
 /**
@@ -152,6 +202,12 @@ export async function processTechnicalRefund(
   if (!refund) return 'not_found';
   if (refund.status === 'concluido') return 'already_concluded';
   if (refund.status === 'pendente_operacional') return 'operational';
+  if (refund.attemptCount >= REFUND_MAX_ATTEMPTS) {
+    // Tentativas automaticas ja esgotadas (por exemplo, execucao interrompida
+    // depois da ultima): escala sem chamar o provedor de novo. Caso aberto.
+    await escalateExhaustedRefund(refund);
+    return 'operational';
+  }
 
   // Nunca devolve o canonico de uma solicitacao paga (PE-3.2, PD-7.3).
   if (refund.isCanonical && refund.attemptStatus === 'pagamento_confirmado') {
@@ -175,8 +231,7 @@ export async function processTechnicalRefund(
         });
         return 'inconsistent';
       }
-      await recordAttempt(refund, 'falhou_retentando', `order_${order.kind}`);
-      return 'retrying';
+      return recordTransientFailure(refund, `order_${order.kind}`);
     }
 
     const transactions = order.value.payments.map((p) => p.providerPaymentId);
@@ -213,11 +268,12 @@ export async function processTechnicalRefund(
       return 'concluded';
     }
     if (result.kind === 'unavailable') {
-      await recordAttempt(refund, 'falhou_retentando', `refund_${result.reason}`);
-      return 'retrying';
+      return recordTransientFailure(refund, `refund_${result.reason}`);
     }
     // PD-8.5: `order_not_found` e erro nao mapeado abrem inconsistencia. Os
-    // codigos de saldo insuficiente e de 180 dias nao estao confirmados.
+    // codigos de saldo insuficiente e de 180 dias NAO constam da lista de erros
+    // oficial de `POST /v1/orders/{id}/refund` (conferida em 2026-10-01, F3-008):
+    // sem fonte, nao ha mapeamento proprio e ambos caem aqui.
     const code = result.kind === 'not_found' ? 'order_not_found' : result.code;
     await recordAttempt(refund, 'pendente_operacional', `refund_rejected_${code}`, {
       inconsistency: `refund_rejected_${code}`.slice(0, 64),
@@ -225,11 +281,37 @@ export async function processTechnicalRefund(
     return 'inconsistent';
   } catch (err) {
     if (err instanceof MercadoPagoConfigError) {
-      await recordAttempt(refund, 'falhou_retentando', 'configuration');
-      return 'retrying';
+      return recordTransientFailure(refund, 'configuration');
     }
     throw err;
   }
+}
+
+/** Escala para `pendente_operacional` sem nova chamada; o caso continua aberto. */
+async function escalateExhaustedRefund(refund: RefundRow): Promise<void> {
+  await getPrismaClient().$transaction(async (tx) => {
+    const [{ at }] = await tx.$queryRaw<{ at: Date }[]>`SELECT now() AS "at"`;
+    const updated = await tx.$executeRaw`
+      UPDATE "technical_refunds"
+      SET "status" = 'pendente_operacional', "next_attempt_at" = NULL, "updated_at" = ${at}
+      WHERE "id" = ${refund.id}::uuid AND "status" IN ('pendente', 'falhou_retentando')`;
+    if (updated === 0) return;
+    await recordAuditEvent(tx, {
+      eventType: 'payment.refund_attempted',
+      actorId: null,
+      targetType: 'technical_refund',
+      targetId: refund.id,
+      result: 'failure',
+      occurredAt: at,
+      details: {
+        hypothesis: refund.hypothesis,
+        status: 'pendente_operacional',
+        result: 'retries_exhausted',
+        exhausted: true,
+        maxAttempts: REFUND_MAX_ATTEMPTS,
+      },
+    });
+  });
 }
 
 /** Primeira tentativa (ou retentativa) de todos os reembolsos abertos da tentativa. */

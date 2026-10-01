@@ -520,6 +520,14 @@ model PaymentAttempt {
   /// PD-5.2 / PD-8.10 — chave do cancelamento da order, gerada na primeira
   /// tentativa e RELIDA nas seguintes (F3-007).
   cancelIdempotencyKey String?              @unique @map("cancel_idempotency_key")
+  /// F3-008 — reconciliacao periodica (PD-10.7, nota de 2026-10-01): a
+  /// reclamacao por `FOR UPDATE SKIP LOCKED` avanca este instante e commita;
+  /// so entao a tentativa e processada. NULL: elegivel ja.
+  nextReconcileAt      DateTime?            @map("next_reconcile_at") @db.Timestamptz(6)
+  /// Ultima observacao da reconciliacao, para diagnostico (PD-10.4). Nunca
+  /// segredo nem resposta crua do provedor: so um codigo fechado.
+  lastReconciledAt     DateTime?            @map("last_reconciled_at") @db.Timestamptz(6)
+  lastReconcileResult  String?              @map("last_reconcile_result")
   createdAt            DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt            DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
 
@@ -529,6 +537,7 @@ model PaymentAttempt {
   reconciliationCases ReconciliationCase[]
 
   @@index([status])
+  @@index([status, nextReconcileAt])
   @@map("payment_attempts")
 }
 
@@ -570,6 +579,10 @@ model TechnicalRefund {
   attemptCount      Int                       @default(0) @map("attempt_count")
   lastAttemptAt     DateTime?                 @map("last_attempt_at") @db.Timestamptz(6)
   lastAttemptResult String?                   @map("last_attempt_result")
+  /// F3-008 — recuo exponencial PERSISTIDO (PD-3.4, PD-3.5): a falha grava o
+  /// proximo instante, e a reclamacao por `SKIP LOCKED` o avanca antes de
+  /// processar. NULL: elegivel ja.
+  nextAttemptAt     DateTime?                 @map("next_attempt_at") @db.Timestamptz(6)
   providerRefundId  String?                   @map("provider_refund_id")
   concludedAt       DateTime?                 @map("concluded_at") @db.Timestamptz(6)
   createdAt         DateTime                  @default(now()) @map("created_at") @db.Timestamptz(6)
@@ -578,6 +591,7 @@ model TechnicalRefund {
   payment Payment @relation(fields: [paymentId], references: [id], onDelete: Restrict)
 
   @@index([status])
+  @@index([status, nextAttemptAt])
   @@map("technical_refunds")
 }
 

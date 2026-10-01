@@ -9,6 +9,7 @@ export {
   type GatewayResult,
   type MercadoPagoClient,
   type MercadoPagoClientOptions,
+  type OrderSearchWindow,
   type PixChargeCreated,
   type RefundOutcome,
   type RefundTransaction,
