@@ -104,6 +104,8 @@ Fontes: [../product/mvp-scope.md](../product/mvp-scope.md), [../product/requirem
 
 **Objetivo:** implementar o núcleo monetizado: solicitação paga, limite de 3, escolha e liberação de contato.
 
+**Estado em 2026-10-01:** fase liberada, **decomposta e não iniciada**. F3-000 abriu as issues executoras [#91](https://github.com/BrunoMNoronha/techlab-troq/issues/91) a [#105](https://github.com/BrunoMNoronha/techlab-troq/issues/105) (F3-001 a F3-015) e registrou o inventário de desvio, as decisões pendentes e a rastreabilidade deste gate em [phase-3-plan.md](phase-3-plan.md). A próxima entrega é #91 (F3-001). O parágrafo seguinte é o registro de 2026-09-29.
+
 **Estado em 2026-09-29:** nenhuma entrega implementada. `payments` e `contact` são fronteiras vazias; `request` tem apenas a entrada de leitura integrada por #60, que exige login e elegibilidade e devolve `request_unavailable`, **sem** criar solicitação, reservar vaga, cobrar ou liberar contato.
 
 **Principais entregáveis:**
