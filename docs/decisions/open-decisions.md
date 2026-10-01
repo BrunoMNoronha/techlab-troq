@@ -11,14 +11,7 @@ Registro das questões que **ainda não foram decididas** (criado na Fase 0; rea
 
 ## Lista de decisões abertas
 
-**Quatro decisões abertas desde 2026-10-01**: OD-13 a OD-15, registradas por F3-001 ([#91](https://github.com/BrunoMNoronha/techlab-troq/issues/91)) a partir do inventário de [../delivery/phase-3-plan.md](../delivery/phase-3-plan.md), e OD-16, registrada por F3-004 ([#94](https://github.com/BrunoMNoronha/techlab-troq/issues/94)). Nenhuma delas reabre decisão vigente: cada uma é uma questão que as fontes atuais não respondem e que muda o que a Fase 3 implementa ou como o seu gate é provado. Todas são do Bruno.
-
-### OD-13 — Contato do anunciante como pré-condição
-
-- **Contexto:** RB-001 libera o contato do anunciante ao escolhido com pagamento aprovado. Nada impede hoje que um anúncio seja publicado, receba solicitações pagas e tenha um escolhido sem que o anunciante tenha cadastrado contato (`UserContact`, [../architecture/data-model.md](../architecture/data-model.md), DM-4.1). O escolhido pagaria R$ 0,99 e não receberia nada. RB-004 diz que a cobrança é definitiva quando o solicitante **não** é escolhido; não trata o escolhido sem contato a receber.
-- **O que falta decidir:** se o contato cadastrado é pré-condição e de quê — publicar (T1) e reativar (T4), aceitar nova solicitação, escolher, ou combinação —, e o que acontece com anúncios já publicados sem contato.
-- **Recomendação (F3-000):** exigir contato cadastrado, no servidor, antes de aceitar nova solicitação no anúncio, e orientar o anunciante no painel. Isso protege o solicitante sem mudar a máquina de estados do anúncio. Se preferir exigir na publicação, a regra entra em T1/T4 de [../product/listing-lifecycle.md](../product/listing-lifecycle.md).
-- **Bloqueia:** a parte de pré-condição de [#92](https://github.com/BrunoMNoronha/techlab-troq/issues/92) (F3-002); o cadastro do contato não depende dela.
+**Três decisões abertas**: OD-14 e OD-15, registradas em 2026-10-01 por F3-001 ([#91](https://github.com/BrunoMNoronha/techlab-troq/issues/91)) a partir do inventário de [../delivery/phase-3-plan.md](../delivery/phase-3-plan.md), e OD-16, registrada por F3-004 ([#94](https://github.com/BrunoMNoronha/techlab-troq/issues/94)). Nenhuma delas reabre decisão vigente: cada uma é uma questão que as fontes atuais não respondem e que muda o que a Fase 3 implementa ou como o seu gate é provado. Todas são do Bruno. OD-13, aberta na mesma data, foi fechada em 2026-10-01 por [../product/advertiser-contact.md](../product/advertiser-contact.md) (DEC-040), na execução de F3-002 ([#92](https://github.com/BrunoMNoronha/techlab-troq/issues/92)).
 
 ### OD-14 — Limite de reservas não pagas por conta
 
@@ -72,6 +65,7 @@ Itens que já constaram desta lista e foram fechados por documento próprio. O I
 | OD-10 | Retenção e exclusão de dados | [../product/data-retention-policy.md](../product/data-retention-policy.md) | DEC-033 em [decision-log.md](decision-log.md) |
 | OD-11 | Elegibilidade etária formal | [../product/age-eligibility.md](../product/age-eligibility.md) | DEC-034 em [decision-log.md](decision-log.md) |
 | OD-12 | Natureza da demonstração de interesse | [../product/interest-flow.md](../product/interest-flow.md) | DEC-035 em [decision-log.md](decision-log.md) |
+| OD-13 | Contato do anunciante como pré-condição | [../product/advertiser-contact.md](../product/advertiser-contact.md) | DEC-040 em [decision-log.md](decision-log.md) |
 
 ## Itens explicitamente fora desta lista
 

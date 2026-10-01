@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { Prisma } from '@/generated/prisma/client';
 import { recordAuditEvent } from '@/modules/audit';
+import { hasContact } from '@/modules/contact';
 import { validateSession, type SessionValidationResult } from '@/modules/identity';
 import { lockListingForRequest } from '@/modules/listing';
 import { createPaymentAttempt } from '@/modules/payments';
@@ -11,10 +12,11 @@ import { getPrismaClient } from '@/persistence/prisma';
 //
 // Uma unica transacao, nesta ordem: trava de linha do anuncio (DM-6.12) ->
 // anuncio `published` lido depois da trava (DM-6.9) -> o ator nao e o dono ->
-// `now()` do banco -> expira as reservas vencidas do anuncio (DM-6.3, passo 2)
-// -> menor `slotIndex` livre ou recusa (RB-003) -> `ContactRequest` em
-// `reserved` por 30 minutos (PD-3.1) -> `PaymentAttempt` com a chave
-// persistida (modulo `payments`, AR-3.5) -> auditoria -> COMMIT.
+// anunciante com contato cadastrado (DEC-040) -> `now()` do banco -> expira
+// as reservas vencidas do anuncio (DM-6.3, passo 2) -> menor `slotIndex`
+// livre ou recusa (RB-003) -> `ContactRequest` em `reserved` por 30 minutos
+// (PD-3.1) -> `PaymentAttempt` com a chave persistida (modulo `payments`,
+// AR-3.5) -> auditoria -> COMMIT.
 //
 // A GARANTIA de no maximo tres e o indice unico parcial
 // `contact_requests_listing_slot_occupied_key` (DM-6.2); a trava so serializa
@@ -35,6 +37,7 @@ export type ContactRequestFailureReason =
   | 'account_restricted'
   | 'unavailable'
   | 'own_listing'
+  | 'not_accepting'
   | 'no_slots'
   | 'error';
 
@@ -50,6 +53,9 @@ const MESSAGES: Record<ContactRequestFailureReason, string> = {
   // mesma resposta, sem revelar existencia nem estado (listing-lifecycle.md, 9).
   unavailable: 'Este anúncio não está disponível para solicitações.',
   own_listing: 'Você não pode solicitar o contato do próprio anúncio.',
+  // Anunciante sem contato cadastrado (DEC-040). A mensagem nao revela o motivo:
+  // o solicitante so precisa saber que o anuncio nao aceita solicitacao agora.
+  not_accepting: 'Este anúncio não está aceitando solicitações no momento.',
   no_slots: 'As vagas de solicitação deste anúncio estão ocupadas no momento.',
   error: 'Não foi possível concluir a solicitação. Tente novamente.',
 };
@@ -172,6 +178,9 @@ async function allocate(
       const listing = await lockListingForRequest(tx, listingId);
       if (!listing || listing.status !== 'published') throw new ReservationAbort('unavailable');
       if (listing.ownerId === requesterId) throw new ReservationAbort('own_listing');
+      // DEC-040 (OD-13): sem contato do anunciante, o escolhido pagaria e nao
+      // teria o que receber. Lido sob a trava, pela fronteira de `contact`.
+      if (!(await hasContact(tx, listing.ownerId))) throw new ReservationAbort('not_accepting');
 
       // Um unico instante para o efeito e seus registros: o `now()` da transacao
       // (DM-6.12, item 4). `@default(now())` do Prisma e preenchido no cliente.

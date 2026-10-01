@@ -12,7 +12,11 @@
 //   inexistente e malformado, inclusive para o proprio dono;
 // - `Cache-Control` nunca publico;
 // - depois de T3 (pausa) e T5 (encerramento) com o detalhe e a midia ja
-//   requisitados, a proxima requisicao e 404, e /media deixa de servir.
+//   requisitados, a proxima requisicao e 404, e /media deixa de servir;
+// - C-1 (contact-release.md; F3-002, #92): o contato dos donos e gravado pela
+//   operacao real de `contact`, na forma canonica E.164, e nenhuma resposta
+//   publica -- corpo nem cabecalhos de HTML, RSC, metadados e /media -- contem
+//   o numero em nenhuma variante de escrita.
 //
 // Execucao (docs/engineering/testing.md): o servidor e o teste usam o MESMO
 // banco efemero e o MESMO BETTER_AUTH_SECRET. So roda com
@@ -23,6 +27,7 @@ import { DeleteObjectCommand, ListObjectsV2Command, S3Client } from '@aws-sdk/cl
 import sharp from 'sharp';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import type { ListingStatus, UserStatus } from '@/generated/prisma/client';
+import { registerOwnContact } from '@/modules/contact';
 import { registerUser } from '@/modules/identity/actions';
 import { getAuth } from '@/modules/identity/auth';
 import { closeListing } from '@/app/anuncios/actions';
@@ -49,8 +54,24 @@ vi.setConfig({ testTimeout: 180_000, hookTimeout: 180_000 });
 const RUN_ID = `${Date.now()}-${randomBytes(3).toString('hex')}`;
 const CITY = `Cidade Http ${RUN_ID}`;
 const PASSWORD = 'senha-sintetica-123';
+// Contato sintetico (PD-13.3). PHONE e a entrada; PHONE_E164, o que o banco guarda.
 const PHONE = '+55 11 90000-0000';
+const PHONE_E164 = '+5511900000000';
 const PHONE_DIGITS = '11900000000';
+/** C-1: toda forma de escrita do numero que uma resposta poderia carregar. */
+const PHONE_VARIANTS = [
+  PHONE,
+  PHONE_E164,
+  PHONE_E164.slice(1),
+  PHONE_DIGITS,
+  '(11) 90000-0000',
+  '(11) 900000000',
+  '11 90000-0000',
+  '90000-0000',
+  '%2B5511900000000',
+  // `+` escapado como em JSON/RSC.
+  '\\u002B5511900000000',
+];
 const emails = {
   owner: `sintetico-dono-${RUN_ID}@example.test`,
   third: `sintetico-terceiro-${RUN_ID}@example.test`,
@@ -82,9 +103,21 @@ async function registerVerified(email: string): Promise<string> {
     where: { id },
     data: { emailVerified: true, emailVerifiedAt: new Date() },
   });
-  await prisma.userContact.create({ data: { userId: id, phoneNumber: PHONE } });
   userIds.push(id);
   return id;
+}
+
+/** Contato pela operacao real de `contact` (CR-2.2), com a sessao do proprio dono. */
+async function registerContact(cookie: string) {
+  actionCookie = cookie;
+  try {
+    expect(await registerOwnContact({ phone: PHONE })).toEqual({
+      success: true,
+      hasContact: true,
+    });
+  } finally {
+    actionCookie = '';
+  }
 }
 
 async function signIn(email: string): Promise<string> {
@@ -111,7 +144,8 @@ async function createBlockedOwner(status: UserStatus): Promise<string> {
     select: { id: true },
   });
   userIds.push(id);
-  await prisma.userContact.create({ data: { userId: id, phoneNumber: PHONE } });
+  // Conta inelegivel nao tem sessao para a operacao: fixture ja canonica.
+  await prisma.userContact.create({ data: { userId: id, phoneNumber: PHONE_E164 } });
   await prisma.user.update({ where: { id }, data: { status } });
   return id;
 }
@@ -189,7 +223,22 @@ async function fetchPage(path: string, opts: { cookie?: string; rsc?: boolean } 
     body: await res.text(),
     cacheControl: res.headers.get('cache-control') ?? '',
     contentType: res.headers.get('content-type') ?? '',
+    headerText: serializeHeaders(res.headers),
   };
+}
+
+function serializeHeaders(headers: Headers): string {
+  return [...headers.entries()].map(([k, v]) => `${k}: ${v}`).join('\n');
+}
+
+/** C-1: nenhuma variante do numero, em nenhum campo nem nivel de aninhamento. */
+function expectNoContact(label: string, ...parts: string[]) {
+  const all = parts.join('\n');
+  for (const variant of PHONE_VARIANTS) {
+    expect(all.includes(variant), `${label} contem o contato (${variant.length} caracteres)`).toBe(
+      false,
+    );
+  }
 }
 
 /** Texto sem os separadores `<!-- -->` que o React insere entre nos de texto. */
@@ -258,9 +307,17 @@ describe.skipIf(!enabled)('superficies publicas por HTTP real (#49, D-13)', () =
       .toBuffer();
 
     owner = await registerVerified(emails.owner);
-    await registerVerified(emails.third);
+    const third = await registerVerified(emails.third);
     ownerCookie = await signIn(emails.owner);
     thirdCookie = await signIn(emails.third);
+    await registerContact(ownerCookie);
+    await registerContact(thirdCookie);
+    // Sanidade de C-1: o que esta no banco e a forma canonica, e e ela que se procura.
+    const stored = await getPrismaClient().userContact.findMany({
+      where: { userId: { in: [owner, third] } },
+      select: { phoneNumber: true },
+    });
+    expect(stored.map((c) => c.phoneNumber)).toEqual([PHONE_E164, PHONE_E164]);
 
     visible = await createListing(owner, 'published', `Visivel ${RUN_ID}`);
     readyImage = await addImage(visible, 1, 'ready');
@@ -284,9 +341,7 @@ describe.skipIf(!enabled)('superficies publicas por HTTP real (#49, D-13)', () =
     }
 
     forbidden = [
-      PHONE,
-      PHONE_DIGITS,
-      '90000-0000',
+      ...PHONE_VARIANTS,
       ...userIds,
       ...Object.values(hidden),
       pendingImage,
@@ -387,6 +442,7 @@ describe.skipIf(!enabled)('superficies publicas por HTTP real (#49, D-13)', () =
           expect(page.status, label).toBe(200);
           if (rsc) expect(page.contentType, label).toContain('text/x-component');
           expectClean(label, page.body, who === 'dono');
+          expectNoContact(label, page.body, page.headerText);
           expectNotPublicCache(label, page);
         }
       }
@@ -424,6 +480,27 @@ describe.skipIf(!enabled)('superficies publicas por HTTP real (#49, D-13)', () =
     expect(page.body).toContain(`/media/${readyImage}/large`);
     expect(page.body).toContain(`Imagem 1 de 1: Visivel ${RUN_ID}`);
     expect(page.body).not.toContain(pendingImage);
+    // C-1 nos metadados: <head> inteiro (title, description, og:*, viewport).
+    const head = page.body.slice(0, page.body.indexOf('</head>'));
+    expect(head.length).toBeGreaterThan(0);
+    expectNoContact('metadados do detalhe', head);
+  });
+
+  it('C-1: /media do anuncio do dono com contato nao carrega o numero', async () => {
+    for (const [who, cookie] of viewers()) {
+      for (const kind of MEDIA_KINDS) {
+        const res = await fetch(`${BASE_URL}/media/${readyImage}/${kind}`, {
+          headers: cookie ? { cookie } : {},
+          redirect: 'manual',
+        });
+        const label = `${who} /media ${kind}`;
+        // Sem R2 nao ha bytes para servir; com R2 a imagem e servida. Nos dois
+        // casos, nem o corpo nem os cabecalhos carregam o contato.
+        if (withR2) expect(res.status, label).toBe(200);
+        const body = Buffer.from(await res.arrayBuffer()).toString('latin1');
+        expectNoContact(label, body, serializeHeaders(res.headers));
+      }
+    }
   });
 
   it('404 identico para nao visivel, inexistente e malformado, para qualquer visitante', async () => {

@@ -30,6 +30,7 @@ describe('ContactRequestEntry (#59)', () => {
     ['account_restricted', /suspensa ou em exclusão/i],
     ['own_listing', /este anúncio é seu/i],
     ['no_slots', /vagas de solicitação deste anúncio estão ocupadas/i],
+    ['not_accepting', /não está aceitando solicitações no momento/i],
   ] as const)('estado %s informa o motivo sem acao de solicitacao', (state, message) => {
     render(<ContactRequestEntry listingId={LISTING_ID} state={state} />);
 
