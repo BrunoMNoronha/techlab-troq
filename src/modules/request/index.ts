@@ -29,3 +29,11 @@ export type {
   PaymentConfirmationOptions,
   PaymentConfirmationOutcome,
 } from './payment-confirmation';
+// F3-008 (#98): reconciliacao periodica, pela mesma rotina do webhook.
+export { reconcileAttempt, runPaymentReconciliation } from './reconciliation';
+export type {
+  ReconcileOutcome,
+  ReconcileResult,
+  ReconciliationOptions,
+  ReconciliationSummary,
+} from './reconciliation';

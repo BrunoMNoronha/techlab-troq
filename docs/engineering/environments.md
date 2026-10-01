@@ -233,9 +233,21 @@ O identificador da aplicação conferido antes do HMAC ([../architecture/payment
 
 | Variável | Ambientes | Classificação | Obrigatoriedade | Estado | Origem |
 | --- | --- | --- | --- | --- | --- |
-| `CRON_SECRET` | os três | server-side — **segredo** | obrigatória onde houver trabalho periódico | **consumido** por `src/app/api/jobs/_lib/cron-auth.ts`, usado por `/api/jobs/media-process` (F2-008) e `/api/jobs/media-cleanup` (F2-009); ausente → toda chamada recebe `401` | Segredo que protege os **endpoints de trabalho periódico**. A plataforma de agendamento o envia automaticamente como cabeçalho `Authorization`, e o próprio endpoint o compara ([../adr/0006-async-work-scheduling-concurrency.md](../adr/0006-async-work-scheduling-concurrency.md), fato V-5 e decisão 9). O nome é a convenção documentada da plataforma (regra 4 da seção 4) |
+| `CRON_SECRET` | os três | server-side — **segredo** | obrigatória onde houver trabalho periódico | **consumido** por `src/app/api/jobs/_lib/cron-auth.ts`, usado por `/api/jobs/media-process` (F2-008), `/api/jobs/media-cleanup` (F2-009), `/api/jobs/payments-reconcile` e `/api/jobs/payments-refund-retry` (F3-008); ausente → toda chamada recebe `401` | Segredo que protege os **endpoints de trabalho periódico**. A plataforma de agendamento o envia automaticamente como cabeçalho `Authorization`, e o próprio endpoint o compara ([../adr/0006-async-work-scheduling-concurrency.md](../adr/0006-async-work-scheduling-concurrency.md), fato V-5 e decisão 9). O nome é a convenção documentada da plataforma (regra 4 da seção 4) |
 
 **Por que é obrigatório.** Os endpoints de reconciliação, reembolso e resolução de inconsistência existem **apenas** como trabalho periódico protegido, e nenhuma superfície de cliente os aciona ([../architecture/payments-design.md](../architecture/payments-design.md), PD-11.4, CI-11). Um endpoint de trabalho sem segredo é um caminho anônimo para operações financeiras: a recusa na ausência do segredo é incondicional (DEC-038, decisão 9).
+
+**Rotas de trabalho periódico de pagamento (F3-008, [#98](https://github.com/BrunoMNoronha/techlab-troq/issues/98), 2026-10-01).**
+
+| Rota | Cadência contratual | O que faz |
+| --- | --- | --- |
+| `GET /api/jobs/payments-reconcile` | 5 minutos (PD-3.4) | Reconcilia tentativas não terminais, o cancelamento pendente de PD-8.10, a order perdida de `tentativa_criada` e reobserva inconsistências |
+| `GET /api/jobs/payments-refund-retry` | 1 hora, com recuo por caso (PD-3.4, PD-3.5) | Retenta reembolsos `pendente` e `falhou_retentando` vencidos |
+
+- **Invocação autenticada:** `GET` com `Authorization: Bearer <CRON_SECRET>` do próprio ambiente. Qualquer outra forma recebe `401` sem corpo e com `Cache-Control: no-store`: sem cabeçalho, segredo errado, esquema diferente de `Bearer` ou só cookie de sessão. A recusa é idêntica com ou sem segredo configurado.
+- **Resposta:** `200` com JSON só de contagens, por exemplo `claimed`, `confirmed`, `retrying` e `errors`. Nunca leva id de order, chave de idempotência, segredo ou detalhe do provedor.
+- **Agendamento:** **não** há `crons` em `vercel.json`. No Hobby, a cadência de 5 minutos faria o deployment falhar. O critério de prova da Fase 3 é a invocação autenticada (DEC-042; ADR-0006, decisão 11).
+- **Sem credencial:** sem `MERCADO_PAGO_ACCESS_TOKEN`, como em `preview`, as rotas reclamam e falham fechadas. A tentativa fica `unavailable`, e o reembolso vai a `falhou_retentando` com resultado `configuration`. Nada é concedido nem fechado.
 
 **Distinção que não deve ser perdida.** O endpoint de **webhook** do gateway não usa `CRON_SECRET` e não tem autorização de sessão: ele é público por natureza e a sua única autorização é a **assinatura** da notificação (PD-11.4). Proteger o webhook com `CRON_SECRET` seria impossível — quem chama é o provedor — e proteger o trabalho periódico apenas por assinatura seria insuficiente.
 

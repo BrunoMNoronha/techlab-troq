@@ -11,7 +11,9 @@ import { centsToDecimal, toIsoDuration } from './values';
 // Cliente HTTP da Orders API (ADR-0004, decisoes 3, 5, 7 e 11; payments-design.md,
 // PD-4.1 passo 2, PD-5.3, PD-8.3 a PD-8.5, PD-6.9). `fetch` nativo, sem SDK.
 // Unica leitura fora da Orders API: a busca de pagamentos da Payments API, so
-// para o instante de acreditacao (ADR-0008).
+// para o instante de acreditacao (ADR-0008). A busca de orders por
+// `external_reference` (`GET /v1/orders`) e da propria Orders API e so serve a
+// reconciliacao, para achar a order de uma tentativa que nao a registrou (F3-008).
 //
 // - Toda escrita leva `X-Idempotency-Key` RECEBIDA do chamador: a chave e da
 //   tentativa persistida (PD-5.2) e nunca e gerada aqui.
@@ -26,7 +28,11 @@ const DEFAULT_TIMEOUT_MS = 10_000;
 const ERROR_CODE = /^[a-z0-9_]{1,64}$/i;
 
 export type GatewayFailure =
-  | { ok: false; kind: 'unavailable'; reason: 'network' | 'timeout' | 'server_error' }
+  | {
+      ok: false;
+      kind: 'unavailable';
+      reason: 'network' | 'timeout' | 'server_error' | 'rate_limited' | 'in_process';
+    }
   | { ok: false; kind: 'not_found' }
   | { ok: false; kind: 'rejected'; httpStatus: number; code: string };
 
@@ -52,6 +58,12 @@ export type RefundOutcome = {
   /** Primeiro `transactions.refunds[].id` da resposta (MP-5), se houver. */
   providerRefundId: string | null;
 };
+
+/** Janela de criacao da busca de orders; a Orders API exige as duas datas. */
+export interface OrderSearchWindow {
+  createdFrom: Date;
+  createdTo: Date;
+}
 
 /** Transacao da order a devolver por inteiro (decisao RT-1 do Bruno, F3-007). */
 export interface RefundTransaction {
@@ -226,6 +238,37 @@ export function createMercadoPagoClient(options: MercadoPagoClientOptions = {}) 
       return { ok: true, value: payments };
     },
 
+    /**
+     * `GET /v1/orders?begin_date&end_date&external_reference`: SO LEITURA. Acha a
+     * order de uma tentativa que nao chegou a registra-la (passo 3 de PD-4.1
+     * perdido; F3-008). `begin_date` e `end_date` sao obrigatorios (referencia
+     * oficial conferida em 2026-10-01). Quem chama confere a referencia de cada
+     * resultado e rele a order por `getOrder` antes de qualquer efeito.
+     */
+    async searchOrdersByReference(
+      externalReference: string,
+      window: OrderSearchWindow,
+    ): Promise<GatewayResult<OrderSnapshot[]>> {
+      const query = new URLSearchParams({
+        begin_date: window.createdFrom.toISOString(),
+        end_date: window.createdTo.toISOString(),
+        external_reference: externalReference,
+      });
+      const raw = await call('GET', `/v1/orders?${query.toString()}`, null);
+      if (isFailure(raw)) return raw;
+      if (raw.status !== 200) return fail(raw);
+      const data =
+        typeof raw.body === 'object' && raw.body !== null
+          ? (raw.body as Record<string, unknown>).data
+          : undefined;
+      // 200 sem lista, ou com item sem identificador, nao e resposta interpretavel.
+      const orders = Array.isArray(data) ? data.map(toOrderSnapshot) : null;
+      if (!orders || orders.some((o) => o === null)) {
+        return { ok: false, kind: 'rejected', httpStatus: raw.status, code: 'unmapped' };
+      }
+      return { ok: true, value: orders as OrderSnapshot[] };
+    },
+
     /** `POST /v1/orders/{id}/cancel`: so sem acreditacao (PD-8.3, MP-6). Nao e reembolso. */
     async cancelOrder(
       providerOrderId: string,
@@ -248,6 +291,11 @@ export function createMercadoPagoClient(options: MercadoPagoClientOptions = {}) 
      * de duplicidade sem tocar o canonico (decisao RT-1, F3-007; PE-7.3 lida como
      * "cada pagamento e devolvido por inteiro").
      * `order_already_refunded` e desfecho de SUCESSO, nao erro (PD-8.5, PE-7.11).
+     * Transitorios DOCUMENTADOS na lista de erros desta rota (referencia oficial
+     * conferida em 2026-10-01; F3-008) viram `unavailable`, para a retentativa:
+     * HTTP 429 (`too_many_requests`, `usage_quota_exceeded`) e 409
+     * `order_refund_already_in_process`. Saldo insuficiente e prazo de 180 dias
+     * NAO constam dessa lista: chegam como `rejected` com o codigo bruto.
      */
     async refundOrder(
       providerOrderId: string,
@@ -276,11 +324,16 @@ export function createMercadoPagoClient(options: MercadoPagoClientOptions = {}) 
           value: { refunded: true, alreadyRefunded: false, providerRefundId: refundIdOf(raw.body) },
         };
       }
-      if (errorCode(raw.body) === 'order_already_refunded') {
+      const code = errorCode(raw.body);
+      if (code === 'order_already_refunded') {
         return {
           ok: true,
           value: { refunded: true, alreadyRefunded: true, providerRefundId: null },
         };
+      }
+      if (raw.status === 429) return { ok: false, kind: 'unavailable', reason: 'rate_limited' };
+      if (code === 'order_refund_already_in_process') {
+        return { ok: false, kind: 'unavailable', reason: 'in_process' };
       }
       return fail(raw);
     },

@@ -212,7 +212,19 @@ Não houve achado crítico nem alto. Um achado médio foi corrigido aqui: a reda
 
 O Sentry do navegador chegou ao projeto de `preview`. Achado baixo, fora do gate: depois de pausar ou reativar, o cabeçalho de estado da edição só se atualiza ao recarregar. Pendências fora da fase, com destino, estão na seção V9 da transição: RF-021 restante, exclusão integral (RF-023), retenção executável, hardening, produção, cron e lifecycle do R2 em [#56](https://github.com/BrunoMNoronha/techlab-troq/issues/56); [#76](https://github.com/BrunoMNoronha/techlab-troq/issues/76), [#81](https://github.com/BrunoMNoronha/techlab-troq/issues/81) e [#77](https://github.com/BrunoMNoronha/techlab-troq/issues/77) sem decisão.
 
-**Próximas entregas: [#98](https://github.com/BrunoMNoronha/techlab-troq/issues/98) (F3-008) e [#99](https://github.com/BrunoMNoronha/techlab-troq/issues/99) (F3-009), em paralelo.** F3-007 ([#97](https://github.com/BrunoMNoronha/techlab-troq/issues/97)) entregou em 2026-10-01:
+**Próxima entrega: [#99](https://github.com/BrunoMNoronha/techlab-troq/issues/99) (F3-009).** F3-008 ([#98](https://github.com/BrunoMNoronha/techlab-troq/issues/98)) foi implementado em 2026-10-01, em revisão e com a issue ainda aberta. Entregou:
+- `GET /api/jobs/payments-reconcile` (5 min) e `GET /api/jobs/payments-refund-retry` (1 h), protegidas por `CRON_SECRET` e sem `crons`;
+- a reclamação por `SKIP LOCKED` em transação curta que avança o próximo instante e commita, com processamento depois pelos fluxos existentes (nota de PD-10.7);
+- o cancelamento pendente de PD-8.10 e a order perdida de `tentativa_criada`, achada pela busca de orders;
+- o recuo exponencial persistido e 8 tentativas antes de `pendente_operacional`, com o caso aberto.
+
+T-5 e T-18 foram provados contra PostgreSQL real, provedor simulado e a rota HTTP real.
+
+Pendências da #98:
+- os códigos de saldo insuficiente e de 180 dias **não** constam da referência oficial, e esse critério fica não cumprido (PD-8.5);
+- a invocação **autorizada** em `preview` depende da migration, que o `migrate-preview` só aplica depois do merge.
+
+Registro anterior: as próximas eram #98 e #99, em paralelo. F3-007 ([#97](https://github.com/BrunoMNoronha/techlab-troq/issues/97)) entregou em 2026-10-01:
 - o reembolso técnico com hipótese e chave persistidas no ato da classificação;
 - a duplicidade com canônico eleito uma vez;
 - a devolução do excedente por transação (DEC-044);
