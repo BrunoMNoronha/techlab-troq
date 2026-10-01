@@ -17,7 +17,7 @@ describe('ContactRequestEntry (#59)', () => {
   });
 
   it('usuario elegivel ve indisponibilidade, sem botao que simule solicitacao ou cobranca', () => {
-    render(<ContactRequestEntry listingId={LISTING_ID} state="request_unavailable" />);
+    render(<ContactRequestEntry listingId={LISTING_ID} state="request_available" />);
 
     expect(screen.getByRole('status')).toHaveTextContent(/ainda não está disponível/i);
     expect(screen.getByRole('status')).toHaveTextContent(/nada foi cobrado/i);
@@ -29,6 +29,7 @@ describe('ContactRequestEntry (#59)', () => {
     ['email_unverified', /confirme seu e-mail/i],
     ['account_restricted', /suspensa ou em exclusão/i],
     ['own_listing', /este anúncio é seu/i],
+    ['no_slots', /vagas de solicitação deste anúncio estão ocupadas/i],
   ] as const)('estado %s informa o motivo sem acao de solicitacao', (state, message) => {
     render(<ContactRequestEntry listingId={LISTING_ID} state={state} />);
 
@@ -38,7 +39,7 @@ describe('ContactRequestEntry (#59)', () => {
 
   it('nunca exibe telefone ou WhatsApp do anunciante', () => {
     const { container } = render(
-      <ContactRequestEntry listingId={LISTING_ID} state="request_unavailable" />,
+      <ContactRequestEntry listingId={LISTING_ID} state="request_available" />,
     );
 
     expect(container.textContent).not.toMatch(/\(?\d{2}\)?\s?9?\d{4}-?\d{4}/);

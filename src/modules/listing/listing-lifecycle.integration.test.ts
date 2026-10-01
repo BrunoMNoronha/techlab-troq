@@ -26,7 +26,6 @@ import { registerUser } from '@/modules/identity/actions';
 import { getAuth } from '@/modules/identity/auth';
 import { deleteListingImage } from '@/modules/media/upload';
 import {
-  closeListing,
   createDraftListing,
   discardDraft,
   pauseListing,
@@ -34,6 +33,12 @@ import {
   reactivateListing,
 } from './actions';
 import { LISTING_COMPLIANCE_TERMS_VERSION } from './compliance';
+import { closeOwnedListing, transitionListing } from './lifecycle';
+
+// T5/T6 exigem o efeito sobre as solicitacoes (DM-6.10). Esta suite prova o
+// anuncio; o efeito real e a action composta (src/app/anuncios/actions.ts)
+// sao provados em src/modules/request/reservation.integration.test.ts.
+const closeListing = (id: string) => closeOwnedListing(id, async () => undefined);
 
 let browserCookie = '';
 
@@ -500,6 +505,22 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
           expect(path).toEqual(['published>closed']);
         }
         expect((await counts(id)).audits).toBe(1);
+      });
+
+      it('sem o efeito sobre as solicitacoes, encerrar e recusado e nada muda', async () => {
+        const id = await draft();
+        await fixtureStatus(id, ['published']);
+        const logSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+        try {
+          expect(await transitionListing(id, 'close')).toMatchObject({
+            success: false,
+            reason: 'error',
+          });
+        } finally {
+          logSpy.mockRestore();
+        }
+        expect((await row(id)).status).toBe('published');
+        expect(await counts(id)).toEqual({ transitions: 0, acceptances: 0, audits: 0 });
       });
 
       it('rollback: falha real ao gravar a auditoria desfaz o encerramento inteiro', async () => {

@@ -167,9 +167,23 @@ function failure(
   return { success: false, reason, error: MESSAGES[reason], ...extra };
 }
 
+/**
+ * Efeito obrigatorio de T5/T6 sobre o que outros modulos guardam do anuncio
+ * (data-model.md, DM-6.10): roda DENTRO da transacao da transicao, sob a mesma
+ * trava, com o mesmo instante. `listing` declara a porta e nao importa quem a
+ * implementa — o modulo `request` depende de `listing`, e o inverso seria ciclo
+ * (conventions.md, secao 2.2). A composicao fica em `src/app` (overview.md, AR-3.2).
+ */
+export type ListingClosureEffect = (
+  tx: Prisma.TransactionClient,
+  context: { listingId: string; actorId: string; at: Date; transition: 'T5' | 'T6' },
+) => Promise<void>;
+
 export interface TransitionOptions {
   /** T1: aceite expresso da declaracao de conformidade (prohibited-items.md, secao 5). */
   complianceAccepted?: boolean;
+  /** T5/T6: efeito sobre as solicitacoes do anuncio. Sem ele, o encerramento e recusado. */
+  onClose?: ListingClosureEffect;
 }
 
 /**
@@ -208,6 +222,14 @@ export async function transitionListing(
         throw new LifecycleAbort('compliance_required', from);
       }
 
+      // Fail-closed: encerrar um anuncio que pode ter reservas sem o efeito de
+      // DM-6.10 deixaria vaga reservada viva num anuncio `closed`.
+      const closesOffer = code === 'T5' || code === 'T6';
+      if (closesOffer && !options.onClose) {
+        console.error('[listing] encerramento sem efeito sobre as solicitacoes', { code });
+        throw new LifecycleAbort('error', from);
+      }
+
       if (rule.goesPublic) {
         const content = validateListingContent({
           title: listing.title,
@@ -234,6 +256,15 @@ export async function transitionListing(
           occurredAt: at,
         },
       });
+
+      if (closesOffer && options.onClose) {
+        await options.onClose(tx, {
+          listingId: listing.id,
+          actorId,
+          at,
+          transition: code as 'T5' | 'T6',
+        });
+      }
 
       let acceptanceId: string | undefined;
       if (code === 'T1') {
@@ -283,4 +314,40 @@ export async function transitionListing(
     });
     return failure('error');
   }
+}
+
+/**
+ * T5/T6 pelo dono. Nao e Server Action: a action exposta compoe esta funcao
+ * com o efeito do modulo `request` em `src/app/anuncios/actions.ts`.
+ */
+export async function closeOwnedListing(
+  listingId: string,
+  onClose: ListingClosureEffect,
+): Promise<LifecycleResult> {
+  return transitionListing(listingId, 'close', { onClose });
+}
+
+export interface ListingRequestGate {
+  id: string;
+  status: ListingStatus;
+  ownerId: string;
+}
+
+/**
+ * Trava do anuncio para quem decide sobre as solicitacoes dele (data-model.md,
+ * DM-6.12): a MESMA trava de linha das transicoes acima, adquirida dentro da
+ * transacao do chamador. Devolve so o necessario para DM-6.9 e para recusar o
+ * proprio dono; nada de conteudo do anuncio.
+ */
+export async function lockListingForRequest(
+  tx: Prisma.TransactionClient,
+  listingId: string,
+): Promise<ListingRequestGate | null> {
+  if (!isUuid(listingId)) return null;
+  const rows = await tx.$queryRaw<ListingRequestGate[]>`
+    SELECT "id", "status"::text AS "status", "owner_id"::text AS "ownerId"
+    FROM "listings"
+    WHERE "id" = ${listingId}::uuid
+    FOR UPDATE`;
+  return rows[0] ?? null;
 }

@@ -9,6 +9,11 @@ vi.mock('@/modules/listing', () => ({
   isListingOwnedBy: vi.fn(),
 }));
 
+const queryRaw = vi.fn();
+vi.mock('@/persistence/prisma', () => ({
+  getPrismaClient: () => ({ $queryRaw: (...a: unknown[]) => queryRaw(...a) }),
+}));
+
 const validateSession = vi.mocked(identityModule.validateSession);
 const getPublicListingDetail = vi.mocked(listingModule.getPublicListingDetail);
 const isListingOwnedBy = vi.mocked(listingModule.isListingOwnedBy);
@@ -79,9 +84,29 @@ describe('getContactRequestEntry — entrada da solicitacao de desbloqueio (#59)
     expect(isListingOwnedBy).toHaveBeenCalledWith(LISTING_ID, user.id);
   });
 
-  it('usuario elegivel recebe indisponibilidade da Fase 3, sem criar nada', async () => {
-    validateSession.mockResolvedValue({ user, isValid: true });
+  it.each([
+    [0, 'request_available'],
+    [2, 'request_available'],
+    [3, 'no_slots'],
+  ] as const)(
+    'elegivel com %i vagas ocupadas recebe %s, sem criar nada',
+    async (occupied, state) => {
+      validateSession.mockResolvedValue({ user, isValid: true });
+      queryRaw.mockResolvedValue([{ occupied }]);
 
-    expect(await getContactRequestEntry(LISTING_ID)).toBe('request_unavailable');
+      expect(await getContactRequestEntry(LISTING_ID)).toBe(state);
+      // So leitura: a contagem considera `paid` e `reserved` ainda na janela.
+      const sqlText = (queryRaw.mock.calls[0][0] as TemplateStringsArray).join('?');
+      expect(sqlText).toContain('"status" = \'paid\'');
+      expect(sqlText).toContain('"reserved_until" > now()');
+      expect(sqlText).not.toMatch(/INSERT|UPDATE|DELETE/);
+    },
+  );
+
+  it('o estado devolvido nao revela quantas vagas estao ocupadas', async () => {
+    validateSession.mockResolvedValue({ user, isValid: true });
+    queryRaw.mockResolvedValue([{ occupied: 1 }]);
+
+    expect(JSON.stringify(await getContactRequestEntry(LISTING_ID))).not.toMatch(/\d/);
   });
 });

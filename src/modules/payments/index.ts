@@ -10,7 +10,13 @@
 // importado de fora (docs/engineering/conventions.md, secao 2.2). Consumidores
 // externos importam `@/modules/payments`; nunca um caminho interno do modulo.
 //
-// F1-005 materializa apenas a fronteira: nao ha implementacao, e nenhuma
-// entidade, servico, repositorio ou caso de uso e antecipado aqui. O `export {}`
-// mantem o arquivo como modulo TypeScript sob `isolatedModules`, sem comportamento.
-export {};
+// F1-005 materializou a fronteira. F3-003 (#93) acrescenta a criacao da
+// tentativa com a chave de idempotencia persistida (PD-2.1, PD-5); a cobranca,
+// a confirmacao e o reembolso vem nas issues seguintes da Fase 3.
+export {
+  createPaymentAttempt,
+  deriveIdempotencyKey,
+  deriveExternalReference,
+  readPersistedIdempotencyKey,
+} from './attempt';
+export type { CreatedPaymentAttempt } from './attempt';

@@ -19,6 +19,8 @@ vi.mock('@/modules/listing/actions', () => ({
   discardDraft: (...a: unknown[]) => actions.discardDraft(...a),
   pauseListing: (...a: unknown[]) => actions.pauseListing(...a),
   reactivateListing: (...a: unknown[]) => actions.reactivateListing(...a),
+}));
+vi.mock('@/app/anuncios/actions', () => ({
   closeListing: (...a: unknown[]) => actions.closeListing(...a),
 }));
 

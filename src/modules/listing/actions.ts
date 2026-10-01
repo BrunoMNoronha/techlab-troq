@@ -297,10 +297,9 @@ export async function reactivateListing(listingId: string): Promise<LifecycleRes
   return transitionListing(listingId, 'reactivate');
 }
 
-/** T5/T6 `published`|`paused` -> `closed`. Irreversivel; a tela exige confirmacao. */
-export async function closeListing(listingId: string): Promise<LifecycleResult> {
-  return transitionListing(listingId, 'close');
-}
+// T5/T6 nao fica aqui: o encerramento precisa do efeito do modulo `request`
+// sobre as reservas (DM-6.10), e `listing` nao importa `request`. A action
+// exposta e `closeListing`, de src/app/anuncios/actions.ts (F3-003).
 
 /** T2 `draft` -> `closed` (descarte). Irreversivel; a tela exige confirmacao. */
 export async function discardDraft(listingId: string): Promise<LifecycleResult> {

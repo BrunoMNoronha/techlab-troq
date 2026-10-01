@@ -2,8 +2,8 @@
 
 import { startTransition, useEffect, useId, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { closeListing } from '@/app/anuncios/actions';
 import {
-  closeListing,
   discardDraft,
   pauseListing,
   publishListing,

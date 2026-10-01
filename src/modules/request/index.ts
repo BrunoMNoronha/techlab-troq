@@ -11,7 +11,13 @@
 // importado de fora (docs/engineering/conventions.md, secao 2.2). Consumidores
 // externos importam `@/modules/request`; nunca um caminho interno do modulo.
 //
-// F1-005 materializou a fronteira. #59 acrescenta apenas a entrada da jornada
-// (somente leitura); reserva, cobranca e liberacao continuam na Fase 3 (#54).
+// F1-005 materializou a fronteira e #59 a entrada da jornada (somente leitura).
+// F3-003 (#93) acrescenta a reserva atomica de vaga com a tentativa de
+// pagamento e o efeito de T5/T6 sobre as reservas (DM-6.10). Dependencia
+// direcional: `request` -> `listing`, `payments`; nunca o inverso.
 export { getContactRequestEntry } from './entry';
 export type { ContactRequestEntryState } from './entry';
+export { requestContactUnlock } from './actions';
+export { createContactRequest, RESERVATION_WINDOW_MS } from './reservation';
+export type { ContactRequestFailureReason, ContactRequestResult } from './reservation';
+export { endOpenReservationsOnListingClosure } from './closure';

@@ -1,14 +1,14 @@
 // Entrada da jornada de solicitacao de desbloqueio a partir do detalhe publico
 // do anuncio (#59). Decide, no servidor e a cada requisicao, o que a pessoa
 // pode fazer: entrar, confirmar e-mail, nada (conta restrita ou anuncio proprio)
-// ou iniciar a solicitacao.
+// ou solicitar, com ou sem vaga livre.
 //
-// A solicitacao paga (reserva de vaga, cobranca Pix de R$ 0,99, liberacao de
-// contato) pertence a Fase 3 (#54) e ainda nao existe. Por isso o estado para
-// quem e elegivel e `request_unavailable`: nada e criado, reservado ou cobrado.
-// Esta funcao so le; nao e Server Action e nao e exposta como endpoint.
+// F3-003 (#93): a reserva passou a existir (reservation.ts), e o elegivel recebe
+// `request_available` ou `no_slots`. A tela que dispara a reserva e a cobranca
+// e de F3-012 (#102). Esta funcao so le; nao e Server Action e nao e endpoint.
 import { validateSession } from '@/modules/identity';
 import { getPublicListingDetail, isListingOwnedBy } from '@/modules/listing';
+import { getPrismaClient } from '@/persistence/prisma';
 
 export type ContactRequestEntryState =
   | 'listing_unavailable'
@@ -16,7 +16,21 @@ export type ContactRequestEntryState =
   | 'email_unverified'
   | 'account_restricted'
   | 'own_listing'
-  | 'request_unavailable';
+  | 'request_available'
+  | 'no_slots';
+
+/**
+ * Vagas ocupadas AGORA: `paid` e `reserved` ainda dentro da janela. Leitura sem
+ * trava, so para orientar a tela; a decisao real e da transacao da reserva. O
+ * resultado nao sai daqui: a tela so sabe se ha vaga, nunca quantas pagas existem.
+ */
+async function hasFreeSlot(listingId: string): Promise<boolean> {
+  const [{ occupied }] = await getPrismaClient().$queryRaw<{ occupied: number }[]>`
+    SELECT count(*)::int AS "occupied" FROM "contact_requests"
+    WHERE "listing_id" = ${listingId}::uuid
+      AND ("status" = 'paid' OR ("status" = 'reserved' AND "reserved_until" > now()))`;
+  return occupied < 3;
+}
 
 export async function getContactRequestEntry(listingId: string): Promise<ContactRequestEntryState> {
   const listing = await getPublicListingDetail(listingId);
@@ -41,5 +55,5 @@ export async function getContactRequestEntry(listingId: string): Promise<Contact
     return 'own_listing';
   }
 
-  return 'request_unavailable';
+  return (await hasFreeSlot(listing.id)) ? 'request_available' : 'no_slots';
 }
