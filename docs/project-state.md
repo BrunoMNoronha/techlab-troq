@@ -221,8 +221,9 @@ O Sentry do navegador chegou ao projeto de `preview`. Achado baixo, fora do gate
 T-5 e T-18 foram provados contra PostgreSQL real, provedor simulado e a rota HTTP real.
 
 Pendências da #98:
-- os códigos de saldo insuficiente e de 180 dias **não** constam da referência oficial, e esse critério fica não cumprido (PD-8.5);
-- a invocação **autorizada** em `preview` depende da migration, que o `migrate-preview` só aplica depois do merge.
+- ~~os códigos de saldo insuficiente e de 180 dias **não** constam da referência oficial~~: resolvidos em 2026-10-01 por **DEC-045** (prazo conferido antes da chamada pelo instante de acreditação; `cannot_refund_order` com a order acreditada retentado como saldo), com testes em PostgreSQL efêmero e mutações;
+- ~~a busca de orders não foi exercitada na sandbox~~: provada na sandbox em 2026-10-01; a credencial de teste é aceita e a order criada é achada;
+- a invocação **autorizada** em `preview`: a migration já está aplicada (`20261001200000`, 0 pendentes), mas o escopo Preview da Vercel **não** tem `CRON_SECRET`. Falta provisioná-lo; depois disso, a prova é por invocação autenticada num deployment novo (DEC-042).
 
 Registro anterior: as próximas eram #98 e #99, em paralelo. F3-007 ([#97](https://github.com/BrunoMNoronha/techlab-troq/issues/97)) entregou em 2026-10-01:
 - o reembolso técnico com hipótese e chave persistidas no ato da classificação;

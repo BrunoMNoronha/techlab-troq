@@ -46,6 +46,14 @@ export type RefundRunOutcome =
 export const REFUND_MAX_ATTEMPTS = 8;
 export const REFUND_BACKOFF_CAP_HOURS = 24;
 
+// Prazo do provedor para reembolso: 180 dias a partir da aprovacao (PD-8.7,
+// MP-5). A referencia oficial nao documenta o codigo dessa recusa (F3-008), entao
+// o TROQ confere o prazo ANTES de chamar, pelo instante de acreditacao
+// autoritativo ja gravado (`payments.accredited_at`, ADR-0008), contra o
+// relogio do banco. Vencido -> `pendente_operacional` imediato e sem chamada:
+// retentar e inutil (PD-8.5). O caso continua aberto (PD-3.5). DEC-045.
+export const REFUND_WINDOW_DAYS = 180;
+
 /** Recuo depois da k-esima falha (k >= 1), em horas. */
 export function refundBackoffHours(failures: number): number {
   return Math.min(2 ** Math.max(failures - 1, 0), REFUND_BACKOFF_CAP_HOURS);
@@ -63,6 +71,8 @@ interface RefundRow {
   attemptId: string;
   attemptStatus: string;
   providerOrderId: string | null;
+  /** Aprovacao ha `REFUND_WINDOW_DAYS` dias ou mais, pelo relogio do banco. */
+  windowExpired: boolean;
 }
 
 async function readRefund(refundId: string): Promise<RefundRow | null> {
@@ -73,7 +83,9 @@ async function readRefund(refundId: string): Promise<RefundRow | null> {
            p."provider_payment_id" AS "providerPaymentId", p."amount_cents" AS "amountCents",
            p."is_canonical" AS "isCanonical",
            pa."id"::text AS "attemptId", pa."status"::text AS "attemptStatus",
-           pa."provider_order_id" AS "providerOrderId"
+           pa."provider_order_id" AS "providerOrderId",
+           COALESCE(p."accredited_at" <= now() - make_interval(days => ${REFUND_WINDOW_DAYS}::int),
+                    false) AS "windowExpired"
     FROM "technical_refunds" tr
     JOIN "payments" p ON p."id" = tr."payment_id"
     JOIN "payment_attempts" pa ON pa."id" = p."payment_attempt_id"
@@ -216,6 +228,11 @@ export async function processTechnicalRefund(
     });
     return 'inconsistent';
   }
+  if (refund.windowExpired) {
+    // Limite do provedor, nao inconsistencia: so o desfecho manual resta.
+    await recordAttempt(refund, 'pendente_operacional', 'refund_window_expired');
+    return 'operational';
+  }
   if (!refund.providerOrderId) {
     await recordAttempt(refund, 'pendente_operacional', 'order_unknown');
     return 'operational';
@@ -267,13 +284,28 @@ export async function processTechnicalRefund(
       );
       return 'concluded';
     }
+    if (result.kind === 'unavailable' && result.reason === 'cannot_refund') {
+      // DEC-045: a sandbox devolve `cannot_refund_order` tambem para order nao
+      // acreditada ou cancelada (2026-10-01). So com a order ACREDITADA, lida
+      // acima, a recusa e tratada como saldo insuficiente (transitorio, PE-7.8);
+      // em qualquer outro estado e definitiva e abre inconsistencia (PD-8.5).
+      if (order.value.state.kind === 'accredited') {
+        return recordTransientFailure(refund, 'refund_cannot_refund');
+      }
+      await recordAttempt(refund, 'pendente_operacional', 'refund_rejected_cannot_refund_order', {
+        inconsistency: 'refund_rejected_cannot_refund_order',
+      });
+      return 'inconsistent';
+    }
     if (result.kind === 'unavailable') {
       return recordTransientFailure(refund, `refund_${result.reason}`);
     }
     // PD-8.5: `order_not_found` e erro nao mapeado abrem inconsistencia. Os
     // codigos de saldo insuficiente e de 180 dias NAO constam da lista de erros
-    // oficial de `POST /v1/orders/{id}/refund` (conferida em 2026-10-01, F3-008):
-    // sem fonte, nao ha mapeamento proprio e ambos caem aqui.
+    // oficial de `POST /v1/orders/{id}/refund` (conferida em 2026-10-01, F3-008).
+    // DEC-045: o prazo e conferido acima, antes da chamada, e a recusa generica
+    // documentada `cannot_refund_order` chega como `unavailable` (retentativa).
+    // Qualquer outro codigo cai aqui.
     const code = result.kind === 'not_found' ? 'order_not_found' : result.code;
     await recordAttempt(refund, 'pendente_operacional', `refund_rejected_${code}`, {
       inconsistency: `refund_rejected_${code}`.slice(0, 64),

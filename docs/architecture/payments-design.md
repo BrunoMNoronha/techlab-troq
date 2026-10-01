@@ -328,6 +328,18 @@ Dois transitórios **documentados** passaram a retentar (`falhou_retentando`, co
 - HTTP `429` (`too_many_requests`, `usage_quota_exceeded`), cuja própria referência manda repetir com recuo;
 - `409 order_refund_already_in_process`.
 
+_Atualização de 2026-10-01 (DEC-045, [#98](https://github.com/BrunoMNoronha/techlab-troq/issues/98)) — saldo e 180 dias materializados sem código próprio._ Por autorização do Bruno para resolver o impedimento, as duas linhas passaram a ter tratamento verificável:
+
+| Linha de PD-8.5 | Como o TROQ a reconhece | Desfecho |
+| --- | --- | --- |
+| Fora do prazo de 180 dias | **Antes** da chamada: `payments.accredited_at` (instante autoritativo, ADR-0008) com 180 dias ou mais pelo relógio do banco (`REFUND_WINDOW_DAYS`, `src/modules/payments/refund.ts`) | `pendente_operacional` imediato, **sem** chamada e sem `inconsistente`; resultado `refund_window_expired` |
+| Saldo insuficiente | `409 cannot_refund_order` com a order, lida na mesma execução, em estado **acreditado** | `falhou_retentando` com o recuo de PD-3.5; resultado `refund_cannot_refund` |
+| (recusa definitiva) | `409 cannot_refund_order` com a order em qualquer outro estado | `pendente_operacional` com `inconsistente` |
+
+- **Evidência:** na sandbox (PX-2, 2026-10-01), `POST /v1/orders/{id}/refund` devolveu `409 cannot_refund_order` para uma order `action_required` e de novo depois de cancelada. É a recusa genérica da rota, e por isso só o estado acreditado da order a torna candidata a saldo.
+- **Suposição:** que saldo insuficiente chega como `cannot_refund_order`. Se chegar como outro código, cai em "erro não mapeado", que é conservador.
+- **Invariante preservada:** esgotar, vencer o prazo ou recusar **nunca** fecha o caso `reembolso_pendente` (PD-3.5, PD-8.6).
+
 **PD-8.6 (invariante).** Falha de reembolso **não** é ocultada, **não** é encerrada sem desfecho real e **nunca** vira receita reconhecida, vaga, elegibilidade ou silêncio (PE-7.9, PE-7.10). O caso permanece em AR-14.3.
 
 **PD-8.7 (fato externo).** Os dois limites são do provedor e não estão sob controle do TROQ: prazo de **180 dias** a partir da aprovação e exigência de **saldo suficiente** (MP-5). Ambos já estão registrados como R-11.

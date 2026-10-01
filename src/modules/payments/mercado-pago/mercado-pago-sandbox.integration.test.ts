@@ -9,7 +9,9 @@
 // Prova o que o servidor simulado de client.test.ts nao prova: que o provedor
 // aceita o corpo exato, repete a mesma order para a mesma chave e cancela uma
 // order sem acreditacao; e (F3-006, ADR-0008) que a busca da Payments API por
-// `external_reference` devolve o instante de acreditacao da order acreditada.
+// `external_reference` devolve o instante de acreditacao da order acreditada; e
+// (F3-008) que a busca de orders por `external_reference` aceita a credencial
+// de teste e acha a order criada.
 import { randomUUID } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import { classifyAccreditation } from './accreditation';
@@ -60,6 +62,41 @@ describe.skipIf(!enabled)('Mercado Pago sandbox: Orders API real (PX-2)', () => 
       value: { state: { kind: 'not_accredited_terminal', outcome: 'canceled' } },
     });
   }, 60_000);
+
+  it('F3-008: a busca de orders por external_reference acha a order (tentativa_criada orfa)', async () => {
+    const externalReference = `troq-sandbox-${randomUUID()}`;
+    const created = await client.createPixCharge({
+      idempotencyKey: randomUUID(),
+      externalReference,
+      amountCents: 99,
+      expiresInMs: 30 * 60 * 1000,
+      payerEmail: TEST_PAYER,
+    });
+    if (!created.ok) throw new Error(`falha: ${JSON.stringify(created)}`);
+    const orderId = created.value.snapshot.providerOrderId;
+    const window = {
+      createdFrom: new Date(Date.now() - 60 * 60 * 1000),
+      createdTo: new Date(Date.now() + 5 * 60 * 1000),
+    };
+    try {
+      // A credencial de TESTE e aceita (a referencia cita `invalid_credentials`);
+      // referencia sem order -> lista vazia, nunca erro.
+      const none = await client.searchOrdersByReference(`troq-sandbox-${randomUUID()}`, window);
+      expect(none).toEqual({ ok: true, value: [] });
+
+      // A busca pode atrasar em relacao a criacao: repete por ate ~60 s.
+      let found: string[] = [];
+      for (let i = 0; i < 12 && found.length === 0; i++) {
+        const search = await client.searchOrdersByReference(externalReference, window);
+        if (!search.ok) throw new Error(`falha: ${JSON.stringify(search)}`);
+        found = search.value.map((o) => o.providerOrderId);
+        if (found.length === 0) await new Promise((resolve) => setTimeout(resolve, 5_000));
+      }
+      expect(found).toEqual([orderId]);
+    } finally {
+      await client.cancelOrder(orderId, randomUUID());
+    }
+  }, 120_000);
 
   it('ADR-0008: a busca por external_reference devolve date_approved da order acreditada', async () => {
     const externalReference = `troq-sandbox-${randomUUID()}`;

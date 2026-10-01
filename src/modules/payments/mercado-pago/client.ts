@@ -31,7 +31,8 @@ export type GatewayFailure =
   | {
       ok: false;
       kind: 'unavailable';
-      reason: 'network' | 'timeout' | 'server_error' | 'rate_limited' | 'in_process';
+      reason:
+        'network' | 'timeout' | 'server_error' | 'rate_limited' | 'in_process' | 'cannot_refund';
     }
   | { ok: false; kind: 'not_found' }
   | { ok: false; kind: 'rejected'; httpStatus: number; code: string };
@@ -295,7 +296,12 @@ export function createMercadoPagoClient(options: MercadoPagoClientOptions = {}) 
      * conferida em 2026-10-01; F3-008) viram `unavailable`, para a retentativa:
      * HTTP 429 (`too_many_requests`, `usage_quota_exceeded`) e 409
      * `order_refund_already_in_process`. Saldo insuficiente e prazo de 180 dias
-     * NAO constam dessa lista: chegam como `rejected` com o codigo bruto.
+     * NAO constam dessa lista. DEC-045 (2026-10-01, #98): a recusa generica
+     * documentada `409 cannot_refund_order` vira `unavailable` (`cannot_refund`);
+     * quem decide se ela e saldo insuficiente (retentavel, PE-7.8) ou definitiva
+     * e refund.ts, pelo estado da order lida antes. O prazo de 180 dias nao
+     * depende do provedor: refund.ts o confere antes da chamada. Outros codigos
+     * fora da lista continuam `rejected` com o codigo bruto.
      */
     async refundOrder(
       providerOrderId: string,
@@ -334,6 +340,9 @@ export function createMercadoPagoClient(options: MercadoPagoClientOptions = {}) 
       if (raw.status === 429) return { ok: false, kind: 'unavailable', reason: 'rate_limited' };
       if (code === 'order_refund_already_in_process') {
         return { ok: false, kind: 'unavailable', reason: 'in_process' };
+      }
+      if (raw.status === 409 && code === 'cannot_refund_order') {
+        return { ok: false, kind: 'unavailable', reason: 'cannot_refund' };
       }
       return fail(raw);
     },
