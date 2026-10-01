@@ -71,7 +71,7 @@ vi.mock('./s3', async (importOriginal) => {
   };
 });
 
-import { processPendingImages } from './processor';
+import { EXHAUST_BATCH, processPendingImages } from './processor';
 import {
   confirmImageUpload,
   deleteListingImage,
@@ -563,6 +563,66 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
           errors: [],
           images: ids.map(() => ({ status: 'ready', attempts: 1, failureCode: null })),
         });
+      });
+
+      it('claim de uma imagem: com duas elegiveis, so uma sai de uploaded', async () => {
+        const listing = await listingOf(userA);
+        const ids = [await uploadConfirmed(listing), await uploadConfirmed(listing)];
+        // Durante o download, o claim ja foi gravado: so uma das duas pode estar
+        // em `processing` com tentativa consumida (CTE MATERIALIZED, LIMIT 1).
+        const claimedDuringRun: number[] = [];
+        hooks.onGet = async () => {
+          claimedDuringRun.push(
+            await getPrismaClient().listingImage.count({
+              where: { id: { in: ids }, status: 'processing', attempts: { gt: 0 } },
+            }),
+          );
+        };
+
+        expect(await processPendingImages({ maxImages: 1 })).toMatchObject({
+          claimed: 1,
+          ready: 1,
+        });
+        expect(claimedDuringRun).toEqual([1]);
+        const rows = await Promise.all(ids.map(image));
+        expect(rows.map(outcomeOf).sort((a, b) => a.status.localeCompare(b.status))).toEqual([
+          { status: 'ready', attempts: 1, failureCode: null },
+          { status: 'uploaded', attempts: 0, failureCode: null },
+        ]);
+      });
+
+      it('esgotadas com lease vencido: cada invocacao falha no maximo EXHAUST_BATCH', async () => {
+        const prisma = getPrismaClient();
+        const ids: string[] = [];
+        let listing = '';
+        // Uma imagem a mais que o lote; seis posicoes por anuncio.
+        for (let n = 0; n < EXHAUST_BATCH + 1; n += 1) {
+          if (n % 6 === 0) listing = await listingOf(userA);
+          const id = randomUUID();
+          await prisma.$executeRaw`
+            INSERT INTO "listing_images" (
+              "id", "listing_id", "position", "status", "object_key", "upload_generation",
+              "upload_authorized_at", "source_confirmed_at", "source_etag", "attempts",
+              "lease_expires_at", "updated_at")
+            VALUES (
+              ${id}::uuid, ${listing}::uuid, ${(n % 6) + 1}, 'processing',
+              ${originalKey(id, 1)}, 1, now(), now(), '"e"', 5,
+              now() - interval '1 second', now())`;
+          ids.push(id);
+        }
+
+        const first = await processPendingImages({ maxImages: 0 });
+        expect(first.exhausted).toBe(EXHAUST_BATCH);
+        expect(
+          await prisma.listingImage.count({
+            where: { id: { in: ids }, status: 'failed', failureCode: 'transient_exhausted' },
+          }),
+        ).toBe(EXHAUST_BATCH);
+
+        expect((await processPendingImages({ maxImages: 0 })).exhausted).toBeGreaterThanOrEqual(1);
+        expect(
+          await prisma.listingImage.count({ where: { id: { in: ids }, status: 'failed' } }),
+        ).toBe(EXHAUST_BATCH + 1);
       });
 
       it('objeto substituido depois da confirmacao: 412, falha fechada, bytes novos nunca processados', async () => {

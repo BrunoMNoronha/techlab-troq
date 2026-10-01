@@ -16,7 +16,10 @@ import { classifyR2Error, getObjectIfMatch, putDerivative } from './s3';
 // CRON_SECRET). A fila e o proprio estado em `listing_images` (ADR-0006).
 //
 // - Claim em UMA instrucao com `FOR UPDATE SKIP LOCKED`; nenhuma transacao fica
-//   aberta durante download, sharp ou upload.
+//   aberta durante download, sharp ou upload. A selecao travada fica numa CTE
+//   `MATERIALIZED`: na forma `UPDATE ... FROM (SELECT ... FOR UPDATE SKIP
+//   LOCKED)`, o PostgreSQL pode reavaliar a subconsulta por linha externa de um
+//   nested loop e reclamar mais que o lote (payments-design.md, PD-10.7).
 // - `attempts` sobe no claim e e o token de fencing: so a tentativa corrente
 //   finaliza. Lease de 360 s (> maxDuration de 300 s) recupera queda.
 // - `ready` so e gravado na transacao final, com os tres derivados
@@ -26,6 +29,8 @@ export const LEASE_SECONDS = 360;
 export const MAX_ATTEMPTS = 5;
 /** Recuo depois da 1a, 2a, 3a e 4a falha transitoria (minutos). */
 export const BACKOFF_MINUTES = [1, 5, 15, 60] as const;
+/** Lote de `exhaustAbandoned` por invocacao. */
+export const EXHAUST_BATCH = 20;
 
 // Medido no benchmark de 50 MP (2 GB / 1 vCPU): sem cache e com uma thread por
 // operacao o pico e previsivel; o cache nao traz ganho para processamento unico.
@@ -55,15 +60,16 @@ export interface ProcessSummary {
 async function exhaustAbandoned(): Promise<number> {
   return getPrismaClient().$transaction(async (tx) => {
     const rows = await tx.$queryRaw<{ id: string; upload_generation: number }[]>`
+      WITH x AS MATERIALIZED (
+        SELECT "id" FROM "listing_images"
+        WHERE "status" = 'processing' AND "lease_expires_at" < now() AND "attempts" >= ${MAX_ATTEMPTS}
+        LIMIT ${EXHAUST_BATCH}
+        FOR UPDATE SKIP LOCKED
+      )
       UPDATE "listing_images" li
       SET "status" = 'failed', "failure_code" = 'transient_exhausted',
           "lease_expires_at" = NULL, "updated_at" = now()
-      FROM (
-        SELECT "id" FROM "listing_images"
-        WHERE "status" = 'processing' AND "lease_expires_at" < now() AND "attempts" >= ${MAX_ATTEMPTS}
-        LIMIT 20
-        FOR UPDATE SKIP LOCKED
-      ) x
+      FROM x
       WHERE li."id" = x."id"
       RETURNING li."id"::text AS "id", li."upload_generation"`;
     for (const row of rows) {
@@ -82,30 +88,25 @@ async function claimNext(imageId?: string): Promise<Claim | null> {
   const prisma = getPrismaClient();
   const rows = imageId
     ? await prisma.$queryRaw<Claim[]>`
-        UPDATE "listing_images" li
-        SET "status" = 'processing', "attempts" = li."attempts" + 1,
-            "lease_expires_at" = now() + make_interval(secs => ${LEASE_SECONDS}),
-            "next_attempt_at" = NULL,
-            "failure_code" = CASE WHEN li."status" = 'processing' THEN 'interrupted' ELSE li."failure_code" END,
-            "updated_at" = now()
-        FROM (
+        WITH c AS MATERIALIZED (
           SELECT "id" FROM "listing_images"
           WHERE "id" = ${imageId}::uuid AND "attempts" < ${MAX_ATTEMPTS}
             AND (("status" = 'uploaded' AND "source_confirmed_at" IS NOT NULL
                   AND ("next_attempt_at" IS NULL OR "next_attempt_at" <= now()))
               OR ("status" = 'processing' AND "lease_expires_at" < now()))
           FOR UPDATE SKIP LOCKED
-        ) c
-        WHERE li."id" = c."id"
-        RETURNING li."id"::text AS "id", li."attempts", li."object_key", li."source_etag", li."upload_generation"`
-    : await prisma.$queryRaw<Claim[]>`
+        )
         UPDATE "listing_images" li
         SET "status" = 'processing', "attempts" = li."attempts" + 1,
             "lease_expires_at" = now() + make_interval(secs => ${LEASE_SECONDS}),
             "next_attempt_at" = NULL,
             "failure_code" = CASE WHEN li."status" = 'processing' THEN 'interrupted' ELSE li."failure_code" END,
             "updated_at" = now()
-        FROM (
+        FROM c
+        WHERE li."id" = c."id"
+        RETURNING li."id"::text AS "id", li."attempts", li."object_key", li."source_etag", li."upload_generation"`
+    : await prisma.$queryRaw<Claim[]>`
+        WITH c AS MATERIALIZED (
           SELECT "id" FROM "listing_images"
           WHERE "attempts" < ${MAX_ATTEMPTS}
             AND (("status" = 'uploaded' AND "source_confirmed_at" IS NOT NULL
@@ -114,7 +115,14 @@ async function claimNext(imageId?: string): Promise<Claim | null> {
           ORDER BY coalesce("next_attempt_at", "source_confirmed_at")
           LIMIT 1
           FOR UPDATE SKIP LOCKED
-        ) c
+        )
+        UPDATE "listing_images" li
+        SET "status" = 'processing', "attempts" = li."attempts" + 1,
+            "lease_expires_at" = now() + make_interval(secs => ${LEASE_SECONDS}),
+            "next_attempt_at" = NULL,
+            "failure_code" = CASE WHEN li."status" = 'processing' THEN 'interrupted' ELSE li."failure_code" END,
+            "updated_at" = now()
+        FROM c
         WHERE li."id" = c."id"
         RETURNING li."id"::text AS "id", li."attempts", li."object_key", li."source_etag", li."upload_generation"`;
   return rows[0] ?? null;
