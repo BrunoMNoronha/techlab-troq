@@ -13,7 +13,8 @@ import { getPrismaClient } from '@/persistence/prisma';
 // Uma unica transacao, nesta ordem: trava de linha do anuncio (DM-6.12) ->
 // anuncio `published` lido depois da trava (DM-6.9) -> o ator nao e o dono ->
 // anunciante com contato cadastrado (DEC-040) -> `now()` do banco -> expira
-// as reservas vencidas do anuncio (DM-6.3, passo 2) -> menor `slotIndex`
+// as reservas vencidas do anuncio (DM-6.3, passo 2) -> o ator nao tem outra
+// reserva viva no anuncio (DEC-041) -> menor `slotIndex`
 // livre ou recusa (RB-003) -> `ContactRequest` em `reserved` por 30 minutos
 // (PD-3.1) -> `PaymentAttempt` com a chave persistida (modulo `payments`,
 // AR-3.5) -> auditoria -> COMMIT.
@@ -21,7 +22,9 @@ import { getPrismaClient } from '@/persistence/prisma';
 // A GARANTIA de no maximo tres e o indice unico parcial
 // `contact_requests_listing_slot_occupied_key` (DM-6.2); a trava so serializa
 // o comportamento (DM-6.4). Se uma colisao no indice escapar mesmo assim, ela
-// vira recusa limpa, nunca quarta vaga nem erro cru.
+// vira recusa limpa, nunca quarta vaga nem erro cru. O mesmo vale para
+// `contact_requests_live_reservation_per_requester_key` (DEC-041): a colisao
+// refaz a transacao, e a releitura sob a trava recusa com `active_reservation`.
 //
 // Nao chama o provedor: a cobranca e o passo 2 (F3-005, #95).
 
@@ -38,6 +41,7 @@ export type ContactRequestFailureReason =
   | 'unavailable'
   | 'own_listing'
   | 'not_accepting'
+  | 'active_reservation'
   | 'no_slots'
   | 'error';
 
@@ -56,6 +60,9 @@ const MESSAGES: Record<ContactRequestFailureReason, string> = {
   // Anunciante sem contato cadastrado (DEC-040). A mensagem nao revela o motivo:
   // o solicitante so precisa saber que o anuncio nao aceita solicitacao agora.
   not_accepting: 'Este anúncio não está aceitando solicitações no momento.',
+  // DEC-041 (OD-14): uma reserva viva por conta em cada anuncio.
+  active_reservation:
+    'Você já tem uma solicitação aguardando pagamento neste anúncio. Conclua o Pix gerado ou aguarde o prazo terminar.',
   no_slots: 'As vagas de solicitação deste anúncio estão ocupadas no momento.',
   error: 'Não foi possível concluir a solicitação. Tente novamente.',
 };
@@ -125,6 +132,17 @@ async function expireOverdueReservations(
   }
 }
 
+async function hasLiveReservation(
+  tx: Prisma.TransactionClient,
+  listingId: string,
+  requesterId: string,
+): Promise<boolean> {
+  const live = await tx.contactRequest.count({
+    where: { listingId, requesterId, status: 'reserved' },
+  });
+  return live > 0;
+}
+
 async function occupiedSlots(tx: Prisma.TransactionClient, listingId: string): Promise<number[]> {
   const rows = await tx.$queryRaw<{ slotIndex: number }[]>`
     SELECT "slot_index" AS "slotIndex" FROM "contact_requests"
@@ -188,8 +206,12 @@ async function allocate(
 
       await expireOverdueReservations(tx, listing.id, requesterId, at);
 
-      // OD-14 (limite de reservas nao pagas por conta) esta aberta: DM-6.11 vale
-      // como esta. Se for decidida, a regra entra AQUI, sob a trava do anuncio.
+      // DEC-041 (fecha OD-14): no maximo uma reserva viva por conta em cada
+      // anuncio, lida sob a trava e depois de expirar as vencidas. A garantia e
+      // o indice `contact_requests_live_reservation_per_requester_key`.
+      if (await hasLiveReservation(tx, listing.id, requesterId)) {
+        throw new ReservationAbort('active_reservation');
+      }
       const slotIndex = lowestFreeSlot(await occupiedSlots(tx, listing.id));
       if (slotIndex === null) throw new ReservationAbort('no_slots');
 
