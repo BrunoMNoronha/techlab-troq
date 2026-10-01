@@ -324,6 +324,101 @@ describe('refundOrder (POST /v1/orders/{id}/refund) — PD-8.5', () => {
       code,
     });
   });
+
+  // F3-008 (#98): so o que a lista de erros oficial desta rota documenta.
+  it.each([
+    [429, { errors: [{ code: 'too_many_requests' }] }, 'rate_limited'],
+    [429, { errors: [{ code: 'usage_quota_exceeded' }] }, 'rate_limited'],
+    [409, { errors: [{ code: 'order_refund_already_in_process' }] }, 'in_process'],
+  ] as const)(
+    'transitorio documentado (HTTP %i, %o) vira unavailable',
+    async (status, body, reason) => {
+      respond = (_req, res) => json(res, status, body);
+      expect(await client().refundOrder(ORDER.id, KEY)).toEqual({
+        ok: false,
+        kind: 'unavailable',
+        reason,
+      });
+    },
+  );
+
+  it.each([['insufficient_balance'], ['insufficient_funds'], ['refund_period_exceeded']])(
+    'saldo e 180 dias NAO documentados: "%s" fica rejected, sem adivinhar',
+    async (code) => {
+      respond = (_req, res) => json(res, 400, { errors: [{ code }] });
+      expect(await client().refundOrder(ORDER.id, KEY)).toEqual({
+        ok: false,
+        kind: 'rejected',
+        httpStatus: 400,
+        code,
+      });
+    },
+  );
+});
+
+describe('searchOrdersByReference (GET /v1/orders) — F3-008', () => {
+  const window = {
+    createdFrom: new Date('2026-10-01T12:00:00.000Z'),
+    createdTo: new Date('2026-10-01T15:00:00.000Z'),
+  };
+
+  it('so leitura: GET sem chave, com as duas datas obrigatorias e a referencia', async () => {
+    respond = (_req, res) => json(res, 200, { data: [ORDER], paging: { total: '1' } });
+
+    const result = await client().searchOrdersByReference('troq-pa-1', window);
+
+    expect(received).toHaveLength(1);
+    const url = new URL(received[0].url, 'http://sim');
+    expect(received[0].method).toBe('GET');
+    expect(url.pathname).toBe('/v1/orders');
+    expect(Object.fromEntries(url.searchParams)).toEqual({
+      begin_date: '2026-10-01T12:00:00.000Z',
+      end_date: '2026-10-01T15:00:00.000Z',
+      external_reference: 'troq-pa-1',
+    });
+    expect(received[0].headers['x-idempotency-key']).toBeUndefined();
+    expect(received[0].headers.authorization).toBe(`Bearer ${TOKEN}`);
+    expect(result).toMatchObject({
+      ok: true,
+      value: [{ providerOrderId: ORDER.id, externalReference: 'troq-pa-1' }],
+    });
+  });
+
+  it('lista vazia e resultado, nao erro', async () => {
+    respond = (_req, res) => json(res, 200, { data: [], paging: { total: '0' } });
+    expect(await client().searchOrdersByReference('troq-pa-1', window)).toEqual({
+      ok: true,
+      value: [],
+    });
+  });
+
+  it.each([[{ paging: {} }], [{ data: [{ status: 'processed' }] }]])(
+    '200 sem lista ou com item sem id nao e interpretado (%o)',
+    async (body) => {
+      respond = (_req, res) => json(res, 200, body);
+      expect(await client().searchOrdersByReference('troq-pa-1', window)).toEqual({
+        ok: false,
+        kind: 'rejected',
+        httpStatus: 200,
+        code: 'unmapped',
+      });
+    },
+  );
+
+  it('credencial nao suportada e 5xx nunca viram "nao existe order"', async () => {
+    respond = (_req, res) => json(res, 401, { errors: [{ code: 'invalid_credentials' }] });
+    expect(await client().searchOrdersByReference('troq-pa-1', window)).toEqual({
+      ok: false,
+      kind: 'rejected',
+      httpStatus: 401,
+      code: 'invalid_credentials',
+    });
+    respond = (_req, res) => json(res, 500, {});
+    expect(await client().searchOrdersByReference('troq-pa-1', window)).toMatchObject({
+      ok: false,
+      kind: 'unavailable',
+    });
+  });
 });
 
 describe('findPaymentAccreditation (GET /v1/payments/search) — ADR-0008', () => {

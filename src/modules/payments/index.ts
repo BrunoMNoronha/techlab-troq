@@ -66,6 +66,23 @@ export {
 } from './refund';
 export type { CancelOutcome, RefundRunOutcome } from './refund';
 
+// F3-008 (#98): trabalhos periodicos. Reclamacao por `FOR UPDATE SKIP LOCKED`
+// em transacao curta que avanca o proximo instante e commita; processamento
+// depois, pelos fluxos existentes (nota de 2026-10-01 em PD-10.7).
+export { REFUND_BACKOFF_CAP_HOURS, REFUND_MAX_ATTEMPTS, refundBackoffHours } from './refund';
+export { claimRefundsForRetry, runRefundRetry } from './refund-retry';
+export type { RefundRetryOptions, RefundRetrySummary } from './refund-retry';
+export {
+  adoptOrphanOrder,
+  claimAttemptsForReconciliation,
+  RECONCILE_ACTIVE_SECONDS,
+  RECONCILE_OBSERVE_SECONDS,
+  recordReconciliation,
+} from './reconciliation';
+export type { OrphanOutcome } from './reconciliation';
+export { runClaimLoop } from './jobs';
+export type { ClaimHooks, JobLoopCounts, JobLoopOptions } from './jobs';
+
 // F3-004 (#94): adaptador do Mercado Pago. O dominio recebe snapshot e veredito
 // em termos do TROQ; o vocabulario do provedor fica em ./mercado-pago.
 export {
@@ -85,6 +102,7 @@ export type {
   NotificationInput,
   NotificationRejection,
   NotificationVerification,
+  OrderSearchWindow,
   OrderSnapshot,
   PixChargeCreated,
   PixInstructions,
