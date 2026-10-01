@@ -295,6 +295,19 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
       expect(await pending([originalKey(young, 1), ...derivativeKeys(oldReady, 1)])).toEqual([]);
     });
 
+    it('teto de 20 h: cada chamada expira no maximo `limit` imagens', async () => {
+      const owner = await user();
+      const listing = await listingOf(owner);
+      for (const position of [1, 2, 3]) {
+        await seedImage(listing, position, 'confirmed', 21 * 60 + position);
+      }
+      // Selecao em CTE MATERIALIZED: executada uma vez, nunca reavaliada por
+      // linha do UPDATE (payments-design.md, PD-10.7).
+      expect(await expireStaleImages(2)).toBe(2);
+      expect(await expireStaleImages(2)).toBe(1);
+      expect(await expireStaleImages(2)).toBe(0);
+    });
+
     it('teto de 20 h cerca a tentativa em curso: o executor antigo nao grava `ready`', async () => {
       const owner = await user();
       const listing = await listingOf(owner);
@@ -335,6 +348,26 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
 
       expect(await consumeDeletionQueue()).toMatchObject({ claimed: 0 });
       expect(deleteCalls.filter((k) => k === due)).toHaveLength(1);
+    });
+
+    it('fila: nenhum claim devolve mais pendencias que o lote', async () => {
+      const id = randomUUID();
+      const keys = Array.from({ length: 13 }, (_, i) => `derivatives/${id}/1/v1/b${i}.webp`);
+      await enqueue(keys);
+
+      const run = await consumeDeletionQueue({ batchSize: 5 });
+      expect(run).toMatchObject({ claimed: 13, completed: 13 });
+
+      // Cada claim grava o mesmo `now()` + lease em todo o seu lote, e a
+      // conclusao nao mexe em `due_at`: agrupar por `due_at` recupera os lotes.
+      const batches = await getPrismaClient().$queryRaw<{ size: number; attempts: number }[]>`
+        SELECT count(*)::int AS "size", max("attempts")::int AS "attempts"
+        FROM "media_object_deletions"
+        WHERE "object_key" = ANY(${keys})
+        GROUP BY "due_at" ORDER BY "due_at"`;
+      expect(batches.map((b) => b.size)).toEqual([5, 5, 3]);
+      expect(batches.every((b) => b.attempts === 1)).toBe(true);
+      expect(deleteCalls).toHaveLength(13);
     });
 
     it('falha parcial: o primeiro item falha, o segundo conclui; a pendencia fica com codigo e recuo', async () => {

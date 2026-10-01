@@ -183,7 +183,7 @@ O endpoint de cron compara `Authorization: Bearer <CRON_SECRET>` e recusa qualqu
 Claim em **transação curta**, sem segurar a transação durante o processamento (pool do Neon em modo transação, ADR-0006 N-1):
 
 ```sql
-WITH c AS (
+WITH c AS MATERIALIZED (
   SELECT id FROM listing_images
   WHERE (status = 'uploaded' AND source_confirmed_at IS NOT NULL
          AND (next_attempt_at IS NULL OR next_attempt_at <= now()))
@@ -200,6 +200,7 @@ RETURNING i.id, i.attempts, i.object_key, i.source_etag, i.upload_generation;
 ```
 
 - O caminho rápido acrescenta `AND id = $imageId`.
+- A seleção travada fica numa CTE `MATERIALIZED`, executada uma vez por claim; o expurgo de esgotadas com lease vencido usa a mesma forma, em lotes de 20 (mesma razão de [payments-design.md](payments-design.md), PD-10.7).
 - **Lease de 360 s**, maior que o `maxDuration` de 300 s: uma invocação morta por timeout, OOM ou deploy libera a imagem para o próximo claim, sem intervenção.
 - `attempts` é incrementado **no claim**, e não no fim. Queda em loop (por exemplo, OOM determinístico numa entrada adversarial) consome o orçamento de tentativas e termina em `failed`; nunca vira retry infinito.
 - Se o claim fosse levar `attempts` acima de 5, a linha vai direto a `failed` (`transient_exhausted`) na mesma transação.
@@ -342,7 +343,7 @@ Um único mecanismo convergente para original processado, original falho ou aban
 
 - a linha é inserida **na mesma transação** do fato que torna o objeto descartável (`ready`, `failed`, remoção da imagem, reenvio, exclusão da conta). Não há fato sem a pendência correspondente;
 - inserção idempotente (`ON CONFLICT DO NOTHING` sobre a chave pendente);
-- o job horário reclama lotes vencidos com `FOR UPDATE SKIP LOCKED` e executa `DeleteObject`. Apagar chave inexistente é sucesso;
+- o job horário reclama lotes vencidos com `FOR UPDATE SKIP LOCKED` e executa `DeleteObject`. Apagar chave inexistente é sucesso. A seleção travada fica numa CTE `MATERIALIZED`, executada uma vez por claim, para que nenhum claim passe do lote (mesma razão de [payments-design.md](payments-design.md), PD-10.7); o teto de 20 h (seção 11) usa a mesma forma;
 - **antes de apagar uma chave de `derivatives/`, confere que nenhum `ImageDerivative` vivo a referencia.** É a segunda barreira, depois da geração na chave;
 - falha mantém a pendência com `attempts` e `lastErrorCode`, retentada no ciclo seguinte. Nunca é marcada como concluída sem sucesso real. A função atual `deleteR2Object`, que engole o erro, é substituída (#47);
 - a limpeza usa as chaves que o banco conhece; **não** depende de listar o bucket.
