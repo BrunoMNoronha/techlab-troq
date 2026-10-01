@@ -11,12 +11,14 @@ export {
   type MercadoPagoClientOptions,
   type PixChargeCreated,
   type RefundOutcome,
+  type RefundTransaction,
 } from './client';
 export {
   classifyAccreditation,
   toSearchedPayments,
   type AccreditationDivergence,
   type AccreditationVerdict,
+  type AccreditedPayment,
   type SearchedPayment,
 } from './accreditation';
 export {

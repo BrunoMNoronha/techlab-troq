@@ -1,5 +1,12 @@
 import { recordAuditEvent } from '@/modules/audit';
 import type { ListingClosureEffect } from '@/modules/listing';
+import {
+  cancelUnaccreditedCharge,
+  type CancelOutcome,
+  type ConfirmationDeps,
+} from '@/modules/payments';
+import { getPrismaClient } from '@/persistence/prisma';
+import { confirmPaymentFlow } from './payment-confirmation';
 
 // Efeito de T5/T6 sobre as solicitacoes do anuncio (data-model.md, DM-6.10;
 // listing-lifecycle.md, secao 5): roda DENTRO da transacao do encerramento,
@@ -34,3 +41,29 @@ export const endOpenReservationsOnListingClosure: ListingClosureEffect = async (
     });
   }
 };
+
+/**
+ * Depois do COMMIT de T5/T6, e fora da trava: cancela a cobranca sem acreditacao
+ * de cada reserva que o encerramento terminou, para que ela nao sobreviva a
+ * reserva (PD-8.10, PE-4.5). Cancelamento nao e reembolso (PE-7.4). Se a order
+ * ja acreditou, a confirmacao classifica RT-3 e devolve o valor. Falha aqui nao
+ * desfaz o encerramento: a tentativa continua aberta para a reconciliacao.
+ */
+export async function cancelChargesOfClosedListing(
+  listingId: string,
+  deps: ConfirmationDeps = {},
+): Promise<CancelOutcome[]> {
+  const ended = await getPrismaClient().$queryRaw<{ id: string }[]>`
+    SELECT "id"::text AS "id" FROM "contact_requests"
+    WHERE "listing_id" = ${listingId}::uuid AND "status" = 'failed'
+    ORDER BY "id"`;
+  const outcomes: CancelOutcome[] = [];
+  for (const request of ended) {
+    const { attemptId, outcome } = await cancelUnaccreditedCharge(request.id, deps);
+    if (outcome === 'accredited' && attemptId) {
+      await confirmPaymentFlow(attemptId, { origin: 'reconciliacao', deps });
+    }
+    outcomes.push(outcome);
+  }
+  return outcomes;
+}

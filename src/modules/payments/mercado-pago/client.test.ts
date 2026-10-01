@@ -267,10 +267,15 @@ describe('cancelOrder (POST /v1/orders/{id}/cancel)', () => {
 
 describe('refundOrder (POST /v1/orders/{id}/refund) — PD-8.5', () => {
   it('reembolso integral: sem corpo, com a chave recebida', async () => {
-    respond = (_req, res) => json(res, 201, { ...ORDER, status: 'refunded' });
+    respond = (_req, res) =>
+      json(res, 201, {
+        ...ORDER,
+        status: 'refunded',
+        transactions: { ...ORDER.transactions, refunds: [{ id: 'REF01ABC', amount: '0.99' }] },
+      });
     expect(await client().refundOrder(ORDER.id, KEY)).toEqual({
       ok: true,
-      value: { refunded: true, alreadyRefunded: false },
+      value: { refunded: true, alreadyRefunded: false, providerRefundId: 'REF01ABC' },
     });
     expect(received[0]).toMatchObject({ method: 'POST', url: `/v1/orders/${ORDER.id}/refund` });
     expect(received[0].body).toBe('');
@@ -282,7 +287,21 @@ describe('refundOrder (POST /v1/orders/{id}/refund) — PD-8.5', () => {
     respond = (_req, res) => json(res, 409, { errors: [{ code: 'order_already_refunded' }] });
     expect(await client().refundOrder(ORDER.id, KEY)).toEqual({
       ok: true,
-      value: { refunded: true, alreadyRefunded: true },
+      value: { refunded: true, alreadyRefunded: true, providerRefundId: null },
+    });
+  });
+
+  it('por transacao (RT-1): devolve so a transacao indicada, pelo valor cheio dela', async () => {
+    respond = (_req, res) => json(res, 201, { ...ORDER, status: 'processed' });
+    const result = await client().refundOrder(ORDER.id, KEY, {
+      providerTransactionId: 'PAY01EXCEDENTE',
+      amountCents: 99,
+    });
+    expect(result).toMatchObject({ ok: true, value: { refunded: true, alreadyRefunded: false } });
+    expect(received[0].headers['content-type']).toBe('application/json');
+    expect(received[0].headers['x-idempotency-key']).toBe(KEY);
+    expect(JSON.parse(received[0].body)).toEqual({
+      transactions: [{ id: 'PAY01EXCEDENTE', amount: '0.99' }],
     });
   });
 

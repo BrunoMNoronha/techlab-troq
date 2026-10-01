@@ -31,15 +31,22 @@ export interface SearchedPayment {
 export type AccreditationVerdict =
   | { kind: 'approved'; accreditedAt: Date; providerPaymentId: string | null }
   | { kind: 'absent' }
-  | { kind: 'multiple'; count: number }
+  /** Dois ou mais aprovados, TODOS validos: candidatos a eleicao de PD-7.1. */
+  | { kind: 'multiple'; payments: AccreditedPayment[] }
   | { kind: 'divergent'; reason: AccreditationDivergence };
+
+export interface AccreditedPayment {
+  providerPaymentId: string;
+  accreditedAt: Date;
+}
 
 export type AccreditationDivergence =
   | 'reference_mismatch'
   | 'payment_not_approved'
   | 'detail_not_accredited'
   | 'amount_mismatch'
-  | 'date_approved_invalid';
+  | 'date_approved_invalid'
+  | 'payment_id_missing';
 
 type Raw = Record<string, unknown>;
 
@@ -75,20 +82,32 @@ export function classifyAccreditation(
     return { kind: 'divergent', reason: 'reference_mismatch' };
   }
   const approved = payments.filter((p) => p.status === 'approved');
-  if (approved.length > 1) return { kind: 'multiple', count: approved.length };
   if (approved.length === 0) return { kind: 'divergent', reason: 'payment_not_approved' };
 
+  // Cada aprovado tem de ser acreditado, do valor certo e com instante valido;
+  // um so que nao seja torna o conjunto contraditorio (nunca elege por analogia).
+  const accredited: AccreditedPayment[] = [];
+  for (const payment of approved) {
+    if (payment.statusDetail !== 'accredited') {
+      return { kind: 'divergent', reason: 'detail_not_accredited' };
+    }
+    if (payment.amountCents !== expected.amountCents) {
+      return { kind: 'divergent', reason: 'amount_mismatch' };
+    }
+    if (!payment.approvedAt) return { kind: 'divergent', reason: 'date_approved_invalid' };
+    if (approved.length > 1 && !payment.providerPaymentId) {
+      return { kind: 'divergent', reason: 'payment_id_missing' };
+    }
+    accredited.push({
+      providerPaymentId: payment.providerPaymentId ?? '',
+      accreditedAt: payment.approvedAt,
+    });
+  }
+  if (accredited.length > 1) return { kind: 'multiple', payments: accredited };
   const [payment] = approved;
-  if (payment.statusDetail !== 'accredited') {
-    return { kind: 'divergent', reason: 'detail_not_accredited' };
-  }
-  if (payment.amountCents !== expected.amountCents) {
-    return { kind: 'divergent', reason: 'amount_mismatch' };
-  }
-  if (!payment.approvedAt) return { kind: 'divergent', reason: 'date_approved_invalid' };
   return {
     kind: 'approved',
-    accreditedAt: payment.approvedAt,
+    accreditedAt: accredited[0].accreditedAt,
     providerPaymentId: payment.providerPaymentId,
   };
 }

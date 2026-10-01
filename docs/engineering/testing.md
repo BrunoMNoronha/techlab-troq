@@ -156,6 +156,13 @@ Regras e expectativas:
   - `src/app/api/webhooks/mercadopago/webhook.http.integration.test.ts` prova T-13/T-14 na **rota real** do servidor. Exige `PRIVATE_SURFACE_BASE_URL`, `MERCADO_PAGO_WEBHOOK_SECRET` e `MERCADO_PAGO_APPLICATION_ID` iguais no servidor e no teste; a CI gera os dois por job.
 
   A prova por mutação (sem conferência da aplicação, manifesto do corpo, sem trava, tempestividade pelo reconhecimento e `last_updated_date` como acreditação) é local e está na PR de F3-006.
+- Reembolso técnico, duplicidade e cancelamento (#97 / F3-007): `src/modules/request/technical-refund.integration.test.ts` exige `INTEGRATION_EPHEMERAL_DB=1`, usa o Better Auth real e o provedor **simulado** com reembolso total, reembolso por transação, resposta perdida depois de devolver, `order_already_refunded` e cancelamento. Cobre:
+  - T-7, T-9 e T-16;
+  - T-8, com duas confirmações concorrentes esperando a trava (vistas em `pg_stat_activity`), eleição repetida com a busca em outra ordem e desempate lexicográfico;
+  - o reembolso por transação sem tocar o canônico;
+  - os desfechos de PD-8.5 e o cancelamento depois de T5.
+
+  Os ids sintéticos da Payments API são únicos por execução, porque `payments.provider_payment_id` é único no banco. A suíte opcional de sandbox ganhou o reembolso real de uma order `APRO` e a retentativa.
 - Adaptador do Mercado Pago (#94 / F3-004): os testes de `src/modules/payments/mercado-pago/` rodam na suíte padrão (`test:ci`), sem rede externa. O contrato HTTP é conferido contra um servidor **simulado** local (`node:http`), que recebe o que o adaptador envia e devolve cada resposta documentada. A assinatura usa segredo sintético gerado por execução. `src/modules/payments/mercado-pago/mercado-pago-sandbox.integration.test.ts` é **opcional**: exige `MERCADO_PAGO_INTEGRATION=1`, `APP_ENV=development` e Access Token **de teste**, cria orders reais de R$ 0,99 no sandbox e **não** roda na CI, no mesmo padrão de `R2_INTEGRATION`.
 - Vitrine pública (#49 / F2-011), duas suítes:
   - `src/modules/listing/public-listing.integration.test.ts` exige `INTEGRATION_EPHEMERAL_DB=1` e prova a consulta pública contra o banco: visibilidade, desempate por `id`, limites e filtros. Isola os próprios dados por uma cidade única da execução e não fala com o R2.

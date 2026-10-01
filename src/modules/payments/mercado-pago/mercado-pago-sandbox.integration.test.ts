@@ -110,4 +110,51 @@ describe.skipIf(!enabled)('Mercado Pago sandbox: Orders API real (PX-2)', () => 
       expect(verdict.accreditedAt.getTime()).toBeLessThanOrEqual(Date.now());
     }
   }, 180_000);
+
+  it('T-16 no provedor: reembolso total de order acreditada e retentativa', async () => {
+    const externalReference = `troq-sandbox-${randomUUID()}`;
+    const res = await fetch(`${MERCADO_PAGO_API_BASE_URL}/v1/orders`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${process.env.MERCADO_PAGO_ACCESS_TOKEN}`,
+        'Content-Type': 'application/json',
+        'X-Idempotency-Key': randomUUID(),
+      },
+      body: JSON.stringify({
+        type: 'online',
+        processing_mode: 'automatic',
+        external_reference: externalReference,
+        total_amount: '0.99',
+        payer: { email: TEST_PAYER, first_name: 'APRO' },
+        transactions: {
+          payments: [
+            {
+              amount: '0.99',
+              payment_method: { id: 'pix', type: 'bank_transfer' },
+              expiration_time: 'PT30M',
+            },
+          ],
+        },
+      }),
+    });
+    expect(res.status).toBe(201);
+    const orderId = ((await res.json()) as { id: string }).id;
+    let accredited = false;
+    for (let i = 0; i < 24 && !accredited; i++) {
+      await new Promise((resolve) => setTimeout(resolve, 5_000));
+      const read = await client.getOrder(orderId);
+      accredited = read.ok && read.value.state.kind === 'accredited';
+    }
+    expect(accredited).toBe(true);
+
+    const key = randomUUID();
+    const first = await client.refundOrder(orderId, key);
+    expect(first).toMatchObject({ ok: true, value: { refunded: true } });
+    // Mesma chave: a idempotencia do provedor nao devolve de novo.
+    const sameKey = await client.refundOrder(orderId, key);
+    expect(sameKey).toMatchObject({ ok: true, value: { refunded: true } });
+    // Outra chave: `order_already_refunded` e desfecho de SUCESSO (PE-7.11).
+    const otherKey = await client.refundOrder(orderId, randomUUID());
+    expect(otherKey).toMatchObject({ ok: true, value: { refunded: true, alreadyRefunded: true } });
+  }, 180_000);
 });

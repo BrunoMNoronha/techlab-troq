@@ -288,7 +288,7 @@ A regra é determinística, total e não depende de ordem de chegada, de ordem d
 - order em `created` ou `action_required`, sem acreditação: o caminho é **cancelamento** (`POST /v1/orders/{id}/cancel`), que **não** é reembolso e **não** é exceção técnica (PE-7.4, MP-6);
 - valor acreditado: o caminho é **reembolso total** (`POST /v1/orders/{id}/refund`, sem valor no corpo), com `X-Idempotency-Key` (PE-7.7, MP-5).
 
-**PD-8.4 (invariante).** O reembolso é sempre **integral**. Reembolso parcial **não** é usado no MVP: R$ 0,99 é indivisível neste modelo (PE-7.3).
+**PD-8.4 (invariante).** O reembolso é sempre **integral**. Reembolso parcial **não** é usado no MVP: R$ 0,99 é indivisível neste modelo (PE-7.3). _Atualização de 2026-10-01 (DEC-044):_ integral **por pagamento**. O excedente de duplicidade numa order com vários pagamentos é devolvido pela sua transação, com o valor cheio dela (nota de PE-7.3).
 
 **PD-8.5 (decisão arquitetural — tratamento dos erros documentados).**
 
@@ -312,6 +312,23 @@ _Atualização de 2026-10-01 (F3-004) — códigos confirmados e não confirmado
 **PD-8.10 (decisão arquitetural, F3-001, DV-2 — cobrança de reserva encerrada antes da janela).** Quando T5/T6 (pelo dono) ou T7 a T9 (pela moderação) encerram uma reserva `reserved` antes de `reservedUntil` ([data-model.md](data-model.md), DM-6.10), a order Pix dela continuaria pagável até o `expiration_time`. Para que a cobrança não sobreviva à reserva (PE-4.5), a tentativa não terminal sem acreditação segue o caminho de **cancelamento** de PD-8.3 — fora da transação do ciclo de vida, que só encerra a reserva e marca a tentativa para o trabalho de PD-10. O cancelamento é defesa adicional, não garantia: se a acreditação ocorrer mesmo assim, a confirmação encontra a solicitação fora de `reserved` e aplica RT-3 (PD-6.6, passo 5). Cancelamento **não** é reembolso e **não** é exceção técnica (PE-7.4).
 
 **PD-8.9 (invariante).** Nenhuma superfície de cliente aciona reembolso, reconciliação ou resolução de inconsistência. Todos são server-side e autorizados (PE-11.5, CI-11). Não existe rota, ação ou parâmetro que permita a uma pessoa usuária final disparar qualquer um deles.
+
+**PD-8.11 (implementação, F3-007, [#97](https://github.com/BrunoMNoronha/techlab-troq/issues/97), 2026-10-01).** Como a seção 8 foi materializada:
+
+1. **Classificação.** Na mesma transação que classifica a exceção, sob a trava do anúncio, nasce o `TechnicalRefund`: um por pagamento, com a hipótese (PD-8.2) e uma chave de idempotência aleatória **persistida**, relida em toda retentativa (PD-5.2). Abre-se também um caso `reembolso_pendente` por hipótese.
+   - **Duplicidade:** o canônico é eleito uma única vez entre os pagamentos aprovados da busca da Payments API (ADR-0008), pela regra de PD-7.1, com empate pelo menor id em ordem **lexicográfica**. O canônico segue a regra de tempestividade como pagamento único, e cada excedente vira RT-1.
+2. **Execução** (`src/modules/payments/refund.ts`). Fora de transação, logo depois do commit da classificação (`confirmPaymentFlow`), e de novo na retentativa de F3-008. A rota sai da order consultada na hora:
+   - pagamento que é a **única** transação da order: reembolso **total**;
+   - pagamento que é **uma de várias** transações: só ela, pelo valor cheio (DEC-044);
+   - pagamento que **não** é transação conhecida da order: `pendente_operacional`, sem chamada;
+   - canônico de solicitação paga: **nunca** devolvido, e a tentativa abre `inconsistente`.
+3. **Desfechos (PD-8.5).**
+   - Sucesso ou `order_already_refunded` → `concluido`. A sandbox, em 2026-10-01, confirmou que a mesma chave não devolve duas vezes e que outra chave recebe `order_already_refunded`.
+   - Indisponibilidade → `falhou_retentando`.
+   - `order_not_found` ou código não mapeado → `pendente_operacional` com caso `inconsistente`.
+   - Concluídos todos os reembolsos de uma hipótese, o caso fecha com desfecho `refunded`. A tentativa inteira de exceção passa a `reembolsada_ou_revertida`. Uma solicitação paga com excedente devolvido continua `pagamento_confirmado`.
+4. **Cancelamento (PD-8.10).** Depois do commit de T5/T6, `closeListing` cancela, fora da trava, a order sem acreditação de cada reserva encerrada, com chave persistida em `payment_attempts.cancel_idempotency_key`. A tentativa vai a `falha`, e isso não é reembolso nem cria `TechnicalRefund`. Se a order já acreditou, a confirmação aplica RT-3. A falha do cancelamento não desfaz o encerramento: a tentativa fica aberta para a reconciliação. Os encerramentos de moderação (T7–T9) ainda não existem e usarão a mesma rotina.
+5. **Limite conhecido.** A busca da Payments API não vincula os seus ids às transações da order. Por isso, com as fontes atuais, a duplicidade observada pela busca termina em `pendente_operacional`, para devolução manual do excedente.
 
 ## 9. Reversões posteriores
 

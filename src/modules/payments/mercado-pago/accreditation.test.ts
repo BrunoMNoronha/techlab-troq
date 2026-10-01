@@ -58,8 +58,27 @@ describe('classifyAccreditation (ADR-0008, decisao 4)', () => {
     expect(classify([])).toEqual({ kind: 'absent' });
   });
 
-  it('mais de um aprovado: multiple (duplicidade, PD-7)', () => {
-    expect(classify([result(), result({ id: 2 })])).toEqual({ kind: 'multiple', count: 2 });
+  it('mais de um aprovado: multiple, com os candidatos validados (PD-7)', () => {
+    expect(
+      classify([result(), result({ id: 2, date_approved: '2026-10-01T12:30:00.000-04:00' })]),
+    ).toEqual({
+      kind: 'multiple',
+      payments: [
+        { providerPaymentId: '180819249321', accreditedAt: new Date('2026-10-01T16:29:46.000Z') },
+        { providerPaymentId: '2', accreditedAt: new Date('2026-10-01T16:30:00.000Z') },
+      ],
+    });
+  });
+
+  it('duplicidade com um aprovado invalido: divergent, nunca elege por analogia', () => {
+    expect(classify([result(), result({ id: 2, date_approved: null })])).toEqual({
+      kind: 'divergent',
+      reason: 'date_approved_invalid',
+    });
+    expect(classify([result(), result({ id: null })])).toEqual({
+      kind: 'divergent',
+      reason: 'payment_id_missing',
+    });
   });
 
   it('um aprovado e outro nao aprovado: vale o aprovado', () => {

@@ -508,17 +508,20 @@ model ContactRequest {
 /// PD-2.1 — a tentativa logica de cobrar R$ 0,99 por UMA reserva. I-2: unica
 /// por solicitacao (DM-7.1); chave de idempotencia persistida e unica (DM-7.2).
 model PaymentAttempt {
-  id                String               @id @default(uuid()) @db.Uuid
-  contactRequestId  String               @unique @map("contact_request_id") @db.Uuid
-  idempotencyKey    String               @unique @map("idempotency_key")
-  externalReference String               @unique @map("external_reference")
-  providerOrderId   String?              @unique @map("provider_order_id")
-  status            PaymentAttemptStatus @default(tentativa_criada)
-  accreditedAt      DateTime?            @map("accredited_at") @db.Timestamptz(6)
-  recognizedAt      DateTime?            @map("recognized_at") @db.Timestamptz(6)
-  recognitionSource RecognitionSource?   @map("recognition_source")
-  createdAt         DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt         DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id                   String               @id @default(uuid()) @db.Uuid
+  contactRequestId     String               @unique @map("contact_request_id") @db.Uuid
+  idempotencyKey       String               @unique @map("idempotency_key")
+  externalReference    String               @unique @map("external_reference")
+  providerOrderId      String?              @unique @map("provider_order_id")
+  status               PaymentAttemptStatus @default(tentativa_criada)
+  accreditedAt         DateTime?            @map("accredited_at") @db.Timestamptz(6)
+  recognizedAt         DateTime?            @map("recognized_at") @db.Timestamptz(6)
+  recognitionSource    RecognitionSource?   @map("recognition_source")
+  /// PD-5.2 / PD-8.10 — chave do cancelamento da order, gerada na primeira
+  /// tentativa e RELIDA nas seguintes (F3-007).
+  cancelIdempotencyKey String?              @unique @map("cancel_idempotency_key")
+  createdAt            DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   contactRequest      ContactRequest        @relation(fields: [contactRequestId], references: [id], onDelete: Restrict)
   payments            Payment[]
@@ -560,6 +563,9 @@ model TechnicalRefund {
   id                String                    @id @default(uuid()) @db.Uuid
   paymentId         String                    @unique @map("payment_id") @db.Uuid
   hypothesis        TechnicalRefundHypothesis
+  /// PD-5.2 / PD-5.3 — chave do reembolso, persistida na criacao e relida em
+  /// toda retentativa (F3-007).
+  idempotencyKey    String                    @unique @map("idempotency_key")
   status            TechnicalRefundStatus     @default(pendente)
   attemptCount      Int                       @default(0) @map("attempt_count")
   lastAttemptAt     DateTime?                 @map("last_attempt_at") @db.Timestamptz(6)
