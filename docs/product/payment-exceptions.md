@@ -264,6 +264,8 @@ Quando um pagamento estiver efetivamente acreditado mas não puder legitimamente
 
 **PE-7.3** — O reembolso técnico é sempre **integral**. Ainda que a API admita devolução parcial (MP-5), o MVP não a utiliza: R$ 0,99 é indivisível neste modelo e não existe hipótese de devolução parcial.
 
+_Atualização de 2026-10-01 (DEC-044; decisão do Bruno, F3-007, [#97](https://github.com/BrunoMNoronha/techlab-troq/issues/97))._ "Integral" significa que **cada pagamento é devolvido por inteiro**; não existe devolução de fração de um pagamento. Quando dois pagamentos acreditados estão na **mesma** order (duplicidade, seção 6.2), o reembolso total da order (PE-7.7) devolveria também o canônico. Nesse caso, o excedente é devolvido **só ele, pelo valor cheio da sua transação**, pela forma de devolução por transação da API (`transactions[{ id, amount }]`, MP-5). Se a transação excedente não puder ser identificada com segurança entre as transações da order — por exemplo, quando o excedente só aparece na busca da Payments API, cujos ids não têm vínculo documentado com as transações da order —, o reembolso vai para `pendente_operacional` sem chamada ao provedor. O canônico **nunca** é devolvido.
+
 **PE-7.4** — Quando a cobrança ainda não estiver acreditada e a order estiver em `created` ou `action_required`, o caminho correto é o **cancelamento** (MP-6), não o reembolso. Cancelar cobrança não acreditada não é reembolso e não é exceção técnica.
 
 ### 10.2 O que não gera reembolso

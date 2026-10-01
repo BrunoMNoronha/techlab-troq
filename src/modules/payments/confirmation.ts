@@ -7,6 +7,7 @@ import {
   classifyAccreditation,
   createMercadoPagoClient,
   MercadoPagoConfigError,
+  type AccreditedPayment,
   type MercadoPagoClient,
   type NotificationRejection,
   type OrderSnapshot,
@@ -144,8 +145,11 @@ export type PaymentFact =
   | { kind: 'pending' }
   | { kind: 'not_accredited_terminal'; outcome: 'expired' | 'canceled' | 'failed' }
   | { kind: 'reversed' }
-  /** Mais de um pagamento acreditado: duplicidade, tratada em F3-007 (PD-7). */
-  | { kind: 'multiple_accredited' }
+  /**
+   * Mais de um pagamento acreditado (PD-7): os candidatos validados da busca,
+   * cada um com o instante autoritativo, ja espelhados em `Payment`.
+   */
+  | { kind: 'multiple_accredited'; payments: AccreditedPayment[] }
   /** Desconhecido, ausente ou contraditorio: nunca aprovado (PD-3.6, CI-9). */
   | { kind: 'inconsistent'; reason: string };
 
@@ -217,6 +221,40 @@ async function mirrorPayments(
   });
 }
 
+/**
+ * Espelha os pagamentos aprovados da BUSCA (ids numericos da Payments API) na
+ * duplicidade. Sao fatos distintos das transacoes da order (`PAY01...`); o
+ * vinculo entre os dois nao e documentado, e por isso o excedente so e
+ * devolvido por transacao quando ele E uma transacao conhecida da order
+ * (decisao RT-1, F3-007).
+ */
+async function mirrorSearchPayments(
+  attempt: AttemptRow,
+  payments: AccreditedPayment[],
+): Promise<'ok' | 'foreign_payment'> {
+  return getPrismaClient().$transaction(async (tx) => {
+    const [{ at }] = await tx.$queryRaw<{ at: Date }[]>`SELECT now() AS "at"`;
+    for (const payment of payments) {
+      const mirrored = await tx.$queryRaw<{ id: string }[]>`
+        INSERT INTO "payments" (
+          "id", "payment_attempt_id", "provider_payment_id", "amount_cents",
+          "provider_status", "provider_status_detail", "accredited_at",
+          "first_observed_at", "last_observed_at", "created_at", "updated_at")
+        VALUES (
+          ${randomUUID()}::uuid, ${attempt.id}::uuid, ${payment.providerPaymentId},
+          ${REQUEST_PRICE_CENTS}, 'approved', 'accredited', ${payment.accreditedAt},
+          ${at}, ${at}, ${at}, ${at})
+        ON CONFLICT ("provider_payment_id") DO UPDATE SET
+          "last_observed_at" = EXCLUDED."last_observed_at",
+          "updated_at" = EXCLUDED."updated_at"
+        WHERE "payments"."payment_attempt_id" = EXCLUDED."payment_attempt_id"
+        RETURNING "id"::text AS "id"`;
+      if (mirrored.length === 0) return 'foreign_payment';
+    }
+    return 'ok';
+  });
+}
+
 async function readFact(attempt: AttemptRow, gateway: MercadoPagoClient): Promise<PaymentFact> {
   if (!attempt.providerOrderId) return { kind: 'no_order' };
 
@@ -256,11 +294,10 @@ async function readFact(attempt: AttemptRow, gateway: MercadoPagoClient): Promis
 
   // Acreditada pela order: o instante vem da Payments API (ADR-0008).
   const pix = snapshot.payments.filter((p) => p.isPix);
-  if (pix.length > 1) return { kind: 'multiple_accredited' };
-  const [pixPayment] = pix;
-  if (pixPayment.amountCents !== REQUEST_PRICE_CENTS) {
+  if (pix.some((p) => p.amountCents !== REQUEST_PRICE_CENTS)) {
     return { kind: 'inconsistent', reason: 'order_amount_mismatch' };
   }
+  const [pixPayment] = pix;
   const search = await gateway.findPaymentAccreditation(attempt.externalReference);
   if (!search.ok) {
     return {
@@ -281,13 +318,23 @@ async function readFact(attempt: AttemptRow, gateway: MercadoPagoClient): Promis
     case 'absent':
       // Atraso de indexacao possivel: indisponibilidade, nunca recusa (ADR-0008, 4).
       return { kind: 'unavailable', reason: 'search_absent' };
-    case 'multiple':
-      return { kind: 'multiple_accredited' };
+    case 'multiple': {
+      if ((await mirrorPayments(attempt, snapshot, null)) === 'foreign_payment') {
+        return { kind: 'inconsistent', reason: 'payment_of_other_attempt' };
+      }
+      if ((await mirrorSearchPayments(attempt, verdict.payments)) === 'foreign_payment') {
+        return { kind: 'inconsistent', reason: 'payment_of_other_attempt' };
+      }
+      return { kind: 'multiple_accredited', payments: verdict.payments };
+    }
     case 'divergent':
       return { kind: 'inconsistent', reason: verdict.reason };
     case 'approved':
       break;
   }
+  // Uma busca com um so aprovado contra uma order com varias transacoes Pix
+  // nao diz qual delas acreditou: contradicao, nunca analogia.
+  if (pix.length > 1) return { kind: 'inconsistent', reason: 'order_search_mismatch' };
   const accreditation = {
     providerPaymentId: pixPayment.providerPaymentId,
     accreditedAt: verdict.accreditedAt,
@@ -389,7 +436,7 @@ export async function confirmPaymentInTx(
   return true;
 }
 
-async function openCaseInTx(
+export async function openCaseInTx(
   tx: Prisma.TransactionClient,
   input: {
     attemptId: string;
@@ -435,10 +482,138 @@ async function openCaseInTx(
 }
 
 /**
+ * Reembolso tecnico INTEGRAL do pagamento, com a hipotese determinada e
+ * persistida no ato da classificacao (PD-8.2, PE-7.2) e a chave de
+ * idempotencia gerada AGORA e relida em toda retentativa (PD-5.2). Um por
+ * pagamento (DM-7.x): reclassificar nao cria segundo reembolso.
+ */
+export async function createTechnicalRefundInTx(
+  tx: Prisma.TransactionClient,
+  input: {
+    attemptId: string;
+    providerPaymentId: string;
+    hypothesis: 'rt_1' | 'rt_2' | 'rt_3';
+    at: Date;
+  },
+): Promise<string | null> {
+  const [created] = await tx.$queryRaw<{ id: string }[]>`
+    INSERT INTO "technical_refunds" (
+      "id", "payment_id", "hypothesis", "idempotency_key", "status", "attempt_count",
+      "created_at", "updated_at")
+    SELECT ${randomUUID()}::uuid, p."id", ${input.hypothesis}::"technical_refund_hypothesis",
+           ${randomUUID()}, 'pendente', 0, ${input.at}, ${input.at}
+    FROM "payments" p
+    WHERE p."payment_attempt_id" = ${input.attemptId}::uuid
+      AND p."provider_payment_id" = ${input.providerPaymentId}
+    ON CONFLICT ("payment_id") DO NOTHING
+    RETURNING "id"::text AS "id"`;
+  if (!created) return null;
+  await recordAuditEvent(tx, {
+    eventType: 'payment.refund_classified',
+    actorId: null,
+    targetType: 'technical_refund',
+    targetId: created.id,
+    result: 'success',
+    occurredAt: input.at,
+    details: {
+      paymentAttemptId: input.attemptId,
+      providerPaymentId: input.providerPaymentId,
+      hypothesis: input.hypothesis,
+    },
+  });
+  return created.id;
+}
+
+/**
+ * Duplicidade (PD-7): elege o canonico UMA unica vez — menor instante de
+ * acreditacao autoritativo, empate pelo menor id do provedor em ordem
+ * lexicografica (PD-7.1) — por atualizacao condicionada a nao haver canonico
+ * (DM-7.4, PD-7.2). Reprocessar devolve a eleicao ja feita, nunca reelege.
+ * O excedente vira RT-1 (PD-7.3), auditado com o canonico (PE-3.5).
+ */
+export async function resolveDuplicateInTx(
+  tx: Prisma.TransactionClient,
+  input: { attemptId: string; payments: AccreditedPayment[]; at: Date },
+): Promise<{ canonical: AccreditedPayment; excess: AccreditedPayment[] }> {
+  const candidates = [...input.payments].sort(
+    (a, b) =>
+      a.accreditedAt.getTime() - b.accreditedAt.getTime() ||
+      (a.providerPaymentId < b.providerPaymentId
+        ? -1
+        : a.providerPaymentId > b.providerPaymentId
+          ? 1
+          : 0),
+  );
+  const [existing] = await tx.$queryRaw<{ providerPaymentId: string }[]>`
+    SELECT "provider_payment_id" AS "providerPaymentId" FROM "payments"
+    WHERE "payment_attempt_id" = ${input.attemptId}::uuid AND "is_canonical"`;
+  let canonical = candidates.find((c) => c.providerPaymentId === existing?.providerPaymentId);
+  if (!canonical) {
+    if (existing) {
+      // Canonico ja eleito fora deste conjunto: nao se reelege por analogia.
+      throw new Error('duplicate_canonical_outside_candidates');
+    }
+    canonical = candidates[0];
+    await tx.$executeRaw`
+      UPDATE "payments" SET "is_canonical" = true, "updated_at" = ${input.at}
+      WHERE "payment_attempt_id" = ${input.attemptId}::uuid
+        AND "provider_payment_id" = ${canonical.providerPaymentId}
+        AND NOT EXISTS (
+          SELECT 1 FROM "payments"
+          WHERE "payment_attempt_id" = ${input.attemptId}::uuid AND "is_canonical")`;
+    await recordAuditEvent(tx, {
+      eventType: 'payment.duplicate_resolved',
+      actorId: null,
+      targetType: 'payment_attempt',
+      targetId: input.attemptId,
+      result: 'success',
+      occurredAt: input.at,
+      details: {
+        rule: 'PD-7.1',
+        canonical: {
+          providerPaymentId: canonical.providerPaymentId,
+          accreditedAt: canonical.accreditedAt.toISOString(),
+        },
+        excess: candidates.slice(1).map((c) => ({
+          providerPaymentId: c.providerPaymentId,
+          accreditedAt: c.accreditedAt.toISOString(),
+        })),
+      },
+    });
+  }
+  const chosen = canonical;
+  const excess = candidates.filter((c) => c.providerPaymentId !== chosen.providerPaymentId);
+  for (const payment of excess) {
+    await createTechnicalRefundInTx(tx, {
+      attemptId: input.attemptId,
+      providerPaymentId: payment.providerPaymentId,
+      hypothesis: 'rt_1',
+      at: input.at,
+    });
+  }
+  if (excess.length > 0) {
+    await openCaseInTx(tx, {
+      attemptId: input.attemptId,
+      kind: 'reembolso_pendente',
+      reason: 'rt_1',
+      at: input.at,
+    });
+  }
+  // Caso aberto por F3-006 antes do tratamento: fecha com o desfecho real.
+  await tx.$executeRaw`
+    UPDATE "reconciliation_cases"
+    SET "closed_at" = ${input.at}, "outcome" = 'resolved_by_election', "updated_at" = ${input.at}
+    WHERE "payment_attempt_id" = ${input.attemptId}::uuid AND "kind" = 'divergencia'
+      AND "reason" = 'multiple_accredited' AND "closed_at" IS NULL`;
+  return { canonical: chosen, excess };
+}
+
+/**
  * Acreditacao que NAO pode virar solicitacao paga (PD-6.6, passo 5): RT-2
  * (depois do fim da janela) ou RT-3 (sem reserva valida vigente). A hipotese e
- * determinada e persistida AGORA (PD-8.2), no caso aberto; o reembolso em si e
- * de F3-007 (#97). Nao concede direito (PD-3.3).
+ * determinada e persistida AGORA (PD-8.2): `TechnicalRefund` e caso aberto, na
+ * mesma transacao. O reembolso e executado fora dela (refund.ts). Nao concede
+ * direito (PD-3.3).
  */
 export async function classifyPaymentExceptionInTx(
   tx: Prisma.TransactionClient,
@@ -461,6 +636,12 @@ export async function classifyPaymentExceptionInTx(
     WHERE "id" = ${input.attemptId}::uuid
       AND "status" IN ('aguardando_pagamento', 'em_confirmacao')`;
   if (updated === 0) return false;
+  await createTechnicalRefundInTx(tx, {
+    attemptId: input.attemptId,
+    providerPaymentId: input.providerPaymentId,
+    hypothesis: input.hypothesis,
+    at: input.at,
+  });
   await openCaseInTx(tx, {
     attemptId: input.attemptId,
     kind: 'reembolso_pendente',
@@ -538,7 +719,7 @@ export async function forwardCaseInTx(
   tx: Prisma.TransactionClient,
   input: {
     attemptId: string;
-    reason: 'multiple_accredited' | 'reversed_before_confirmation';
+    reason: 'reversed_before_confirmation';
     at: Date;
   },
 ): Promise<void> {

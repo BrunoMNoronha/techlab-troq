@@ -33,6 +33,7 @@ const FIXTURE_EXCEPTIONS = new Set([
   'src/modules/request/charge.integration.test.ts',
   'src/modules/request/payment-confirmation.integration.test.ts',
   'src/modules/request/reservation.integration.test.ts',
+  'src/modules/request/technical-refund.integration.test.ts',
 ]);
 
 const CONTACT_DATA = /userContact|UserContact|user_contacts/;

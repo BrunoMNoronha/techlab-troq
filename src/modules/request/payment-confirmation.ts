@@ -7,9 +7,12 @@ import {
   forwardCaseInTx,
   markInconsistentInTx,
   observeAttempt,
+  processRefundsForAttempt,
   readAttemptStatusInTx,
   recordNotAccreditedInTx,
+  resolveDuplicateInTx,
   returnToAwaitingPaymentInTx,
+  type AccreditedPayment,
   type ConfirmationDeps,
   type PaymentFact,
   type RecognitionOrigin,
@@ -26,7 +29,9 @@ import { getPrismaClient } from '@/persistence/prisma';
 //   `pagamento_confirmado`, consumindo a vaga (PE-4.2: vale mesmo reconhecida
 //   muito depois);
 // - acreditada fora da janela -> RT-2; sem reserva valida vigente -> RT-3. A
-//   hipotese fica persistida no caso aberto (PD-8.2); o reembolso e de F3-007;
+//   hipotese fica persistida no `TechnicalRefund` e no caso aberto (PD-8.2);
+// - dois ou mais acreditados -> canonico eleito uma vez (PD-7.1) segue as
+//   regras acima, e o excedente vira RT-1 (PD-7.3);
 // - terminal sem acreditacao -> `expirada`/`falha` e a reserva viva sai da vaga;
 // - pendente -> volta a aguardar; desconhecido -> `inconsistente`;
 // - indisponivel -> nada muda (PD-6.9).
@@ -34,6 +39,9 @@ import { getPrismaClient } from '@/persistence/prisma';
 // A transacao NAO consulta o estado do anuncio: reserva viva de anuncio
 // `paused` confirma (PD-6.11). Toda transicao e por UPDATE condicionado ao
 // estado de origem: reprocessar o mesmo fato nao produz segundo efeito (PD-5.4).
+//
+// Depois do COMMIT, e fora da trava, a primeira tentativa de reembolso de toda
+// excecao (F3-007; PD-8). A retentativa periodica e de F3-008.
 
 export type PaymentConfirmationOutcome =
   | 'confirmed'
@@ -44,7 +52,6 @@ export type PaymentConfirmationOutcome =
   | 'pending'
   | 'unavailable'
   | 'no_order'
-  | 'multiple_accredited'
   | 'reversed'
   | 'inconsistent'
   | 'not_found'
@@ -169,16 +176,32 @@ async function applyFact(
       }
       return 'reversed';
     }
-    case 'multiple_accredited':
-      await forwardCaseInTx(tx, { attemptId, reason: 'multiple_accredited', at });
-      return 'multiple_accredited';
+    case 'multiple_accredited': {
+      // PD-7: o canonico e eleito uma unica vez; o excedente vira RT-1 na mesma
+      // transacao. O canonico segue a regra de tempestividade como unico.
+      const { canonical } = await resolveDuplicateInTx(tx, {
+        attemptId,
+        payments: fact.payments,
+        at,
+      });
+      return applyAccreditation(tx, attemptId, request, canonical, origin, at);
+    }
     case 'inconsistent':
       await markInconsistentInTx(tx, { attemptId, reason: fact.reason, at });
       return 'inconsistent';
     case 'accredited':
-      break;
+      return applyAccreditation(tx, attemptId, request, fact, origin, at);
   }
+}
 
+async function applyAccreditation(
+  tx: Prisma.TransactionClient,
+  attemptId: string,
+  request: RequestRow,
+  fact: AccreditedPayment,
+  origin: RecognitionOrigin,
+  at: Date,
+): Promise<PaymentConfirmationOutcome> {
   const status = await readAttemptStatusInTx(tx, attemptId);
   if (status === 'pagamento_confirmado') return 'already_confirmed';
   if (status !== 'aguardando_pagamento' && status !== 'em_confirmacao') return 'no_effect';
@@ -236,7 +259,7 @@ export async function confirmPaymentFlow(
   if (observed.fact.kind === 'unavailable') return 'unavailable';
   if (observed.fact.kind === 'no_order') return 'no_order';
 
-  return getPrismaClient().$transaction(async (tx) => {
+  const outcome = await getPrismaClient().$transaction(async (tx) => {
     const before = await readRequest(tx, observed.contactRequestId);
     if (!before) return 'not_found';
     // Trava de linha do anuncio: serializa com reservas, encerramentos e outras
@@ -248,4 +271,20 @@ export async function confirmPaymentFlow(
     const [{ at }] = await tx.$queryRaw<{ at: Date }[]>`SELECT now() AS "at"`;
     return applyFact(tx, attemptId, request, observed.fact, options.origin, at);
   });
+
+  const owesRefund =
+    observed.fact.kind === 'multiple_accredited' ||
+    outcome === 'exception_rt_2' ||
+    outcome === 'exception_rt_3';
+  if (owesRefund) {
+    try {
+      await processRefundsForAttempt(attemptId, options.deps);
+    } catch (err) {
+      // O reembolso continua `pendente` e visivel; F3-008 retenta (PD-8.6).
+      console.error('[request] falha na primeira tentativa de reembolso', {
+        error: err instanceof Error ? err.name : 'unknown',
+      });
+    }
+  }
+  return outcome;
 }

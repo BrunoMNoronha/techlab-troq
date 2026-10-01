@@ -22,7 +22,7 @@ export { getPixPaymentFlow, requestContactUnlockFlow } from './charge-flow';
 export type { PixChargeFailureReason, PixChargeResult } from './charge-flow';
 export { createContactRequest, RESERVATION_WINDOW_MS } from './reservation';
 export type { ContactRequestFailureReason, ContactRequestResult } from './reservation';
-export { endOpenReservationsOnListingClosure } from './closure';
+export { cancelChargesOfClosedListing, endOpenReservationsOnListingClosure } from './closure';
 // F3-006 (#96): efeito do fato de pagamento sobre a vaga, sob a trava do anuncio.
 export { confirmPaymentFlow } from './payment-confirmation';
 export type {

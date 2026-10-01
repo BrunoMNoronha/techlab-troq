@@ -46,7 +46,28 @@ export interface PixChargeCreated {
   instructions: PixInstructions | null;
 }
 
-export type RefundOutcome = { refunded: true; alreadyRefunded: boolean };
+export type RefundOutcome = {
+  refunded: true;
+  alreadyRefunded: boolean;
+  /** Primeiro `transactions.refunds[].id` da resposta (MP-5), se houver. */
+  providerRefundId: string | null;
+};
+
+/** Transacao da order a devolver por inteiro (decisao RT-1 do Bruno, F3-007). */
+export interface RefundTransaction {
+  providerTransactionId: string;
+  amountCents: number;
+}
+
+function refundIdOf(body: unknown): string | null {
+  if (typeof body !== 'object' || body === null) return null;
+  const transactions = (body as Record<string, unknown>).transactions;
+  if (typeof transactions !== 'object' || transactions === null) return null;
+  const refunds = (transactions as Record<string, unknown>).refunds;
+  const first = Array.isArray(refunds) ? (refunds[0] as Record<string, unknown> | undefined) : null;
+  const id = first?.id;
+  return typeof id === 'string' && ERROR_CODE.test(id) ? id : null;
+}
 
 export interface MercadoPagoClientOptions {
   /** Somente para teste: `fetch` e URL base injetados por fabrica, nunca por variavel. */
@@ -221,24 +242,45 @@ export function createMercadoPagoClient(options: MercadoPagoClientOptions = {}) 
     },
 
     /**
-     * `POST /v1/orders/{id}/refund` sem corpo: reembolso INTEGRAL (PD-8.4).
+     * `POST /v1/orders/{id}/refund` (MP-5). Sem `transaction`: reembolso TOTAL da
+     * order, sem corpo (PD-8.4). Com `transaction`: devolve SO aquela transacao,
+     * pelo valor CHEIO dela — `transactions[{ id, amount }]` —, para o excedente
+     * de duplicidade sem tocar o canonico (decisao RT-1, F3-007; PE-7.3 lida como
+     * "cada pagamento e devolvido por inteiro").
      * `order_already_refunded` e desfecho de SUCESSO, nao erro (PD-8.5, PE-7.11).
      */
     async refundOrder(
       providerOrderId: string,
       idempotencyKey: string,
+      transaction?: RefundTransaction,
     ): Promise<GatewayResult<RefundOutcome>> {
       const raw = await call(
         'POST',
         `/v1/orders/${encodeURIComponent(providerOrderId)}/refund`,
         idempotencyKey,
+        transaction
+          ? {
+              transactions: [
+                {
+                  id: transaction.providerTransactionId,
+                  amount: centsToDecimal(transaction.amountCents),
+                },
+              ],
+            }
+          : undefined,
       );
       if (isFailure(raw)) return raw;
       if (raw.status === 200 || raw.status === 201) {
-        return { ok: true, value: { refunded: true, alreadyRefunded: false } };
+        return {
+          ok: true,
+          value: { refunded: true, alreadyRefunded: false, providerRefundId: refundIdOf(raw.body) },
+        };
       }
       if (errorCode(raw.body) === 'order_already_refunded') {
-        return { ok: true, value: { refunded: true, alreadyRefunded: true } };
+        return {
+          ok: true,
+          value: { refunded: true, alreadyRefunded: true, providerRefundId: null },
+        };
       }
       return fail(raw);
     },

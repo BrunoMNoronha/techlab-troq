@@ -152,6 +152,14 @@ function handle(req: IncomingMessage, res: ServerResponse, raw: string) {
       order ? reply(res, 200, order) : reply(res, 404, { errors: [{ code: 'order_not_found' }] }),
     );
   }
+  // Reembolso total (F3-007): a primeira tentativa roda logo depois da excecao.
+  const refund = /^\/v1\/orders\/([^/]+)\/refund$/.exec(url.pathname);
+  if (req.method === 'POST' && refund) {
+    const order = sim.byId.get(decodeURIComponent(refund[1]));
+    if (!order) return reply(res, 404, { errors: [{ code: 'order_not_found' }] });
+    Object.assign(order, { status: 'refunded', status_detail: 'refunded' });
+    return reply(res, 201, order);
+  }
   if (req.method === 'GET' && url.pathname === '/v1/payments/search') {
     const reference = url.searchParams.get('external_reference') ?? '';
     return void respondWith(res, sim.searchMode, () =>
@@ -421,16 +429,25 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
           select: { id: true },
         })
       ).map((c) => c.id);
+      const refundIds = (
+        await prisma().technicalRefund.findMany({
+          where: { payment: { paymentAttemptId: { in: attemptIds } } },
+          select: { id: true },
+        })
+      ).map((r) => r.id);
       await prisma().auditEvent.deleteMany({
         where: {
           OR: [
             { actorId: { in: userIds } },
-            { targetId: { in: [...attemptIds, ...requestIds, ...caseIds] } },
+            { targetId: { in: [...attemptIds, ...requestIds, ...caseIds, ...refundIds] } },
             { details: { path: ['providerRequestId'], string_starts_with: REQUEST_PREFIX } },
           ],
         },
       });
       await prisma().reconciliationCase.deleteMany({ where: { id: { in: caseIds } } });
+      await prisma().technicalRefund.deleteMany({
+        where: { payment: { paymentAttemptId: { in: attemptIds } } },
+      });
       await prisma().paymentNotification.deleteMany({
         where: {
           OR: [
@@ -780,8 +797,11 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
         expect(sb.request.status).toBe('paid');
         expect(sb.attempt.status).toBe('pagamento_confirmado');
         expect(sa.request.status).toBe('expired');
-        expect(sa.attempt.status).toBe('reembolso_pendente');
-        expect(sa.cases.map((c) => [c.kind, c.reason])).toEqual([['reembolso_pendente', 'rt_3']]);
+        // A excecao e devolvida logo depois (F3-007): caso fechado com desfecho real.
+        expect(sa.attempt.status).toBe('reembolsada_ou_revertida');
+        expect(sa.cases.map((c) => [c.kind, c.reason, c.outcome])).toEqual([
+          ['reembolso_pendente', 'rt_3', 'refunded'],
+        ]);
         expect(await prisma().contactRequest.count({ where: { listingId, status: 'paid' } })).toBe(
           3,
         );
@@ -902,7 +922,7 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
     });
 
     // -----------------------------------------------------------------------
-    describe('encaminhamentos (F3-007, F3-011) e desfechos sem acreditacao', () => {
+    describe('excecoes, duplicidade e desfechos sem acreditacao', () => {
       it('acreditada DEPOIS da janela: RT-2 persistida, sem vaga, reserva expirada', async () => {
         const listingId = await publishedListing();
         const r = await reserve('r4', listingId);
@@ -915,28 +935,31 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
 
         const s = await state(r);
         expect(s.request.status).toBe('expired');
-        expect(s.attempt.status).toBe('reembolso_pendente');
-        expect(s.cases.map((c) => [c.kind, c.reason])).toEqual([['reembolso_pendente', 'rt_2']]);
+        expect(s.attempt.status).toBe('reembolsada_ou_revertida');
+        expect(s.cases.map((c) => [c.kind, c.reason, c.outcome])).toEqual([
+          ['reembolso_pendente', 'rt_2', 'refunded'],
+        ]);
         expect(await audits('request.paid', [r.contactRequestId])).toHaveLength(0);
       });
 
-      it('dois pagamentos aprovados na busca: caso de duplicidade, sem aprovacao', async () => {
+      it('dois pagamentos aprovados na busca: canonico eleito e excedente RT-1 (F3-007)', async () => {
         const listingId = await publishedListing();
         const r = await reserve('r0', listingId);
         const { reservedFrom } = await windowOf(r.contactRequestId);
         accredit(r.orderId, new Date(reservedFrom.getTime() + 60_000));
         const [first] = sim.search.get(r.externalReference)!;
-        sim.search.set(r.externalReference, [first, { ...first, id: 999 }]);
+        sim.search.set(r.externalReference, [first, { ...first, id: `${String(first.id)}9` }]);
 
         expect(
           await confirmPaymentFlow(r.attemptId, { origin: 'reconciliacao', deps: { gateway } }),
-        ).toBe('multiple_accredited');
+        ).toBe('confirmed');
 
         const s = await state(r);
-        expect(s.request.status).toBe('reserved');
-        expect(s.attempt.status).toBe('aguardando_pagamento');
-        expect(s.cases.map((c) => [c.kind, c.reason])).toEqual([
-          ['divergencia', 'multiple_accredited'],
+        expect(s.request.status).toBe('paid');
+        expect(s.attempt.status).toBe('pagamento_confirmado');
+        expect(s.cases.map((c) => [c.kind, c.reason])).toEqual([['reembolso_pendente', 'rt_1']]);
+        expect(s.payments.filter((p) => p.isCanonical).map((p) => p.providerPaymentId)).toEqual([
+          String(first.id),
         ]);
       });
 

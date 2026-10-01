@@ -212,7 +212,13 @@ Não houve achado crítico nem alto. Um achado médio foi corrigido aqui: a reda
 
 O Sentry do navegador chegou ao projeto de `preview`. Achado baixo, fora do gate: depois de pausar ou reativar, o cabeçalho de estado da edição só se atualiza ao recarregar. Pendências fora da fase, com destino, estão na seção V9 da transição: RF-021 restante, exclusão integral (RF-023), retenção executável, hardening, produção, cron e lifecycle do R2 em [#56](https://github.com/BrunoMNoronha/techlab-troq/issues/56); [#76](https://github.com/BrunoMNoronha/techlab-troq/issues/76), [#81](https://github.com/BrunoMNoronha/techlab-troq/issues/81) e [#77](https://github.com/BrunoMNoronha/techlab-troq/issues/77) sem decisão.
 
-**Próximas entregas: [#97](https://github.com/BrunoMNoronha/techlab-troq/issues/97) (F3-007) e [#99](https://github.com/BrunoMNoronha/techlab-troq/issues/99) (F3-009), em paralelo.** F3-006 ([#96](https://github.com/BrunoMNoronha/techlab-troq/issues/96)) entregou em 2026-10-01:
+**Próximas entregas: [#98](https://github.com/BrunoMNoronha/techlab-troq/issues/98) (F3-008) e [#99](https://github.com/BrunoMNoronha/techlab-troq/issues/99) (F3-009), em paralelo.** F3-007 ([#97](https://github.com/BrunoMNoronha/techlab-troq/issues/97)) entregou em 2026-10-01:
+- o reembolso técnico com hipótese e chave persistidas no ato da classificação;
+- a duplicidade com canônico eleito uma vez;
+- a devolução do excedente por transação (DEC-044);
+- o cancelamento da order de reserva encerrada por T5/T6.
+
+T-7, T-8, T-9 e T-16 foram provados contra PostgreSQL real e provedor simulado, e o reembolso e a retentativa também na sandbox. Registro anterior: as próximas eram #97 e #99.  F3-006 ([#96](https://github.com/BrunoMNoronha/techlab-troq/issues/96)) entregou em 2026-10-01:
 - o receptor `POST /api/webhooks/mercadopago`, que autoriza só pela assinatura;
 - a confirmação contra o estado autoritativo, com o instante de acreditação da ADR-0008;
 - a transação de efeito sob a trava do anúncio, com T-2, T-3, T-4, T-6 e T-10 a T-14 provados contra PostgreSQL real e provedor simulado, e T-13/T-14 também na rota HTTP real;

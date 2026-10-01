@@ -38,6 +38,8 @@ export type {
 export {
   classifyPaymentExceptionInTx,
   confirmPaymentInTx,
+  createTechnicalRefundInTx,
+  resolveDuplicateInTx,
   forwardCaseInTx,
   markInconsistentInTx,
   markNotificationProcessed,
@@ -56,6 +58,14 @@ export type {
   RegisteredNotification,
 } from './confirmation';
 
+// F3-007 (#97): reembolso tecnico e cancelamento, fora de transacao (PD-8).
+export {
+  cancelUnaccreditedCharge,
+  processRefundsForAttempt,
+  processTechnicalRefund,
+} from './refund';
+export type { CancelOutcome, RefundRunOutcome } from './refund';
+
 // F3-004 (#94): adaptador do Mercado Pago. O dominio recebe snapshot e veredito
 // em termos do TROQ; o vocabulario do provedor fica em ./mercado-pago.
 export {
@@ -66,6 +76,7 @@ export {
 } from './mercado-pago';
 export type {
   AccreditationVerdict,
+  AccreditedPayment,
   AuthoritativeState,
   CreatePixChargeInput,
   GatewayFailure,
@@ -79,4 +90,5 @@ export type {
   PixInstructions,
   ProviderPaymentFact,
   RefundOutcome,
+  RefundTransaction,
 } from './mercado-pago';

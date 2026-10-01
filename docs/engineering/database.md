@@ -428,6 +428,10 @@ Só SQL customizado: o índice único parcial `contact_requests_live_reservation
 
 Validação local em PostgreSQL descartável: `migrate deploy` sobre o histórico, índice conferido em `\d contact_requests`, caso negativo (segunda linha `reserved` da mesma conta no mesmo anúncio recusada pelo índice) e caso positivo (linha `expired` da mesma conta aceita), em `src/modules/request/reservation.integration.test.ts`. Antes do `migrate deploy` em `preview`, nenhuma linha pode violar o índice: duas reservas `reserved` da mesma conta no mesmo anúncio.
 
-## 18. Revisão
+## 18. Migration `20261001180000_refund_cancel_idempotency_keys` (F3-007)
+
+Acrescenta `technical_refunds.idempotency_key` (`NOT NULL`, único) e `payment_attempts.cancel_idempotency_key` (único, nulo até o primeiro cancelamento): as chaves persistidas de reembolso e de cancelamento (PD-5.2, PD-5.3). O `migrate dev --create-only` recusa rodar sem terminal interativo diante de coluna obrigatória. Por isso o SQL foi gerado por `prisma migrate diff --from-config-datasource --to-schema` e reduzido à mão, deixando de fora, de novo, os três `DROP DEFAULT` das tabelas do Better Auth. Antes desta migration, `technical_refunds` estava vazia em `preview` (consulta só de leitura em 2026-10-01), condição para a coluna `NOT NULL` sem default. Validação: `migrate deploy` em banco descartável e `migrate diff` mostrando só o drift preexistente.
+
+## 19. Revisão
 
 Revisado a cada migration nova, quando `production` for provisionado (banco, environment e job com aprovação), quando a Vercel Preview receber `DATABASE_URL`, quando a fronteira de runtime mudar de adapter ou de estratégia de reuso, quando o workflow da seção 15 mudar de contrato, ou quando [../architecture/data-model.md](../architecture/data-model.md) mudar.
