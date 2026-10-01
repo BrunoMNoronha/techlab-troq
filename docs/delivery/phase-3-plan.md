@@ -55,10 +55,10 @@ Nenhum item exige alterar RB-001 a RB-006, DEC-027 a DEC-038 ou as ADRs. As corr
 | DV-6 | A trava do anúncio é a de linha (`FOR UPDATE`), e não `pg_advisory_xact_lock` como dizia DM-6.3: duas travas diferentes não serializariam alocação e encerramento | DECISÃO TÉCNICA | DM-6.3, DM-6.12; PD-4.6 | #93, #96, #99 |
 | DV-7 | Relógio do banco (`now()` da transação) para janela, expiração e tempestividade | DECISÃO TÉCNICA | DM-6.12, PD-4.6 | #93, #96 |
 | DV-8 | Trabalhos de pagamento com `FOR UPDATE SKIP LOCKED`, diferentes do lease da mídia | CONFIRMADO | PD-10.7 | #98, #101 |
-| DV-9 | Sem cron; critério de prova virou decisão aberta | DECISÃO PENDENTE | PD-10.7; **OD-15** | #98, #101, #102, #105 |
+| DV-9 | Sem cron; critério de prova | DECISÃO (2026-10-01) | OD-15 fechada por **DEC-042** (seção 5.1) | #98, #101, #102, #105 |
 | DV-12 | Conferir a aplicação antes do HMAC; o simulador é rejeitado quando `data.id` tem maiúsculas | DECISÃO TÉCNICA | PD-6.10 | #94, #96 |
 | DV-13 | C-5 provado por ator autenticado sem relação com a negociação, com reexecução por moderador real na Fase 4 | DECISÃO TÉCNICA | Nota da seção 10 de contact-release | #100, #55 |
-| DV-14 | Limite de reservas não pagas | DECISÃO PENDENTE | **OD-14**; nota de DM-6.11 | #93 |
+| DV-14 | Limite de reservas não pagas | DECISÃO (2026-10-01) | OD-14 fechada por **DEC-041** ([../product/reservation-limit.md](../product/reservation-limit.md)): uma reserva viva por conta em cada anúncio | #93 |
 | DV-15 | `force-dynamic`, `runtime = 'nodejs'`, sem `revalidate`, `Cache-Control: private, no-store` explícito em route handler, sem `unstable_cache`/`'use cache'` | DECISÃO TÉCNICA | CR-7.4 | #100 |
 | DV-19 | E.164 brasileiro normalizado no servidor; a escrita devolve só confirmação e a interface não exibe dígitos | DECISÃO TÉCNICA | DM-4.5, CR-2.5 | #92 |
 | DV-1 | Contato como pré-condição | DECISÃO (2026-10-01) | OD-13 fechada por **DEC-040** ([../product/advertiser-contact.md](../product/advertiser-contact.md)): exigido antes de aceitar nova solicitação, não na publicação | #92 |
@@ -71,16 +71,16 @@ Nenhum item exige alterar RB-001 a RB-006, DEC-027 a DEC-038 ou as ADRs. As corr
 | --- | --- | --- | --- | --- |
 | DP-1 | Exigir contato cadastrado antes de publicar (T1/T4) ou antes de aceitar solicitação | Acrescenta pré-condição de negócio ao ciclo de vida | F3-002 aplica a pré-condição; sem decisão, F3-002 entrega só o cadastro | Exigir antes de aceitar nova solicitação, no servidor, e orientar o anunciante no painel |
 | DP-2 | Efeito da pausa sobre reserva com Pix já emitido (só se F3-001 não resolver DV-3 pelas fontes) | Pode gerar ou evitar reembolso e consumo de vaga | F3-003, F3-006, F3-007 | — (F3-001 tenta resolver primeiro) |
-| DP-3 | Critério de prova da Fase 3 sem cron: aceitar convergência por invocação autenticada em `preview` e manter o plano pago em #56, ou contratar o plano agora | Custo recorrente (R-09) e leitura de ADR-0006, decisão 11 ("qualquer ambiente em que se pretenda exercitar o fluxo de pagamento de ponta a ponta") | F3-008, F3-011, F3-012, F3-015 | Aceitar a invocação autenticada para o gate da Fase 3: em `preview` não há cron em plano nenhum (V-5) |
+| DP-3 | Critério de prova da Fase 3 sem cron: aceitar convergência por invocação autenticada em `preview` e manter o plano pago em #56, ou contratar o plano agora | Custo recorrente (R-09) e leitura de ADR-0006, decisão 11 ("qualquer ambiente em que se pretenda exercitar o fluxo de pagamento de ponta a ponta") | F3-008, F3-011, F3-012, F3-015 | Aceitar a invocação autenticada para o gate da Fase 3: em `preview` não há cron em plano nenhum (V-5)  **Decidida em 2026-10-01: DEC-042 (seção 5.1).** |
 | DP-4 | Alvo do webhook do Mercado Pago em `preview`: URL estável e como atravessar a proteção da Vercel | Configuração em painel externo e exposição de endpoint | F3-012 | Alias estável de `preview` com *Protection Bypass for Automation* ou projeto de validação dedicado, como no F0-010; avaliar o risco de segredo em URL antes de escolher |
-| DP-5 | Limite de reservas não pagas por conta (por anúncio e por tempo) | Nova regra de produto (DM-6.11) | F3-003 | No máximo uma reserva `reserved` ativa por conta em cada anúncio |
+| DP-5 | Limite de reservas não pagas por conta (por anúncio e por tempo) | Nova regra de produto (DM-6.11) | F3-003 | No máximo uma reserva `reserved` ativa por conta em cada anúncio  **Decidida em 2026-10-01: DEC-041.** |
 
 **Pré-requisitos externos.**
 
 | # | Pré-requisito | Responsável | Necessário para |
 | --- | --- | --- | --- |
 | PX-1 | Tornar `Integração (PostgreSQL efêmero)` required check em `main` | Bruno (configuração do repositório) | Recomendado antes do merge de F3-003 |
-| PX-2 | Credencial de **teste** do Mercado Pago e aplicação de teste com chave de webhook, cadastradas em `development` e `preview` | Bruno (painel); agente registra em `environments.md` | F3-012 (obrigatório); suíte opcional de F3-004 |
+| PX-2 | Credencial de **teste** do Mercado Pago e aplicação de teste com chave de webhook, cadastradas em `development` e `preview` | Bruno (painel); agente registra em `environments.md` | F3-012 (obrigatório); suíte opcional de F3-004  Preferir as credenciais de teste automáticas de uma aplicação nova de Checkout Transparente com Orders (notícia oficial de 2025-11-19); se a Orders API as recusar, usar `APP_USR` de aplicação de usuário de teste vendedor, como no F0-010 ([../engineering/environments.md](../engineering/environments.md), seção 5.6). Também valida OD-16 antes de F3-006 completa. |
 | PX-3 | URL de webhook alcançável no `preview` configurada no painel (depois de DP-4) | Bruno | F3-012 |
 
 ## 4. Issues executoras
@@ -89,7 +89,7 @@ Nenhum item exige alterar RB-001 a RB-006, DEC-027 a DEC-038 ou as ADRs. As corr
 | --- | --- | --- | --- | --- | --- | --- |
 | F3-001 | [#91](https://github.com/BrunoMNoronha/techlab-troq/issues/91) | Reconciliar os contratos da Fase 3 com o código da Fase 2 | — | — | Documental | concluído (2026-10-01, seção 2.1) |
 | F3-002 | [#92](https://github.com/BrunoMNoronha/techlab-troq/issues/92) | Cadastrar e proteger o contato do anunciante | #91; OD-13 (só a pré-condição) | C-1 | PostgreSQL efêmero + HTTP | concluído (2026-10-01; OD-13 fechada por DEC-040) |
-| F3-003 | [#93](https://github.com/BrunoMNoronha/techlab-troq/issues/93) | Solicitação com reserva atômica e limite de três | #91; OD-14 (só o limite) | T-1 | PostgreSQL efêmero, concorrente | concluído (2026-10-01; limite de OD-14 pendente) |
+| F3-003 | [#93](https://github.com/BrunoMNoronha/techlab-troq/issues/93) | Solicitação com reserva atômica e limite de três | #91; OD-14 (só o limite; fechada por DEC-041 e aplicada em 2026-10-01) | T-1 | PostgreSQL efêmero, concorrente | concluído (2026-10-01; limite de OD-14 pendente) |
 | F3-004 | [#94](https://github.com/BrunoMNoronha/techlab-troq/issues/94) | Adaptador do Mercado Pago | #91; PX-2 (opcional) | Contrato do adaptador | Simulado; sandbox opcional | concluído (2026-10-01; abriu OD-16) |
 | F3-005 | [#95](https://github.com/BrunoMNoronha/techlab-troq/issues/95) | Cobrança Pix de R$ 0,99 | #93, #94 | T-15 | PostgreSQL efêmero + simulado | concluído (2026-10-01) |
 | F3-006 | [#96](https://github.com/BrunoMNoronha/techlab-troq/issues/96) | Webhook e confirmação autoritativa | #95; OD-16 | T-2, T-3, T-4, T-6, T-10, T-11, T-12, T-13, T-14 | PostgreSQL efêmero + HTTP | bloqueado |
@@ -148,6 +148,10 @@ Cada teste do contrato pertence a exatamente uma issue executora; F3-014 reexecu
 | Escolha, desistência e reseleção (RF-013, DEC-032) | #99 |
 | Autorização e liberação ao escolhido com auditoria (RF-014, RF-015, RF-022) | #92, #99, #100 |
 | Notificações RF-021 e observabilidade | #103 |
+
+### 5.1 Critério de prova sem agendamento (DEC-042, fecha OD-15)
+
+Decisão do Bruno em 2026-10-01. O gate da Fase 3 aceita a convergência dos trabalhos de pagamento — reconciliação e retentativa de reembolso (F3-008), reversões (F3-011) — provada por **invocação autenticada** com `CRON_SECRET` em `preview`, no mesmo padrão dos trabalhos de mídia da Fase 2, mais os testes **T-5** e **T-18** sobre PostgreSQL real. Em `preview` não existe cron em plano nenhum, e no Hobby a cadência de 5 minutos é impossível ([../adr/0006-async-work-scheduling-concurrency.md](../adr/0006-async-work-scheduling-concurrency.md), V-4 e V-5). Por isso o plano pago fica para a preparação de produção, rastreada em [#56](https://github.com/BrunoMNoronha/techlab-troq/issues/56) (R-09). A decisão **não** enfraquece PD-3.4 nem a decisão 11 de ADR-0006: nenhum ambiente de produção opera sem a cadência real.
 
 ## 6. Issues abertas fora da fase
 

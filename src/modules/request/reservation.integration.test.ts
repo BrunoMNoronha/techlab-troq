@@ -306,6 +306,90 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
       });
     });
 
+    describe('DEC-041: uma reserva viva por conta em cada anuncio (OD-14)', () => {
+      it('segunda solicitacao da mesma conta e recusada; outra conta segue normal', async () => {
+        const listingId = await listingIn('published');
+        expect((await as('r0', () => createContactRequest(listingId))).success).toBe(true);
+
+        const again = await as('r0', () => createContactRequest(listingId));
+        expect(again).toMatchObject({ success: false, reason: 'active_reservation' });
+        expect((await as('r1', () => createContactRequest(listingId))).success).toBe(true);
+
+        const rows = await requestsOf(listingId);
+        expect(rows.filter((r) => r.status === 'reserved')).toHaveLength(2);
+        expect(new Set(rows.map((r) => r.requesterId)).size).toBe(2);
+      });
+
+      it('vencida a reserva, a mesma conta reserva de novo no ato da alocacao', async () => {
+        const listingId = await listingIn('published');
+        expect((await as('r0', () => createContactRequest(listingId))).success).toBe(true);
+        await prisma().$executeRaw`
+          UPDATE "contact_requests"
+          SET "reserved_from" = now() - interval '2 hours',
+              "reserved_until" = now() - interval '90 minutes'
+          WHERE "listing_id" = ${listingId}::uuid`;
+
+        expect((await as('r0', () => createContactRequest(listingId))).success).toBe(true);
+        const rows = await requestsOf(listingId);
+        expect(rows.map((r) => r.status).sort()).toEqual(['expired', 'reserved']);
+      });
+
+      it(`com a trava segurada: ${N} pedidos simultaneos da mesma conta criam uma unica reserva`, async () => {
+        const listingId = await listingIn('published');
+        let pending!: Promise<ContactRequestResult[]>;
+        let waiting = 0;
+
+        await prisma().$transaction(
+          async (tx: Prisma.TransactionClient) => {
+            await tx.$queryRaw`SELECT "id" FROM "listings" WHERE "id" = ${listingId}::uuid FOR UPDATE`;
+            pending = Promise.all(
+              Array.from({ length: N }, () => as('r0', () => createContactRequest(listingId))),
+            );
+            for (let i = 0; i < 100 && waiting < N; i++) {
+              await new Promise((resolve) => setTimeout(resolve, 100));
+              const [{ count }] = await tx.$queryRaw<{ count: number }[]>`
+                SELECT count(*)::int AS "count" FROM pg_stat_activity
+                WHERE "datname" = current_database()
+                  AND "wait_event_type" = 'Lock'
+                  AND "pid" <> pg_backend_pid()`;
+              waiting = count;
+            }
+          },
+          { timeout: 30_000, maxWait: 10_000 },
+        );
+
+        expect(waiting).toBe(N);
+        const results = await pending;
+        expect(results.filter((r) => r.success)).toHaveLength(1);
+        expect(results.filter((r) => !r.success && r.reason === 'active_reservation')).toHaveLength(
+          N - 1,
+        );
+        expect(await requestsOf(listingId)).toHaveLength(1);
+      });
+
+      it('garantia de banco: segunda linha reserved da mesma conta viola o indice parcial', async () => {
+        const listingId = await listingIn('published');
+        expect((await as('r0', () => createContactRequest(listingId))).success).toBe(true);
+        const [first] = await requestsOf(listingId);
+
+        await expect(
+          prisma().$executeRaw`
+            INSERT INTO "contact_requests"
+              ("id", "listing_id", "requester_id", "slot_index", "status",
+               "reserved_from", "reserved_until", "created_at", "updated_at")
+            VALUES (${randomUUID()}::uuid, ${listingId}::uuid, ${first.requesterId}::uuid, 2,
+                    'reserved', now(), now() + interval '30 minutes', now(), now())`,
+        ).rejects.toThrow(/contact_requests_live_reservation_per_requester_key/);
+        // Fora de `reserved` a mesma conta pode ter outras linhas (historico).
+        await prisma().$executeRaw`
+          INSERT INTO "contact_requests"
+            ("id", "listing_id", "requester_id", "slot_index", "status",
+             "reserved_from", "reserved_until", "created_at", "updated_at")
+          VALUES (${randomUUID()}::uuid, ${listingId}::uuid, ${first.requesterId}::uuid, 2,
+                  'expired', now() - interval '2 hours', now() - interval '90 minutes', now(), now())`;
+      });
+    });
+
     describe('reserva, tentativa e chave (PD-4.1 passo 1, PD-5)', () => {
       it('cria reserva de 30 min pelo relogio do banco, tentativa com chave persistida e auditoria', async () => {
         const listingId = await listingIn('published');

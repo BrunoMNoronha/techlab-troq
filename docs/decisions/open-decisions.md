@@ -11,21 +11,7 @@ Registro das questões que **ainda não foram decididas** (criado na Fase 0; rea
 
 ## Lista de decisões abertas
 
-**Três decisões abertas**: OD-14 e OD-15, registradas em 2026-10-01 por F3-001 ([#91](https://github.com/BrunoMNoronha/techlab-troq/issues/91)) a partir do inventário de [../delivery/phase-3-plan.md](../delivery/phase-3-plan.md), e OD-16, registrada por F3-004 ([#94](https://github.com/BrunoMNoronha/techlab-troq/issues/94)). Nenhuma delas reabre decisão vigente: cada uma é uma questão que as fontes atuais não respondem e que muda o que a Fase 3 implementa ou como o seu gate é provado. Todas são do Bruno. OD-13, aberta na mesma data, foi fechada em 2026-10-01 por [../product/advertiser-contact.md](../product/advertiser-contact.md) (DEC-040), na execução de F3-002 ([#92](https://github.com/BrunoMNoronha/techlab-troq/issues/92)).
-
-### OD-14 — Limite de reservas não pagas por conta
-
-- **Contexto:** a reserva ocupa uma das três vagas por 30 minutos sem pagamento (RF-010, [../architecture/payments-design.md](../architecture/payments-design.md), PD-3.1). Uma mesma conta pode ocupar as três vagas, deixá-las expirar e repetir, impedindo que outros solicitem. [../architecture/data-model.md](../architecture/data-model.md), DM-6.11, registra que nenhuma decisão vigente restringe solicitações por solicitante e que criar a restrição seria inventar requisito.
-- **O que falta decidir:** se existe limite e qual — por exemplo, no máximo uma reserva `reserved` ativa por conta em cada anúncio, um teto de reservas expiradas por período, ou nenhum.
-- **Recomendação (F3-000):** no máximo uma reserva `reserved` ativa por conta em cada anúncio, verificada sob a trava do anúncio (DM-6.12). Não altera RB-003 nem o limite de três pagas.
-- **Bloqueia:** a regra de limite em [#93](https://github.com/BrunoMNoronha/techlab-troq/issues/93) (F3-003). Sem decisão, #93 implementa DM-6.11 como está e o risco fica registrado.
-
-### OD-15 — Critério de prova da Fase 3 sem agendamento
-
-- **Contexto:** a reconciliação de pagamentos tem cadência de 5 minutos (PD-3.4). [../adr/0006-async-work-scheduling-concurrency.md](../adr/0006-async-work-scheduling-concurrency.md) registra que o Hobby limita o cron a uma execução diária (V-4), que o cron só dispara no deployment de **produção** (V-5) e, na decisão 11, que "qualquer ambiente em que se pretenda exercitar o fluxo de pagamento de ponta a ponta precisa de plano que permita a cadência real". Em `preview` não há cron em plano nenhum. A Fase 2 provou os trabalhos de mídia por invocação autenticada com `CRON_SECRET`, e o plano pago já está rastreado em [#56](https://github.com/BrunoMNoronha/techlab-troq/issues/56) (R-09).
-- **O que falta decidir:** se o gate da Fase 3 aceita a convergência provada por invocação autenticada dos trabalhos em `preview`, mais os testes T-5 e T-18 sobre banco real, deixando o plano pago para a preparação de produção, ou se o plano pago é contratado agora.
-- **Recomendação (F3-000):** aceitar a invocação autenticada para o gate da Fase 3. A cadência real só existe em produção, de modo que contratar o plano agora não tornaria o `preview` agendado. Isso não enfraquece PD-3.4 nem dispensa o plano pago antes do lançamento.
-- **Bloqueia:** a homologação de [#102](https://github.com/BrunoMNoronha/techlab-troq/issues/102) (F3-012) e o gate em [#105](https://github.com/BrunoMNoronha/techlab-troq/issues/105) (F3-015). Não bloqueia a implementação.
+**Uma decisão aberta**: OD-16, registrada por F3-004 ([#94](https://github.com/BrunoMNoronha/techlab-troq/issues/94)), do Bruno. Ela não reabre decisão vigente; é uma questão que as fontes atuais não respondem e que muda o que a Fase 3 implementa. OD-13, OD-14 e OD-15, abertas em 2026-10-01 por F3-001 ([#91](https://github.com/BrunoMNoronha/techlab-troq/issues/91)), foram fechadas na mesma data por decisão do Bruno: OD-13 por [../product/advertiser-contact.md](../product/advertiser-contact.md) (DEC-040), OD-14 por [../product/reservation-limit.md](../product/reservation-limit.md) (DEC-041) e OD-15 por [../delivery/phase-3-plan.md](../delivery/phase-3-plan.md), seção 5.1 (DEC-042).
 
 ### OD-16 — Fonte do instante de acreditação autoritativo
 
@@ -36,6 +22,14 @@ Registro das questões que **ainda não foram decididas** (criado na Fase 0; rea
   3. usar como cota superior o primeiro instante em que o TROQ **observou** a acreditação. Isso prova a tempestividade quando a observação ocorre dentro da janela, mas transforma em exceção técnica a acreditação tempestiva reconhecida tarde (T-6), o que **altera o efeito de PE-4.2** e por isso exige decisão de negócio.
 - **Recomendação (F3-004):** opção 1, validada com PX-2 antes de F3-006. A opção 3 só como regime provisório, se o Bruno aceitar o efeito sobre PE-4.2.
 - **Bloqueia:** a verificação de tempestividade da confirmação em [#96](https://github.com/BrunoMNoronha/techlab-troq/issues/96) (F3-006) e, por consequência, T-5 a T-8. Não bloqueia F3-005 nem o adaptador.
+
+- **Achado de 2026-10-01, depois de F3-002 (evidência nova, sem decisão nova).** O Bruno escolheu a **opção 1**; falta a validação com PX-2 antes da ADR. Fatos levantados:
+  1. A referência oficial de `GET /v1/orders/{id}` (Checkout Transparente, consultada em 2026-10-01) confirma que `transactions.payments[]` não tem campo de aprovação ou acreditação.
+  2. No spike F0-010, os sete pagamentos aprovados do experimento de tarifas eram **orders Pix**, e `GET /v1/payments/{id}` respondeu para eles com `fee_details` e `money_release_date`. Logo, o pagamento de uma order é consultável na Payments API.
+  3. O identificador consultável provavelmente **não** é o `PAY01…` da order. A `ticket_url` da order Pix traz um id **numérico** (`/sandbox/payments/<id>/ticket` no experimento 1 do spike), e a `ticket_url` **some** da order depois da acreditação. Se for esse o caminho, o id tem de ser guardado na criação da cobrança.
+  4. Duas fontes oficiais divergem sobre a credencial. A referência de `GET /v1/orders/{id}` lista o erro `invalid_credentials` ("não há suporte para credenciais de teste; utilize usuários de teste com credenciais de produção"). Já a [notícia de 2025-11-19](https://www.mercadopago.com.br/developers/pt/news/2025/11/19/Streamlined-integration-testing-with-automatic-credentials) diz que **aplicações novas** de Checkout Transparente com Orders recebem Access Token e Public Key de teste automaticamente, e que todo o desenvolvimento e a validação podem usar só essas credenciais. O spike F0-010 usou o caminho antigo: credenciais `APP_USR` de uma aplicação criada dentro de um usuário de teste vendedor. Caminho para PX-2: primeiro, as credenciais de teste automáticas de uma aplicação nova; se a Orders API as recusar com `invalid_credentials`, o arranjo do spike. Nunca credenciais de produção da conta real.
+  5. O sandbox promove o Pix a aprovado sozinho em cerca de 49 s (spike, experimento 4), o que permite conferir `date_approved` sem transferência real.
+  A validação com PX-2 deve testar `payments[].id`, `reference_id`, `attempts[].id` e o id da `ticket_url`, e registrar qual deles responde em `GET /v1/payments/{id}`.
 
 **Fora desta lista, por ser configuração e não decisão de produto ou de arquitetura:** o alvo do webhook do Mercado Pago em `preview` (DP-4 de F3-000), registrado como pré-requisito pendente em [../engineering/environments.md](../engineering/environments.md), seção 5.6.
 
@@ -66,6 +60,8 @@ Itens que já constaram desta lista e foram fechados por documento próprio. O I
 | OD-11 | Elegibilidade etária formal | [../product/age-eligibility.md](../product/age-eligibility.md) | DEC-034 em [decision-log.md](decision-log.md) |
 | OD-12 | Natureza da demonstração de interesse | [../product/interest-flow.md](../product/interest-flow.md) | DEC-035 em [decision-log.md](decision-log.md) |
 | OD-13 | Contato do anunciante como pré-condição | [../product/advertiser-contact.md](../product/advertiser-contact.md) | DEC-040 em [decision-log.md](decision-log.md) |
+| OD-14 | Limite de reservas não pagas por conta | [../product/reservation-limit.md](../product/reservation-limit.md) | DEC-041 em [decision-log.md](decision-log.md) |
+| OD-15 | Critério de prova da Fase 3 sem agendamento | [../delivery/phase-3-plan.md](../delivery/phase-3-plan.md), seção 5.1 | DEC-042 em [decision-log.md](decision-log.md) |
 
 ## Itens explicitamente fora desta lista
 

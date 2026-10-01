@@ -214,6 +214,8 @@ Se não houver índice livre, a transação termina recusando a solicitação �
 
 _Atualização de 2026-10-01 (F3-001)._ A consequência — uma conta pode ocupar as três vagas com reservas não pagas, repetidamente — foi registrada como decisão aberta **OD-14** em [../decisions/open-decisions.md](../decisions/open-decisions.md). Até o seu fechamento, DM-6.11 vale como está.
 
+_Atualização de 2026-10-01 (DEC-041, fecha OD-14)._ Cada conta tem **no máximo uma reserva viva** (`reserved`) em cada anúncio ([../product/reservation-limit.md](../product/reservation-limit.md)). A verificação roda sob a trava do anúncio (DM-6.12), depois de expirar as vencidas (DM-6.3); a garantia é o índice único parcial `contact_requests_live_reservation_per_requester_key` sobre `(listing_id, requester_id)` restrito a `status = 'reserved'`. Fora de `reserved`, DM-6.11 continua valendo: a mesma pessoa pode ter mais de uma solicitação no mesmo anúncio ao longo do tempo.
+
 **DM-6.12 (decisão técnica, F3-001, DV-6 e DV-7 — a trava e o relógio).**
 
 1. **A trava do anúncio é a trava de linha** `SELECT … FROM listings WHERE id = … FOR UPDATE`, a mesma que a Fase 2 adotou nas transições do dono e na gestão de imagens (`src/modules/listing/lifecycle.ts`, `src/modules/media/upload.ts`). Alocação de vaga (DM-6.3), confirmação (DM-6.6), transições T5 a T9 (DM-6.10) e escolha (DM-8) adquirem **essa mesma** trava.
@@ -422,7 +424,7 @@ Consolidação verificável. A coluna "protegida por" é o compromisso que a Fas
 | Estados de negociação além de `active` e `closed` | **Rejeitada** | DEC-029, seção 3, proíbe expressamente |
 | Modelar "desistência" como estado, evento ou motivo | **Rejeitada** | DEC-029, seção 9.3, e DEC-032, seção 7, rejeitaram motivo, culpado e resultado |
 | Uma tabela de log por módulo | **Rejeitada** | Imutabilidade, retenção e proibição de dado protegido são propriedades da trilha; espalhá-las garante que uma das cópias as viole (AR-9.2) |
-| Proibir duas solicitações do mesmo usuário no mesmo anúncio | **Rejeitada** | Nenhuma decisão vigente proíbe; criar a regra aqui seria inventar requisito de produto ausente (DM-6.11) |
+| Proibir duas solicitações do mesmo usuário no mesmo anúncio | **Rejeitada** | Nenhuma decisão vigente proíbe; criar a regra aqui seria inventar requisito de produto ausente (DM-6.11). Desde 2026-10-01, DEC-041 proíbe só duas reservas **vivas** simultâneas |
 
 ## 15. Rastreabilidade
 

@@ -422,6 +422,12 @@ A migration **não** inclui os três `ALTER … updated_at DROP DEFAULT` que `mi
 
 Validação local, em PostgreSQL descartável (seção 12): `migrate deploy` em banco vazio e `migrate status` sem pendência; aplicação sobre banco com dados legados sintéticos, com backfill conferido; introspecção confirmando a restrição adiável; casos negativos (`ready` sem confirmação e `failure_code` fora da lista recusados; troca de posições 1↔2 numa transação aceita; posição duplicada recusada no `COMMIT`; segunda inserção pendente da mesma chave vira no-op). A aplicação ao Neon de `preview` é feita **somente** pelo workflow da seção 15, depois do merge.
 
-## 17. Revisão
+## 17. Migration `20261001160818_reservation_per_requester` (DEC-041)
+
+Só SQL customizado: o índice único parcial `contact_requests_live_reservation_per_requester_key` sobre `contact_requests(listing_id, requester_id)` restrito a `status = 'reserved'`, garantia de banco de [../product/reservation-limit.md](../product/reservation-limit.md). Gerada com `prisma migrate dev --create-only` e reescrita à mão. Como na seção 16, os três `ALTER … updated_at DROP DEFAULT` das tabelas do Better Auth que o `migrate dev` voltou a propor **não** entraram: são drift preexistente, fora do escopo.
+
+Validação local em PostgreSQL descartável: `migrate deploy` sobre o histórico, índice conferido em `\d contact_requests`, caso negativo (segunda linha `reserved` da mesma conta no mesmo anúncio recusada pelo índice) e caso positivo (linha `expired` da mesma conta aceita), em `src/modules/request/reservation.integration.test.ts`. Antes do `migrate deploy` em `preview`, nenhuma linha pode violar o índice: duas reservas `reserved` da mesma conta no mesmo anúncio.
+
+## 18. Revisão
 
 Revisado a cada migration nova, quando `production` for provisionado (banco, environment e job com aprovação), quando a Vercel Preview receber `DATABASE_URL`, quando a fronteira de runtime mudar de adapter ou de estratégia de reuso, quando o workflow da seção 15 mudar de contrato, ou quando [../architecture/data-model.md](../architecture/data-model.md) mudar.
