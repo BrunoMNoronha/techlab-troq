@@ -89,7 +89,7 @@ const sim = {
   unavailable: new Set<string>(),
   /** Cria a order e DERRUBA a resposta (passo 3 nunca acontece). */
   dropCreate: false,
-  refundMode: 'ok' as 'ok' | 'unavailable' | 'rate_limited' | 'rejected',
+  refundMode: 'ok' as 'ok' | 'unavailable' | 'rate_limited' | 'rejected' | 'cannot_refund',
   refundPosts: [] as string[],
   refundCalls: [] as { orderId: string; key: string; applied: boolean }[],
   cancelCalls: [] as { orderId: string; key: string }[],
@@ -175,6 +175,10 @@ function handle(req: IncomingMessage, res: ServerResponse, raw: string) {
     if (sim.refundMode === 'unavailable') return reply(res, 503, {});
     if (sim.refundMode === 'rate_limited') {
       return reply(res, 429, { errors: [{ code: 'too_many_requests' }] });
+    }
+    if (sim.refundMode === 'cannot_refund') {
+      // Recusa generica documentada (409); DEC-045 a trata como saldo insuficiente.
+      return reply(res, 409, { errors: [{ code: 'cannot_refund_order' }] });
     }
     if (sim.refundMode === 'rejected') {
       // Codigo que a lista oficial NAO documenta (saldo insuficiente presumido).
@@ -914,7 +918,90 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
         ]);
       });
 
-      it('saldo insuficiente / 180 dias: codigo NAO documentado fica no mapeamento conservador', async () => {
+      it('DEC-045 saldo: cannot_refund_order -> falhou_retentando com recuo, sem inconsistencia; conclui com a MESMA chave', async () => {
+        const r = await failingRefund('r1');
+        sim.refundMode = 'cannot_refund';
+        await makeDue([], [r.refundId]);
+        await park([], [r.refundId]);
+        expect(await retryRefunds()).toMatchObject({ claimed: 1, retrying: 1 });
+
+        let s = await state(r);
+        expect(s.refunds[0]).toMatchObject({
+          status: 'falhou_retentando',
+          attemptCount: 2,
+          lastAttemptResult: 'refund_cannot_refund',
+        });
+        expect(s.refunds[0].nextAttemptAt!.getTime() - s.refunds[0].lastAttemptAt!.getTime()).toBe(
+          refundBackoffHours(2) * 3_600_000,
+        );
+        expect(s.cases.map((c) => [c.kind, c.closedAt])).toEqual([['reembolso_pendente', null]]);
+
+        // Saldo reposto: a retentativa seguinte conclui, com a chave persistida.
+        sim.refundMode = 'ok';
+        await makeDue([], [r.refundId]);
+        expect(await retryRefunds()).toMatchObject({ claimed: 1, concluded: 1 });
+        s = await state(r);
+        expect(s.refunds[0]).toMatchObject({ status: 'concluido', attemptCount: 3 });
+        expect(s.cases.find((c) => c.kind === 'reembolso_pendente')?.outcome).toBe('refunded');
+        expect(sim.refundCalls.filter((c) => c.orderId === r.orderId).map((c) => c.key)).toEqual([
+          s.refunds[0].idempotencyKey,
+        ]);
+      });
+
+      it('DEC-045: cannot_refund_order com a order NAO acreditada e definitivo -> inconsistente, sem retentar', async () => {
+        const r = await failingRefund('r0');
+        const order = sim.byId.get(r.orderId!)!;
+        Object.assign(order, { status: 'canceled', status_detail: 'canceled' });
+        sim.refundMode = 'cannot_refund';
+        await makeDue([], [r.refundId]);
+        await park([], [r.refundId]);
+        expect(await retryRefunds()).toMatchObject({ claimed: 1, inconsistent: 1 });
+
+        const s = await state(r);
+        expect(s.refunds[0]).toMatchObject({
+          status: 'pendente_operacional',
+          lastAttemptResult: 'refund_rejected_cannot_refund_order',
+          nextAttemptAt: null,
+        });
+        expect(s.cases.map((c) => [c.kind, c.closedAt])).toEqual([
+          ['reembolso_pendente', null],
+          ['inconsistente', null],
+        ]);
+      });
+
+      it('DEC-045 prazo: aprovacao com 180 dias ou mais -> pendente_operacional imediato, SEM chamada; 179 dias ainda chama', async () => {
+        const expired = await failingRefund('r0');
+        const inside = await failingRefund('r2');
+        const age = async (r: Reserved, days: number) => {
+          await prisma().$executeRaw`
+            UPDATE "payments" SET "accredited_at" = now() - make_interval(days => ${days}::int)
+            WHERE "payment_attempt_id" = ${r.attemptId}::uuid`;
+        };
+        await age(expired, 180);
+        await age(inside, 179);
+        await makeDue([], [expired.refundId, inside.refundId]);
+        await park([], [expired.refundId, inside.refundId]);
+        const posts = sim.refundPosts.length;
+
+        expect(await retryRefunds()).toMatchObject({ claimed: 2, operational: 1, concluded: 1 });
+        // So o reembolso dentro do prazo chegou ao provedor.
+        expect(sim.refundPosts.slice(posts)).toEqual([inside.orderId]);
+
+        const s = await state(expired);
+        expect(s.refunds[0]).toMatchObject({
+          status: 'pendente_operacional',
+          attemptCount: 2,
+          lastAttemptResult: 'refund_window_expired',
+          nextAttemptAt: null,
+          concludedAt: null,
+        });
+        // Limite do provedor, nao inconsistencia; o caso continua ABERTO (PD-3.5).
+        expect(s.cases.map((c) => [c.kind, c.closedAt])).toEqual([['reembolso_pendente', null]]);
+        expect(s.attempt.status).toBe('reembolso_pendente');
+        expect((await state(inside)).refunds[0].status).toBe('concluido');
+      });
+
+      it('codigo NAO documentado fica no mapeamento conservador', async () => {
         const r = await failingRefund('r2');
         sim.refundMode = 'rejected';
         await makeDue([], [r.refundId]);

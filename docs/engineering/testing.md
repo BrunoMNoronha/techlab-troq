@@ -179,6 +179,13 @@ Regras e expectativas:
   - resposta só de contagens.
 
   A prova por mutação é local e está na PR de F3-008: reclamar sem `SKIP LOCKED`, não avançar o próximo instante, fechar caso por esgotamento e aceitar requisição sem segredo.
+
+  DEC-045 (2026-10-01) acrescentou três provas à retentativa:
+  - `cannot_refund_order` com a order acreditada → `falhou_retentando` com recuo, sem `inconsistente`, e conclusão posterior com a mesma chave;
+  - a mesma recusa com a order não acreditada → `inconsistente`;
+  - aprovação com 180 dias → `pendente_operacional` sem chamada ao provedor, e com 179 dias o reembolso ainda é feito.
+
+  Mutações locais pegas: sem a guarda de prazo, prazo de 181 dias, sem o mapeamento de `cannot_refund_order` e sem conferir o estado da order. A suíte de sandbox ganhou a busca de orders por `external_reference` (F3-008): credencial de teste aceita, referência inexistente → lista vazia, e a order criada é achada.
 - Adaptador do Mercado Pago (#94 / F3-004): os testes de `src/modules/payments/mercado-pago/` rodam na suíte padrão (`test:ci`), sem rede externa. O contrato HTTP é conferido contra um servidor **simulado** local (`node:http`), que recebe o que o adaptador envia e devolve cada resposta documentada. A assinatura usa segredo sintético gerado por execução. `src/modules/payments/mercado-pago/mercado-pago-sandbox.integration.test.ts` é **opcional**: exige `MERCADO_PAGO_INTEGRATION=1`, `APP_ENV=development` e Access Token **de teste**, cria orders reais de R$ 0,99 no sandbox e **não** roda na CI, no mesmo padrão de `R2_INTEGRATION`.
 - Vitrine pública (#49 / F2-011), duas suítes:
   - `src/modules/listing/public-listing.integration.test.ts` exige `INTEGRATION_EPHEMERAL_DB=1` e prova a consulta pública contra o banco: visibilidade, desempate por `id`, limites e filtros. Isola os próprios dados por uma cidade única da execução e não fala com o R2.

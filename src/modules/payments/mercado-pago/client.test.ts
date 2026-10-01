@@ -311,7 +311,7 @@ describe('refundOrder (POST /v1/orders/{id}/refund) — PD-8.5', () => {
   });
 
   it.each([
-    [409, { errors: [{ code: 'cannot_refund_order' }] }, 'cannot_refund_order'],
+    [409, { errors: [{ code: 'idempotency_key_already_used' }] }, 'idempotency_key_already_used'],
     [400, { errors: [{ code: 'refund_amount_exceeds' }] }, 'refund_amount_exceeds'],
     [400, { message: 'sem codigo' }, 'unmapped'],
     [400, { code: 'codigo com espaco' }, 'unmapped'],
@@ -330,6 +330,8 @@ describe('refundOrder (POST /v1/orders/{id}/refund) — PD-8.5', () => {
     [429, { errors: [{ code: 'too_many_requests' }] }, 'rate_limited'],
     [429, { errors: [{ code: 'usage_quota_exceeded' }] }, 'rate_limited'],
     [409, { errors: [{ code: 'order_refund_already_in_process' }] }, 'in_process'],
+    // DEC-045: recusa generica documentada; saldo insuficiente presumido.
+    [409, { errors: [{ code: 'cannot_refund_order' }] }, 'cannot_refund'],
   ] as const)(
     'transitorio documentado (HTTP %i, %o) vira unavailable',
     async (status, body, reason) => {
@@ -341,6 +343,16 @@ describe('refundOrder (POST /v1/orders/{id}/refund) — PD-8.5', () => {
       });
     },
   );
+
+  it('DEC-045: cannot_refund_order so e retentavel com o HTTP 409 documentado', async () => {
+    respond = (_req, res) => json(res, 400, { errors: [{ code: 'cannot_refund_order' }] });
+    expect(await client().refundOrder(ORDER.id, KEY)).toEqual({
+      ok: false,
+      kind: 'rejected',
+      httpStatus: 400,
+      code: 'cannot_refund_order',
+    });
+  });
 
   it.each([['insufficient_balance'], ['insufficient_funds'], ['refund_period_exceeded']])(
     'saldo e 180 dias NAO documentados: "%s" fica rejected, sem adivinhar',
