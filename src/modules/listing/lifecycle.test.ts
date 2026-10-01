@@ -3,12 +3,17 @@ import {
   publishListing,
   pauseListing,
   reactivateListing,
-  closeListing,
   discardDraft,
   getPublicFeed,
   getPublicListingDetail,
 } from './actions';
-import { auditEventFor, transitionCode, TRANSITION_RULES } from './lifecycle';
+import {
+  auditEventFor,
+  closeOwnedListing,
+  transitionCode,
+  transitionListing,
+  TRANSITION_RULES,
+} from './lifecycle';
 import { LISTING_COMPLIANCE_TERMS_VERSION } from './compliance';
 import * as identityModule from '@/modules/identity';
 import * as prismaModule from '@/persistence/prisma';
@@ -17,6 +22,12 @@ import type { ListingStatus } from '@/generated/prisma/client';
 // Unitario do ciclo de vida pelo dono (F2-010, #48). O banco e uma transacao
 // falsa que registra o que seria gravado; trava, concorrencia e rollback reais
 // sao provados em listing-lifecycle.integration.test.ts.
+
+// T5/T6 exigem o efeito sobre as solicitacoes (DM-6.10); aqui ele e simulado
+// e so se confere que foi chamado na transacao. O efeito real e provado em
+// src/modules/request/reservation.integration.test.ts.
+const onClose = vi.fn(async () => undefined);
+const closeListing = (id: string) => closeOwnedListing(id, onClose);
 
 const userId = '11111111-1111-4111-8111-111111111111';
 const listingId = '22222222-2222-4222-8222-222222222222';
@@ -339,6 +350,32 @@ describe('modulo listing — transicoes de ciclo de vida (#48)', () => {
           details: expect.objectContaining({ transition: code, fromStatus: from }),
         }),
       ]);
+    });
+
+    it('T5/T6 chamam o efeito sobre as solicitacoes na mesma transacao', async () => {
+      signedIn();
+      onClose.mockClear();
+      fakeDb({ status: 'published' });
+      await closeListing(listingId);
+      expect(onClose).toHaveBeenCalledTimes(1);
+      expect(onClose).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ listingId, actorId: userId, transition: 'T5' }),
+      );
+    });
+
+    it('sem o efeito sobre as solicitacoes, o encerramento e recusado sem gravar', async () => {
+      signedIn();
+      const db = fakeDb({ status: 'published' });
+      const spy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      expect(await transitionListing(listingId, 'close')).toMatchObject({
+        success: false,
+        reason: 'error',
+      });
+      expect(db.updates).toHaveLength(0);
+      expect(db.transitions).toHaveLength(0);
+      expect(db.audits).toHaveLength(0);
+      spy.mockRestore();
     });
 
     it('encerrar anuncio ja encerrado e idempotente e nao audita de novo', async () => {

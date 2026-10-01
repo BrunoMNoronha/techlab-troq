@@ -3,7 +3,8 @@ import type { ContactRequestEntryState } from '@/modules/request';
 
 // Bloco "Solicitar desbloqueio do contato" do detalhe publico (#59). O estado
 // vem do servidor (getContactRequestEntry). Nenhum estado cria solicitacao,
-// reserva ou cobranca: a solicitacao paga ainda nao existe (Fase 3, #54).
+// reserva ou cobranca: a reserva existe no servidor desde F3-003 (#93), mas a
+// tela que a dispara, com a cobranca Pix, e de F3-012 (#102).
 export function ContactRequestEntry({
   listingId,
   state,
@@ -81,11 +82,18 @@ function EntryMessage({
           Este anúncio é seu. Você não pode solicitar o próprio contato.
         </p>
       );
-    case 'request_unavailable':
+    case 'request_available':
       return (
         <p role="status" style={{ margin: 0 }}>
           A solicitação paga de desbloqueio ainda não está disponível nesta versão do TROQ. Nenhuma
           solicitação foi criada e nada foi cobrado.
+        </p>
+      );
+    case 'no_slots':
+      return (
+        <p role="status" style={{ margin: 0 }}>
+          As vagas de solicitação deste anúncio estão ocupadas no momento. Nenhuma solicitação foi
+          criada e nada foi cobrado.
         </p>
       );
   }

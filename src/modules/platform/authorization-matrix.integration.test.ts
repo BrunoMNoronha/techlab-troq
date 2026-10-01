@@ -24,8 +24,8 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import type { ListingStatus } from '@/generated/prisma/client';
 import { registerUser } from '@/modules/identity/actions';
 import { getAuth } from '@/modules/identity/auth';
+import { closeListing } from '@/app/anuncios/actions';
 import {
-  closeListing,
   createDraftListing,
   discardDraft,
   getListingForEdit,

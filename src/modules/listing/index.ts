@@ -6,7 +6,6 @@ export {
   publishListing,
   pauseListing,
   reactivateListing,
-  closeListing,
   discardDraft,
   getPublicFeed,
   getPublicListingDetail,
@@ -14,7 +13,14 @@ export {
 
 export { isListingOwnedBy } from './ownership';
 
-export type { LifecycleAction, LifecycleFailureReason, LifecycleResult } from './lifecycle';
+export type {
+  LifecycleAction,
+  LifecycleFailureReason,
+  LifecycleResult,
+  ListingClosureEffect,
+  ListingRequestGate,
+} from './lifecycle';
+export { closeOwnedListing, lockListingForRequest } from './lifecycle';
 export {
   LISTING_COMPLIANCE_DECLARATION,
   LISTING_COMPLIANCE_TERMS_VERSION,

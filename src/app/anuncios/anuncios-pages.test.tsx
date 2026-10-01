@@ -35,6 +35,9 @@ vi.mock('@/modules/listing/actions', () => ({
   discardDraft: vi.fn(),
   pauseListing: vi.fn(),
   reactivateListing: vi.fn(),
+}));
+
+vi.mock('@/app/anuncios/actions', () => ({
   closeListing: vi.fn(),
 }));
 
