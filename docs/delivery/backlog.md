@@ -12,7 +12,7 @@ Fontes: [roadmap.md](roadmap.md), [../decisions/open-decisions.md](../decisions/
 
 ## Convenções
 
-- IDs por fase — `F0-xxx` na Fase 0, `F1-xxx` na Fase 1, `F2-xxx` na Fase 2 —, sequenciais dentro da fase e nunca reutilizados.
+- IDs por fase — `F0-xxx` na Fase 0, `F1-xxx` na Fase 1, `F2-xxx` na Fase 2, `F3-xxx` na Fase 3 —, sequenciais dentro da fase e nunca reutilizados.
 - **Estados:** `concluído`, `próximo` (o próximo trabalho a executar), `pendente` (pode ser executado assim que houver capacidade, sem bloqueio) e `bloqueado` (depende de outro item ainda não concluído).
 - Cada item resulta em documento versionado, em código versionado ou em decisão registrada em [../decisions/decision-log.md](../decisions/decision-log.md) e, quando houver, no fechamento da OD correspondente em [../decisions/open-decisions.md](../decisions/open-decisions.md).
 - Ordem de execução segue a hierarquia de dependências; itens `pendente` sem dependência entre si podem correr em paralelo.
@@ -294,7 +294,28 @@ Os estados abaixo descrevem o que o Git e o código mostram, e não substituem o
 
 ## Fase 3
 
-A Fase 3 está **liberada para execução** desde a aprovação do gate da Fase 2 em 2026-09-30 e **não foi iniciada**. O planejamento e a decomposição estão em [#54](https://github.com/BrunoMNoronha/techlab-troq/issues/54). Registro anterior (2026-09-29): a Fase 3 estava condicionada ao gate e a execução não estava liberada. As Fases 4 e 5 são acompanhadas em [#55](https://github.com/BrunoMNoronha/techlab-troq/issues/55) e [#56](https://github.com/BrunoMNoronha/techlab-troq/issues/56). Nenhum item `F3-xxx` foi aberto neste backlog.
+A Fase 3 está **liberada para execução** desde a aprovação do gate da Fase 2 em 2026-09-30 e **não foi iniciada**. Em 2026-10-01, **F3-000** a decompôs em quinze issues executoras, registrou o desvio entre os contratos da fase e o código da Fase 2 e listou as decisões pendentes do Bruno (DP-1 a DP-5) e os pré-requisitos externos (PX-1 a PX-3) em [phase-3-plan.md](phase-3-plan.md). Acompanhamento em [#54](https://github.com/BrunoMNoronha/techlab-troq/issues/54). As Fases 4 e 5 são acompanhadas em [#55](https://github.com/BrunoMNoronha/techlab-troq/issues/55) e [#56](https://github.com/BrunoMNoronha/techlab-troq/issues/56). Registro anterior (2026-09-30): nenhum item `F3-xxx` havia sido aberto. Registro anterior (2026-09-29): a Fase 3 estava condicionada ao gate e a execução não estava liberada.
+
+**Próxima entrega: [#91](https://github.com/BrunoMNoronha/techlab-troq/issues/91) (F3-001)**, documental, de que todas as demais dependem. Depois dela, F3-002, F3-003 e F3-004 podem correr em paralelo.
+
+| ID | Título | Objetivo | Dependências | Estado |
+| --- | --- | --- | --- | --- |
+| F3-000 | Decompor a Fase 3 em issues executoras | Inventário de desvio, issues F3-001 a F3-015, rastreabilidade de T-1 a T-18 e C-1 a C-11, decisões pendentes ([phase-3-plan.md](phase-3-plan.md)) | gate da Fase 2 | concluído |
+| F3-001 | Reconciliar os contratos da Fase 3 com o código da Fase 2 ([#91](https://github.com/BrunoMNoronha/techlab-troq/issues/91)) | Encerrar DV-3 a DV-8, DV-12, DV-13, DV-15 e DV-19 sem alterar regra de negócio | F3-000 | próximo |
+| F3-002 | Cadastrar e proteger o contato do anunciante ([#92](https://github.com/BrunoMNoronha/techlab-troq/issues/92)) | `UserContact` gravado só pelo dono, nunca público (C-1) | F3-001; DP-1 | bloqueado |
+| F3-003 | Solicitação com reserva atômica e limite de três ([#93](https://github.com/BrunoMNoronha/techlab-troq/issues/93)) | PD-4.1, passo 1, e efeitos de T5/T6 (T-1) | F3-001; DP-5 | bloqueado |
+| F3-004 | Adaptador do Mercado Pago ([#94](https://github.com/BrunoMNoronha/techlab-troq/issues/94)) | Orders API, classificação fechada e assinatura | F3-001; PX-2 (opcional) | bloqueado |
+| F3-005 | Cobrança Pix de R$ 0,99 ([#95](https://github.com/BrunoMNoronha/techlab-troq/issues/95)) | PD-4.1, passos 2 e 3 (T-15) | F3-003, F3-004 | bloqueado |
+| F3-006 | Webhook e confirmação autoritativa ([#96](https://github.com/BrunoMNoronha/techlab-troq/issues/96)) | PD-6 (T-2 a T-4, T-6, T-10 a T-14) | F3-005 | bloqueado |
+| F3-007 | Duplicidade, fora da janela e reembolso técnico ([#97](https://github.com/BrunoMNoronha/techlab-troq/issues/97)) | PD-7 e PD-8 (T-7 a T-9, T-16) | F3-006 | bloqueado |
+| F3-008 | Reconciliação periódica e retentativa de reembolso ([#98](https://github.com/BrunoMNoronha/techlab-troq/issues/98)) | PD-10 (T-5, T-18) | F3-007 | bloqueado |
+| F3-009 | Escolha, negociação e autorização ([#99](https://github.com/BrunoMNoronha/techlab-troq/issues/99)) | CR-3 e DEC-032 (C-9) | F3-002, F3-006 | bloqueado |
+| F3-010 | Entrega do contato ao escolhido ([#100](https://github.com/BrunoMNoronha/techlab-troq/issues/100)) | CR-5 a CR-7 (C-2 a C-7, C-11) | F3-009 | bloqueado |
+| F3-011 | Reversões e seus efeitos ([#101](https://github.com/BrunoMNoronha/techlab-troq/issues/101)) | PD-9 e CR-4 (T-17, C-10) | F3-008, F3-010 | bloqueado |
+| F3-012 | Jornada de interface e homologação em `preview` ([#102](https://github.com/BrunoMNoronha/techlab-troq/issues/102)) | Jornada completa a 375 px com sandbox do Mercado Pago; fecha #59 | F3-008, F3-010; PX-2, PX-3, DP-3, DP-4 | bloqueado |
+| F3-013 | E-mails transacionais e observabilidade ([#103](https://github.com/BrunoMNoronha/techlab-troq/issues/103)) | Catálogo RF-021 da fase e sinais no Sentry | F3-006, F3-009 | bloqueado |
+| F3-014 | Verificação de segurança e revisão reforçada ([#104](https://github.com/BrunoMNoronha/techlab-troq/issues/104)) | Matriz de atores e C-8 | F3-011, F3-012, F3-013 | bloqueado |
+| F3-015 | Gate de saída da Fase 3 ([#105](https://github.com/BrunoMNoronha/techlab-troq/issues/105)) | Auditoria por SHA e transição para a Fase 4 | F3-014; DP-3; recomendação #86 | bloqueado |
 
 ## Fora deste backlog
 
