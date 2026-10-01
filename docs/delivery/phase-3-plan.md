@@ -80,7 +80,7 @@ Nenhum item exige alterar RB-001 a RB-006, DEC-027 a DEC-038 ou as ADRs. As corr
 | # | Pré-requisito | Responsável | Necessário para |
 | --- | --- | --- | --- |
 | PX-1 | Tornar `Integração (PostgreSQL efêmero)` required check em `main` | Bruno (configuração do repositório) | Recomendado antes do merge de F3-003 |
-| PX-2 | Credencial de **teste** do Mercado Pago e aplicação de teste com chave de webhook, cadastradas em `development` e `preview` | Bruno (painel); agente registra em `environments.md` | F3-012 (obrigatório); suíte opcional de F3-004  A Orders API não aceita `TEST-`: são as credenciais `APP_USR` de uma aplicação de usuário de teste vendedor ([../engineering/environments.md](../engineering/environments.md), seção 5.6). Também valida OD-16 antes de F3-006 completa. |
+| PX-2 | Credencial de **teste** do Mercado Pago e aplicação de teste com chave de webhook, cadastradas em `development` e `preview` | Bruno (painel); agente registra em `environments.md` | F3-012 (obrigatório); suíte opcional de F3-004  Preferir as credenciais de teste automáticas de uma aplicação nova de Checkout Transparente com Orders (notícia oficial de 2025-11-19); se a Orders API as recusar, usar `APP_USR` de aplicação de usuário de teste vendedor, como no F0-010 ([../engineering/environments.md](../engineering/environments.md), seção 5.6). Também valida OD-16 antes de F3-006 completa. |
 | PX-3 | URL de webhook alcançável no `preview` configurada no painel (depois de DP-4) | Bruno | F3-012 |
 
 ## 4. Issues executoras
