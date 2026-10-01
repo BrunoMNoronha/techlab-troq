@@ -98,22 +98,24 @@ export async function abandonStaleReservations(limit = BATCH): Promise<number> {
 /**
  * Imagem ainda nao `ready` autorizada ha mais de 20 h vira `failed`/`expired`.
  * Uma tentativa em curso e cercada pelo fencing do executor (status deixa de
- * ser `processing`) e enfileira os derivados que tiver escrito.
+ * ser `processing`) e enfileira os derivados que tiver escrito. Selecao em CTE
+ * `MATERIALIZED` pelo mesmo motivo de `claimDeletions`.
  */
 export async function expireStaleImages(limit = BATCH): Promise<number> {
   return getPrismaClient().$transaction(async (tx) => {
     const rows = await tx.$queryRaw<{ id: string; upload_generation: number }[]>`
-      UPDATE "listing_images" li
-      SET "status" = 'failed', "failure_code" = 'expired', "lease_expires_at" = NULL,
-          "next_attempt_at" = NULL, "updated_at" = now()
-      FROM (
+      WITH x AS MATERIALIZED (
         SELECT "id" FROM "listing_images"
         WHERE "status" IN ('uploaded', 'processing')
           AND "upload_authorized_at" < now() - make_interval(hours => ${EXPIRE_AFTER_HOURS})
         ORDER BY "upload_authorized_at"
         LIMIT ${limit}
         FOR UPDATE SKIP LOCKED
-      ) x
+      )
+      UPDATE "listing_images" li
+      SET "status" = 'failed', "failure_code" = 'expired', "lease_expires_at" = NULL,
+          "next_attempt_at" = NULL, "updated_at" = now()
+      FROM x
       WHERE li."id" = x."id"
       RETURNING li."id"::text AS "id", li."upload_generation"`;
     for (const row of rows) {
@@ -143,19 +145,25 @@ interface ClaimedDeletion {
  * token de fencing; `due_at` e empurrado pelo lease, para que outro executor
  * nao pegue a mesma pendencia depois do commit. Queda do executor: o lease
  * vence e a pendencia volta a ser elegivel.
+ *
+ * A selecao travada fica numa CTE `MATERIALIZED`: na forma
+ * `UPDATE ... FROM (SELECT ... LIMIT ... FOR UPDATE SKIP LOCKED)`, o PostgreSQL
+ * pode planejar a subconsulta como lado interno de um nested loop e reavalia-la
+ * por linha externa, reclamando mais que `limit` (payments-design.md, PD-10.7).
  */
 async function claimDeletions(limit: number): Promise<ClaimedDeletion[]> {
   return getPrismaClient().$queryRaw<ClaimedDeletion[]>`
-    UPDATE "media_object_deletions" d
-    SET "attempts" = d."attempts" + 1,
-        "due_at" = now() + make_interval(secs => ${DELETION_LEASE_SECONDS})
-    FROM (
+    WITH c AS MATERIALIZED (
       SELECT "id" FROM "media_object_deletions"
       WHERE "completed_at" IS NULL AND "due_at" <= now()
       ORDER BY "due_at"
       LIMIT ${limit}
       FOR UPDATE SKIP LOCKED
-    ) c
+    )
+    UPDATE "media_object_deletions" d
+    SET "attempts" = d."attempts" + 1,
+        "due_at" = now() + make_interval(secs => ${DELETION_LEASE_SECONDS})
+    FROM c
     WHERE d."id" = c."id"
     RETURNING d."id"::text AS "id", d."object_key", d."attempts"`;
 }
