@@ -28,7 +28,7 @@ Ponto de partida: [project-state.md](project-state.md), cuja seção 3.3 traz o 
 
 | Documento | Status | Conteúdo |
 | --- | --- | --- |
-| [decisions/open-decisions.md](decisions/open-decisions.md) | existente | Questões ainda não decididas, separadas das decisões vigentes. **Nenhuma resta:** OD-07, a última, foi fechada por [product/payment-exceptions.md](product/payment-exceptions.md) (DEC-037) |
+| [decisions/open-decisions.md](decisions/open-decisions.md) | existente | Questões ainda não decididas, separadas das decisões vigentes. **OD-13 a OD-15 abertas em 2026-10-01** por F3-001 (#91), para decisão do Bruno; as da Fase 0 foram todas fechadas, a última (OD-07) por [product/payment-exceptions.md](product/payment-exceptions.md) (DEC-037) |
 | [decisions/decision-log.md](decisions/decision-log.md) | existente | Registro conciso das decisões vigentes DEC-001 a DEC-039, com fonte oficial e impacto |
 
 ### architecture — visão de arquitetura e design técnico
@@ -83,6 +83,6 @@ Ponto de partida: [project-state.md](project-state.md), cuja seção 3.3 traz o 
 ## Convenções
 
 - Regras de negócio usam o prefixo `RB-` e não têm sua semântica alterada sem decisão registrada.
-- Requisitos usam `RF-` (funcionais) e `RNF-` (não funcionais); decisões vigentes usam `DEC-`; decisões abertas usam `OD-`; riscos usam `R-`; itens do backlog usam o prefixo da sua fase — `F0-` na Fase 0, `F1-` na Fase 1 e `F2-` na Fase 2. IDs nunca são reutilizados.
+- Requisitos usam `RF-` (funcionais) e `RNF-` (não funcionais); decisões vigentes usam `DEC-`; decisões abertas usam `OD-`; riscos usam `R-`; itens do backlog usam o prefixo da sua fase — `F0-` na Fase 0, `F1-` na Fase 1, `F2-` na Fase 2 e `F3-` na Fase 3. IDs nunca são reutilizados.
 - ADRs seguem a estrutura: Status, Contexto, Decisão, Consequências, Alternativas consideradas.
 - Toda decisão listada em [decisions/open-decisions.md](decisions/open-decisions.md) permanece aberta até ser fechada por documento próprio (ADR ou documento de produto).

@@ -219,6 +219,13 @@ Gateway Pix inicial homologado do MVP, por Checkout Transparente via Orders API 
 
 **Consequência operacional.** Como a URL e a chave vivem no painel, e não no Git nem no CI, cada ambiente exige uma aplicação ou configuração de webhook própria, com a sua própria chave secreta. Credencial de produção do gateway não é usada em `development` nem em `preview` (decisão 6 daquele ADR; seção 2.5 deste documento).
 
+**Pré-requisitos pendentes da Fase 3 (registrados por F3-001, [#91](https://github.com/BrunoMNoronha/techlab-troq/issues/91), em 2026-10-01).** Nenhum dos dois está atendido; ambos dependem de ação do Bruno no painel do Mercado Pago e na Vercel, e nenhum valor deles entra no Git.
+
+1. **Alvo do webhook em `preview` (DP-4 de [../delivery/phase-3-plan.md](../delivery/phase-3-plan.md)).** A URL é **uma por aplicação** e o painel só persiste a configuração com URL de teste e de produção preenchidas (F0-010). Os deployments de `preview` têm URL por branch e estão sob a proteção de deployment da Vercel, que recusaria o `POST` do Mercado Pago. É preciso escolher um alvo estável e alcançável — por exemplo, alias de `preview` com bypass de proteção para automação, ou projeto de validação dedicado como o de F0-010 — avaliando antes o risco de um segredo de bypass ficar em URL registrada no painel e em logs. Necessário para a homologação de [#102](https://github.com/BrunoMNoronha/techlab-troq/issues/102).
+2. **Credenciais de teste em `development` e `preview` (PX-2).** Access Token **de teste** e aplicação de teste com chave de webhook própria, cadastrados por ambiente. Necessário para #102 e para a suíte opcional em sandbox de [#94](https://github.com/BrunoMNoronha/techlab-troq/issues/94).
+
+O identificador da aplicação conferido antes do HMAC ([../architecture/payments-design.md](../architecture/payments-design.md), PD-6.10) é configuração server-side, não segredo; a sua variável será acrescentada a esta tabela por F3-004 ([#94](https://github.com/BrunoMNoronha/techlab-troq/issues/94)).
+
 ### 5.7 Jobs internos e agendamento
 
 | Variável | Ambientes | Classificação | Obrigatoriedade | Estado | Origem |

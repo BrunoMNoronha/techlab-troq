@@ -8,6 +8,8 @@ Este documento converte essa regra em mecanismo. Ele não altera RB-001, não cr
 
 Os itens são identificados como `CR-x`.
 
+**Atualização de 2026-10-01 ([F3-001](https://github.com/BrunoMNoronha/techlab-troq/issues/91)).** Reconciliação com o código e o framework entregues pela Fase 2, sem alterar RB-001 nem decisão vigente: formato e resposta da escrita do contato (CR-2.5), registro das entregas e das negativas (nota de CR-5.5), mecanismo concreto de não cache no Next.js 16.3.5 (CR-7.4) e prova de C-5 sem papel de moderação (nota da seção 10). Inventário em [../delivery/phase-3-plan.md](../delivery/phase-3-plan.md), seção 2.1.
+
 ## 1. A fronteira que organiza todo o desenho
 
 **CR-1.1 (decisão arquitetural).** Três fatos distintos são frequentemente confundidos, e confundi-los é a origem da maioria dos vazamentos. Neste desenho eles são **três coisas separadas**, com entidade própria, momento próprio e autorização própria:
@@ -42,6 +44,13 @@ O motivo é estrutural, não estilístico: a falha mais comum e mais difícil de
 **CR-2.3 (invariante).** Cadastrar contato **não** o expõe. O contato do anunciante nunca é servido em listagem, detalhe público, busca, feed, sitemap, resposta de API pública, cache público ou payload de Server Component renderizado para quem não é o destinatário autorizado (RF-014).
 
 **CR-2.4 (normativa).** Após a exclusão da conta, o contato é eliminado nos prazos de DEC-033, e a auditoria **não** conserva telefone/WhatsApp em texto puro, usando identificadores internos ou pseudonimizados (DEC-033, seções 3.2 e 6).
+
+**CR-2.5 (decisão técnica, F3-001, DV-19).** A operação "registrar ou alterar o próprio contato" de CR-2.2:
+
+1. exige sessão válida com email verificado e conta ativa, e só escreve o contato **do próprio ator** — o titular vem da sessão, nunca de parâmetro;
+2. normaliza e valida o número no servidor conforme [data-model.md](data-model.md), DM-4.5 (E.164 brasileiro), recusando qualquer outra forma com erro de campo que **não** ecoa o valor recebido;
+3. devolve apenas **confirmação** — sucesso, e se o contato existe — e **nunca** o número, nem inteiro nem mascarado. A interface informa que há contato cadastrado e oferece substituí-lo; ela não exibe dígitos. Exibir o número, ainda que parcialmente, ao próprio dono seria uma terceira operação que CR-2.2 não prevê, e por isso não é adotada aqui;
+4. não grava o número em log, telemetria, auditoria ou mensagem de erro (CR-6.1); se o evento for auditado, a auditoria registra apenas que o contato foi registrado ou alterado.
 
 ## 3. Autorizar
 
@@ -124,6 +133,8 @@ O que a reversão **de fato** produz é o que CR-4.2 já diz: perda de elegibili
 
 **CR-5.5 (invariante).** Cada entrega bem-sucedida grava um `ContactAccessEvent` — ator, negociação, instante, resultado — e um registro na trilha única (DM-11.3), na mesma transação da leitura. Tentativas **negadas** também são registradas, como evento de segurança, sem revelar o dado e sem identificar o titular além do necessário.
 
+_Atualização de 2026-10-01 (F3-001, DV-4)._ A "entrega bem-sucedida" grava `ContactAccessEvent` com ator, autorização (de que a negociação deriva, CR-3.1) e instante; o resultado é implícito, porque a entidade só registra entregas. A **negativa** — que, em A2 ou A3, nem tem autorização a referenciar — vai **apenas** para a trilha única `AuditEvent`, como evento de segurança, com o ator autenticado quando houver, o motivo codificado e nenhum dado do titular ([data-model.md](data-model.md), DM-4.4 e nota de DM-11.3). Nenhuma migration é necessária para isso.
+
 **CR-5.6 (decisão arquitetural).** Registrar **cada** acesso, e não apenas o primeiro, é o que permite responder à pergunta que importa em um incidente: quantas vezes, quando e a partir de qual sessão o dado saiu. Uma autorização criada uma vez, sem registro das entregas, não responde a isso.
 
 ### 5.2 Retenção da trilha
@@ -166,6 +177,14 @@ Motivo: uma propriedade entregue a um Client Component **está no payload**, mes
 **CR-7.2 (decisão arquitetural).** As respostas que carregam contato são marcadas explicitamente como privadas e não armazenáveis, e a rota que as serve é sempre dinâmica — nunca estática, nunca pré-renderizada, nunca revalidada por tempo. A configuração é explícita e não pode depender de o framework "decidir certo" por inferência.
 
 **CR-7.3 (decisão arquitetural).** Esta é a aplicação concreta de AR-2.2: aqui o objetivo de desempenho **cede** ao objetivo de não vazar. Não existe argumento de latência que justifique cachear uma resposta com dado protegido, porque o erro não é lento — é irreversível.
+
+**CR-7.4 (decisão técnica, F3-001, DV-15 — o mecanismo no Next.js 16.3.5).** O projeto usa Next.js 16.3.5 **sem** `cacheComponents` (`next.config.ts`). Fontes lidas na documentação instalada (`node_modules/next/dist/docs/01-app/`): `02-guides/caching-without-cache-components.md` (opções `dynamic` e `fetchCache`), `03-api-reference/03-file-conventions/route.md` (segment config em route handlers) e `03-api-reference/04-functions/connection.md`. Concretamente:
+
+1. a página ou a rota que entrega o contato declara `export const dynamic = 'force-dynamic'` e `export const runtime = 'nodejs'`, e **não** declara `revalidate`; é o mesmo padrão da rota `/media` (`src/app/media/[imageId]/[kind]/route.ts`), que já serve conteúdo autorizado sem cache;
+2. route handler que carrega o número responde com `Cache-Control: private, no-store` **explícito**; página renderizada no servidor tem o cabeçalho efetivo **conferido por teste** (C-7), sem presumir o padrão do framework;
+3. a leitura do contato **não** passa por `unstable_cache`, `'use cache'` (nenhuma variante), `fetch` com `force-cache`, nem por cache de módulo; `cache()` do React, que é memoização por requisição, é admitido;
+4. a obtenção sob demanda de CR-6.2, item 2, é Server Action (requisição `POST`, não armazenável por CDN), autorizada por CR-5.2 a cada chamada;
+5. qualquer mudança futura para `cacheComponents` exige revisar esta seção antes, porque altera o modelo de cache do framework.
 
 ## 8. Quem não recebe o contato
 
@@ -221,6 +240,8 @@ Complementa PD-13 e as áreas de risco de [testing.md](../engineering/testing.md
 | C-10 | Reversão depois da liberação | Integração | Autorização intacta; releitura permitida; evento de reversão registrado; solicitação não escolhida fica inelegível |
 | C-11 | Fluxo do escolhido com JavaScript inspecionado | Componentes + integração | O número não está em propriedade de Client Component antes da ação autorizada |
 
+_Atualização de 2026-10-01 (F3-001, DV-13)._ O MVP ainda não tem papel de moderação: `User` não carrega perfil, e a moderação é implementada na Fase 4 ([#55](https://github.com/BrunoMNoronha/techlab-troq/issues/55)). Na Fase 3, **C-5** é provado pela propriedade da qual ele decorre — CR-8.1 nega o moderador por A2 e A3, **não** por um papel — com um ator autenticado, verificado e sem nenhuma relação com a negociação, que conhece o identificador da negociação e da liberação e é negado sem revelar existência. Essa prova é **substituta**, não definitiva: quando a Fase 4 introduzir o papel de moderação, C-5 é **reexecutado** com um moderador real; a pendência fica registrada em #55. Nenhum caminho da Fase 3 pode conceder acesso por papel.
+
 ## 11. Alternativas rejeitadas
 
 | Alternativa | Decisão | Razão |
@@ -263,3 +284,5 @@ Complementa PD-13 e as áreas de risco de [testing.md](../engineering/testing.md
 ## 13. Revisão
 
 Revisado quando uma decisão alterar RB-001 ou as políticas que a detalham; quando a Fase 3 implementar a escolha e a liberação; ou quando um teste da seção 10 demonstrar que alguma proteção aqui declarada é insuficiente.
+
+Revisado em 2026-10-01 por F3-001 ([#91](https://github.com/BrunoMNoronha/techlab-troq/issues/91)), antes do início da implementação da Fase 3: CR-2.5, CR-7.4 e as notas de CR-5.5 e da seção 10. RB-001, as pré-condições P1 a P7, as condições A1 a A6 e os testes C-1 a C-11 permanecem inalterados.
