@@ -83,6 +83,10 @@ export type { OrphanOutcome } from './reconciliation';
 export { runClaimLoop } from './jobs';
 export type { ClaimHooks, JobLoopCounts, JobLoopOptions } from './jobs';
 
+// F3-009 (#99): evidencia de pagamento confirmado, para a escolha (CR-3.2, P3).
+export { readConfirmedPaymentEvidence } from './eligibility';
+export type { PaymentEvidenceReader } from './eligibility';
+
 // F3-004 (#94): adaptador do Mercado Pago. O dominio recebe snapshot e veredito
 // em termos do TROQ; o vocabulario do provedor fica em ./mercado-pago.
 export {
