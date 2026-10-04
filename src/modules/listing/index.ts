@@ -11,7 +11,7 @@ export {
   getPublicListingDetail,
 } from './actions';
 
-export { getListingOwnerId } from './ownership';
+export { getListingGate, getListingOwnerId } from './ownership';
 
 export type {
   LifecycleAction,

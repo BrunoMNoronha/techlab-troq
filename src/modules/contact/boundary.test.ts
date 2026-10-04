@@ -28,6 +28,7 @@ const FIXTURE_EXCEPTIONS = new Set([
   'src/app/private-surface.http.integration.test.ts',
   'src/app/public-surface.http.integration.test.ts',
   'src/modules/listing/public-listing.integration.test.ts',
+  'src/modules/negotiation/selection.integration.test.ts',
   'src/modules/platform/authorization-matrix.integration.test.ts',
   'src/modules/platform/telemetry-redaction.integration.test.ts',
   'src/modules/request/charge.integration.test.ts',

@@ -92,6 +92,16 @@ Falhando qualquer uma, a escolha é **rejeitada no servidor** e nenhuma autoriza
 
 **CR-3.6 (decisão arquitetural — o que "não revogar" significa tecnicamente).** Não revogar **não** significa que a autorização seja um cheque em branco. Significa que o **registro** do fato é imutável. A pergunta que a entrega faz (CR-5) é sempre sobre o estado **atual**; a autorização é uma das condições dessa pergunta, e as demais continuam sendo verificadas a cada acesso. A distinção importa: a plataforma não pode desfazer uma divulgação que já ocorreu — isso é tecnicamente impossível —, mas continua controlando cada nova entrega.
 
+_Atualização de 2026-10-04 (F3-009, [#99](https://github.com/BrunoMNoronha/techlab-troq/issues/99)): como CR-3.2 a CR-3.4 foram implementadas, sem alterar nenhuma regra._
+1. **Onde vive.** O ato fica em `negotiation` (`selectRequester`). Cada módulo cuida da sua parte, sempre dentro da transação do ato:
+   - `request` trava a linha da solicitação e responde por P2 e P3;
+   - `payments` fornece a evidência do pagamento confirmado;
+   - `contact` cria `ContactRelease` (`authorizeContactReleaseInTx`).
+2. **Ordem das travas.** Primeiro a trava de linha do anúncio (DM-6.12), depois a da solicitação e, por fim, as linhas de negociação do anúncio.
+3. **Evidência de P3.** A tentativa precisa estar em `pagamento_confirmado`, com instante de acreditação e com um pagamento canônico, que vira `paymentId` da autorização. Nenhum outro estado é elegível. Por isso a reversão de F3-011 precisa tirar a tentativa de `pagamento_confirmado`, ou acrescentar o seu marcador à consulta, para cumprir CR-4.2.
+4. **Auditoria.** Grava dois eventos: `negotiation.selected` ou `negotiation.reselected`, sobre a escolha, e `contact.release_authorized`, sobre a autorização. Nenhum dos dois contém o número.
+5. **Repetição e recusas.** Repetir a escolha de quem é o escolhido da negociação viva é idempotente (DEC-032, seção 8). Uma colisão nos índices de DM-8.3 ou DM-8.5 que escape da trava vira a recusa `conflict`, e nunca uma segunda autorização. As recusas não são auditadas, porque nada foi criado.
+
 ## 4. Elegibilidade e o efeito da reversão
 
 **CR-4.1 (invariante).** **Elegibilidade** e **autorização concedida** são coisas distintas:

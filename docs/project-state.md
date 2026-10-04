@@ -212,7 +212,15 @@ Não houve achado crítico nem alto. Um achado médio foi corrigido aqui: a reda
 
 O Sentry do navegador chegou ao projeto de `preview`. Achado baixo, fora do gate: depois de pausar ou reativar, o cabeçalho de estado da edição só se atualiza ao recarregar. Pendências fora da fase, com destino, estão na seção V9 da transição: RF-021 restante, exclusão integral (RF-023), retenção executável, hardening, produção, cron e lifecycle do R2 em [#56](https://github.com/BrunoMNoronha/techlab-troq/issues/56); [#76](https://github.com/BrunoMNoronha/techlab-troq/issues/76), [#81](https://github.com/BrunoMNoronha/techlab-troq/issues/81) e [#77](https://github.com/BrunoMNoronha/techlab-troq/issues/77) sem decisão.
 
-**Próxima entrega: [#99](https://github.com/BrunoMNoronha/techlab-troq/issues/99) (F3-009).** F3-008 ([#98](https://github.com/BrunoMNoronha/techlab-troq/issues/98)) foi implementado em 2026-10-01, em revisão e com a issue ainda aberta. Entregou:
+**Próxima entrega: [#100](https://github.com/BrunoMNoronha/techlab-troq/issues/100) (F3-010).** F3-009 ([#99](https://github.com/BrunoMNoronha/techlab-troq/issues/99)) foi implementado em 2026-10-04, sem migration. Entregou:
+- a escolha do solicitante como um único ato atômico sob a trava de linha do anúncio (DM-6.12): verifica P1 a P7 e cria `Selection`, `Negotiation` `active` e `ContactRelease`, sem o número, com auditoria `negotiation.selected` ou `negotiation.reselected` e `contact.release_authorized` (CR-3.2 a CR-3.4);
+- a reseleção sob RS-1 a RS-5: a primeira escolha vale com o anúncio `published`, `paused` ou `closed`, a reseleção exige `published`, e `removed` bloqueia as duas;
+- a elegibilidade de CR-4.1: solicitação `paid` com a tentativa em `pagamento_confirmado` e um pagamento canônico, exposta por `payments` (`readConfirmedPaymentEvidence`);
+- a Server Action `chooseRequester`, com confirmação explícita, e `getSelectionOptions`, que entrega só ao dono as solicitações pagas elegíveis (PD-11.3). A tela fica para F3-012.
+
+C-9 foi provado contra PostgreSQL real com N escolhas concorrentes esperando a trava (vistas em `pg_stat_activity`), com teste negativo para cada pré-condição. Pendência para F3-011 ([#101](https://github.com/BrunoMNoronha/techlab-troq/issues/101)): a reversão de um pagamento já confirmado precisa tirar a tentativa de `pagamento_confirmado` (ou marcar a reversão na consulta de elegibilidade) para que a solicitação deixe de ser elegível.
+
+Registro anterior: a próxima entrega era a [#99](https://github.com/BrunoMNoronha/techlab-troq/issues/99) (F3-009). F3-008 ([#98](https://github.com/BrunoMNoronha/techlab-troq/issues/98)) foi implementado em 2026-10-01, em revisão e com a issue ainda aberta. Entregou:
 - `GET /api/jobs/payments-reconcile` (5 min) e `GET /api/jobs/payments-refund-retry` (1 h), protegidas por `CRON_SECRET` e sem `crons`;
 - a reclamação por `SKIP LOCKED` em transação curta que avança o próximo instante e commita, com processamento depois pelos fluxos existentes (nota de PD-10.7);
 - o cancelamento pendente de PD-8.10 e a order perdida de `tentativa_criada`, achada pela busca de orders;
