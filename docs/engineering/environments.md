@@ -25,7 +25,7 @@ Documento irmão de [conventions.md](conventions.md), cuja seção 3.2 fixa a fr
 - o **target Production da Vercel** é um conceito da plataforma de deploy: o destino dos deployments do branch de produção do projeto e o escopo Production das suas variáveis. Ele **existe tecnicamente**, mas **não** é o ambiente `production` do TROQ e **não** está homologado;
 - o **ambiente `production` do TROQ** é o da seção 2.3, identificado por `APP_ENV=production`, com credenciais exclusivas de produção em cada provedor. Ele **não** está provisionado nem homologado em nenhum provedor.
 
-O fato verificado em 2026-09-29, por leitura da API da Vercel e sem alterar nada: o projeto Vercel `techlab-troq` já gera deployments de `main` com `target=production`, servidos no domínio `techlab-troq.vercel.app`, e o escopo Production desse projeto **não tem nenhuma variável de ambiente** — todas as variáveis configuradas no projeto estão no escopo Preview. Como `APP_ENV`, `BETTER_AUTH_SECRET` e `BETTER_AUTH_URL` estão ausentes nesses deployments, a autenticação neles **falha fechada** por desenho: `resolveAuthEnvironment` em `src/modules/identity/auth.ts` recusa a configuração e nenhuma sessão é criada (seção 5.5). Esses deployments **não** são deploy de produção do TROQ, não recebem credencial de produção e não devem ser tratados como homologação de `production`. Registros anteriores que dizem que `production` "não existe em nenhum provedor" referem-se ao ambiente do TROQ, não ao target da plataforma.
+O fato verificado em 2026-09-29, por leitura da API da Vercel e sem alterar nada: o projeto Vercel `techlab-troq` já gera deployments de `main` com `target=production`, servidos no domínio `techlab-troq.vercel.app`, e o escopo Production desse projeto **não tem nenhuma variável de ambiente** — todas as variáveis configuradas no projeto estão no escopo Preview. Como `APP_ENV`, `BETTER_AUTH_SECRET` e `BETTER_AUTH_URL` estão ausentes nesses deployments, a autenticação neles **falha fechada** por desenho: `resolveAuthEnvironment` em `src/modules/identity/auth.ts` recusa a configuração e nenhuma sessão é criada (seção 5.5). Esses deployments **não** são deploy de produção do TROQ, não recebem credencial de produção e não devem ser tratados como homologação de `production`. Registros anteriores que dizem que `production` "não existe em nenhum provedor" referem-se ao ambiente do TROQ, não ao target da plataforma. Desde 2026-10-04 (#77), esse mesmo target também é servido no domínio público `https://troqs.app`, sem que isso mude o seu estado: continua sem variáveis de produção e sem homologação (seção 2.6).
 
 ## 2. Ambientes
 
@@ -87,6 +87,30 @@ O projeto tem exatamente **três** ambientes. Ambiente é uma fronteira de isola
 ### 2.5 A regra que atravessa os três
 
 **Credencial de produção existe apenas em `production`.** Ela não é copiada para máquina de desenvolvimento, não é colada em preview, não é usada em teste, não é enviada por mensagem e não é anexada a tarefa, PR ou relatório. Esta regra não tem exceção operacional; qualquer necessidade que pareça exigi-la é sinal de que falta um ambiente ou uma credencial de escopo menor ([conventions.md](conventions.md), seção 6, item 1; RNF-015).
+
+### 2.6 Domínio público `troqs.app` (#77, 2026-10-04)
+
+O domínio apex `troqs.app` — o mesmo que já hospeda os remetentes `dev.troqs.app` e `preview.troqs.app` do Resend (seção 5.4) — foi associado ao **target Production da Vercel** do projeto `techlab-troq`. Isso dá ao TROQ um endereço público estável, mas **não** provisiona nem homologa o ambiente `production` da seção 2.3: o que `https://troqs.app` serve é exatamente o mesmo deployment de `main` servido em `techlab-troq.vercel.app`, sem variáveis de produção, sem banco e com a autenticação falhando fechada (seção 1, estado do target Production). A issue pedia `troq.app`; o alvo foi corrigido para `troqs.app` porque `troq.app` é registrado por terceiro desde 2024 (registrar IONOS) e serve outro produto.
+
+| Item | Estado em 2026-10-04 |
+| --- | --- |
+| Projeto e equipe | `techlab-troq` (`prj_mpILJv4OGXwsW3boJdXBPx3PSJGT`), equipe `bruno-m-noronha` |
+| Associação | `troqs.app` no projeto, sem redirecionamento e sem branch (portanto target Production), `verified: true` na API da Vercel; `techlab-troq.vercel.app` continua associado |
+| Deployment servido | `dpl_8tdPFNSWzHnesEEkKY7yvo2XPUzE`, `main` em `92231d5`; novos deployments de `main` passam a ser servidos automaticamente |
+| Provedor DNS | Cloudflare, conta TechLab+, nameservers preservados (`edward`/`mira.ns.cloudflare.com`) |
+| Registros criados | Apenas no apex: `A @ 216.150.1.1` e `A @ 216.150.16.1`, sem proxy da Cloudflare (a resolução pública devolve os IPs da Vercel, faixas `VERCEL-08`/`VERCEL-09` da ARIN) |
+| Registros anteriores no apex | Nenhum: antes da mudança o apex não tinha A, AAAA, CNAME, MX, TXT nem CAA |
+| Registros preservados | Os seis do Resend (`resend._domainkey`, `send` MX e `send` SPF, para `dev` e `preview`), conferidos por DNS público após a mudança |
+| CAA | Ausente — não restringe a emissão |
+| Certificado | Let's Encrypt (`YR2`), `CN=troqs.app`, SAN `troqs.app`, válido de 2026-10-04 a 2027-01-02, TLS 1.3, emitido e renovado pela Vercel |
+| HTTP | `http://troqs.app/x?y=1` → **308** para `https://troqs.app/x?y=1`, caminho e query preservados, sem loop; HTTPS envia `Strict-Transport-Security: max-age=63072000` |
+| `www.troqs.app` | Não configurado (opcional, fora do requisito) |
+
+**Validação (2026-10-04, por HTTP real contra o domínio).** `/`, `/explorar`, `/politica/itens-proibidos`, `/login`, `/cadastro` e `/verificar-email` respondem 200 nos dois hosts, com o mesmo título e o mesmo conjunto de assets; os 11 assets estáticos da home respondem 200, e o HTML não referencia nenhuma origem `http://` nem host absoluto, portanto não há mixed content. `/conta` e `/anuncios` redirecionam para `https://troqs.app/login?motivo=sessao`, no próprio host. Cada um dos dois IPs, testado isoladamente, responde 200 com o mesmo certificado, de modo que não há registro concorrente que torne o acesso intermitente. Rotas que dependem de banco ou de autenticação (`/explorar/<id>`, `/api/auth/*`) respondem 500 nos dois hosts, como esperado sem variáveis de produção.
+
+**O que continua pendente e por quê.** O escopo Production da Vercel deve receber `BETTER_AUTH_URL=https://troqs.app` (plain), a única variável de URL base consumida pelo código (seção 5.5; `NEXT_PUBLIC_APP_URL` não tem mais leitor). Isso sozinho não faz o login funcionar: `APP_ENV`, `BETTER_AUTH_SECRET`, banco, Resend e demais credenciais exclusivas de produção pertencem ao provisionamento de `production`, condicionado ao gate de lançamento ([#56](https://github.com/BrunoMNoronha/techlab-troq/issues/56)). Até lá, login, logout, sessão e links de email **não** são prováveis no domínio público, e os critérios correspondentes da #77 ficam abertos. Os ambientes `preview` e `development` não foram alterados e continuam com URLs próprias.
+
+**Reversão.** Nada foi apagado para fazer a associação, então reverter não perde dado: (1) remover os dois registros `A @` da zona `troqs.app` na Cloudflare, o que devolve o apex ao estado anterior (vazio); (2) remover `troqs.app` em *Settings → Domains* do projeto na Vercel; (3) se `BETTER_AUTH_URL` tiver sido criada no escopo Production, apagá-la. `techlab-troq.vercel.app` e os registros do Resend não dependem de nenhum desses passos.
 
 ## 3. Classificação das variáveis
 
