@@ -29,3 +29,7 @@ export type {
 } from './actions';
 export { getOwnContactStatus, hasContact } from './contact';
 export type { ContactReader } from './contact';
+// F3-009 (#99): a autorizacao de liberacao (CR-3), criada na transacao da
+// escolha. Nao toca `UserContact` e nao devolve o numero.
+export { authorizeContactReleaseInTx } from './release';
+export type { ContactReleaseInput } from './release';
