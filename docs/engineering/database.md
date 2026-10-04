@@ -142,6 +142,7 @@ I-3, I-4, I-7, I-9, I-10, I-12, I-13 e I-14 são atribuídas pelo modelo a **tra
 | Regra | Mecanismo | Nome do objeto |
 | --- | --- | --- |
 | DM-5.7 — até 6 imagens, posição única por anúncio | `@@unique([listingId, position])` + `CHECK (position BETWEEN 1 AND 6)` | `listing_images_listing_id_position_key`, `listing_images_position_range_check` |
+| DM-5.10 — até 3 alternativas de troca, posição única, texto aparado de 1 a 60 caracteres (seção 19) | `@@unique([listingId, position])` + `CHECK (position BETWEEN 1 AND 3)` + `CHECK (label = btrim(label) AND char_length(label) BETWEEN 1 AND 60)` | `listing_trade_options_listing_id_position_key`, `listing_trade_options_position_range_check`, `listing_trade_options_label_check` |
 | DM-9.1 — uma avaliação por (negociação, avaliador) | `@@unique([negotiationId, evaluatorId])` | `ratings_negotiation_id_evaluator_id_key` |
 | DM-9.2 — nota inteira em {1..5}; sem autoavaliação | `CHECK (score BETWEEN 1 AND 5)`; `CHECK (evaluator_id <> evaluated_id)` | `ratings_score_range_check`, `ratings_distinct_parties_check` |
 | DM-10.1 — denúncia única por (denunciante, anúncio) | `@@unique([reporterId, listingId])` | `reports_reporter_id_listing_id_key` |
@@ -432,6 +433,14 @@ Validação local em PostgreSQL descartável: `migrate deploy` sobre o históric
 
 Acrescenta `technical_refunds.idempotency_key` (`NOT NULL`, único) e `payment_attempts.cancel_idempotency_key` (único, nulo até o primeiro cancelamento): as chaves persistidas de reembolso e de cancelamento (PD-5.2, PD-5.3). O `migrate dev --create-only` recusa rodar sem terminal interativo diante de coluna obrigatória. Por isso o SQL foi gerado por `prisma migrate diff --from-config-datasource --to-schema` e reduzido à mão, deixando de fora, de novo, os três `DROP DEFAULT` das tabelas do Better Auth. Antes desta migration, `technical_refunds` estava vazia em `preview` (consulta só de leitura em 2026-10-01), condição para a coluna `NOT NULL` sem default. Validação: `migrate deploy` em banco descartável e `migrate diff` mostrando só o drift preexistente.
 
-## 19. Revisão
+## 19. Migration `20261004232041_listing_trade_options` (DEC-046)
+
+Cria `listing_trade_options` ([../architecture/data-model.md](../architecture/data-model.md), DM-5.10; [../architecture/listing-contract.md](../architecture/listing-contract.md), seções 3.1 e 17): `id`, `listing_id` (FK com `ON DELETE CASCADE`), `position` `SMALLINT`, `label` e `created_at`, com a unicidade de `(listing_id, position)` gerada pelo Prisma e dois `CHECK` em SQL próprio — posição de 1 a 3 e texto aparado, não vazio, com até 60 caracteres. Gerada com `prisma migrate dev --create-only` e editada à mão; como nas seções 16 a 18, os três `ALTER … updated_at DROP DEFAULT` das tabelas do Better Auth ficaram de fora.
+
+É **aditiva**: não altera `listings`, não preenche alternativas e não muda estado de anúncio. Os anúncios existentes ficam com zero alternativas e seguem a seção 17.3 do contrato; nenhuma linha existente pode violar os `CHECK`, porque a tabela nasce vazia. A completude (exatamente 3) **não** é restrição de banco: o rascunho e o legado precisam existir incompletos.
+
+Validação local em PostgreSQL 17 descartável: `migrate deploy` do histórico inteiro num banco vazio, `migrate diff --from-config-datasource --to-schema` mostrando só o drift preexistente do Better Auth, e os casos negativos do `CHECK` de texto e da posição exercitados em `listing-lifecycle.integration.test.ts` e pelas actions.
+
+## 20. Revisão
 
 Revisado a cada migration nova, quando `production` for provisionado (banco, environment e job com aprovação), quando a Vercel Preview receber `DATABASE_URL`, quando a fronteira de runtime mudar de adapter ou de estratégia de reuso, quando o workflow da seção 15 mudar de contrato, ou quando [../architecture/data-model.md](../architecture/data-model.md) mudar.

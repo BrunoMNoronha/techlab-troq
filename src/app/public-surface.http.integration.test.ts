@@ -54,6 +54,14 @@ vi.setConfig({ testTimeout: 180_000, hookTimeout: 180_000 });
 const RUN_ID = `${Date.now()}-${randomBytes(3).toString('hex')}`;
 const CITY = `Cidade Http ${RUN_ID}`;
 const PASSWORD = 'senha-sintetica-123';
+// Alternativas de troca (#76) do anuncio visivel; a terceira traz marcacao,
+// que precisa voltar escapada no HTML.
+const TRADE_OPTIONS = ['Notebook sintetico', 'Videogame sintetico', 'Camera <b>e um radio</b>'];
+const TRADE_OPTIONS_HTML = [
+  TRADE_OPTIONS[0],
+  TRADE_OPTIONS[1],
+  'Camera &lt;b&gt;e um radio&lt;/b&gt;',
+];
 // Contato sintetico (PD-13.3). PHONE e a entrada; PHONE_E164, o que o banco guarda.
 const PHONE = '+55 11 90000-0000';
 const PHONE_E164 = '+5511900000000';
@@ -320,6 +328,13 @@ describe.skipIf(!enabled)('superficies publicas por HTTP real (#49, D-13)', () =
     expect(stored.map((c) => c.phoneNumber)).toEqual([PHONE_E164, PHONE_E164]);
 
     visible = await createListing(owner, 'published', `Visivel ${RUN_ID}`);
+    // Alternativas de troca (#76): gravadas fora de ordem; o detalhe as mostra
+    // pela posicao do anunciante.
+    for (const [position, label] of TRADE_OPTIONS.map((l, i) => [i + 1, l] as const).reverse()) {
+      await getPrismaClient().listingTradeOption.create({
+        data: { listingId: visible, position, label },
+      });
+    }
     readyImage = await addImage(visible, 1, 'ready');
     pendingImage = await addImage(visible, 2, 'uploaded');
     toPause = await createListing(owner, 'published', `Para pausar ${RUN_ID}`);
@@ -484,6 +499,22 @@ describe.skipIf(!enabled)('superficies publicas por HTTP real (#49, D-13)', () =
     const head = page.body.slice(0, page.body.indexOf('</head>'));
     expect(head.length).toBeGreaterThan(0);
     expectNoContact('metadados do detalhe', head);
+  });
+
+  it('detalhe visivel mostra as alternativas de troca ao anonimo, em ordem e como texto (#76)', async () => {
+    const page = await fetchPage(`/explorar/${visible}`);
+    expect(page.status).toBe(200);
+    const body = text(page.body);
+    expect(body).toContain('Aceita em troca');
+    const positions = TRADE_OPTIONS_HTML.map((label) => body.indexOf(label));
+    expect(positions.every((p) => p >= 0)).toBe(true);
+    expect([...positions].sort((a, b) => a - b)).toEqual(positions);
+    // A marcacao gravada como texto volta escapada, nunca como elemento.
+    expect(page.body).not.toContain('<b>e um radio</b>');
+    // Listagem e home nao carregam o campo (allowlist, listing-contract.md 6.1).
+    for (const path of ['/', `/explorar?city=${encodeURIComponent(CITY)}`]) {
+      expect((await fetchPage(path)).body).not.toContain(TRADE_OPTIONS[0]);
+    }
   });
 
   it('C-1: /media do anuncio do dono com contato nao carrega o numero', async () => {

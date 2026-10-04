@@ -5,12 +5,16 @@ import { mediaPath } from '@/modules/media/media-path';
 import { getPrismaClient } from '@/persistence/prisma';
 import type { ListingStatus } from '@/generated/prisma/client';
 import { isUuid } from './ids';
-import { transitionListing, type LifecycleResult } from './lifecycle';
+import { lockOwnedListing, transitionListing, type LifecycleResult } from './lifecycle';
 import { normalizePublicFeedQuery } from './public-query';
 import {
+  EMPTY_TRADE_OPTIONS,
+  toTradeOptionSlots,
   validateListingContent,
   validateListingPatch,
+  validateTradeOptions,
   type ListingFieldErrors,
+  type TradeOptionSlots,
 } from './validation';
 
 export interface CreateListingInput {
@@ -18,6 +22,8 @@ export interface CreateListingInput {
   description: string;
   city: string;
   state: string;
+  /** As tres posicoes, na ordem do formulario; no rascunho podem ficar vazias. */
+  tradeOptions?: string[];
 }
 
 export interface UpdateListingInput {
@@ -25,6 +31,8 @@ export interface UpdateListingInput {
   description?: string;
   city?: string;
   state?: string;
+  /** Ausente mantem as gravadas; presente substitui as tres posicoes. */
+  tradeOptions?: string[];
 }
 
 export interface ListingDTO {
@@ -33,6 +41,8 @@ export interface ListingDTO {
   description: string;
   city: string;
   state: string;
+  /** As tres posicoes, na ordem gravada; `''` e posicao ainda nao preenchida. */
+  tradeOptions: TradeOptionSlots;
   status: ListingStatus;
   createdAt: Date;
   updatedAt: Date;
@@ -74,6 +84,11 @@ function notFound(): { success: false; reason: 'not_found'; error: string } {
   return { success: false, reason: 'not_found', error: MESSAGES.notFound };
 }
 
+const TRADE_OPTIONS_SELECT = {
+  orderBy: { position: 'asc' },
+  select: { position: true, label: true },
+} as const;
+
 const OWNER_LISTING_SELECT = {
   id: true,
   title: true,
@@ -83,6 +98,7 @@ const OWNER_LISTING_SELECT = {
   status: true,
   createdAt: true,
   updatedAt: true,
+  tradeOptions: TRADE_OPTIONS_SELECT,
 } as const;
 
 function toListingDTO(item: {
@@ -94,6 +110,7 @@ function toListingDTO(item: {
   status: ListingStatus;
   createdAt: Date;
   updatedAt: Date;
+  tradeOptions: { position: number; label: string }[];
 }): ListingDTO {
   return {
     id: item.id,
@@ -101,16 +118,43 @@ function toListingDTO(item: {
     description: item.description,
     city: item.city,
     state: item.uf,
+    tradeOptions: toTradeOptionSlots(item.tradeOptions),
     status: item.status,
     createdAt: item.createdAt,
     updatedAt: item.updatedAt,
   };
 }
 
+/** `tradeOptions` da entrada, lida de objeto arbitrario (Server Action). */
+function tradeOptionsInput(input: unknown): unknown {
+  return input !== null && typeof input === 'object'
+    ? (input as Record<string, unknown>).tradeOptions
+    : undefined;
+}
+
+/** Linhas a gravar: so as posicoes preenchidas, com a posicao do formulario. */
+function tradeOptionRows(slots: TradeOptionSlots): { position: number; label: string }[] {
+  return slots
+    .map((label, index) => ({ position: index + 1, label }))
+    .filter((row) => row.label.length > 0);
+}
+
+/** Falha de dominio da edicao, lancada para desfazer a transacao inteira. */
+class EditAbort extends Error {
+  constructor(
+    readonly reason: 'not_found' | 'not_editable' | 'validation',
+    readonly fieldErrors?: ListingFieldErrors,
+  ) {
+    super(reason);
+  }
+}
+
 /**
  * Cria um novo anuncio, sempre em `draft` (listing-contract.md, secao 4.1).
  * Dono vem da sessao; status e definido aqui; so os quatro campos de conteudo
- * sao lidos da entrada. Exige sessao valida, e-mail verificado e conta ativa.
+ * e as alternativas de troca sao lidos da entrada. As alternativas podem ficar
+ * incompletas no rascunho (secao 3.1). Exige sessao valida, e-mail verificado e
+ * conta ativa.
  */
 export async function createDraftListing(
   input: CreateListingInput,
@@ -122,18 +166,32 @@ export async function createDraftListing(
   }
 
   const validation = validateListingContent(input);
-  if (!validation.ok) {
+  const rawOptions = tradeOptionsInput(input);
+  const options =
+    rawOptions === undefined
+      ? ({ ok: true, data: EMPTY_TRADE_OPTIONS } as const)
+      : validateTradeOptions(rawOptions, false);
+  if (!validation.ok || !options.ok) {
     return {
       success: false,
       reason: 'validation',
       error: MESSAGES.validation,
-      fieldErrors: validation.fieldErrors,
+      fieldErrors: {
+        ...(validation.ok ? {} : validation.fieldErrors),
+        ...(options.ok ? {} : options.fieldErrors),
+      },
     };
   }
 
   try {
+    // Criacao aninhada: o anuncio e as alternativas entram juntos ou nada entra.
     const listing = await getPrismaClient().listing.create({
-      data: { ...validation.data, ownerId: sessionResult.user.id, status: 'draft' },
+      data: {
+        ...validation.data,
+        ownerId: sessionResult.user.id,
+        status: 'draft',
+        tradeOptions: { create: tradeOptionRows(options.data) },
+      },
       select: { id: true },
     });
 
@@ -147,10 +205,14 @@ export async function createDraftListing(
 /**
  * Atualiza o conteudo de um anuncio proprio em estado editavel.
  *
- * Posse e estado sao condicoes do proprio UPDATE (`id`, `ownerId` e `status`
- * no WHERE): nao ha janela entre verificar e gravar em que uma transicao para
- * `closed`/`removed` permita escrever em estado terminal. A validacao roda antes
- * de qualquer acesso ao banco, e anuncio alheio responde como inexistente.
+ * Tudo acontece numa transacao, sob a trava de linha do anuncio ja filtrada
+ * pelo dono -- a mesma das transicoes (lifecycle.ts). Estado e alternativas sao
+ * lidos depois da trava: nao ha janela em que uma transicao para
+ * `closed`/`removed` permita escrever em estado terminal, nem em que publicar e
+ * esvaziar uma alternativa se cruzem. Anuncio `published`/`paused` so aceita o
+ * resultado com as tres alternativas preenchidas (secao 3.1). A forma da
+ * entrada e validada antes de qualquer acesso ao banco, e anuncio alheio
+ * responde como inexistente.
  */
 export async function updateListing(
   listingId: string,
@@ -163,16 +225,22 @@ export async function updateListing(
   }
 
   const validation = validateListingPatch(input);
-  if (!validation.ok) {
+  const rawOptions = tradeOptionsInput(input);
+  const options = rawOptions === undefined ? undefined : validateTradeOptions(rawOptions, false);
+  if (!validation.ok || (options && !options.ok)) {
     return {
       success: false,
       reason: 'validation',
       error: MESSAGES.validation,
-      fieldErrors: validation.fieldErrors,
+      fieldErrors: {
+        ...(validation.ok ? {} : validation.fieldErrors),
+        ...(options && !options.ok ? options.fieldErrors : {}),
+      },
     };
   }
 
-  if (Object.keys(validation.data).length === 0) {
+  const newOptions = options?.ok ? options.data : undefined;
+  if (Object.keys(validation.data).length === 0 && newOptions === undefined) {
     return { success: false, reason: 'validation', error: MESSAGES.emptyPatch };
   }
 
@@ -181,29 +249,55 @@ export async function updateListing(
   }
 
   const ownerId = sessionResult.user.id;
-  const prisma = getPrismaClient();
 
   try {
-    const { count } = await prisma.listing.updateMany({
-      where: { id: listingId, ownerId, status: { in: EDITABLE_STATUSES } },
-      data: validation.data,
+    await getPrismaClient().$transaction(async (tx) => {
+      const listing = await lockOwnedListing(tx, listingId, ownerId);
+      if (!listing) throw new EditAbort('not_found');
+      if (!EDITABLE_STATUSES.includes(listing.status)) throw new EditAbort('not_editable');
+
+      // Anuncio publico ou pausado nunca fica sem as tres alternativas,
+      // inclusive o anterior a #76, que as completa na primeira edicao.
+      if (listing.status !== 'draft') {
+        const resulting =
+          newOptions ??
+          toTradeOptionSlots(
+            await tx.listingTradeOption.findMany({
+              where: { listingId },
+              select: { position: true, label: true },
+            }),
+          );
+        const complete = validateTradeOptions(resulting, true);
+        if (!complete.ok) throw new EditAbort('validation', complete.fieldErrors);
+      }
+
+      await tx.listing.update({
+        where: { id: listingId },
+        data: { ...validation.data, updatedAt: new Date() },
+      });
+
+      if (newOptions) {
+        await tx.listingTradeOption.deleteMany({ where: { listingId } });
+        await tx.listingTradeOption.createMany({
+          data: tradeOptionRows(newOptions).map((row) => ({ ...row, listingId })),
+        });
+      }
     });
 
-    if (count === 1) {
-      return { success: true, listingId };
-    }
-
-    // Nada foi gravado. A consulta e restrita ao dono: so distingue o proprio
-    // anuncio terminal; anuncio alheio e inexistente caem na mesma resposta not_found.
-    const own = await prisma.listing.findFirst({
-      where: { id: listingId, ownerId },
-      select: { id: true },
-    });
-
-    return own
-      ? { success: false, reason: 'not_editable', error: MESSAGES.notEditable }
-      : notFound();
+    return { success: true, listingId };
   } catch (err) {
+    if (err instanceof EditAbort) {
+      if (err.reason === 'not_found') return notFound();
+      if (err.reason === 'not_editable') {
+        return { success: false, reason: 'not_editable', error: MESSAGES.notEditable };
+      }
+      return {
+        success: false,
+        reason: 'validation',
+        error: MESSAGES.validation,
+        fieldErrors: err.fieldErrors,
+      };
+    }
     console.error('[Update Listing Error]', err);
     return { success: false, reason: 'error', error: MESSAGES.updateError };
   }
@@ -323,6 +417,15 @@ export interface PublicListingFeedItem {
       height: number;
     }[];
   }[];
+}
+
+/**
+ * Detalhe publico: o item do feed mais as alternativas de troca, so os textos e
+ * na ordem do anunciante (listing-contract.md, 6.1). Anuncio anterior a #76
+ * ainda nao completado vem com lista vazia (secao 17.3).
+ */
+export interface PublicListingDetail extends PublicListingFeedItem {
+  tradeOptions: string[];
 }
 
 export interface PublicFeedPage {
@@ -448,7 +551,7 @@ export async function getPublicFeed(options?: {
  */
 export async function getPublicListingDetail(
   listingId: string,
-): Promise<PublicListingFeedItem | null> {
+): Promise<PublicListingDetail | null> {
   // ID fora do formato UUID (URL adulterada) e tratado como anuncio inexistente,
   // em vez de erro de consulta na coluna uuid.
   if (!isUuid(listingId)) {
@@ -470,6 +573,7 @@ export async function getPublicListingDetail(
       city: true,
       uf: true,
       createdAt: true,
+      tradeOptions: TRADE_OPTIONS_SELECT,
       images: {
         where: { status: 'ready' },
         orderBy: { position: 'asc' },
@@ -498,6 +602,7 @@ export async function getPublicListingDetail(
     description: item.description,
     city: item.city,
     state: item.uf,
+    tradeOptions: item.tradeOptions.map((option) => option.label),
     createdAt: item.createdAt,
     images: item.images.map((img) => ({
       id: img.id,

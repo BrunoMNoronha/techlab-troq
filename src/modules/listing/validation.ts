@@ -6,7 +6,18 @@ export const LISTING_FIELDS = ['title', 'description', 'city', 'state'] as const
 
 export type ListingField = (typeof LISTING_FIELDS)[number];
 
-export type ListingFieldErrors = Partial<Record<ListingField, string>>;
+/**
+ * Alternativas de troca (DEC-046, #76; listing-contract.md, secao 3.1): um campo
+ * por posicao, na ordem do formulario. `tradeOptions` e o erro da lista inteira
+ * (forma errada do payload); os demais, de cada campo.
+ */
+export const TRADE_OPTION_FIELDS = ['tradeOption1', 'tradeOption2', 'tradeOption3'] as const;
+
+export type TradeOptionField = (typeof TRADE_OPTION_FIELDS)[number];
+
+export type ListingFieldErrors = Partial<
+  Record<ListingField | TradeOptionField | 'tradeOptions', string>
+>;
 
 /** Conteudo normalizado, com o nome fisico `uf` para a UF. */
 export interface ListingContent {
@@ -90,4 +101,62 @@ export function validateListingPatch(
   input: unknown,
 ): ListingValidationResult<Partial<ListingContent>> {
   return validate(input, false);
+}
+
+export const TRADE_OPTION_COUNT = 3;
+export const TRADE_OPTION_MAX_LENGTH = 60;
+
+/**
+ * As tres posicoes, aparadas, na ordem do formulario; `''` e posicao vazia.
+ * Vazio so e aceito enquanto a completude nao e exigida (rascunho).
+ */
+export type TradeOptionSlots = [string, string, string];
+
+export const EMPTY_TRADE_OPTIONS: TradeOptionSlots = ['', '', ''];
+
+export const TRADE_OPTION_MESSAGES = {
+  list: `Informe exatamente ${TRADE_OPTION_COUNT} alternativas de troca.`,
+  field: `Informe esta alternativa de troca, com até ${TRADE_OPTION_MAX_LENGTH} caracteres.`,
+} as const;
+
+/**
+ * Valida as alternativas de troca. A forma e sempre exigida: uma lista de
+ * exatamente tres textos, cada um com ate 60 caracteres apos `trim`. Com
+ * `requireComplete`, nenhuma pode ficar vazia ou so com espacos -- e a regra de
+ * publicar, reativar e editar anuncio `published`/`paused`.
+ */
+export function validateTradeOptions(
+  input: unknown,
+  requireComplete: boolean,
+): ListingValidationResult<TradeOptionSlots> {
+  if (!Array.isArray(input) || input.length !== TRADE_OPTION_COUNT) {
+    return { ok: false, fieldErrors: { tradeOptions: TRADE_OPTION_MESSAGES.list } };
+  }
+
+  const fieldErrors: ListingFieldErrors = {};
+  const slots: string[] = [];
+  TRADE_OPTION_FIELDS.forEach((field, index) => {
+    const raw: unknown = input[index];
+    const value = typeof raw === 'string' ? raw.trim() : null;
+    const invalid =
+      value === null ||
+      value.length > TRADE_OPTION_MAX_LENGTH ||
+      (requireComplete && value.length === 0);
+    if (invalid) fieldErrors[field] = TRADE_OPTION_MESSAGES.field;
+    slots.push(value ?? '');
+  });
+
+  return Object.keys(fieldErrors).length > 0
+    ? { ok: false, fieldErrors }
+    : { ok: true, data: slots as TradeOptionSlots };
+}
+
+/** Posicoes gravadas (1..3) de volta para as tres posicoes do formulario. */
+export function toTradeOptionSlots(rows: { position: number; label: string }[]): TradeOptionSlots {
+  const slots: TradeOptionSlots = [...EMPTY_TRADE_OPTIONS];
+  for (const row of rows) {
+    if (row.position >= 1 && row.position <= TRADE_OPTION_COUNT)
+      slots[row.position - 1] = row.label;
+  }
+  return slots;
 }

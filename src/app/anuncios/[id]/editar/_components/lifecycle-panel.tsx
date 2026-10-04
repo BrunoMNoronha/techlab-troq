@@ -30,6 +30,9 @@ const FIELD_LABELS: Record<string, string> = {
   description: 'descrição',
   city: 'cidade',
   state: 'UF',
+  tradeOption1: 'alternativa de troca 1',
+  tradeOption2: 'alternativa de troca 2',
+  tradeOption3: 'alternativa de troca 3',
 };
 
 const DONE: Record<Action, string> = {
@@ -271,8 +274,8 @@ export function LifecyclePanel({
       ) : status === 'draft' ? (
         <div>
           <p style={{ fontSize: '14px', color: '#374151', margin: '0 0 12px' }}>
-            Rascunho: só você vê este anúncio. Para publicar, ele precisa de pelo menos uma imagem
-            pronta.
+            Rascunho: só você vê este anúncio. Para publicar, ele precisa das três alternativas de
+            troca e de pelo menos uma imagem pronta.
             {readyImageCount === 0 ? ' Nenhuma imagem está pronta ainda.' : null}
           </p>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', margin: '0 0 8px' }}>
@@ -323,7 +326,7 @@ export function LifecyclePanel({
           <p style={{ fontSize: '14px', color: '#374151', margin: '0 0 16px' }}>
             {status === 'published'
               ? 'Publicado: o anúncio aparece na oferta pública. Pausar retira da oferta até você reativar.'
-              : 'Pausado: o anúncio não aparece na oferta pública. Reativar exige pelo menos uma imagem pronta.'}
+              : 'Pausado: o anúncio não aparece na oferta pública. Reativar exige as três alternativas de troca e pelo menos uma imagem pronta.'}
           </p>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
             {status === 'published' ? (
