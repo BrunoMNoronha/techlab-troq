@@ -240,6 +240,18 @@ O desenho completo está em [payments-design.md](payments-design.md). Em nível 
 | Última execução bem-sucedida de cada trabalho periódico | O agendamento é **best effort** (AR-15.2); sem isso, uma falha silenciosa é indistinguível de "não havia trabalho" |
 | Denúncias decididas dentro do prazo, por classe | Métrica já exigida por DEC-031, seção 9, item 5 |
 
+_Atualização de 2026-10-04 (F3-013, [#103](https://github.com/BrunoMNoronha/techlab-troq/issues/103))._ Cinco dos seis sinais estão instrumentados, como sinais nomeados do Sentry (`signal:<nome>`, com atributos só numéricos ou codificados) emitidos por `reportSignal` em `src/modules/platform`:
+
+| Sinal de AR-14.3 | Nome | Quando é emitido | Alerta |
+| --- | --- | --- | --- |
+| Tentativas em estado não terminal, por idade | `payments.attempt_stale` | A cada execução da reconciliação | Alguma há mais de 2 h |
+| Casos em `reembolso_pendente`, por idade | `payments.refund_pending` | A cada execução da reconciliação | Algum há mais de 24 h, ou algum em `pendente_operacional` |
+| Casos em `inconsistente`, abertos | `payments.inconsistent_open` | A cada execução da reconciliação | Qualquer um aberto |
+| Notificações rejeitadas por autenticidade, por janela | `payments.notification_rejected` | Por ocorrência (só o motivo) e, na reconciliação, a contagem de 24 h | Mais de 10 em 24 h |
+| Última execução bem-sucedida de cada trabalho | `jobs.run` / `jobs.failure` | Ao fim de cada trabalho periódico | Execução que lança, ou caso com erro inesperado |
+
+Os sinais são **derivados** do PostgreSQL por leitura sem trava (ADR-0007, decisão 4) e os limiares são design, ajustáveis por medição. Os sinais periódicos saem a cada execução da reconciliação: em `production`, pelo cron de cinco minutos de `vercel.json`; em `preview`, só por chamada autenticada ([../engineering/deployment.md](../engineering/deployment.md), "Operação e gates"). O sexto sinal, denúncias decididas no prazo, é da Fase 4. A falha de email transacional é o sinal `email.delivery_failed` ([../product/transactional-emails.md](../product/transactional-emails.md), TE-5.4).
+
 **AR-14.4 (normativa).** Nenhum desses sinais contém telefone/WhatsApp, credencial, token ou conteúdo integral de requisição capaz de contê-los (RNF-018, PE-11.3).
 
 ## 15. Trabalho assíncrono e agendamento
@@ -283,7 +295,7 @@ Consequências concretas, cada uma detalhada no documento indicado:
 | Endpoints, rotas, contratos HTTP e telas | Fases 2 a 4 |
 | Metas numéricas de desempenho, acessibilidade e disponibilidade | Gate da Fase 5 (RNF-003, RNF-004, RNF-010, RNF-012) |
 | Ferramenta concreta de observabilidade | **Decidida** por [ADR-0007](../adr/0007-observability-sentry.md) (DEC-039) na Fase 1, com o contrato de variáveis em [environments.md](../engineering/environments.md), seção 5.8 (RNF-018). Taxas de amostragem, dashboards e limiares de alerta continuam sendo design |
-| Catálogo completo de emails transacionais | RF-021, na fase de cada fluxo |
+| Catálogo completo de emails transacionais | RF-021, na fase de cada fluxo. A Fase 3 está em [../product/transactional-emails.md](../product/transactional-emails.md) (DEC-048) |
 | Provisionamento de Vercel, Neon, R2 e Resend | Fase 1 |
 
 ## 18. Rastreabilidade

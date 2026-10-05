@@ -1,5 +1,6 @@
 import { runMediaCleanup } from '@/modules/media/cleanup';
 import { cronUnauthorized, isCronAuthorized } from '../_lib/cron-auth';
+import { runJob } from '../_lib/run-job';
 
 // Limpeza de midia (media-pipeline-contract.md, secoes 11 e 13): reservas
 // abandonadas, teto de 20 h e fila de exclusao de objetos. Protegida por
@@ -19,7 +20,9 @@ const CLAIM_BUDGET_MS = (maxDuration - 120) * 1000;
 export async function GET(request: Request): Promise<Response> {
   if (!isCronAuthorized(request)) return cronUnauthorized();
   const started = Date.now();
-  const summary = await runMediaCleanup({ stopClaimingAt: started + CLAIM_BUDGET_MS });
+  const summary = await runJob('media-cleanup', () =>
+    runMediaCleanup({ stopClaimingAt: started + CLAIM_BUDGET_MS }),
+  );
   console.info('[media] limpeza executada', { ...summary, durationMs: Date.now() - started });
   return Response.json(summary, { headers: { 'Cache-Control': 'no-store' } });
 }

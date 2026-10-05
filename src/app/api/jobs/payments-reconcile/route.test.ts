@@ -9,6 +9,12 @@ vi.mock('@/modules/request', () => ({
   runPaymentReconciliation: (...args: unknown[]) => runPaymentReconciliation(...args),
 }));
 
+// F3-013 (#103): os sinais de AR-14.3 sao lidos depois de cada execucao autorizada.
+const reportPaymentSignals = vi.fn();
+vi.mock('@/modules/payments', () => ({
+  reportPaymentSignals: (...args: unknown[]) => reportPaymentSignals(...args),
+}));
+
 import { dynamic, GET, maxDuration, runtime } from './route';
 
 const SECRET = 'segredo-sintetico-reconciliacao-123';
@@ -40,6 +46,8 @@ describe('GET /api/jobs/payments-reconcile', () => {
   beforeEach(() => {
     runPaymentReconciliation.mockReset();
     runPaymentReconciliation.mockResolvedValue(SUMMARY);
+    reportPaymentSignals.mockReset();
+    reportPaymentSignals.mockResolvedValue(null);
     vi.spyOn(console, 'info').mockImplementation(() => undefined);
   });
   afterEach(() => {
@@ -76,6 +84,7 @@ describe('GET /api/jobs/payments-reconcile', () => {
     expect(res.headers.get('cache-control')).toBe('no-store');
     expect(await res.text()).toBe('');
     expect(runPaymentReconciliation).not.toHaveBeenCalled();
+    expect(reportPaymentSignals).not.toHaveBeenCalled();
   });
 
   it('a recusa e identica com e sem segredo configurado', async () => {
@@ -103,5 +112,13 @@ describe('GET /api/jobs/payments-reconcile', () => {
     ];
     expect(stopClaimingAt - before).toBeGreaterThanOrEqual(179_000);
     expect(stopClaimingAt - before).toBeLessThanOrEqual(181_000);
+    expect(reportPaymentSignals).toHaveBeenCalledTimes(1);
+  });
+
+  it('falha da reconciliacao: a rota lanca e os sinais nao sao lidos', async () => {
+    vi.stubEnv('CRON_SECRET', SECRET);
+    runPaymentReconciliation.mockRejectedValueOnce(new Error('falha sintetica'));
+    await expect(call({ authorization: `Bearer ${SECRET}` })).rejects.toThrow('falha sintetica');
+    expect(reportPaymentSignals).not.toHaveBeenCalled();
   });
 });

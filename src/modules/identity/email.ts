@@ -1,4 +1,5 @@
 import { Resend } from 'resend';
+import { escapeHtml, isConfigured, isConfiguredSender } from './email-config';
 
 // Envio do email de verificacao via Resend (DEC-015; identity-contract.md,
 // IC-9.1). O resultado e PROPAGADO: so ha sucesso quando o provedor aceita a
@@ -18,22 +19,6 @@ export interface VerificationEmail {
    * envio nunca vira dois emails. Nao ha retry automatico.
    */
   idempotencyKey: string;
-}
-
-const PLACEHOLDER_PREFIX = 'SUBSTITUIR_';
-
-function isConfigured(value: string | undefined): value is string {
-  return Boolean(value) && !value!.startsWith(PLACEHOLDER_PREFIX);
-}
-
-// O placeholder de EMAIL_FROM em .env.example usa o dominio reservado
-// `example.invalid`, que nunca resolve (RFC 2606).
-function isConfiguredSender(value: string | undefined): value is string {
-  return isConfigured(value) && !/@[^>]*\.invalid>?\s*$/i.test(value);
-}
-
-function escapeHtml(value: string): string {
-  return value.replace(/[&<>"']/g, (char) => `&#${char.charCodeAt(0)};`);
 }
 
 export async function sendVerificationEmail({
