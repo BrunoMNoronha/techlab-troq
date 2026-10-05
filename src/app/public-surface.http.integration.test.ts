@@ -450,12 +450,30 @@ describe.skipIf(!enabled)('superficies publicas por HTTP real (#49, D-13)', () =
       ['dono', ownerCookie],
     ] as const;
 
-  // A entrada do site nao tem conteudo proprio: so encaminha a vitrine publica.
-  it('/ encaminha para /explorar, com ou sem sessao', async () => {
+  // A entrada do site e a landing publica (pagina inicial do consentimento do
+  // Google), com a vitrine e os links legais; nunca carrega dado privado.
+  it('/ abre a landing publica, com ou sem sessao, sem dado privado', async () => {
     for (const [who, cookie] of viewers()) {
-      const page = await fetchPage('/', { cookie });
-      expect(page.status, who).toBe(307);
-      expect(page.headerText, who).toMatch(/^location: \/explorar$/m);
+      for (const rsc of [false, true]) {
+        const label = `${who} ${rsc ? 'RSC' : 'HTML'} /`;
+        const page = await fetchPage('/', { cookie, rsc });
+        expect(page.status, label).toBe(200);
+        expectClean(label, page.body, who === 'dono');
+        expectNoContact(label, page.body, page.headerText);
+        expectNotPublicCache(label, page);
+        if (!rsc) {
+          expect(page.body, label).toContain('href="/privacidade"');
+          expect(page.body, label).toContain('href="/termos"');
+        }
+      }
+    }
+  });
+
+  it('/privacidade e /termos abrem sem sessao', async () => {
+    for (const path of ['/privacidade', '/termos']) {
+      const page = await fetchPage(path);
+      expect(page.status, path).toBe(200);
+      expectNoContact(path, page.body, page.headerText);
     }
   });
 
