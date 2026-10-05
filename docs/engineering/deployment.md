@@ -110,4 +110,4 @@ Estado de configuração nesta entrega: Neon dos dois ambientes verificado; GitH
   - `EMAIL_FROM=TROQ <nao-responda@troqs.app>` na Vercel Production.
 - **Mudança em development:** para liberar a vaga no plano do Resend, o domínio `dev.troqs.app` foi removido. O envio em development não funciona até haver novo remetente.
 - **Valores secretos:** `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` e `RESEND_API_KEY` são exibidos uma única vez pelo provedor. O responsável os cadastra diretamente na Vercel Production como *sensitive*.
-- **Pendências de Production:** Mercado Pago e o par `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`.
+- **Pendências desta etapa histórica:** Mercado Pago e o par `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`. A configuração posterior e a release operacional estão em #135; o aceite específico de Google está em #133.
