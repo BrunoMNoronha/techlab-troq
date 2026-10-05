@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Suspense } from 'react';
+import { BRAZILIAN_UFS, isBrazilianUf, ufOptionLabel } from '@/modules/listing/uf';
 import { ExplorarLoading, ExplorarResults } from './explorar-results';
 import {
   explorarHref,
@@ -85,20 +86,31 @@ export default async function ExplorarPage({
             style={fieldStyle}
           />
         </div>
-        <div style={{ flex: '0 1 96px' }}>
+        <div style={{ flex: '1 1 200px' }}>
           <label htmlFor="filtro-uf" style={labelStyle}>
             UF
           </label>
-          <input
+          {/* A chave remonta o seletor quando a URL muda, para o valor acompanhar. */}
+          <select
+            key={query.state}
             id="filtro-uf"
             name="state"
-            type="text"
             defaultValue={query.state}
             autoComplete="address-level1"
-            autoCapitalize="characters"
-            maxLength={2}
-            style={fieldStyle}
-          />
+            style={{ ...fieldStyle, backgroundColor: 'white' }}
+          >
+            <option value="">Todos os estados</option>
+            {/* Sigla inexistente vinda da URL continua filtrando (resultado vazio) e
+                aparece como tal, em vez de "Todos os estados" ou outra UF. */}
+            {query.state !== '' && !isBrazilianUf(query.state) && (
+              <option value={query.state}>UF inválida ({query.state})</option>
+            )}
+            {BRAZILIAN_UFS.map((uf) => (
+              <option key={uf.code} value={uf.code}>
+                {ufOptionLabel(uf)}
+              </option>
+            ))}
+          </select>
         </div>
         <button
           type="submit"
