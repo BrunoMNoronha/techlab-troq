@@ -40,7 +40,7 @@ Decisões já tomadas e válidas na Fase 0. Detalhes nos ADRs indicados.
 - Vercel como plataforma de deploy. Produção comercial não pode depender do plano Vercel Hobby.
 - Cloudflare R2 como armazenamento S3-compatible preferencial para imagens — [ADR-0003](adr/0003-object-storage-r2.md).
 - Resend como provedor inicial de email transacional.
-- Better Auth como solução de autenticação inicial; email/senha com verificação de email. Login social fica fora do núcleo inicial.
+- Better Auth como solução de autenticação inicial; email/senha com verificação de email. Entrada com Conta Google aprovada por DEC-047 (#81), só em `preview` e `production`; outros provedores sociais ficam fora.
 - PWA faz parte do direcionamento mobile; Web Push não bloqueia o MVP.
 
 ### Dados protegidos e privacidade

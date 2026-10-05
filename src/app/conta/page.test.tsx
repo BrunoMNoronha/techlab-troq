@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as contactModule from '@/modules/contact';
 import * as contactActions from '@/modules/contact/actions';
 import * as identityModule from '@/modules/identity';
+import * as googleModule from '@/modules/identity/google';
 import { ContactForm } from './contact-form';
 import ContaPage from './page';
 
@@ -24,6 +25,11 @@ vi.mock('@/modules/identity', () => ({
 }));
 vi.mock('@/modules/contact', () => ({ getOwnContactStatus: vi.fn() }));
 vi.mock('@/modules/contact/actions', () => ({ registerOwnContact: vi.fn() }));
+vi.mock('@/modules/identity/google', () => ({
+  hasLinkedGoogleAccount: vi.fn().mockResolvedValue(false),
+  isGoogleSignInAvailable: vi.fn().mockReturnValue(false),
+}));
+vi.mock('@/modules/identity/google-actions', () => ({ linkGoogleAccount: vi.fn() }));
 
 const validateSession = vi.mocked(identityModule.validateSession);
 const getOwnContactStatus = vi.mocked(contactModule.getOwnContactStatus);
@@ -77,6 +83,44 @@ describe('/conta — contato do anunciante', () => {
     );
     // Nenhum digito de telefone na pagina (o e-mail e o nome sinteticos nao tem digitos).
     expect(container.textContent).not.toMatch(/\d{4}/);
+  });
+});
+
+// Conta Google (#81, IC-15.4): vinculacao so a partir desta area privada.
+describe('/conta — Conta Google', () => {
+  beforeEach(() => {
+    getOwnContactStatus.mockResolvedValue({ hasContact: true });
+  });
+
+  it('sem Google configurado informa a indisponibilidade e nao oferece vinculacao', async () => {
+    render(await page());
+    expect(screen.getByText('A entrada com Google não está disponível no momento.')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Vincular Conta Google' })).toBeNull();
+  });
+
+  it('com Google configurado e sem vinculo oferece vincular a propria conta', async () => {
+    vi.mocked(googleModule.isGoogleSignInAvailable).mockReturnValueOnce(true);
+    render(await page());
+    expect(googleModule.hasLinkedGoogleAccount).toHaveBeenCalledWith('u');
+    expect(screen.getByRole('button', { name: 'Vincular Conta Google' })).toBeTruthy();
+  });
+
+  it('com Conta Google vinculada nao oferece vincular de novo', async () => {
+    vi.mocked(googleModule.isGoogleSignInAvailable).mockReturnValueOnce(true);
+    vi.mocked(googleModule.hasLinkedGoogleAccount).mockResolvedValueOnce(true);
+    render(await page());
+    expect(screen.getByText(/Sua Conta Google está vinculada/)).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Vincular Conta Google' })).toBeNull();
+  });
+
+  it.each([
+    ['vinculada', 'status', 'Conta Google vinculada'],
+    ['ja_vinculada', 'alert', 'nao pode ser transferida'],
+    ['email_diferente', 'alert', 'mesmo e-mail'],
+  ])('resultado %s e anunciado', async (google, role, text) => {
+    render(await ContaPage({ searchParams: Promise.resolve({ google }) }));
+    const announced = screen.getAllByRole(role).filter((el) => el.textContent?.includes(text));
+    expect(announced).toHaveLength(1);
   });
 });
 

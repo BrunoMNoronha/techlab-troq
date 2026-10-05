@@ -177,7 +177,7 @@ Fontes: [../product/mvp-scope.md](../product/mvp-scope.md), [../product/requirem
 Itens **não planejados** e **não comprometidos**. Entram no roadmap apenas por decisão registrada após o lançamento do MVP:
 
 - Web Push (DEC-021: não bloqueia o MVP).
-- Login social (DEC-013: fora do núcleo inicial).
+- Login social com outros provedores (DEC-013); a entrada com Google foi aprovada por DEC-047 (#81).
 - Recomendações de anúncios.
 - Melhorias avançadas de marketplace.
 

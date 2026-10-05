@@ -7,6 +7,7 @@ import { isAPIError } from 'better-auth/api';
 import { ACCOUNT_NOT_ACTIVE_CODE, authErrorLabel, getAuth, resolveAppOrigin } from './auth';
 import { sendVerificationEmail } from './email';
 import { sanitizeReturnPath } from './return-path';
+import { TERMS_VERSION } from './terms';
 import {
   clearLoginFailures,
   recordLoginFailure,
@@ -53,8 +54,6 @@ export interface ResendResult {
   message?: string;
   error?: string;
 }
-
-const TERMS_VERSION = '1.0';
 
 // Convencoes do Better Auth para a credencial email/senha: `providerId`
 // 'credential' e `accountId` igual ao id do usuario. O hash usa o algoritmo

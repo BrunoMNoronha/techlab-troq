@@ -2,8 +2,10 @@
 
 import { use, useEffect, useRef, useState } from 'react';
 import { loginUser } from '@/modules/identity/actions';
+import { GoogleDivider, GoogleSignInButton } from '@/app/_components/google-sign-in';
 
-// Motivos repassados por redirecionamentos server-side (area da conta e logout).
+// Motivos repassados por redirecionamentos server-side (area da conta, logout
+// e retorno do Google pela rota /login/google, que so emite motivos desta lista).
 const REASON_MESSAGES: Record<string, string> = {
   sessao: 'Entre com seu e-mail e senha para acessar sua conta.',
   bloqueada: 'Sua conta esta suspensa ou inativa. Entre em contato com a plataforma.',
@@ -11,6 +13,13 @@ const REASON_MESSAGES: Record<string, string> = {
   nao_verificada: 'Seu e-mail ainda nao foi verificado. Confira sua caixa de entrada.',
   encerrada: 'Voce saiu da sua conta.',
   solicitar: 'Entre na sua conta para solicitar o desbloqueio do contato deste anuncio.',
+  google_cancelado:
+    'A entrada com Google foi cancelada e nenhuma conta foi criada. Tente de novo ou use seu e-mail e senha.',
+  google_conta_existente:
+    'Ja existe uma conta TROQ com o e-mail desta Conta Google. Entre com e-mail e senha e vincule a Conta Google em Minha conta.',
+  google_email_nao_verificado:
+    'O Google nao confirmou o e-mail desta conta. Verifique o e-mail no Google ou cadastre-se com e-mail e senha.',
+  google_falha: 'Nao foi possivel entrar com Google. Tente novamente.',
 };
 
 export default function LoginPage({
@@ -171,7 +180,12 @@ export default function LoginPage({
         >
           {loading ? 'Entrando...' : 'Entrar'}
         </button>
+      </form>
 
+      <GoogleDivider />
+      <GoogleSignInButton returnTo={returnTo} />
+
+      <div>
         <p style={{ marginTop: '16px', textAlign: 'center', fontSize: '14px', color: '#4b5563' }}>
           Não tem uma conta?{' '}
           <a
@@ -181,7 +195,7 @@ export default function LoginPage({
             Cadastre-se
           </a>
         </p>
-      </form>
+      </div>
     </main>
   );
 }
