@@ -15,8 +15,11 @@
 // F3-003 (#93) acrescenta a reserva atomica de vaga com a tentativa de
 // pagamento e o efeito de T5/T6 sobre as reservas (DM-6.10). Dependencia
 // direcional: `request` -> `listing`, `payments`; nunca o inverso.
-export { getContactRequestEntry } from './entry';
-export type { ContactRequestEntryState } from './entry';
+export { getContactRequestEntry, getContactRequestEntryView } from './entry';
+export type { ContactRequestEntryState, ContactRequestEntryView } from './entry';
+// F3-012 (#102): acompanhamento da solicitacao pelo proprio solicitante.
+export { getOwnContactRequest, listOwnContactRequests } from './tracking';
+export type { OwnContactRequestSummary, OwnContactRequestView, OwnRequestPhase } from './tracking';
 export { getPixPayment, requestContactUnlock } from './actions';
 export { getPixPaymentFlow, requestContactUnlockFlow } from './charge-flow';
 export type { PixChargeFailureReason, PixChargeResult } from './charge-flow';
