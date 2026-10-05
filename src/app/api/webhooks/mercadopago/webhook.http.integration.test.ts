@@ -24,7 +24,7 @@ const enabled =
 
 vi.setConfig({ testTimeout: 60_000, hookTimeout: 60_000 });
 
-const PREFIX = `it96http-R${Date.now()}-${randomBytes(3).toString('hex')}`;
+const PREFIX = `it96http-R${Date.now()}-R${randomBytes(3).toString('hex')}`;
 let counter = 0;
 const ORDER = `ORDHTTP${randomBytes(4).toString('hex').toUpperCase()}`;
 

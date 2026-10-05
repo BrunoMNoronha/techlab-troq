@@ -69,7 +69,8 @@ const sent = () => sentEmails.send.mock.calls.map(([e]) => e);
 
 vi.setConfig({ testTimeout: 90_000, hookTimeout: 90_000 });
 
-const RUN_ID = `${Date.now()}-${randomBytes(3).toString('hex')}`;
+// Cada segmento aleatorio tem prefixo alfabetico, mesmo quando o hex so contem digitos.
+const RUN_ID = `${Date.now()}-R${randomBytes(3).toString('hex')}`;
 const PASSWORD = 'senha-sintetica-123';
 const TOKEN = 'TEST-sintetico-confirmacao-000000';
 const SECRET = randomBytes(32).toString('hex');

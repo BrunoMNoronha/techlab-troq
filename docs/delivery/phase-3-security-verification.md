@@ -31,6 +31,8 @@ A captura tem controles não vazios: envelope com marcador diagnóstico conhecid
 
 O prefixo dos identificadores sintéticos de rejeição foi ajustado para distinguir correlação técnica de uma sequência isolada semelhante a telefone. Os testes continuam exigindo o identificador técnico completo no registro legítimo; não foram relaxados. A rajada HTTP tem 32 requisições concorrentes, cada uma recusada e auditada, sem alteração dos fatos financeiros nem persistência do telefone enviado no corpo.
 
+Na atualização com a interface de #152, a [CI 37282794615](https://github.com/BrunoMNoronha/techlab-troq/actions/runs/37282794615) encontrou quatro falhas de fixtures: um sufixo hexadecimal composto apenas de dígitos parecia telefone na correlação rejeitada; três provas de duplicidade tardia geravam ids com zero inicial, perdido pela serialização numérica da API simulada. Os segmentos aleatórios de correlação agora também têm prefixo alfabético, e os ids numéricos começam com `1`. As asserções de correlação completa, privacidade e duplicidade permanecem iguais; a correção não altera código de produção.
+
 ## Reexecução dos contratos no mesmo SHA
 
 O job de integração aplica todas as migrations em PostgreSQL efêmero, faz o build e inicia o servidor HTTP. As suítes abaixo rodam no **mesmo checkout/SHA do job**. Execução em sandbox real do Mercado Pago e homologação de Preview são camadas separadas.

@@ -77,8 +77,8 @@ const TOKEN = 'TEST-sintetico-duplicidade-000000';
 const SECRET = randomBytes(32).toString('hex');
 const APP_ID = '9900000000000147';
 const REQUEST_PREFIX = `it147-${RUN_ID}`;
-/** Prefixo numerico dos ids sinteticos da Payments API, unico por execucao. */
-const PID = RUN_ID.replace(/\D/g, '').slice(-9);
+/** Prefixo numerico sem zero inicial: a API simulada serializa o id como numero. */
+const PID = `1${RUN_ID.replace(/\D/g, '').slice(-8)}`;
 const LATE_REASON = 'late_duplicate_canonical_unlinked';
 const email = (tag: string) => `it-dup-tardia-${tag}-${RUN_ID}@example.test`;
 const prisma = () => getPrismaClient();
