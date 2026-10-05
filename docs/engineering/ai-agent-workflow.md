@@ -157,11 +157,12 @@ O ruleset exige atualmente **zero approvals humanos** no GitHub. Isso **não** d
 
 #### Required status check
 
-O check obrigatório é, no estado atual, exatamente:
+Os checks obrigatórios são, desde 2026-10-04:
 
-`Validação (format, lint, typecheck, test, build)`
+- `Validação (format, lint, typecheck, test, build)`
+- `Integração (PostgreSQL efêmero)`
 
-Ele corresponde ao job definido em [../../.github/workflows/ci.yml](../../.github/workflows/ci.yml), que executa `pnpm install --frozen-lockfile` seguido de `pnpm run format:check`, `pnpm run lint`, `pnpm run typecheck`, `pnpm run test:ci` e `pnpm run build`. Os contratos desses comandos estão em [conventions.md](conventions.md), seção 5.1, e a estratégia de testes em [testing.md](testing.md); este documento não os replica.
+Eles correspondem aos jobs definidos em [../../.github/workflows/ci.yml](../../.github/workflows/ci.yml), que executa `pnpm install --frozen-lockfile` seguido de `pnpm run format:check`, `pnpm run lint`, `pnpm run typecheck`, `pnpm run test:ci` e `pnpm run build`. Os contratos desses comandos estão em [conventions.md](conventions.md), seção 5.1, e a estratégia de testes em [testing.md](testing.md); este documento não os replica.
 
 A proteção usa **política estrita** de required status checks. Em termos operacionais: quando `main` avança e o GitHub considera a PR desatualizada, a branch precisa ser atualizada e o CI precisa voltar a ficar verde antes do merge. Isso não se contorna por merge administrativo nem por bypass.
 
@@ -238,3 +239,7 @@ O relatório de bloqueio segue o formato da seção 6, com o item "Pendências" 
 - [../decisions/open-decisions.md](../decisions/open-decisions.md)
 - [../delivery/backlog.md](../delivery/backlog.md)
 - [../delivery/roadmap.md](../delivery/roadmap.md)
+
+## Publicação por ambientes
+
+`main` e `preview` são permanentes. Branches de trabalho entram por PR em `main`; após o CI completo, o pipeline sincroniza `preview` por fast-forward, migra e publica Preview. Production exige workflow manual com SHA aprovado em Preview. Detalhes e limites operacionais: [deployment.md](deployment.md).

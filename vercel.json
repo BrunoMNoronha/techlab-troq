@@ -1,0 +1,13 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "git": { "deploymentEnabled": false },
+  "installCommand": "pnpm install --frozen-lockfile",
+  "buildCommand": "pnpm run build",
+  "regions": ["gru1"],
+  "crons": [
+    { "path": "/api/jobs/media-process", "schedule": "*/5 * * * *" },
+    { "path": "/api/jobs/payments-reconcile", "schedule": "*/5 * * * *" },
+    { "path": "/api/jobs/payments-refund-retry", "schedule": "*/5 * * * *" },
+    { "path": "/api/jobs/media-cleanup", "schedule": "0 * * * *" }
+  ]
+}
