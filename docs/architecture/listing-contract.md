@@ -66,7 +66,7 @@ O histórico de transições (`ListingTransition`: ator, origem, destino, instan
 
 A declaração de conformidade com [prohibited-items.md](../product/prohibited-items.md) **não** é campo do anúncio: é um registro `TermsAcceptance` do tipo `listing_compliance`, criado na publicação (seção 4.4), com `userId`, `listingId`, `termsVersion` e `acceptedAt`. É dado de auditoria, nunca público e nunca editável pelo usuário.
 
-**`termsVersion` (F2-010).** Identifica o texto efetivamente aceito, no formato `DEC-031/<data da revisão de prohibited-items.md>/declaracao-<n>`; valor atual `DEC-031/2026-09-14/declaracao-2` (a redação 1 trazia o nome do produto como "TROQS"; a redação 2 corrige para TROQS, sem mudança de teor). O texto exibido e a versão gravada vêm da mesma constante (`src/modules/listing/compliance.ts`), e um teste fixa o hash do texto: mudar a declaração ou a política exige nova versão. É decisão técnica de rastreabilidade, sem regra nova.
+**`termsVersion` (F2-010).** Identifica o texto efetivamente aceito, no formato `DEC-031/<data da revisão de prohibited-items.md>/declaracao-<n>`; valor atual `DEC-031/2026-09-14/declaracao-2` (a redação 1 trazia o nome do produto como "TROQ"; a redação 2 corrige para TROQS, sem mudança de teor). O texto exibido e a versão gravada vêm da mesma constante (`src/modules/listing/compliance.ts`), e um teste fixa o hash do texto: mudar a declaração ou a política exige nova versão. É decisão técnica de rastreabilidade, sem regra nova.
 
 ### 2.4 Imagens: entidade separada
 

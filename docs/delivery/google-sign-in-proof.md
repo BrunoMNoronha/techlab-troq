@@ -14,7 +14,7 @@ No console do projeto `troq-510700`, o público foi publicado e confirmado como 
 | Cliente Production "TROQs" | Callback `https://troqs.app/api/auth/callback/google` conferido |
 | Par Production na Vercel | Ambas as chaves presentes como Sensitive; valores não recuperados |
 | Login Google em Production | Relatado pelo Bruno em comentário de #133 após [Deploy Production 37273766162](https://github.com/BrunoMNoronha/techlab-troq/actions/runs/37273766162), SHA `dc511320ac4048c1b875ec7db283456defcbb7e3`; não repetido nesta etapa |
-| Cliente Preview "TROQS preview" | Cliente distinto de Production; callback `https://techlab-troq-git-preview-bruno-m-noronha.vercel.app/api/auth/callback/google` salvo e conferido em nova leitura do console |
+| Cliente Preview "TROQ preview" | Cliente distinto de Production; callback `https://techlab-troq-git-preview-bruno-m-noronha.vercel.app/api/auth/callback/google` salvo e conferido em nova leitura do console |
 | Par efetivo de Preview estável | Ambas as chaves presentes como Sensitive, no escopo Preview sem restrição de branch; segredo cadastrado diretamente pelo Bruno, sem recuperação do valor |
 | Release Preview com Google | SHA `9447b8af344201ac60d25721dbce78c7982ae01e`, [run 37332427023, tentativa 1](https://github.com/BrunoMNoronha/techlab-troq/actions/runs/37332427023), deployment `dpl_H2coTZhL45V7t52PTzJtfNcGM4hj`; preflight, migrations, build e smoke aprovados |
 | Jornada de Preview estável | Botão, pedido OAuth, callback real, recusa de vinculação implícita, vinculação explícita pelo Bruno, acesso posterior pelo Google e logout observados pelo agente. Cadastro novo com aceite, cancelamento e links de e-mail confirmados pelo Bruno conforme o roteiro abaixo |
@@ -57,7 +57,7 @@ Na continuação, o Bruno entregou uma sessão com Google vinculado e confirmou 
 | --- | --- |
 | Projeto Google Cloud do TROQS | criado: `troq-510700` ("TROQ"), conduzido pelo agente no Chrome com a sessão do Bruno |
 | Tela de consentimento OAuth | público **Externo**, em **modo de teste**; escopos declarados só `openid` e `userinfo.email`; um usuário de teste (a conta do Bruno) |
-| Cliente OAuth "Aplicativo da Web" de `preview` | "TROQS preview", sem origem JavaScript; URI de redirecionamento só a do alias da branch de prova |
+| Cliente OAuth "Aplicativo da Web" de `preview` | "TROQ preview", sem origem JavaScript; URI de redirecionamento só a do alias da branch de prova |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` e `BETTER_AUTH_URL` em `preview` | restritas à branch `proof/81-google-preview`; o segredo foi gravado pelo Bruno como Sensitive |
 | Cliente OAuth de `production` | não criado; depende da origem `https` de [#77](https://github.com/BrunoMNoronha/techlab-troq/issues/77) e da configuração de autenticação de `production`, que ainda não tem variáveis |
 
@@ -80,7 +80,7 @@ Na continuação, o Bruno entregou uma sessão com Google vinculado e confirmou 
 | 10 | Acesso posterior com Google → mesma conta (5 usuários, 1 identidade), nova sessão, tokens ainda nulos | PASS |
 | 11 | Logs de requisição do alias (29 registros, 4 callbacks): nenhum segredo do cliente, token do Google, JWT, cookie de sessão ou handle de pendência | PASS |
 
-**Limpeza (2026-10-05).** Removidos: as três variáveis restritas à branch, a branch `proof/81-google-preview` e a URI do alias no cliente "TROQS preview". A conta de teste foi apagada do Neon de `preview` (usuário, identidade, aceite e sessões), e o banco voltou à linha de base: 4 usuários, 0 identidades Google, 0 pendências. Ficam o projeto `troq-510700`, a tela de consentimento em modo de teste e o cliente sem URI.
+**Limpeza (2026-10-05).** Removidos: as três variáveis restritas à branch, a branch `proof/81-google-preview` e a URI do alias no cliente "TROQ preview". A conta de teste foi apagada do Neon de `preview` (usuário, identidade, aceite e sessões), e o banco voltou à linha de base: 4 usuários, 0 identidades Google, 0 pendências. Ficam o projeto `troq-510700`, a tela de consentimento em modo de teste e o cliente sem URI.
 
 **Não provados com o Google real** (cobertos só pelos testes automatizados de `google-signin.integration.test.ts`):
 

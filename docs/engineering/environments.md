@@ -237,7 +237,7 @@ Autenticação por email/senha com verificação de email, via Better Auth (DEC-
 - **Origens JavaScript autorizadas**: nenhuma é necessária, porque o fluxo é iniciado e concluído pelo servidor.
 - **Escopos da tela de consentimento**: apenas `openid` e `email`. O TROQS não pede `profile`, Gmail, Drive, contatos nem acesso offline (IC-15.7).
 
-**Atualização de #133 em 2026-10-05.** Projeto Google Cloud `troq-510700`, consentimento **Externo / Em produção**, com clientes distintos "TROQS preview" e "TROQs". Production tem o par como Sensitive e login real previamente relatado pelo Bruno. O par efetivo de Preview e sua homologação estão em [../delivery/google-sign-in-proof.md](../delivery/google-sign-in-proof.md). A prova histórica de #81 usou variáveis restritas a `proof/81-google-preview`, removidas na limpeza; ela não comprova a configuração da release estável.
+**Atualização de #133 em 2026-10-05.** Projeto Google Cloud `troq-510700`, consentimento **Externo / Em produção**, com clientes distintos "TROQ preview" e "TROQs". Production tem o par como Sensitive e login real previamente relatado pelo Bruno. O par efetivo de Preview e sua homologação estão em [../delivery/google-sign-in-proof.md](../delivery/google-sign-in-proof.md). A prova histórica de #81 usou variáveis restritas a `proof/81-google-preview`, removidas na limpeza; ela não comprova a configuração da release estável.
 
 O preflight verifica presença, escopo e tipo por metadados, sem descriptografar os segredos. Formato e validade não podem ser afirmados a partir de valores Sensitive mascarados; a homologação precisa do fluxo real.
 
