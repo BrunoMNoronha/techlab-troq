@@ -37,7 +37,8 @@ export interface CompleteGoogleSignupInput {
 }
 
 const GOOGLE_AUTHORIZATION_ORIGIN = 'https://accounts.google.com';
-const DEFAULT_DESTINATION = '/conta';
+// Sem destino de retorno, a entrada leva a vitrine publica de anuncios.
+const DEFAULT_DESTINATION = '/explorar';
 
 const GOOGLE_UNAVAILABLE_ERROR =
   'A entrada com Google esta indisponivel no momento. Use seu e-mail e senha.';
