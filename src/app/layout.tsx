@@ -1,3 +1,4 @@
+import { SpeedInsights } from '@vercel/speed-insights/next';
 import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
 import { ToastProvider } from '@/components/feedback';
@@ -63,6 +64,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             {children}
           </AppShell>
         </ToastProvider>
+        <SpeedInsights />
       </body>
     </html>
   );
