@@ -126,3 +126,20 @@ export function requireDirectConnection(directUrl, pooledUrl) {
     throw new Error('DIRECT_URL e DATABASE_URL não identificam o mesmo banco Neon.');
   }
 }
+
+/**
+ * Diagnóstico da CLI da Vercel sem vazar segredo: últimas linhas do stderr,
+ * com cada valor secreto conhecido trocado por `***` e as sequências de escape
+ * de terminal removidas.
+ */
+export function redactCliOutput(text, secrets, maxLines = 40) {
+  let clean = String(text ?? '').replace(/\u001b\[[0-9;]*[A-Za-z]/g, '');
+  for (const secret of secrets) {
+    if (typeof secret === 'string' && secret.length > 0) clean = clean.split(secret).join('***');
+  }
+  return clean
+    .split(/\r?\n/)
+    .filter((line) => line.trim().length > 0)
+    .slice(-maxLines)
+    .join('\n');
+}
