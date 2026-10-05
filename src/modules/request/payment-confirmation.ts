@@ -239,12 +239,16 @@ async function applyFact(
     case 'multiple_accredited': {
       // PD-7: o canonico e eleito uma unica vez; o excedente vira RT-1 na mesma
       // transacao. O canonico segue a regra de tempestividade como unico.
-      const { canonical } = await resolveDuplicateInTx(tx, {
+      const resolution = await resolveDuplicateInTx(tx, {
         attemptId,
         payments: fact.payments,
         at,
       });
-      return applyAccreditation(tx, attemptId, request, canonical, origin, at);
+      // Duplicidade tardia sem vinculo documentado com o canonico ja eleito
+      // (#147): caso `inconsistente` aberto em `payments`; a tentativa e a vaga
+      // ficam como estao (PD-7.2, PD-10.5).
+      if (resolution.kind === 'canonical_unlinked') return 'inconsistent';
+      return applyAccreditation(tx, attemptId, request, resolution.canonical, origin, at);
     }
     case 'inconsistent':
       await markInconsistentInTx(tx, { attemptId, reason: fact.reason, at });

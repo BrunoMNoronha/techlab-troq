@@ -285,6 +285,19 @@ A regra é determinística, total e não depende de ordem de chegada, de ordem d
 
 **PD-7.5 (normativa).** Duplicidade técnica **jamais** é tratada como cobrança válida definitiva de RB-004 (PE-3.7, PE-12.3).
 
+**PD-7.6 (implementação, [#147](https://github.com/BrunoMNoronha/techlab-troq/issues/147), 2026-10-05) — duplicidade que aparece depois da confirmação.** Sem alterar regra de negócio:
+
+1. **Causa.** A confirmação de um pagamento único (PD-6.6, passo 4) marca como canônico a **transação da order** (`PAY01...` na Orders API). Quando um segundo pagamento aprovado aparece depois, a busca de ADR-0008 devolve os candidatos com os ids **numéricos** da Payments API. O provedor não documenta vínculo entre os dois tipos de id: conferido em 2026-10-05 nos tipos do SDK oficial (`sdk-nodejs`). O `PaymentOrder` do pagamento tem só `id` numérico e `type` (`mercadopago`/`mercadolibre`), que é a order de loja, e não a order `ORD...` nem a transação. O `reference_id` e o `e2e_id` da transação da order não aparecem no pagamento da Payments API. Na sandbox (OD-16), `PAY01...` e `reference_id` deram 404 em `/v1/payments`. Por isso o canônico nunca estava entre os candidatos, e `resolveDuplicateInTx` lançava `duplicate_canonical_outside_candidates`. No webhook, isso virava `unavailable` em silêncio. Na reconciliação, na corrida com o webhook, e na varredura de reversões (PD-9.5), virava `errors` com `jobs.failure` a cada passada.
+2. **Tratamento.** Sem saber qual candidato é o canônico, não há excedente identificável. Então:
+   - nada é reeleito (PD-7.2) e o canônico não é tocado;
+   - nenhum `TechnicalRefund` é criado e nenhuma chamada ao provedor é feita, porque classificar RT-1 para um candidato poderia devolver o próprio pagamento válido;
+   - abre-se **um** caso `inconsistente` com motivo `late_duplicate_canonical_unlinked` (PD-10.5). A auditoria `payment.case_opened` leva o canônico, os candidatos com os instantes autoritativos e `excessTreatment: pending_decision`;
+   - a tentativa continua `pagamento_confirmado`, e a solicitação continua `paid`, com a vaga consumida;
+   - `confirmPaymentFlow` devolve `inconsistent`, sem exceção.
+3. **Exatamente uma vez.** O caso é único por motivo enquanto aberto (`openCaseInTx`), e a decisão acontece sob a trava do anúncio. Assim, reentregas e reprocessamentos concorrentes se serializam e só o primeiro abre o caso. Depois disso, a reconciliação só reobserva a tentativa (PD-10.8, item 2), e a varredura diária devolve `inconsistent` sem novo efeito.
+4. **Prova.** `src/modules/request/late-duplicate.integration.test.ts`, contra PostgreSQL efêmero e o provedor simulado. Cobre a confirmação por webhook e por reconciliação; a reentrega do webhook, a reconciliação e a varredura de reversões **concorrentes** (espera na trava vista em `pg_stat_activity`, PD-13.2); e a corrida em que a reconciliação lê a duplicidade enquanto o webhook confirma. Antes da correção, as três provas falhavam com a exceção ou com `errors: 1`.
+5. **Limite e decisão pendente.** O excedente fica para devolução **manual**, como DEC-044 já prevê quando a transação excedente não é identificável com segurança. Automatizar a devolução depende de uma fonte do provedor que ligue o pagamento da Payments API à transação da order, ou de uma decisão do Bruno sobre outra regra. Um exemplo de outra regra: devolver por transação quando a própria order lista duas transações Pix acreditadas.
+
 ## 8. Reembolso técnico e cancelamento
 
 **PD-8.1 (normativa).** As hipóteses são **exaustivas** (PE-7.2): RT-1 duplicidade (excedente); RT-2 acreditação depois do fim da janela; RT-3 acreditação sem reserva válida vigente, inclusive quando a vaga já foi legitimamente ocupada por outra solicitação; RT-4 cobrança criada por defeito técnico do TROQ. Nenhuma outra hipótese é autorizada.
@@ -365,7 +378,7 @@ _Atualização de 2026-10-01 (DEC-045, [#98](https://github.com/BrunoMNoronha/te
    - `order_not_found` ou código não mapeado → `pendente_operacional` com caso `inconsistente`.
    - Concluídos todos os reembolsos de uma hipótese, o caso fecha com desfecho `refunded`. A tentativa inteira de exceção passa a `reembolsada_ou_revertida`. Uma solicitação paga com excedente devolvido continua `pagamento_confirmado`.
 4. **Cancelamento (PD-8.10).** Depois do commit de T5/T6, `closeListing` cancela, fora da trava, a order sem acreditação de cada reserva encerrada, com chave persistida em `payment_attempts.cancel_idempotency_key`. A tentativa vai a `falha`, e isso não é reembolso nem cria `TechnicalRefund`. Se a order já acreditou, a confirmação aplica RT-3. A falha do cancelamento não desfaz o encerramento: a tentativa fica aberta para a reconciliação. Os encerramentos de moderação (T7–T9) ainda não existem e usarão a mesma rotina.
-5. **Limite conhecido.** A busca da Payments API não vincula os seus ids às transações da order. Por isso, com as fontes atuais, a duplicidade observada pela busca termina em `pendente_operacional`, para devolução manual do excedente.
+5. **Limite conhecido.** A busca da Payments API não vincula os seus ids às transações da order. Por isso, com as fontes atuais, a duplicidade observada pela busca termina em `pendente_operacional`, para devolução manual do excedente. Quando a duplicidade aparece **depois** da confirmação, nem o excedente é identificável: o caminho é o caso `inconsistente` de PD-7.6, sem `TechnicalRefund`.
 
 ## 9. Reversões posteriores
 
@@ -573,3 +586,5 @@ Revisado em 2026-10-01 por F3-001 ([#91](https://github.com/BrunoMNoronha/techla
 Revisado em 2026-10-01 por F3-004 ([#94](https://github.com/BrunoMNoronha/techlab-troq/issues/94)), com a implementação do adaptador: notas em PD-3.2 (expiração por duração), antes de PD-6.7 (instante de acreditação, OD-16) e antes de PD-8.6 (códigos de reembolso). Nenhuma regra, janela ou teste de PD-13 foi alterado.
 
 Revisado em 2026-10-05 por F3-011 ([#101](https://github.com/BrunoMNoronha/techlab-troq/issues/101)), com a implementação das reversões: PD-9.5 e notas em PD-6.12 e PD-10.8. Nenhuma regra de negócio, cadência ou teste de PD-13 foi alterado.
+
+Revisado em 2026-10-05 pela [#147](https://github.com/BrunoMNoronha/techlab-troq/issues/147), com a correção da duplicidade depois da confirmação: PD-7.6 e nota no item 5 de PD-8.11. Nenhuma regra de negócio, decisão registrada ou teste de PD-13 foi alterado.
