@@ -51,7 +51,7 @@ export type ReconcileOutcome =
   | 'requester_owned'
   | 'orphan_not_found'
   | 'observed'
-  | 'divergence'
+  | 'reversed'
   | 'unavailable'
   | 'inconsistent'
   | 'unchanged';
@@ -90,7 +90,10 @@ const FROM_CONFIRMATION: Record<PaymentConfirmationOutcome, ReconcileOutcome> = 
   pending: 'pending',
   unavailable: 'unavailable',
   inconsistent: 'inconsistent',
-  reversed: 'divergence',
+  // Reversao antes da confirmacao: aplicada pela mesma rotina (F3-011, PD-9.4).
+  reversed: 'reversed',
+  // So a varredura diaria pega tentativas confirmadas; aqui so por corrida.
+  reversed_after_confirmation: 'reversed',
   no_order: 'unchanged',
   not_found: 'unchanged',
   no_effect: 'unchanged',
@@ -189,7 +192,7 @@ export interface ReconciliationSummary extends JobLoopCounts {
   requesterOwned: number;
   orphansNotFound: number;
   observed: number;
-  divergences: number;
+  reversed: number;
   unavailable: number;
   inconsistent: number;
   unchanged: number;
@@ -209,7 +212,7 @@ const BUCKET: Record<ReconcileOutcome, keyof ReconciliationSummary> = {
   requester_owned: 'requesterOwned',
   orphan_not_found: 'orphansNotFound',
   observed: 'observed',
-  divergence: 'divergences',
+  reversed: 'reversed',
   unavailable: 'unavailable',
   inconsistent: 'inconsistent',
   unchanged: 'unchanged',
@@ -230,7 +233,7 @@ export async function runPaymentReconciliation(
     requesterOwned: 0,
     orphansNotFound: 0,
     observed: 0,
-    divergences: 0,
+    reversed: 0,
     unavailable: 0,
     inconsistent: 0,
     unchanged: 0,

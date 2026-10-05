@@ -45,3 +45,10 @@ export type {
   ReconciliationOptions,
   ReconciliationSummary,
 } from './reconciliation';
+// F3-011 (#101): varredura diaria de reversoes, pela mesma rotina do webhook.
+export { checkConfirmedAttemptForReversal, runPaymentReversalSweep } from './reversal-sweep';
+export type {
+  ReversalCheckOutcome,
+  ReversalSweepOptions,
+  ReversalSweepSummary,
+} from './reversal-sweep';

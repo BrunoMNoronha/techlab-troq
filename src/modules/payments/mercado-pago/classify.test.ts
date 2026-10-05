@@ -65,15 +65,18 @@ describe('classifyState', () => {
   });
 
   it.each([
-    ['refunded', 'refunded'],
-    ['processed', 'refunded'],
-    ['processed', 'partially_refunded'],
-    ['charged_back', 'in_process'],
-    ['charged_back', 'settled'],
-    ['charged_back', 'reimbursed'],
-  ])('%s/%s: reversao', (status, detail) => {
-    expect(classifyState(order(status, detail))).toEqual({ kind: 'reversed' });
-  });
+    ['refunded', 'refunded', 'order_refunded'],
+    ['processed', 'refunded', 'processed_refunded'],
+    ['processed', 'partially_refunded', 'processed_partially_refunded'],
+    ['charged_back', 'in_process', 'order_charged_back'],
+    ['charged_back', 'settled', 'order_charged_back'],
+    ['charged_back', 'reimbursed', 'order_charged_back'],
+  ])(
+    '%s/%s: reversao, com o codigo fechado do estado que a caracterizou',
+    (status, detail, reason) => {
+      expect(classifyState(order(status, detail))).toEqual({ kind: 'reversed', reason });
+    },
+  );
 
   it.each([
     ['approved', 'accredited'],

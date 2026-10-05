@@ -12,6 +12,7 @@ import {
   type MercadoPagoClient,
   type NotificationRejection,
   type OrderSnapshot,
+  type ReversalReason,
 } from './mercado-pago';
 
 // Notificacao e confirmacao do pagamento (F3-006, #96; payments-design.md,
@@ -148,7 +149,8 @@ export type PaymentFact =
   | { kind: 'accredited'; accreditedAt: Date; providerPaymentId: string }
   | { kind: 'pending' }
   | { kind: 'not_accredited_terminal'; outcome: 'expired' | 'canceled' | 'failed' }
-  | { kind: 'reversed' }
+  /** Devolucao ou contestacao (PD-9.1), com o codigo do estado que a caracterizou. */
+  | { kind: 'reversed'; reason: ReversalReason }
   /**
    * Mais de um pagamento acreditado (PD-7): os candidatos validados da busca,
    * cada um com o instante autoritativo, ja espelhados em `Payment`.
@@ -290,7 +292,7 @@ async function readFact(attempt: AttemptRow, gateway: MercadoPagoClient): Promis
       case 'not_accredited_terminal':
         return { kind: 'not_accredited_terminal', outcome: state.outcome };
       case 'reversed':
-        return { kind: 'reversed' };
+        return { kind: 'reversed', reason: state.reason };
       case 'unknown':
         return { kind: 'inconsistent', reason: state.reason };
     }
@@ -710,26 +712,6 @@ export async function markInconsistentInTx(
   await openCaseInTx(tx, {
     attemptId: input.attemptId,
     kind: 'inconsistente',
-    reason: input.reason,
-    at: input.at,
-  });
-}
-
-/**
- * Situacao que outra entrega resolve (duplicidade em F3-007, reversao antes da
- * confirmacao em F3-011): so registra o caso, sem mudar a tentativa.
- */
-export async function forwardCaseInTx(
-  tx: Prisma.TransactionClient,
-  input: {
-    attemptId: string;
-    reason: 'reversed_before_confirmation';
-    at: Date;
-  },
-): Promise<void> {
-  await openCaseInTx(tx, {
-    attemptId: input.attemptId,
-    kind: 'divergencia',
     reason: input.reason,
     at: input.at,
   });

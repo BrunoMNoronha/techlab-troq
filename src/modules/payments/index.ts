@@ -40,7 +40,6 @@ export {
   confirmPaymentInTx,
   createTechnicalRefundInTx,
   resolveDuplicateInTx,
-  forwardCaseInTx,
   markInconsistentInTx,
   markNotificationProcessed,
   observeAttempt,
@@ -81,6 +80,18 @@ export {
 } from './reconciliation';
 export type { OrphanOutcome } from './reconciliation';
 export { runClaimLoop } from './jobs';
+
+// F3-011 (#101): reversoes posteriores. Varredura DIARIA das tentativas
+// confirmadas, pela mesma reclamacao com `SKIP LOCKED`, e as transicoes da
+// tentativa para `reembolsada_ou_revertida`, chamadas por `request` sob a trava
+// do anuncio (PD-9.1, PD-9.2).
+export {
+  claimConfirmedForReversalCheck,
+  REVERSAL_CHECK_SECONDS,
+  reverseConfirmedPaymentInTx,
+  reverseUnconfirmedPaymentInTx,
+} from './reversal';
+export type { ConfirmedReversalOutcome } from './reversal';
 export type { ClaimHooks, JobLoopCounts, JobLoopOptions } from './jobs';
 
 // F3-013 (#103): sinais de AR-14.3 derivados do estado persistido.

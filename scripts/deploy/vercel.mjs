@@ -111,6 +111,8 @@ async function smoke(url) {
       'media-cleanup',
       'payments-reconcile',
       'payments-refund-retry',
+      // F3-011 (#101): a prova em `preview` e esta invocacao autenticada (DEC-042).
+      'payments-reversals',
     ]) {
       const response = await fetch(`${url}/api/jobs/${job}`, {
         headers: {

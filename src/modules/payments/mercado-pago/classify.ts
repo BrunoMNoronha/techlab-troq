@@ -16,8 +16,13 @@ export type AuthoritativeState =
   | { kind: 'pending' }
   /** `expired`, `canceled`, `failed`: sem acreditacao, terminal. */
   | { kind: 'not_accredited_terminal'; outcome: 'expired' | 'canceled' | 'failed' }
-  /** Devolucao ou contestacao: a acreditacao deixou de valer (PD-9). */
-  | { kind: 'reversed' }
+  /**
+   * Devolucao ou contestacao: a acreditacao deixou de valer (PD-9). `reason` e
+   * um codigo fechado do TROQ que diz qual estado a caracterizou (PE-11, tabela
+   * de auditoria; F3-011): `order_refunded`, `order_charged_back`,
+   * `processed_refunded` ou `processed_partially_refunded`.
+   */
+  | { kind: 'reversed'; reason: ReversalReason }
   /** Fora da lista, ausente ou contraditorio: nunca aprovado (PD-3.6). */
   | { kind: 'unknown'; reason: string };
 
@@ -75,17 +80,31 @@ const TERMINAL = new Map<string, 'expired' | 'canceled' | 'failed'>([
   ['canceled', 'canceled'],
   ['failed', 'failed'],
 ]);
-const REVERSED_STATUS = new Set(['refunded', 'charged_back']);
-const REVERSED_DETAIL_ON_PROCESSED = new Set(['refunded', 'partially_refunded']);
+/** Codigo fechado do estado que caracterizou a reversao (vocabulario do TROQ). */
+export type ReversalReason =
+  'order_refunded' | 'order_charged_back' | 'processed_refunded' | 'processed_partially_refunded';
+
+// `charged_back` e valor tecnico da API, nao afirmacao de chargeback no Pix
+// (PD-9.3, PE-8.1).
+const REVERSED_STATUS = new Map<string, ReversalReason>([
+  ['refunded', 'order_refunded'],
+  ['charged_back', 'order_charged_back'],
+]);
+const REVERSED_DETAIL_ON_PROCESSED = new Map<string, ReversalReason>([
+  ['refunded', 'processed_refunded'],
+  ['partially_refunded', 'processed_partially_refunded'],
+]);
 
 export function classifyState(order: Raw): AuthoritativeState {
   const status = str(order.status);
   const detail = str(order.status_detail);
   if (!status) return { kind: 'unknown', reason: 'order_status_missing' };
 
-  if (REVERSED_STATUS.has(status)) return { kind: 'reversed' };
+  const reversedStatus = REVERSED_STATUS.get(status);
+  if (reversedStatus) return { kind: 'reversed', reason: reversedStatus };
   if (status === 'processed') {
-    if (detail && REVERSED_DETAIL_ON_PROCESSED.has(detail)) return { kind: 'reversed' };
+    const reversedDetail = detail ? REVERSED_DETAIL_ON_PROCESSED.get(detail) : undefined;
+    if (reversedDetail) return { kind: 'reversed', reason: reversedDetail };
     if (detail !== 'accredited') return { kind: 'unknown', reason: 'processed_detail_unmapped' };
     const pix = rawPayments(order).filter((p) => paymentMethodId(p) === 'pix');
     if (pix.length === 0) return { kind: 'unknown', reason: 'pix_payment_missing' };

@@ -10,7 +10,11 @@ import { reportSignal } from '@/modules/platform';
 // assim, so atributos numericos seguem, com nome em snake_case.
 
 export type JobName =
-  'payments-reconcile' | 'payments-refund-retry' | 'media-cleanup' | 'media-process';
+  | 'payments-reconcile'
+  | 'payments-refund-retry'
+  | 'payments-reversals'
+  | 'media-cleanup'
+  | 'media-process';
 
 function snakeCase(key: string): string {
   return key.replace(/[A-Z]/g, (char) => `_${char.toLowerCase()}`);
