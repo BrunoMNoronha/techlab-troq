@@ -12,6 +12,11 @@ import {
   requestImageUpload,
 } from '@/modules/media/actions';
 import type { OwnerImageView, UploadAuthorization } from '@/modules/media';
+import { MediaFrame } from '@/components/data-display';
+import { Alert, Progress } from '@/components/feedback';
+import { FieldHint, FileUpload } from '@/components/forms';
+import { Cluster, Grow, Section, Stack } from '@/components/layout';
+import { Button, Card, Text } from '@/components/ui';
 import { putFile } from './upload-transport';
 
 // Gestao privada das imagens do anuncio (F2-008, #46). O binario vai do
@@ -51,17 +56,6 @@ function validateFile(file: File): string | null {
   if (file.size > MAX_BYTES) return `"${file.name}": o arquivo passa de 10 MB.`;
   return null;
 }
-
-const buttonStyle: React.CSSProperties = {
-  padding: '8px 12px',
-  minHeight: '40px',
-  border: '1px solid #d1d5db',
-  borderRadius: '6px',
-  backgroundColor: 'white',
-  color: '#111827',
-  fontSize: '14px',
-  cursor: 'pointer',
-};
 
 export function ImageManager({
   listingId,
@@ -273,47 +267,25 @@ export function ImageManager({
   const full = images.length >= MAX_IMAGES;
 
   return (
-    <section aria-labelledby="imagens-titulo" style={{ marginTop: '32px' }}>
-      <h2 id="imagens-titulo" style={{ fontSize: '18px', fontWeight: '600', marginBottom: '4px' }}>
-        Imagens do anúncio
-      </h2>
-      <p style={{ color: '#6b7280', fontSize: '14px', margin: '0 0 12px' }}>
-        De 1 a {MAX_IMAGES} fotos em JPEG, PNG ou WebP, até 10 MB cada. A primeira é a capa.
-      </p>
-
-      <div role="status" aria-live="polite" style={{ position: 'absolute', left: '-9999px' }}>
+    <Section
+      titleId="imagens-titulo"
+      title="Imagens do anúncio"
+      description={`De 1 a ${MAX_IMAGES} fotos em JPEG, PNG ou WebP, até 10 MB cada. A primeira é a capa.`}
+    >
+      <div role="status" aria-live="polite" className="sr-only">
         {status}
       </div>
 
       {error && (
-        <div
-          ref={errorRef}
-          tabIndex={-1}
-          role="alert"
-          style={{
-            padding: '12px 16px',
-            marginBottom: '12px',
-            backgroundColor: '#fef2f2',
-            border: '1px solid #fecaca',
-            borderRadius: '6px',
-            color: '#991b1b',
-            fontSize: '14px',
-          }}
-        >
+        <Alert ref={errorRef} tabIndex={-1} role="alert" tone="error">
           {error}
-        </div>
+        </Alert>
       )}
 
-      <div style={{ marginBottom: '16px' }}>
-        <label
-          htmlFor="image-input"
-          style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '4px' }}
-        >
-          Adicionar fotos
-        </label>
-        <input
+      <Stack gap={2}>
+        <FileUpload
           id="image-input"
-          type="file"
+          title="Adicionar fotos"
           accept={ACCEPTED.join(',')}
           multiple
           disabled={full || busy}
@@ -322,13 +294,12 @@ export function ImageManager({
             void handleFiles(e.target.files);
             e.target.value = '';
           }}
-          style={{ display: 'block', maxWidth: '100%', fontSize: '14px' }}
         />
-        <p id="image-input-hint" style={{ color: '#6b7280', fontSize: '13px', margin: '6px 0 0' }}>
+        <FieldHint id="image-input-hint">
           {full
             ? `Limite de ${MAX_IMAGES} imagens atingido.`
             : `${images.length} de ${MAX_IMAGES} imagens.`}
-        </p>
+        </FieldHint>
         <input
           ref={reuploadInput}
           type="file"
@@ -339,17 +310,16 @@ export function ImageManager({
             void handleReupload(e.target.files);
             e.target.value = '';
           }}
-          style={{ position: 'absolute', width: '1px', height: '1px', opacity: 0 }}
+          className="sr-only"
         />
-      </div>
+      </Stack>
 
       {images.length === 0 ? (
-        <p style={{ color: '#6b7280', fontSize: '14px' }}>Nenhuma imagem ainda.</p>
+        <Text size="small" tone="muted">
+          Nenhuma imagem ainda.
+        </Text>
       ) : (
-        <ol
-          aria-label="Imagens do anúncio"
-          style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: '12px' }}
-        >
+        <Stack as="ol" gap={3} aria-label="Imagens do anúncio">
           {images.map((image, index) => {
             const entry = local[image.id];
             const phase = entry?.phase;
@@ -359,174 +329,122 @@ export function ImageManager({
             else if (phase?.kind === 'confirming' && image.state === 'awaiting_upload')
               stateText = 'Confirmando envio';
             else if (phase?.kind === 'put_failed') stateText = 'Envio falhou';
+            const failed = image.state === 'failed' || phase?.kind === 'put_failed';
 
             return (
-              <li
-                key={image.id}
-                aria-label={label}
-                style={{
-                  display: 'flex',
-                  gap: '12px',
-                  padding: '12px',
-                  border: '1px solid #e5e7eb',
-                  borderRadius: '8px',
-                  alignItems: 'flex-start',
-                  flexWrap: 'wrap',
-                }}
-              >
-                <div
-                  style={{
-                    width: '72px',
-                    height: '72px',
-                    flexShrink: 0,
-                    borderRadius: '6px',
-                    backgroundColor: '#f3f4f6',
-                    overflow: 'hidden',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: '#6b7280',
-                    fontSize: '12px',
-                  }}
-                >
-                  {entry?.previewUrl ? (
-                    // Pre-visualizacao do arquivo LOCAL (blob:), sem otimizador.
-                    <Image
-                      src={entry.previewUrl}
-                      alt=""
-                      width={72}
-                      height={72}
-                      unoptimized
-                      style={{ objectFit: 'cover' }}
-                    />
-                  ) : image.state === 'ready' ? (
-                    // Miniatura pela rota autorizada /media: acesso privado do
-                    // dono, sem Image Optimization (media-pipeline-contract.md, 9).
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={mediaPath(image.id, 'thumb')}
-                      alt=""
-                      width={72}
-                      height={72}
-                      style={{ width: '72px', height: '72px', objectFit: 'cover' }}
-                    />
-                  ) : (
-                    <span aria-hidden="true">📷</span>
-                  )}
-                </div>
+              <Card as="li" key={image.id} aria-label={label} padding="sm">
+                <Cluster align="start" nowrap>
+                  <MediaFrame ratio="square" rounded size="thumb">
+                    {entry?.previewUrl ? (
+                      // Pre-visualizacao do arquivo LOCAL (blob:), sem otimizador.
+                      <Image src={entry.previewUrl} alt="" width={72} height={72} unoptimized />
+                    ) : image.state === 'ready' ? (
+                      // Miniatura pela rota autorizada /media: acesso privado do
+                      // dono, sem Image Optimization (media-pipeline-contract.md, 9).
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={mediaPath(image.id, 'thumb')} alt="" width={72} height={72} />
+                    ) : null}
+                  </MediaFrame>
 
-                <div style={{ flex: '1 1 160px', minWidth: 0 }}>
-                  <p style={{ margin: 0, fontWeight: '600', fontSize: '15px' }}>{label}</p>
-                  <p
-                    style={{
-                      margin: '4px 0 0',
-                      fontSize: '14px',
-                      color:
-                        image.state === 'failed' || phase?.kind === 'put_failed'
-                          ? '#991b1b'
-                          : '#374151',
-                    }}
-                  >
-                    Estado: {stateText}
-                  </p>
-                  {phase?.kind === 'uploading' && (
-                    <progress
-                      value={phase.progress}
-                      max={100}
-                      aria-label={`Envio da ${label}`}
-                      style={{ width: '100%', marginTop: '6px' }}
-                    />
-                  )}
-                  {image.state === 'failed' && image.failureMessage && (
-                    <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#991b1b' }}>
-                      {image.failureMessage}
-                    </p>
-                  )}
-                  {phase?.kind === 'put_failed' && (
-                    <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#991b1b' }}>
-                      {phase.message}
-                    </p>
-                  )}
+                  <Grow>
+                    <Stack gap={2}>
+                      <Stack gap={1}>
+                        <Text weight="semibold">{label}</Text>
+                        <Text size="small" tone={failed ? 'error' : 'default'}>
+                          Estado: {stateText}
+                        </Text>
+                        {image.state === 'failed' && image.failureMessage && (
+                          <Text size="small" tone="error">
+                            {image.failureMessage}
+                          </Text>
+                        )}
+                        {phase?.kind === 'put_failed' && (
+                          <Text size="small" tone="error">
+                            {phase.message}
+                          </Text>
+                        )}
+                      </Stack>
+                      {phase?.kind === 'uploading' && (
+                        <Progress value={phase.progress} label={`Envio da ${label}`} />
+                      )}
 
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '8px' }}>
-                    <button
-                      type="button"
-                      style={buttonStyle}
-                      disabled={busy || index === 0}
-                      aria-label={`Mover ${label} para cima`}
-                      onClick={() => void move(index, -1)}
-                    >
-                      ↑ Subir
-                    </button>
-                    <button
-                      type="button"
-                      style={buttonStyle}
-                      disabled={busy || index === images.length - 1}
-                      aria-label={`Mover ${label} para baixo`}
-                      onClick={() => void move(index, 1)}
-                    >
-                      ↓ Descer
-                    </button>
-                    {phase?.kind === 'put_failed' && entry?.auth && (
-                      <button
-                        type="button"
-                        style={buttonStyle}
-                        disabled={busy}
-                        onClick={() => void retryPut(image.id)}
-                      >
-                        Tentar de novo
-                      </button>
-                    )}
-                    {image.state === 'failed' && (
-                      <button
-                        type="button"
-                        style={buttonStyle}
-                        disabled={busy}
-                        aria-label={`Reenviar ${label}`}
-                        onClick={() => {
-                          reuploadTarget.current = image.id;
-                          reuploadInput.current?.click();
-                        }}
-                      >
-                        Reenviar
-                      </button>
-                    )}
-                    {confirmingRemoval === image.id ? (
-                      <>
-                        <button
-                          type="button"
-                          style={{ ...buttonStyle, color: '#991b1b', borderColor: '#fecaca' }}
-                          disabled={busy}
-                          onClick={() => void remove(image.id)}
+                      <Cluster gap={2}>
+                        <Button
+                          variant="outline"
+                          iconStart="arrow-up"
+                          disabled={busy || index === 0}
+                          aria-label={`Mover ${label} para cima`}
+                          onClick={() => void move(index, -1)}
                         >
-                          Confirmar remoção
-                        </button>
-                        <button
-                          type="button"
-                          style={buttonStyle}
-                          onClick={() => setConfirmingRemoval(null)}
+                          Subir
+                        </Button>
+                        <Button
+                          variant="outline"
+                          iconStart="arrow-down"
+                          disabled={busy || index === images.length - 1}
+                          aria-label={`Mover ${label} para baixo`}
+                          onClick={() => void move(index, 1)}
                         >
-                          Cancelar
-                        </button>
-                      </>
-                    ) : (
-                      <button
-                        type="button"
-                        style={buttonStyle}
-                        disabled={busy}
-                        aria-label={`Remover ${label}`}
-                        onClick={() => setConfirmingRemoval(image.id)}
-                      >
-                        Remover
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </li>
+                          Descer
+                        </Button>
+                        {phase?.kind === 'put_failed' && entry?.auth && (
+                          <Button
+                            variant="outline"
+                            iconStart="refresh"
+                            disabled={busy}
+                            onClick={() => void retryPut(image.id)}
+                          >
+                            Tentar de novo
+                          </Button>
+                        )}
+                        {image.state === 'failed' && (
+                          <Button
+                            variant="outline"
+                            iconStart="upload"
+                            disabled={busy}
+                            aria-label={`Reenviar ${label}`}
+                            onClick={() => {
+                              reuploadTarget.current = image.id;
+                              reuploadInput.current?.click();
+                            }}
+                          >
+                            Reenviar
+                          </Button>
+                        )}
+                        {confirmingRemoval === image.id ? (
+                          <>
+                            <Button
+                              variant="danger"
+                              iconStart="trash"
+                              disabled={busy}
+                              onClick={() => void remove(image.id)}
+                            >
+                              Confirmar remoção
+                            </Button>
+                            <Button variant="outline" onClick={() => setConfirmingRemoval(null)}>
+                              Cancelar
+                            </Button>
+                          </>
+                        ) : (
+                          <Button
+                            variant="dangerOutline"
+                            iconStart="trash"
+                            disabled={busy}
+                            aria-label={`Remover ${label}`}
+                            onClick={() => setConfirmingRemoval(image.id)}
+                          >
+                            Remover
+                          </Button>
+                        )}
+                      </Cluster>
+                    </Stack>
+                  </Grow>
+                </Cluster>
+              </Card>
             );
           })}
-        </ol>
+        </Stack>
       )}
-    </section>
+    </Section>
   );
 }

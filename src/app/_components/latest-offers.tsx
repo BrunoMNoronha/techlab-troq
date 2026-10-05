@@ -1,12 +1,12 @@
-import Link from 'next/link';
+import { Alert, EmptyState, Skeleton } from '@/components/feedback';
+import { Grid, Stack } from '@/components/layout';
+import { Text, TextLink } from '@/components/ui';
 import { getPublicFeed } from '@/modules/listing';
-import { ListingCard, listingGridStyle } from './listing-card';
+import { ListingCard } from './listing-card';
 
 // Ofertas exibidas na home: primeira pagina do feed publico (#43/#49), com a
 // mesma ordenacao (mais recentes primeiro) e a mesma regra de visibilidade.
 export const HOME_OFFERS_LIMIT = 12;
-
-const navLink = { color: '#1d4ed8', fontWeight: 600, textDecoration: 'none' } as const;
 
 export async function LatestOffers() {
   let feed: Awaited<ReturnType<typeof getPublicFeed>>;
@@ -15,57 +15,59 @@ export async function LatestOffers() {
   } catch (err) {
     console.error('[Home] falha ao carregar ofertas publicas', err);
     return (
-      <div role="alert" style={statusBox('#fef2f2', '#fecaca', '#991b1b')}>
-        Não foi possível carregar as ofertas agora. Tente novamente em instantes ou{' '}
-        <Link href="/explorar" style={{ color: '#991b1b', fontWeight: 600 }}>
-          abra a página de ofertas
-        </Link>
-        .
-      </div>
+      <Alert tone="error" role="alert">
+        <p>
+          Não foi possível carregar as ofertas agora. Tente novamente em instantes ou{' '}
+          <TextLink href="/explorar">abra a página de ofertas</TextLink>.
+        </p>
+      </Alert>
     );
   }
 
   if (feed.listings.length === 0) {
     return (
-      <div role="status" style={statusBox('#f9fafb', '#e5e7eb', '#374151')}>
-        Ainda não há ofertas publicadas. Volte em breve ou crie uma conta para anunciar.
-      </div>
+      <EmptyState
+        role="status"
+        titleAs="h3"
+        title="Ainda não há ofertas publicadas."
+        description="Volte em breve ou crie uma conta para anunciar."
+      />
     );
   }
 
   return (
-    <>
-      <div style={listingGridStyle}>
+    <Stack gap={6}>
+      <Grid columns="md">
         {feed.listings.map((item) => (
           <ListingCard key={item.id} item={item} />
         ))}
-      </div>
+      </Grid>
       {feed.total > feed.listings.length && (
-        <p style={{ margin: '20px 0 0' }}>
-          <Link href="/explorar" style={navLink}>
+        <p>
+          <TextLink href="/explorar" iconEnd="arrow-right">
             Ver todas as {feed.total} ofertas
-          </Link>
+          </TextLink>
         </p>
       )}
-    </>
+    </Stack>
   );
 }
 
 export function OffersLoading() {
   return (
-    <div role="status" aria-live="polite" style={statusBox('#f9fafb', '#e5e7eb', '#374151')}>
-      Carregando ofertas…
-    </div>
+    <Stack role="status" aria-live="polite" gap={4}>
+      <Text size="small" tone="muted">
+        Carregando ofertas…
+      </Text>
+      <Grid columns="md">
+        {[0, 1, 2].map((slot) => (
+          <Stack key={slot} gap={2}>
+            <Skeleton variant="media" />
+            <Skeleton variant="title" />
+            <Skeleton lines={2} />
+          </Stack>
+        ))}
+      </Grid>
+    </Stack>
   );
-}
-
-function statusBox(background: string, border: string, color: string) {
-  return {
-    padding: '24px',
-    backgroundColor: background,
-    border: `1px solid ${border}`,
-    borderRadius: '8px',
-    color,
-    fontSize: '15px',
-  } as const;
 }

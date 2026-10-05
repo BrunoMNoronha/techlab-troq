@@ -14,6 +14,10 @@ import {
   PROHIBITED_ITEMS_POLICY_PATH,
 } from '@/modules/listing/compliance';
 import type { LifecycleResult } from '@/modules/listing/lifecycle';
+import { Alert } from '@/components/feedback';
+import { Checkbox } from '@/components/forms';
+import { Cluster, Section, Stack } from '@/components/layout';
+import { Button, Card, Text, TextLink } from '@/components/ui';
 
 // Situacao do anuncio na edicao privada (F2-010, #48): publicar, pausar,
 // reativar, encerrar e descartar. Toda regra e decidida no servidor
@@ -54,38 +58,6 @@ const CONFIRM_TEXT: Record<Confirmable, { title: string; body: string; button: s
     body: 'O anúncio sai da oferta pública e vai para o histórico como encerrado. Não será possível reativá-lo nem editá-lo. Esta ação não pode ser desfeita.',
     button: 'Sim, encerrar anúncio',
   },
-};
-
-const buttonBase: React.CSSProperties = {
-  padding: '10px 16px',
-  borderRadius: '6px',
-  fontSize: '15px',
-  fontWeight: '600',
-  cursor: 'pointer',
-  border: '1px solid transparent',
-  minHeight: '44px',
-};
-const primaryButton: React.CSSProperties = {
-  ...buttonBase,
-  backgroundColor: '#1d4ed8',
-  color: 'white',
-};
-const secondaryButton: React.CSSProperties = {
-  ...buttonBase,
-  backgroundColor: 'white',
-  color: '#1f2937',
-  borderColor: '#9ca3af',
-};
-const dangerButton: React.CSSProperties = {
-  ...buttonBase,
-  backgroundColor: 'white',
-  color: '#991b1b',
-  borderColor: '#991b1b',
-};
-const dangerSolidButton: React.CSSProperties = {
-  ...buttonBase,
-  backgroundColor: '#991b1b',
-  color: 'white',
 };
 
 function errorMessage(res: Extract<LifecycleResult, { success: false }>): string {
@@ -194,174 +166,116 @@ export function LifecyclePanel({
   const busy = pending !== null;
 
   return (
-    <section
-      aria-labelledby={`${ids}-title`}
-      style={{
-        marginTop: '32px',
-        padding: '16px',
-        border: '1px solid #e5e7eb',
-        borderRadius: '8px',
-        backgroundColor: '#f9fafb',
-      }}
-    >
-      <h2 id={`${ids}-title`} style={{ fontSize: '18px', fontWeight: '600', margin: '0 0 8px' }}>
-        Situação do anúncio
-      </h2>
+    <Card variant="muted">
+      <Section titleId={`${ids}-title`} title="Situação do anúncio" gap={3}>
+        <div role="status" aria-live="polite">
+          {done ? <Alert tone="success">{done}</Alert> : null}
+        </div>
 
-      <div role="status" aria-live="polite">
-        {done ? (
-          <p style={{ color: '#166534', fontSize: '14px', margin: '0 0 12px' }}>{done}</p>
+        {error ? (
+          <Alert ref={errorRef} tabIndex={-1} role="alert" tone="error">
+            {error}
+          </Alert>
         ) : null}
-      </div>
 
-      {error ? (
-        <div
-          ref={errorRef}
-          tabIndex={-1}
-          role="alert"
-          style={{
-            padding: '12px',
-            margin: '0 0 12px',
-            backgroundColor: '#fef2f2',
-            border: '1px solid #fecaca',
-            borderRadius: '6px',
-            color: '#991b1b',
-            fontSize: '14px',
-          }}
-        >
-          {error}
-        </div>
-      ) : null}
-
-      {confirming ? (
-        <div
-          role="group"
-          aria-labelledby={confirmTitleId}
-          aria-describedby={confirmBodyId}
-          style={{
-            padding: '16px',
-            backgroundColor: 'white',
-            border: '2px solid #991b1b',
-            borderRadius: '8px',
-          }}
-        >
-          <h3
-            id={confirmTitleId}
-            ref={confirmRef}
-            tabIndex={-1}
-            style={{ fontSize: '16px', fontWeight: '700', margin: '0 0 8px', color: '#991b1b' }}
+        {confirming ? (
+          <Alert
+            tone="error"
+            role="group"
+            aria-labelledby={confirmTitleId}
+            aria-describedby={confirmBodyId}
           >
-            {CONFIRM_TEXT[confirming].title}
-          </h3>
-          <p id={confirmBodyId} style={{ fontSize: '14px', color: '#374151', margin: '0 0 16px' }}>
-            {CONFIRM_TEXT[confirming].body}
-          </p>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-            <button
-              type="button"
-              style={dangerSolidButton}
-              disabled={busy}
-              aria-busy={busy}
-              onClick={() => run(confirming)}
-            >
-              {busy ? 'Aguarde…' : CONFIRM_TEXT[confirming].button}
-            </button>
-            <button type="button" style={secondaryButton} disabled={busy} onClick={cancelConfirm}>
-              Cancelar
-            </button>
-          </div>
-        </div>
-      ) : status === 'draft' ? (
-        <div>
-          <p style={{ fontSize: '14px', color: '#374151', margin: '0 0 12px' }}>
-            Rascunho: só você vê este anúncio. Para publicar, ele precisa das três alternativas de
-            troca e de pelo menos uma imagem pronta.
-            {readyImageCount === 0 ? ' Nenhuma imagem está pronta ainda.' : null}
-          </p>
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', margin: '0 0 8px' }}>
-            <input
-              id={complianceId}
-              type="checkbox"
-              checked={complianceAccepted}
-              onChange={(e) => setComplianceAccepted(e.target.checked)}
-              style={{ width: '20px', height: '20px', marginTop: '2px', flexShrink: 0 }}
-            />
-            <label htmlFor={complianceId} style={{ fontSize: '14px', color: '#111827' }}>
-              {LISTING_COMPLIANCE_DECLARATION}
-            </label>
-          </div>
-          <p style={{ fontSize: '14px', margin: '0 0 16px 28px' }}>
-            <a
-              href={PROHIBITED_ITEMS_POLICY_PATH}
-              target="_blank"
-              rel="noopener"
-              style={{ color: '#1d4ed8', fontWeight: '600' }}
-            >
-              Ler a Política de itens proibidos (abre em nova aba)
-            </a>
-          </p>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-            <button
-              type="button"
-              style={primaryButton}
-              disabled={busy}
-              aria-busy={pending === 'publish'}
-              onClick={() => run('publish')}
-            >
-              {pending === 'publish' ? 'Publicando…' : 'Publicar anúncio'}
-            </button>
-            <button
-              ref={discardRef}
-              type="button"
-              style={dangerButton}
-              disabled={busy}
-              onClick={() => openConfirm('discard')}
-            >
-              Descartar rascunho
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div>
-          <p style={{ fontSize: '14px', color: '#374151', margin: '0 0 16px' }}>
-            {status === 'published'
-              ? 'Publicado: o anúncio aparece na oferta pública. Pausar retira da oferta até você reativar.'
-              : 'Pausado: o anúncio não aparece na oferta pública. Reativar exige as três alternativas de troca e pelo menos uma imagem pronta.'}
-          </p>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-            {status === 'published' ? (
-              <button
-                type="button"
-                style={secondaryButton}
+            <h3 id={confirmTitleId} ref={confirmRef} tabIndex={-1}>
+              {CONFIRM_TEXT[confirming].title}
+            </h3>
+            <p id={confirmBodyId}>{CONFIRM_TEXT[confirming].body}</p>
+            <Cluster gap={2}>
+              <Button variant="danger" loading={busy} onClick={() => run(confirming)}>
+                {busy ? 'Aguarde…' : CONFIRM_TEXT[confirming].button}
+              </Button>
+              <Button variant="outline" disabled={busy} onClick={cancelConfirm}>
+                Cancelar
+              </Button>
+            </Cluster>
+          </Alert>
+        ) : status === 'draft' ? (
+          <Stack gap={4}>
+            <Text size="small" tone="muted">
+              Rascunho: só você vê este anúncio. Para publicar, ele precisa das três alternativas de
+              troca e de pelo menos uma imagem pronta.
+              {readyImageCount === 0 ? ' Nenhuma imagem está pronta ainda.' : null}
+            </Text>
+            <Stack gap={2}>
+              <Checkbox
+                id={complianceId}
+                label={LISTING_COMPLIANCE_DECLARATION}
+                checked={complianceAccepted}
+                onChange={(e) => setComplianceAccepted(e.target.checked)}
+              />
+              <Text size="small">
+                <TextLink href={PROHIBITED_ITEMS_POLICY_PATH} reload target="_blank" rel="noopener">
+                  Ler a Política de itens proibidos (abre em nova aba)
+                </TextLink>
+              </Text>
+            </Stack>
+            <Cluster gap={2}>
+              <Button
                 disabled={busy}
-                aria-busy={pending === 'pause'}
-                onClick={() => run('pause')}
+                loading={pending === 'publish'}
+                onClick={() => run('publish')}
               >
-                {pending === 'pause' ? 'Pausando…' : 'Pausar anúncio'}
-              </button>
-            ) : (
-              <button
-                type="button"
-                style={primaryButton}
+                {pending === 'publish' ? 'Publicando…' : 'Publicar anúncio'}
+              </Button>
+              <Button
+                ref={discardRef}
+                variant="dangerOutline"
                 disabled={busy}
-                aria-busy={pending === 'reactivate'}
-                onClick={() => run('reactivate')}
+                onClick={() => openConfirm('discard')}
               >
-                {pending === 'reactivate' ? 'Reativando…' : 'Reativar anúncio'}
-              </button>
-            )}
-            <button
-              ref={closeRef}
-              type="button"
-              style={dangerButton}
-              disabled={busy}
-              onClick={() => openConfirm('close')}
-            >
-              Encerrar anúncio
-            </button>
-          </div>
-        </div>
-      )}
-    </section>
+                Descartar rascunho
+              </Button>
+            </Cluster>
+          </Stack>
+        ) : (
+          <Stack gap={4}>
+            <Text size="small" tone="muted">
+              {status === 'published'
+                ? 'Publicado: o anúncio aparece na oferta pública. Pausar retira da oferta até você reativar.'
+                : 'Pausado: o anúncio não aparece na oferta pública. Reativar exige as três alternativas de troca e pelo menos uma imagem pronta.'}
+            </Text>
+            <Cluster gap={2}>
+              {status === 'published' ? (
+                <Button
+                  variant="outline"
+                  iconStart="pause"
+                  disabled={busy}
+                  loading={pending === 'pause'}
+                  onClick={() => run('pause')}
+                >
+                  {pending === 'pause' ? 'Pausando…' : 'Pausar anúncio'}
+                </Button>
+              ) : (
+                <Button
+                  iconStart="play"
+                  disabled={busy}
+                  loading={pending === 'reactivate'}
+                  onClick={() => run('reactivate')}
+                >
+                  {pending === 'reactivate' ? 'Reativando…' : 'Reativar anúncio'}
+                </Button>
+              )}
+              <Button
+                ref={closeRef}
+                variant="dangerOutline"
+                disabled={busy}
+                onClick={() => openConfirm('close')}
+              >
+                Encerrar anúncio
+              </Button>
+            </Cluster>
+          </Stack>
+        )}
+      </Section>
+    </Card>
   );
 }

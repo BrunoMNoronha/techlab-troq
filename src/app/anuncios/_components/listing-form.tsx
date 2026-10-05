@@ -18,6 +18,19 @@ import {
   type TradeOptionSlots,
 } from '@/modules/listing/validation';
 import { BRAZILIAN_UFS, isBrazilianUf, ufOptionLabel } from '@/modules/listing/uf';
+import { Alert } from '@/components/feedback';
+import {
+  Field,
+  FieldHint,
+  FieldRow,
+  Fieldset,
+  Form,
+  FormActions,
+  Input,
+  Select,
+  Textarea,
+} from '@/components/forms';
+import { Button, ButtonLink } from '@/components/ui';
 
 export interface ListingFormValues {
   title: string;
@@ -64,29 +77,6 @@ const HINTS: Partial<Record<ListingField, string>> = {
   title: 'Diga o que é o item. Não inclua telefone, WhatsApp, e-mail ou endereço.',
   description:
     'Descreva o item. Não inclua telefone, WhatsApp, e-mail ou endereço: o contato só é liberado pelo TROQ.',
-};
-
-const inputStyle = (invalid: boolean): React.CSSProperties => ({
-  width: '100%',
-  boxSizing: 'border-box',
-  padding: '10px 12px',
-  border: `1px solid ${invalid ? '#dc2626' : '#d1d5db'}`,
-  borderRadius: '6px',
-  fontSize: '16px',
-  fontFamily: 'inherit',
-});
-
-const labelStyle: React.CSSProperties = {
-  display: 'block',
-  fontSize: '14px',
-  fontWeight: '600',
-  marginBottom: '4px',
-};
-
-const fieldErrorStyle: React.CSSProperties = {
-  color: '#b91c1c',
-  fontSize: '13px',
-  margin: '4px 0 0',
 };
 
 type ListingFormProps =
@@ -227,18 +217,22 @@ export function ListingForm({
       value: values[field],
       'aria-invalid': error ? true : undefined,
       'aria-describedby': describedBy || undefined,
-      style: inputStyle(Boolean(error)),
     };
 
     return (
-      <div key={field} style={{ minWidth: 0 }}>
-        <label htmlFor={field} style={labelStyle}>
-          {LABELS[field]}
-        </label>
+      <Field
+        key={field}
+        label={LABELS[field]}
+        htmlFor={field}
+        hint={hint}
+        hintId={hintId}
+        error={error}
+        errorId={errorId}
+      >
         {field === 'state' ? (
           renderStateSelect(common, error)
         ) : field === 'description' ? (
-          <textarea
+          <Textarea
             {...common}
             ref={(el) => {
               fieldRefs.current.description = el ?? undefined;
@@ -246,10 +240,9 @@ export function ListingForm({
             rows={5}
             maxLength={DESCRIPTION_MAX_LENGTH}
             onChange={(e) => update('description', e.target.value)}
-            style={{ ...common.style, resize: 'vertical' }}
           />
         ) : (
-          <input
+          <Input
             {...common}
             ref={(el) => {
               fieldRefs.current[field] = el ?? undefined;
@@ -260,26 +253,13 @@ export function ListingForm({
             onChange={(e) => update(field, e.target.value)}
           />
         )}
-        {hint && (
-          <p id={hintId} style={{ color: '#6b7280', fontSize: '13px', margin: '4px 0 0' }}>
-            {hint}
-          </p>
-        )}
-        {error && (
-          <p id={errorId} style={fieldErrorStyle}>
-            {error}
-          </p>
-        )}
-      </div>
+      </Field>
     );
   }
 
   // UF por lista (#90; listing-contract.md, secao 3): as 27 UFs por nome, sem
   // escolha inicial. Valor fora da lista nunca aparece como outra UF selecionada.
-  function renderStateSelect(
-    common: { 'aria-describedby'?: string; style: React.CSSProperties },
-    error: string | undefined,
-  ) {
+  function renderStateSelect(common: { 'aria-describedby'?: string }, error: string | undefined) {
     const normalized = values.state.trim().toUpperCase();
     const selected = isBrazilianUf(normalized) ? normalized : '';
     const legacyId = 'state-legacy';
@@ -290,7 +270,7 @@ export function ListingForm({
 
     return (
       <>
-        <select
+        <Select
           id="state"
           name="state"
           ref={(el) => {
@@ -301,7 +281,6 @@ export function ListingForm({
           aria-invalid={error ? true : undefined}
           aria-describedby={describedBy || undefined}
           onChange={(e) => update('state', e.target.value)}
-          style={{ ...common.style, backgroundColor: 'white', minHeight: '44px' }}
         >
           <option value="">Selecione o estado</option>
           {BRAZILIAN_UFS.map((uf) => (
@@ -309,11 +288,11 @@ export function ListingForm({
               {ufOptionLabel(uf)}
             </option>
           ))}
-        </select>
+        </Select>
         {showLegacy && (
-          <p id={legacyId} style={{ color: '#92400e', fontSize: '13px', margin: '4px 0 0' }}>
+          <FieldHint id={legacyId} tone="warning">
             A UF gravada (“{legacyState}”) não é uma UF válida. Selecione o estado para salvar.
-          </p>
+          </FieldHint>
         )}
       </>
     );
@@ -327,86 +306,64 @@ export function ListingForm({
     const listErrorId = 'tradeOptions-error';
 
     return (
-      <fieldset
+      <Fieldset
         aria-describedby={listError ? `${hintId} ${listErrorId}` : hintId}
-        style={{ border: 'none', margin: 0, padding: 0, minWidth: 0 }}
+        legend="O que você aceita em troca"
+        hint={
+          <>
+            Informe três alternativas que você aceita receber por este item. Quem se interessar não
+            precisa oferecer as três juntas. Não inclua telefone, WhatsApp, e-mail ou endereço.{' '}
+            {requireTradeOptions
+              ? 'As três são obrigatórias enquanto o anúncio estiver publicado ou pausado.'
+              : 'As três são obrigatórias para publicar; no rascunho, você pode completar depois.'}
+          </>
+        }
+        hintId={hintId}
+        error={listError}
+        errorId={listErrorId}
       >
-        <legend style={{ ...labelStyle, padding: 0 }}>O que você aceita em troca</legend>
-        <p id={hintId} style={{ color: '#6b7280', fontSize: '13px', margin: '0 0 8px' }}>
-          Informe três alternativas que você aceita receber por este item. Quem se interessar não
-          precisa oferecer as três juntas. Não inclua telefone, WhatsApp, e-mail ou endereço.{' '}
-          {requireTradeOptions
-            ? 'As três são obrigatórias enquanto o anúncio estiver publicado ou pausado.'
-            : 'As três são obrigatórias para publicar; no rascunho, você pode completar depois.'}
-        </p>
-        {listError && (
-          <p id={listErrorId} style={{ ...fieldErrorStyle, margin: '0 0 8px' }}>
-            {listError}
-          </p>
-        )}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          {TRADE_OPTION_FIELDS.map((field, index) => {
-            const error = fieldErrors[field];
-            const errorId = `${field}-error`;
-            return (
-              <div key={field} style={{ minWidth: 0 }}>
-                <label htmlFor={field} style={labelStyle}>
-                  Alternativa {index + 1}
-                </label>
-                <input
-                  ref={(el) => {
-                    fieldRefs.current[field] = el ?? undefined;
-                  }}
-                  id={field}
-                  name={field}
-                  type="text"
-                  autoComplete="off"
-                  value={values.tradeOptions[index]}
-                  placeholder={TRADE_OPTION_EXAMPLES[index]}
-                  maxLength={TRADE_OPTION_MAX_LENGTH}
-                  required={requireTradeOptions}
-                  aria-invalid={error ? true : undefined}
-                  aria-describedby={error ? errorId : undefined}
-                  onChange={(e) => updateTradeOption(index, e.target.value)}
-                  style={inputStyle(Boolean(error))}
-                />
-                {error && (
-                  <p id={errorId} style={fieldErrorStyle}>
-                    {error}
-                  </p>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </fieldset>
+        {TRADE_OPTION_FIELDS.map((field, index) => {
+          const error = fieldErrors[field];
+          const errorId = `${field}-error`;
+          return (
+            <Field
+              key={field}
+              label={`Alternativa ${index + 1}`}
+              htmlFor={field}
+              error={error}
+              errorId={errorId}
+            >
+              <Input
+                ref={(el) => {
+                  fieldRefs.current[field] = el ?? undefined;
+                }}
+                id={field}
+                name={field}
+                type="text"
+                autoComplete="off"
+                value={values.tradeOptions[index]}
+                placeholder={TRADE_OPTION_EXAMPLES[index]}
+                maxLength={TRADE_OPTION_MAX_LENGTH}
+                required={requireTradeOptions}
+                aria-invalid={error ? true : undefined}
+                aria-describedby={error ? errorId : undefined}
+                onChange={(e) => updateTradeOption(index, e.target.value)}
+              />
+            </Field>
+          );
+        })}
+      </Fieldset>
     );
   }
 
   const hasFieldErrors = Object.keys(fieldErrors).length > 0;
 
   return (
-    <form
-      noValidate
-      onSubmit={handleSubmit}
-      style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}
-    >
+    <Form noValidate onSubmit={handleSubmit}>
       {(formError || hasFieldErrors) && (
-        <div
-          ref={formErrorRef}
-          tabIndex={-1}
-          role="alert"
-          style={{
-            padding: '12px 16px',
-            backgroundColor: '#fef2f2',
-            border: '1px solid #fecaca',
-            borderRadius: '6px',
-            color: '#991b1b',
-            fontSize: '14px',
-          }}
-        >
+        <Alert ref={formErrorRef} tabIndex={-1} role="alert" tone="error">
           {formError ?? 'Revise os campos destacados.'}
-        </div>
+        </Alert>
       )}
 
       {renderField('title')}
@@ -414,52 +371,19 @@ export function ListingForm({
       {renderTradeOptions()}
 
       {/* Cidade e UF lado a lado quando cabem; empilhadas no celular. */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))',
-          gap: '12px',
-        }}
-      >
+      <FieldRow>
         {renderField('city')}
         {renderField('state')}
-      </div>
+      </FieldRow>
 
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginTop: '8px' }}>
-        <button
-          type="submit"
-          disabled={submitting}
-          style={{
-            flex: '1 1 180px',
-            padding: '12px',
-            backgroundColor: submitting ? '#9ca3af' : '#2563eb',
-            color: 'white',
-            border: 'none',
-            borderRadius: '6px',
-            fontSize: '16px',
-            fontWeight: '600',
-            cursor: submitting ? 'not-allowed' : 'pointer',
-          }}
-        >
+      <FormActions sticky>
+        <Button type="submit" loading={submitting} fullWidth>
           {submitting ? 'Salvando...' : mode === 'create' ? 'Salvar rascunho' : 'Salvar alterações'}
-        </button>
-        <a
-          href="/anuncios"
-          style={{
-            flex: '0 1 auto',
-            padding: '12px 20px',
-            backgroundColor: '#f3f4f6',
-            color: '#374151',
-            borderRadius: '6px',
-            textDecoration: 'none',
-            fontSize: '16px',
-            fontWeight: '600',
-            textAlign: 'center',
-          }}
-        >
+        </Button>
+        <ButtonLink href="/anuncios" variant="outline" reload fullWidth>
           Cancelar
-        </a>
-      </div>
-    </form>
+        </ButtonLink>
+      </FormActions>
+    </Form>
   );
 }

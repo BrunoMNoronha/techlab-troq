@@ -1,0 +1,373 @@
+/*
+ * Tabela responsiva. Em telas estreitas cada linha vira um cartão: a célula
+ * principal vira o título e as demais mostram o próprio rótulo (`data-label`).
+ * A partir de md volta a ser tabela tradicional. A marcação é sempre <table>.
+ */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-body-small);
+}
+
+.table caption {
+  margin-bottom: var(--space-2);
+  color: var(--color-text-muted);
+  text-align: left;
+}
+
+.table thead {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+.table tbody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.table tr {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface);
+}
+
+.table :is(td, th) {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  min-width: 0;
+  padding: 0;
+  font-weight: var(--font-weight-regular);
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.table :is(td, th)[data-label]::before {
+  content: attr(data-label);
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+  text-align: left;
+}
+
+.table .cellPrimary {
+  justify-content: flex-start;
+  color: var(--color-text);
+  font-size: var(--text-body);
+  font-weight: var(--font-weight-semibold);
+  text-align: left;
+}
+
+.table .cellPrimary::before {
+  content: none;
+}
+
+.table .cellActions {
+  justify-content: flex-start;
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--color-border);
+}
+
+.table td.cellActions[data-label]::before {
+  content: none;
+}
+
+.table .cellSecondary {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .tableWrap {
+    overflow-x: auto;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background-color: var(--color-surface);
+  }
+
+  .table thead {
+    position: static;
+    width: auto;
+    height: auto;
+    clip-path: none;
+  }
+
+  .table thead,
+  .table tbody {
+    display: table-row-group;
+  }
+
+  .table thead {
+    display: table-header-group;
+  }
+
+  .table tr {
+    display: table-row;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .table :is(td, th),
+  .table .cellSecondary {
+    display: table-cell;
+    padding: var(--space-3) var(--space-4);
+    border-bottom: 1px solid var(--color-border);
+    text-align: left;
+    vertical-align: middle;
+  }
+
+  .table tbody tr:last-child :is(td, th) {
+    border-bottom: 0;
+  }
+
+  .table thead th {
+    background-color: var(--color-surface-muted);
+    color: var(--color-text-muted);
+    font-size: var(--text-caption);
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .table tbody tr:hover {
+    background-color: var(--color-surface-muted);
+  }
+
+  .table :is(td, th)[data-label]::before {
+    content: none;
+  }
+
+  .table .cellPrimary {
+    font-size: inherit;
+  }
+
+  .table .cellActions {
+    border-top: 0;
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  .table .alignEnd {
+    text-align: right;
+  }
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  list-style: none;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface);
+}
+
+.listItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+  padding: var(--space-3) var(--space-4);
+  color: inherit;
+  text-decoration: none;
+}
+
+.list > li + li {
+  border-top: 1px solid var(--color-border);
+}
+
+.list > li:first-child > .listItem {
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+}
+
+.list > li:last-child > .listItem {
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+}
+
+a.listItem {
+  transition: var(--transition-control);
+}
+
+a.listItem:hover {
+  background-color: var(--color-surface-muted);
+  color: inherit;
+}
+
+a.listItem:focus-visible {
+  outline-offset: -2px;
+}
+
+.listLeading {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: var(--radius-full);
+  background-color: var(--color-surface-muted);
+  color: var(--color-text-muted);
+}
+
+.listText {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.listTitle {
+  font-weight: var(--font-weight-semibold);
+  overflow-wrap: anywhere;
+}
+
+.listDescription {
+  color: var(--color-text-muted);
+  font-size: var(--text-body-small);
+  overflow-wrap: anywhere;
+}
+
+.listTrailing {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-text-subtle);
+}
+
+.cardList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  list-style: none;
+}
+
+.dl {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-3);
+}
+
+.dlItem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.dlItem > dt {
+  color: var(--color-text-muted);
+  font-size: var(--text-body-small);
+}
+
+.dlItem > dd {
+  overflow-wrap: anywhere;
+}
+
+@media (min-width: 480px) {
+  .dlColumns {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dlInline .dlItem {
+    flex-direction: row;
+    justify-content: space-between;
+    gap: var(--space-4);
+    padding-bottom: var(--space-3);
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .dlInline .dlItem:last-child {
+    padding-bottom: 0;
+    border-bottom: 0;
+  }
+
+  .dlInline .dlItem > dd {
+    text-align: right;
+  }
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface);
+}
+
+.statLabel {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-text-muted);
+  font-size: var(--text-body-small);
+}
+
+.statValue {
+  font-size: 1.75rem;
+  font-weight: var(--font-weight-bold);
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.statHint {
+  color: var(--color-text-muted);
+  font-size: var(--text-caption);
+}
+
+.media {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  overflow: hidden;
+  background-color: var(--color-surface-muted);
+  color: var(--color-text-subtle);
+}
+
+.media > img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.mediaContain > img {
+  object-fit: contain;
+}
+
+.ratioWide {
+  aspect-ratio: 16 / 10;
+}
+
+.ratioPhoto {
+  aspect-ratio: 4 / 3;
+}
+
+.ratioSquare {
+  aspect-ratio: 1;
+}
+
+.mediaSm {
+  max-width: 14rem;
+  margin-inline: auto;
+}
+
+.mediaThumb {
+  flex: 0 0 var(--space-16);
+  width: var(--space-16);
+}
+
+.mediaRounded {
+  border-radius: var(--radius-md);
+}

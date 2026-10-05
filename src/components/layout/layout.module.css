@@ -1,0 +1,221 @@
+/* Primitivas de layout: Stack, Cluster, Grid, PageContainer, PageHeader, Section. */
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.cluster {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  min-width: 0;
+}
+
+.grid {
+  display: grid;
+  min-width: 0;
+  list-style: none;
+}
+
+.gridFull {
+  grid-column: 1 / -1;
+}
+
+.gap1 {
+  gap: var(--space-1);
+}
+
+.gap2 {
+  gap: var(--space-2);
+}
+
+.gap3 {
+  gap: var(--space-3);
+}
+
+.gap4 {
+  gap: var(--space-4);
+}
+
+.gap6 {
+  gap: var(--space-6);
+}
+
+.gap8 {
+  gap: var(--space-8);
+}
+
+.gap12 {
+  gap: var(--space-12);
+}
+
+.alignStart {
+  align-items: flex-start;
+}
+
+.alignEnd {
+  align-items: flex-end;
+}
+
+.alignStretch {
+  align-items: stretch;
+}
+
+.alignBaseline {
+  align-items: baseline;
+}
+
+.justifyBetween {
+  justify-content: space-between;
+}
+
+.justifyCenter {
+  justify-content: center;
+}
+
+.justifyEnd {
+  justify-content: flex-end;
+}
+
+.nowrap {
+  flex-wrap: nowrap;
+}
+
+.grow {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* Colunas automáticas: quantas couberem com a largura mínima pedida. */
+.colsSm {
+  grid-template-columns: repeat(auto-fill, minmax(min(10rem, 100%), 1fr));
+}
+
+.colsMd {
+  grid-template-columns: repeat(auto-fill, minmax(min(16.25rem, 100%), 1fr));
+}
+
+.colsLg {
+  grid-template-columns: repeat(auto-fill, minmax(min(22rem, 100%), 1fr));
+}
+
+/* Conteúdo principal + lateral: empilha no celular, duas colunas a partir de lg. */
+.split {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 1024px) {
+  .split {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 22rem);
+    align-items: start;
+  }
+}
+
+.container {
+  width: 100%;
+  margin-inline: auto;
+  padding: var(--space-6) var(--gutter) var(--space-12);
+}
+
+.narrow {
+  max-width: calc(var(--container-narrow) + var(--gutter) * 2);
+}
+
+.content {
+  max-width: calc(var(--container-content) + var(--gutter) * 2);
+}
+
+.wide {
+  max-width: calc(var(--container-wide) + var(--gutter) * 2);
+}
+
+@media (min-width: 768px) {
+  .container {
+    padding-top: var(--space-8);
+    padding-bottom: var(--space-16);
+  }
+}
+
+.pageHeader {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-bottom: var(--space-6);
+}
+
+.pageHeaderMain {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.pageHeaderText {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.pageTitle {
+  overflow-wrap: anywhere;
+}
+
+.pageDescription {
+  color: var(--color-text-muted);
+  font-size: var(--text-body-small);
+}
+
+.pageMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+}
+
+.pageActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+@media (min-width: 768px) {
+  .pageHeaderMain {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+
+  .pageActions {
+    flex-shrink: 0;
+  }
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.sectionHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-4);
+}
+
+.sectionHeaderText {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.sectionDescription {
+  color: var(--color-text-muted);
+  font-size: var(--text-body-small);
+}

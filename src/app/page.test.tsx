@@ -25,16 +25,20 @@ describe('HomePage', () => {
     render(<HomePage />);
 
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/contato protegido/i);
-    const nav = screen.getByRole('navigation', { name: 'Principal' });
-    expect(within(nav).getByRole('link', { name: 'Explorar ofertas' })).toHaveAttribute(
+    // A marca e a navegacao principal sao da moldura (AppShell, em layout.tsx);
+    // a pagina oferece as mesmas tres entradas como acoes do conteudo.
+    const main = screen.getByRole('main');
+    expect(within(main).getByRole('link', { name: 'Explorar ofertas' })).toHaveAttribute(
       'href',
       '/explorar',
     );
-    expect(within(nav).getByRole('link', { name: 'Entrar' })).toHaveAttribute('href', '/login');
-    expect(within(nav).getByRole('link', { name: 'Criar conta' })).toHaveAttribute(
-      'href',
-      '/cadastro',
-    );
+    expect(within(main).getByRole('link', { name: 'Entrar' })).toHaveAttribute('href', '/login');
+    // "Criar conta" aparece na chamada e de novo em "Quer anunciar?": todas levam ao cadastro.
+    const signUpLinks = within(main).getAllByRole('link', { name: 'Criar conta' });
+    expect(signUpLinks.length).toBeGreaterThan(0);
+    for (const link of signUpLinks) {
+      expect(link).toHaveAttribute('href', '/cadastro');
+    }
   });
 
   it('explica interesse gratuito, solicitação paga de R$ 0,99, limite de três e não reembolso', () => {
