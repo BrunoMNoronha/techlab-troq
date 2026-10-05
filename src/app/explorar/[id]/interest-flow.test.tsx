@@ -92,7 +92,7 @@ describe('InterestFlow — Tenho interesse e confirmacao (F3-012)', () => {
     expect(screen.queryByRole('button', { name: 'Confirmar e gerar Pix' })).toBeNull();
   });
 
-  it.each(['no_slots', 'unavailable', 'not_accepting'] as const)(
+  it.each(['no_slots', 'unavailable', 'not_accepting', 'already_paid'] as const)(
     'recusa definitiva (%s) nao oferece repetir',
     async (reason) => {
       requestContactUnlock.mockResolvedValue({ success: false, reason, error: 'Recusado.' });
@@ -102,6 +102,12 @@ describe('InterestFlow — Tenho interesse e confirmacao (F3-012)', () => {
       expect(await screen.findByRole('alert')).toHaveTextContent('Recusado.');
       expect(screen.queryByRole('button', { name: 'Confirmar e gerar Pix' })).toBeNull();
       expect(screen.getByRole('button', { name: 'Fechar' })).toBeInTheDocument();
+      if (reason === 'already_paid') {
+        expect(screen.getByRole('link', { name: 'Ver minhas solicitações' })).toHaveAttribute(
+          'href',
+          '/solicitacoes',
+        );
+      }
     },
   );
 

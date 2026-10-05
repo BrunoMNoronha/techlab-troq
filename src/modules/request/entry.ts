@@ -13,7 +13,7 @@
 //
 // F3-012 (#102): quem ja tem solicitacao aberta no anuncio (`reserved` dentro
 // da janela ou `paid`) recebe `own_request` e o id DELA, para a tela levar ao
-// Pix ja gerado ou ao acompanhamento, em vez de oferecer outra (DEC-041). So o
+// Pix ja gerado ou ao acompanhamento, em vez de oferecer outra (DEC-041/051). So o
 // proprio solicitante recebe esse id. A solicitacao continua decidida no
 // servidor, sob a trava, por reservation.ts e charge-flow.ts.
 import { hasContact } from '@/modules/contact';

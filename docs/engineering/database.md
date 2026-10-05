@@ -444,6 +444,14 @@ Cria `listing_trade_options` ([../architecture/data-model.md](../architecture/da
 
 Validação local em PostgreSQL 17 descartável: `migrate deploy` do histórico inteiro num banco vazio, `migrate diff --from-config-datasource --to-schema` mostrando só o drift preexistente do Better Auth, e os casos negativos do `CHECK` de texto e da posição exercitados em `listing-lifecycle.integration.test.ts` e pelas actions.
 
-## 20. Revisão
+## 20. Migration `20261005140000_paid_request_per_requester` (DEC-051, #148)
+
+Acrescenta `contact_request_paid_guards` (PK `listing_id, requester_id`, booleano `has_paid`, FKs com cascade) e o trigger `contact_requests_guard_paid_requester`. O SQL é customizado: backfill dos pares distintos pagos e UPSERT condicional atômico para admitir novas solicitações apenas antes de existir pagamento anterior. Confirmar uma reserva previamente admitida continua permitido. O índice de reservas pendentes permanece vigente.
+
+A migration executa em transação, com trava de escrita de `contact_requests` durante backfill/instalação. Não altera solicitações, tentativas ou pagamentos existentes: duplicidades pagas continuam legíveis, mas bloqueiam novas solicitações. O registro auxiliar segue a exclusão física autorizada da conta/anúncio; não substitui auditoria nem fonte financeira.
+
+A prova automatizada `src/persistence/paid-request-migration.integration.test.ts` aplica as migrations reais em schema isolado de PostgreSQL descartável com duas linhas pagas do mesmo par e uma reserva pendente. Compara todas as linhas antes/depois, prova recusa de novas linhas reservadas/pagas e confirma a reserva anteriormente admitida. `reservation.integration.test.ts` também disputa uma inserção direta contra uma confirmação ainda sem commit, sem depender da trava do anúncio no chamador.
+
+## 21. Revisão
 
 Revisado a cada migration nova, quando `production` for provisionado (banco, environment e job com aprovação), quando a Vercel Preview receber `DATABASE_URL`, quando a fronteira de runtime mudar de adapter ou de estratégia de reuso, quando o workflow da seção 15 mudar de contrato, ou quando [../architecture/data-model.md](../architecture/data-model.md) mudar.

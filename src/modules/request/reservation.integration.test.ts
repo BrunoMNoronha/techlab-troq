@@ -391,6 +391,115 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
     });
 
     describe('reserva, tentativa e chave (PD-4.1 passo 1, PD-5)', () => {
+      it('DEC-051: paid recusa nova reserva sem tentativa; outra conta e outro anuncio seguem permitidos', async () => {
+        const listingId = await listingIn();
+        await as('r0', () => createContactRequest(listingId));
+        const [paid] = await requestsOf(listingId);
+        await prisma().contactRequest.update({
+          where: { id: paid.id },
+          data: { status: 'paid', paidAt: new Date() },
+        });
+        const before = await requestsOf(listingId);
+        expect(await as('r0', () => createContactRequest(listingId))).toMatchObject({
+          success: false,
+          reason: 'already_paid',
+        });
+        expect(await requestsOf(listingId)).toEqual(before);
+        expect(await as('r0', () => getContactRequestEntry(listingId))).toBe('own_request');
+        expect(await as('r1', () => createContactRequest(listingId))).toMatchObject({
+          success: true,
+        });
+        const anotherListing = await listingIn();
+        expect(await as('r0', () => createContactRequest(anotherListing))).toMatchObject({
+          success: true,
+        });
+      });
+
+      it('DEC-051: com a trava segurada, N pedidos da conta ja paga sao todos recusados', async () => {
+        const listingId = await listingIn();
+        await as('r0', () => createContactRequest(listingId));
+        const [paid] = await requestsOf(listingId);
+        await prisma().contactRequest.update({
+          where: { id: paid.id },
+          data: { status: 'paid', paidAt: new Date() },
+        });
+        const before = await requestsOf(listingId);
+        let pending!: Promise<ContactRequestResult[]>;
+        let waiting: number[] = [];
+        await prisma().$transaction(
+          async (tx) => {
+            await tx.$queryRaw`SELECT "id" FROM "listings" WHERE "id" = ${listingId}::uuid FOR UPDATE`;
+            pending = Promise.all(
+              Array.from({ length: N }, () => as('r0', () => createContactRequest(listingId))),
+            );
+            for (let i = 0; i < 100 && waiting.length < N; i++) {
+              await new Promise((resolve) => setTimeout(resolve, 100));
+              const rows = await tx.$queryRaw<{ pid: number }[]>`
+              SELECT pid FROM pg_stat_activity WHERE datname = current_database()
+              AND wait_event_type = 'Lock' AND pid <> pg_backend_pid()`;
+              waiting = rows.map((r) => r.pid);
+            }
+          },
+          { timeout: 30_000, maxWait: 10_000 },
+        );
+        expect(new Set(waiting).size).toBe(N);
+        expect((await pending).every((r) => !r.success && r.reason === 'already_paid')).toBe(true);
+        expect(await requestsOf(listingId)).toEqual(before);
+      });
+
+      it('DEC-051: o banco recusa escrita direta mesmo enquanto a confirmacao paid ainda nao confirmou', async () => {
+        const listingId = await listingIn();
+        await as('r0', () => createContactRequest(listingId));
+        const [paid] = await requestsOf(listingId);
+        let pending!: Promise<unknown>;
+        let waiting = 0;
+        await prisma().$transaction(
+          async (tx) => {
+            await tx.contactRequest.update({
+              where: { id: paid.id },
+              data: { status: 'paid', paidAt: new Date() },
+            });
+            pending = prisma().$executeRaw`
+            INSERT INTO "contact_requests"
+              ("id", "listing_id", "requester_id", "slot_index", "status",
+               "reserved_from", "reserved_until", "created_at", "updated_at")
+            VALUES (${randomUUID()}::uuid, ${listingId}::uuid, ${paid.requesterId}::uuid, 2,
+                    'reserved', now(), now() + interval '30 minutes', now(), now())`.then(
+              () => null,
+              (error: unknown) => error,
+            );
+            for (let i = 0; i < 100 && waiting < 1; i++) {
+              await new Promise((resolve) => setTimeout(resolve, 100));
+              const [{ count }] = await tx.$queryRaw<{ count: number }[]>`
+              SELECT count(*)::int AS count FROM pg_stat_activity
+              WHERE datname = current_database() AND wait_event_type = 'Lock' AND pid <> pg_backend_pid()`;
+              waiting = count;
+            }
+          },
+          { timeout: 30_000, maxWait: 10_000 },
+        );
+        expect(waiting).toBe(1);
+        expect(String(await pending)).toContain('DEC-051');
+        expect(await requestsOf(listingId)).toHaveLength(1);
+      });
+
+      it('DEC-051: reserva failed permite nova tentativa, sem apagar o historico', async () => {
+        const listingId = await listingIn();
+        await as('r0', () => createContactRequest(listingId));
+        const [first] = await requestsOf(listingId);
+        await prisma().contactRequest.update({
+          where: { id: first.id },
+          data: { status: 'failed' },
+        });
+        expect(await as('r0', () => createContactRequest(listingId))).toMatchObject({
+          success: true,
+        });
+        expect((await requestsOf(listingId)).map((r) => r.status).sort()).toEqual([
+          'failed',
+          'reserved',
+        ]);
+      });
+
       it('cria reserva de 30 min pelo relogio do banco, tentativa com chave persistida e auditoria', async () => {
         const listingId = await listingIn('published');
         const res = await as('r0', () => createContactRequest(listingId));
