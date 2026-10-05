@@ -1,4 +1,4 @@
-# Limite de solicitações por conta em cada anúncio — TROQ
+# Limite de solicitações por conta em cada anúncio — TROQS
 
 Documento normativo que fecha [OD-14](../decisions/open-decisions.md) e registra **DEC-041** (2026-10-01) e **DEC-051** (2026-10-05). Decisões do Bruno.
 

@@ -1,4 +1,4 @@
-# Estratégia de testes — TROQ
+# Estratégia de testes — TROQS
 
 Base normativa de testes para a implementação da aplicação. Este documento é **preparatório da Fase 1**: define níveis, stack, prioridade por risco e política de test doubles, para que o futuro scaffold e o futuro CI não precisem rediscutir esses padrões.
 
@@ -28,7 +28,7 @@ Documento irmão: [conventions.md](conventions.md). O que aqui se chama "código
 
 - **O que:** a colaboração real entre partes — caso de uso, camada de dados, banco, transação, constraint, índice — e o comportamento de Route Handlers e Server Actions como fronteira.
 - **Quando:** sempre que a garantia depender de mais de uma peça em conjunto, e obrigatoriamente quando depender do banco (transação, restrição de unicidade, bloqueio, `ON CONFLICT`).
-- **Por que:** as garantias mais caras do TROQ — limite de solicitações pagas, idempotência, autorização de liberação — vivem na fronteira entre código e banco.
+- **Por que:** as garantias mais caras do TROQS — limite de solicitações pagas, idempotência, autorização de liberação — vivem na fronteira entre código e banco.
 - **Ambiente:** banco real efêmero, ou ambiente equivalente que preserve o comportamento transacional e as restrições do PostgreSQL ([ADR-0002](../adr/0002-postgresql-neon.md)). Ver seção 6.
 
 ### 2.3 Testes de componentes

@@ -8,7 +8,7 @@
 // O que e simulado: somente o Google. O endpoint de token
 // (https://oauth2.googleapis.com/token) e respondido por um `fetch` falso que
 // confere o PKCE e devolve um id_token com as claims do cenario. Isso prova o
-// comportamento do TROQ e do Better Auth diante de cada resposta do Google; NAO
+// comportamento do TROQS e do Better Auth diante de cada resposta do Google; NAO
 // prova a configuracao real do cliente OAuth, a tela de consentimento nem as
 // URIs cadastradas, que exigem o Google real (docs/delivery/google-sign-in-proof.md).
 //
@@ -180,7 +180,7 @@ async function begin(jar: Jar, body: Record<string, unknown> = {}): Promise<Star
   return { state, authorizationURL };
 }
 
-/** O "Google" autoriza e redireciona o navegador ao callback real do TROQ. */
+/** O "Google" autoriza e redireciona o navegador ao callback real do TROQS. */
 async function callback(jar: Jar, started: Started, claims: GoogleClaims): Promise<Response> {
   const code = randomBytes(12).toString('hex');
   issuedCodes.set(code, {

@@ -1,6 +1,6 @@
-// Conversoes entre os valores do TROQ e os formatos do provedor.
+// Conversoes entre os valores do TROQS e os formatos do provedor.
 //
-// Dinheiro (DM-1.3, PD-4.5): o TROQ trabalha em CENTAVOS INTEIROS; o provedor,
+// Dinheiro (DM-1.3, PD-4.5): o TROQS trabalha em CENTAVOS INTEIROS; o provedor,
 // em string decimal com duas casas ("0.99"). Nenhum `number` de ponto flutuante
 // participa da conversao.
 //
@@ -35,7 +35,7 @@ export const MIN_EXPIRATION_MS = 30 * 60 * 1000;
 /**
  * Duracao ISO 8601 em segundos inteiros, arredondada PARA CIMA e nunca abaixo
  * do minimo documentado. O sandbox aceitou `PT29M` (spike, experimento 6), mas
- * o TROQ nao depende de tolerancia nao documentada.
+ * o TROQS nao depende de tolerancia nao documentada.
  */
 export function toIsoDuration(ms: number): string {
   if (!Number.isFinite(ms)) throw new RangeError('duracao invalida');

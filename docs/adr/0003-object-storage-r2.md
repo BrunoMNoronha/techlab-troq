@@ -6,7 +6,7 @@ Aceito — Fase 0 (2026-09-07).
 
 ## Contexto
 
-Anúncios do TROQ possuem imagens enviadas pelos usuários. Essas imagens precisam ser armazenadas fora do banco relacional e servidas publicamente, com foco em desempenho mobile em redes 3G/4G ([../delivery/risks.md](../delivery/risks.md), R-10).
+Anúncios do TROQS possuem imagens enviadas pelos usuários. Essas imagens precisam ser armazenadas fora do banco relacional e servidas publicamente, com foco em desempenho mobile em redes 3G/4G ([../delivery/risks.md](../delivery/risks.md), R-10).
 
 A aplicação é um monólito modular em Next.js ([ADR-0001](0001-modular-monolith-nextjs.md)) com deploy na Vercel, ambiente sem sistema de arquivos persistente. É necessário um armazenamento de objetos gerenciado.
 

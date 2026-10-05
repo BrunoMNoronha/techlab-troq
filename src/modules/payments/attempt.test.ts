@@ -47,7 +47,7 @@ describe('deriveIdempotencyKey (PD-5.1)', () => {
 });
 
 describe('deriveExternalReference (PD-2.1)', () => {
-  it('deriva da identidade da tentativa, com prefixo do TROQ', () => {
+  it('deriva da identidade da tentativa, com prefixo do TROQS', () => {
     const id = randomUUID();
     expect(deriveExternalReference(id)).toBe(`troq-pa-${id}`);
     expect(deriveExternalReference(id).length).toBeLessThanOrEqual(64);

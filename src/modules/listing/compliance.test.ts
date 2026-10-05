@@ -7,6 +7,9 @@ import { LISTING_COMPLIANCE_DECLARATION, LISTING_COMPLIANCE_TERMS_VERSION } from
 const VERSIONED_TEXT_HASHES: Record<string, string> = {
   'DEC-031/2026-09-14/declaracao-1':
     '751162d07d21e8aedb6c90819e23138448c0522776a6f91a0693c2a8f281cfee',
+  // Redacao 2: mesmo teor, com o nome correto do produto (TROQS).
+  'DEC-031/2026-09-14/declaracao-2':
+    '3ea6f2b048e5bd95f8829689f09b913ad4ef6eea9365aeedf413fca07c2070ac',
 };
 
 describe('declaracao de conformidade', () => {

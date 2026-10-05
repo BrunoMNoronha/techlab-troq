@@ -13,11 +13,11 @@ import { PageContainer, PageHeader, Stack } from '@/components/layout';
 import { Text, TextLink } from '@/components/ui';
 import { GoogleSignupForm } from './signup-form';
 
-export const metadata: Metadata = { title: 'Concluir cadastro com Google — TROQ' };
+export const metadata: Metadata = { title: 'Concluir cadastro com Google — TROQS' };
 export const dynamic = 'force-dynamic';
 
 // Conclusao do cadastro com Google (#81; identity-contract.md, IC-15.3). Chega
-// aqui quem passou pelo Google com identidade ainda sem conta TROQ: o callback
+// aqui quem passou pelo Google com identidade ainda sem conta TROQS: o callback
 // so gravou uma pendencia de 15 minutos, referenciada por cookie httpOnly.
 // Nenhuma conta existe ate a pessoa declarar 18+ e aceitar os termos abaixo.
 

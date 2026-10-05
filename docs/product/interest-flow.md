@@ -1,4 +1,4 @@
-# Natureza da demonstração de interesse — TROQ
+# Natureza da demonstração de interesse — TROQS
 
 Documento normativo que fecha [OD-12](../decisions/open-decisions.md) e registra DEC-035. Define o que é, tecnicamente, o passo "Tenho interesse" do fluxo central.
 

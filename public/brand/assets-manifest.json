@@ -1,0 +1,268 @@
+{
+  "name": "TROQS",
+  "colors": {
+    "primary": "#2563eb",
+    "text": "#111827",
+    "background": "#ffffff"
+  },
+  "assets": [
+    {
+      "file": "public/brand/logo-mark.svg",
+      "url": "/brand/logo-mark.svg",
+      "purpose": "Simbolo vetorial",
+      "width": 100,
+      "height": 100,
+      "type": "image/svg+xml",
+      "bytes": 408,
+      "sha256": "90eaf794e8b2bfcd3257e831fe9da3b3331f73fff3470881483f9a5c725a873a"
+    },
+    {
+      "file": "public/brand/logo.svg",
+      "url": "/brand/logo.svg",
+      "purpose": "Logotipo horizontal vetorial com fundo transparente",
+      "width": 600,
+      "height": 160,
+      "type": "image/svg+xml",
+      "bytes": 909,
+      "sha256": "21f829787c9e8d986b0d5af095c0ab1180998c80e374cf88192f985fe641968a"
+    },
+    {
+      "file": "public/brand/logo.png",
+      "url": "/brand/logo.png",
+      "purpose": "Logotipo horizontal",
+      "width": 1200,
+      "height": 320,
+      "type": "image/png",
+      "bytes": 25610,
+      "sha256": "d4cefe24ca0888b29a8ee54e69011f10e56f9cc6795e7005e3dd064eecd6d1b3"
+    },
+    {
+      "file": "public/brand/logo-white.svg",
+      "url": "/brand/logo-white.svg",
+      "purpose": "Logotipo horizontal vetorial com fundo transparente",
+      "width": 600,
+      "height": 160,
+      "type": "image/svg+xml",
+      "bytes": 909,
+      "sha256": "24d209db5c0ca1b100742b1fe4421770eada2777d50bb4254bfe3e3b1376aa65"
+    },
+    {
+      "file": "public/brand/logo-white.png",
+      "url": "/brand/logo-white.png",
+      "purpose": "Logotipo horizontal",
+      "width": 1200,
+      "height": 320,
+      "type": "image/png",
+      "bytes": 22442,
+      "sha256": "407134e0e357e3938a9760accf6206f9d5f4625ec9c3b677d77f1dd0dcff6f37"
+    },
+    {
+      "file": "src/app/icon.svg",
+      "url": "/icon.svg",
+      "purpose": "Icone vetorial do navegador",
+      "width": 100,
+      "height": 100,
+      "type": "image/svg+xml",
+      "bytes": 408,
+      "sha256": "90eaf794e8b2bfcd3257e831fe9da3b3331f73fff3470881483f9a5c725a873a"
+    },
+    {
+      "file": "src/app/favicon.ico",
+      "url": "/favicon.ico",
+      "purpose": "Favicon multirresolucao 16/32/48 px",
+      "type": "image/x-icon",
+      "bytes": 2532,
+      "sha256": "2b88b2691aaf51e6c5f763d78b74a3315dff4a0a68e8d516745c8dd1b30699a9"
+    },
+    {
+      "file": "public/icons/favicon-16.png",
+      "url": "/icons/favicon-16.png",
+      "purpose": "Favicon PNG",
+      "width": 16,
+      "height": 16,
+      "type": "image/png",
+      "bytes": 445,
+      "sha256": "11ad3746adadd4dba1d3516b58b40cfb8336568c36ae2e292cb9a7ce044cd30f"
+    },
+    {
+      "file": "public/icons/favicon-32.png",
+      "url": "/icons/favicon-32.png",
+      "purpose": "Favicon PNG",
+      "width": 32,
+      "height": 32,
+      "type": "image/png",
+      "bytes": 854,
+      "sha256": "aa50a59d735552a8018191ceec03673eca32dfa112b34e57a1cbfb6fd65f1b8f"
+    },
+    {
+      "file": "public/icons/favicon-48.png",
+      "url": "/icons/favicon-48.png",
+      "purpose": "Favicon PNG",
+      "width": 48,
+      "height": 48,
+      "type": "image/png",
+      "bytes": 1179,
+      "sha256": "420205155c0486c42599cea7b8200f7edd8729a12a04dfe9f3041eb7962229e1"
+    },
+    {
+      "file": "public/icons/icon-192.png",
+      "url": "/icons/icon-192.png",
+      "purpose": "Icone de instalacao",
+      "width": 192,
+      "height": 192,
+      "type": "image/png",
+      "bytes": 5205,
+      "sha256": "c9ba02eea41ec2c2e2e8b5689cef61bff0b0129f0ae458adc4d6c188ac9efd40"
+    },
+    {
+      "file": "public/icons/icon-maskable-192.png",
+      "url": "/icons/icon-maskable-192.png",
+      "purpose": "Icone adaptavel com margem segura",
+      "width": 192,
+      "height": 192,
+      "type": "image/png",
+      "bytes": 3388,
+      "sha256": "17b96da6dbc6c2b4288ef2dbc1716b278c326d37dd0e3fdfb310c7668e6671a9"
+    },
+    {
+      "file": "public/icons/icon-512.png",
+      "url": "/icons/icon-512.png",
+      "purpose": "Icone de instalacao",
+      "width": 512,
+      "height": 512,
+      "type": "image/png",
+      "bytes": 18205,
+      "sha256": "bb80c7b949a55b759683a9ed3bb1dd020ebdc587e44af10b9b30533f9669a500"
+    },
+    {
+      "file": "public/icons/icon-maskable-512.png",
+      "url": "/icons/icon-maskable-512.png",
+      "purpose": "Icone adaptavel com margem segura",
+      "width": 512,
+      "height": 512,
+      "type": "image/png",
+      "bytes": 13217,
+      "sha256": "d73b9eb394f8863be29d2269e3f2b6f7a9b8fed51592228f72f30c0a85583bef"
+    },
+    {
+      "file": "src/app/apple-icon.png",
+      "url": "/apple-icon.png",
+      "purpose": "Apple touch icon opaco",
+      "width": 180,
+      "height": 180,
+      "type": "image/png",
+      "bytes": 2786,
+      "sha256": "37266b6eb16b70b124af9d5cf9a4486d8e44d6624f33e863315328d3a9b38ea1"
+    },
+    {
+      "file": "public/icons/apple-touch-icon.png",
+      "url": "/icons/apple-touch-icon.png",
+      "purpose": "Apple touch icon para download",
+      "width": 180,
+      "height": 180,
+      "type": "image/png",
+      "bytes": 2786,
+      "sha256": "37266b6eb16b70b124af9d5cf9a4486d8e44d6624f33e863315328d3a9b38ea1"
+    },
+    {
+      "file": "public/brand/logo-oauth-120.png",
+      "url": "/brand/logo-oauth-120.png",
+      "purpose": "Upload de logo no Google OAuth",
+      "width": 120,
+      "height": 120,
+      "type": "image/png",
+      "bytes": 2005,
+      "sha256": "2ac029f830acf80a1ba8306f9890e8601c84b04dbb951f116cd9f077db90c0fd"
+    },
+    {
+      "file": "public/brand/logo-512.png",
+      "url": "/brand/logo-512.png",
+      "purpose": "Simbolo PNG",
+      "width": 512,
+      "height": 512,
+      "type": "image/png",
+      "bytes": 18205,
+      "sha256": "bb80c7b949a55b759683a9ed3bb1dd020ebdc587e44af10b9b30533f9669a500"
+    },
+    {
+      "file": "public/brand/logo-1024.png",
+      "url": "/brand/logo-1024.png",
+      "purpose": "Simbolo PNG de alta resolucao",
+      "width": 1024,
+      "height": 1024,
+      "type": "image/png",
+      "bytes": 49396,
+      "sha256": "ea74c5bf1d7481511556f0c0af8bcbbda04976ca7c08cf9c0d6fafde3478efb5"
+    },
+    {
+      "file": "public/social/avatar-1080.png",
+      "url": "/social/avatar-1080.png",
+      "purpose": "Avatar com margem para recorte circular",
+      "width": 1080,
+      "height": 1080,
+      "type": "image/png",
+      "bytes": 40966,
+      "sha256": "df8497ed9563d4e593819ad1059cda66b4f52045107ae3406d6026918421f412"
+    },
+    {
+      "file": "public/social/share-1200x630.png",
+      "url": "/social/share-1200x630.png",
+      "purpose": "Compartilhamento Open Graph e X",
+      "width": 1200,
+      "height": 630,
+      "type": "image/png",
+      "bytes": 92356,
+      "sha256": "0faa0ef6102917a239bae16887db69149c9293b30e1218727145975502193a47"
+    },
+    {
+      "file": "src/app/opengraph-image.png",
+      "url": "/opengraph-image.png",
+      "purpose": "Imagem social descoberta automaticamente pelo Next.js",
+      "width": 1200,
+      "height": 630,
+      "type": "image/png",
+      "bytes": 92356,
+      "sha256": "0faa0ef6102917a239bae16887db69149c9293b30e1218727145975502193a47"
+    },
+    {
+      "file": "src/app/twitter-image.png",
+      "url": "/twitter-image.png",
+      "purpose": "Imagem social descoberta automaticamente pelo Next.js",
+      "width": 1200,
+      "height": 630,
+      "type": "image/png",
+      "bytes": 92356,
+      "sha256": "0faa0ef6102917a239bae16887db69149c9293b30e1218727145975502193a47"
+    },
+    {
+      "file": "public/social/post-1080x1080.png",
+      "url": "/social/post-1080x1080.png",
+      "purpose": "Post quadrado",
+      "width": 1080,
+      "height": 1080,
+      "type": "image/png",
+      "bytes": 98817,
+      "sha256": "0c7be92720c8017472629b92734df830175d75d6ab6fd21f962934d15122f45b"
+    },
+    {
+      "file": "public/social/story-1080x1920.png",
+      "url": "/social/story-1080x1920.png",
+      "purpose": "Story vertical com conteudo na area central",
+      "width": 1080,
+      "height": 1920,
+      "type": "image/png",
+      "bytes": 150433,
+      "sha256": "6d12d01d2a3b704b4000fbd2288ea570d29e21681bf9af095f1fccc25d760d0d"
+    },
+    {
+      "file": "public/social/cover-1584x396.png",
+      "url": "/social/cover-1584x396.png",
+      "purpose": "Capa horizontal para redes sociais",
+      "width": 1584,
+      "height": 396,
+      "type": "image/png",
+      "bytes": 62283,
+      "sha256": "7c7c6948056e456ccbf6893ff270f99c469a8f8031a219a8381dba925da808e8"
+    }
+  ]
+}

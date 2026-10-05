@@ -1,4 +1,4 @@
-# Plano das Fases 4 e 5 — TROQ
+# Plano das Fases 4 e 5 — TROQS
 
 **Decomposição em 2026-10-05.** Baseline de código: `main@f6d3ae51fb480d0b77f713dbfbd63f0c6fe92214`. As 17 issues abaixo estão abertas e vinculadas como subissues dos épicos [#55](https://github.com/BrunoMNoronha/techlab-troq/issues/55) e [#56](https://github.com/BrunoMNoronha/techlab-troq/issues/56). Esta entrega organiza o trabalho; não implementa as fases nem aprova os seus gates.
 
@@ -50,7 +50,7 @@ Todas as entregas têm o gate da Fase 4 como dependência para homologação fin
 
 Métricas (#170), desenho da exclusão (#171) e revisão das páginas/políticas (#173) podem ser preparados em paralelo à Fase 4. A implementação deve revalidar os contratos integrados antes de homologar. Exclusão imediata vem antes do expurgo (#171 → #172); #170 fixa os critérios antes de otimizar ou implementar PWA (#175 e #176). Segurança (#174), observabilidade (#177) e recuperação/custos (#178) convergem na homologação comercial #179.
 
-[#173](https://github.com/BrunoMNoronha/techlab-troq/issues/173) inclui a divergência concreta entre a política pública, que atribui o nome ao Google, e o contrato atual, que usa apenas `openid` e `email` e pede o nome no TROQ. A correção precisa corresponder ao comportamento verificado.
+[#173](https://github.com/BrunoMNoronha/techlab-troq/issues/173) inclui a divergência concreta entre a política pública, que atribui o nome ao Google, e o contrato atual, que usa apenas `openid` e `email` e pede o nome no TROQS. A correção precisa corresponder ao comportamento verificado.
 
 A retenção segue [data-retention-policy.md](../product/data-retention-policy.md), com efeitos imediatos na exclusão, expurgo seletivo, legal hold mínimo e reaplicação de exclusões após restore. Os períodos financeiros precisam da revisão jurídica e contábil prevista; a publicação da política não substitui essa revisão. Nenhum expurgo de dados reais de Production, pagamento real ou contratação de plano está autorizado por esta decomposição.
 

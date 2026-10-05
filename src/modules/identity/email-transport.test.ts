@@ -46,7 +46,7 @@ describe('sendTransactionalEmail', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.stubEnv('RESEND_API_KEY', 're_sintetica_123');
-    vi.stubEnv('EMAIL_FROM', 'TROQ <nao-responda@preview.troqs.app>');
+    vi.stubEnv('EMAIL_FROM', 'TROQS <nao-responda@preview.troqs.app>');
   });
   afterEach(() => vi.unstubAllEnvs());
 
@@ -62,7 +62,7 @@ describe('sendTransactionalEmail', () => {
     vi.stubEnv('RESEND_API_KEY', '');
     expect(await sendTransactionalEmail(EMAIL)).toEqual({ ok: false, reason: 'not_configured' });
     vi.stubEnv('RESEND_API_KEY', 're_sintetica_123');
-    vi.stubEnv('EMAIL_FROM', 'TROQ <nao-responda@example.invalid>');
+    vi.stubEnv('EMAIL_FROM', 'TROQS <nao-responda@example.invalid>');
     expect(await sendTransactionalEmail(EMAIL)).toEqual({ ok: false, reason: 'not_configured' });
     expect(resend.ctor).not.toHaveBeenCalled();
   });
@@ -72,7 +72,7 @@ describe('sendTransactionalEmail', () => {
     expect(await sendTransactionalEmail(EMAIL)).toEqual({ ok: true });
     expect(resend.send).toHaveBeenCalledWith(
       {
-        from: 'TROQ <nao-responda@preview.troqs.app>',
+        from: 'TROQS <nao-responda@preview.troqs.app>',
         to: [EMAIL.to],
         subject: EMAIL.subject,
         text: EMAIL.text,

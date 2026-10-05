@@ -10,10 +10,10 @@
 
 /** Texto exibido ao anunciante; derivado de prohibited-items.md, secao 5, item 1. */
 export const LISTING_COMPLIANCE_DECLARATION =
-  'Declaro que o item deste anúncio não pertence a nenhuma das categorias proibidas da Política de itens proibidos do TROQ.';
+  'Declaro que o item deste anúncio não pertence a nenhuma das categorias proibidas da Política de itens proibidos do TROQS.';
 
 /** Identificador gravado em `terms_acceptances.terms_version` a cada publicacao. */
-export const LISTING_COMPLIANCE_TERMS_VERSION = 'DEC-031/2026-09-14/declaracao-1';
+export const LISTING_COMPLIANCE_TERMS_VERSION = 'DEC-031/2026-09-14/declaracao-2';
 
 /** Pagina publica da politica, acessivel a partir do aceite (secao 5, item 2). */
 export const PROHIBITED_ITEMS_POLICY_PATH = '/politica/itens-proibidos';

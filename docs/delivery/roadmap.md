@@ -1,4 +1,4 @@
-# Roadmap macro — TROQ
+# Roadmap macro — TROQS
 
 Roadmap por fases do MVP. Registra objetivo, principais entregáveis, dependências e gate de saída de cada fase. **Não há datas:** o projeto não possui base para estimativas, e datas artificiais não serão atribuídas. A ordem das fases é lógica, não calendário; itens de fases diferentes podem se sobrepor quando as dependências permitirem.
 

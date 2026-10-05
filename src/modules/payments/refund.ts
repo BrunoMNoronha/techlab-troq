@@ -49,7 +49,7 @@ export const REFUND_BACKOFF_CAP_HOURS = 24;
 
 // Prazo do provedor para reembolso: 180 dias a partir da aprovacao (PD-8.7,
 // MP-5). A referencia oficial nao documenta o codigo dessa recusa (F3-008), entao
-// o TROQ confere o prazo ANTES de chamar, pelo instante de acreditacao
+// o TROQS confere o prazo ANTES de chamar, pelo instante de acreditacao
 // autoritativo ja gravado (`payments.accredited_at`, ADR-0008), contra o
 // relogio do banco. Vencido -> `pendente_operacional` imediato e sem chamada:
 // retentar e inutil (PD-8.5). O caso continua aberto (PD-3.5). DEC-045.

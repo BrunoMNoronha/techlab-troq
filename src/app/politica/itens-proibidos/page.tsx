@@ -12,7 +12,7 @@ import { Card, Heading, Text, TextLink } from '@/components/ui';
 // Mudou a politica? Atualize esta pagina e LISTING_COMPLIANCE_TERMS_VERSION juntos.
 
 export const metadata: Metadata = {
-  title: 'Política de itens proibidos — TROQ',
+  title: 'Política de itens proibidos — TROQS',
 };
 
 const POLICY_SOURCE_URL =
@@ -28,15 +28,15 @@ const FUNDAMENTOS = [
   {
     code: 'regulado',
     meaning:
-      'A comercialização é lícita apenas sob licença, autorização, registro, prescrição ou controle equivalente, incompatível com um marketplace C2C sem verificação; bloqueado no TROQ pela decisão da seção 2',
+      'A comercialização é lícita apenas sob licença, autorização, registro, prescrição ou controle equivalente, incompatível com um marketplace C2C sem verificação; bloqueado no TROQS pela decisão da seção 2',
     reading:
-      '"Isto pode ser lícito no Brasil, mas o TROQ não tem como verificar as condições, então não aceita"',
+      '"Isto pode ser lícito no Brasil, mas o TROQS não tem como verificar as condições, então não aceita"',
   },
   {
     code: 'política',
     meaning:
       'Não há vedação legal clara aplicável, mas o risco jurídico, sanitário, de segurança ou operacional é desproporcional para o MVP',
-    reading: '"O TROQ escolheu não aceitar"',
+    reading: '"O TROQS escolheu não aceitar"',
   },
 ] as const;
 
@@ -69,7 +69,7 @@ const CATEGORIES = [
   ['PI-10', 'Falsificações e violações de propriedade intelectual', '`ilegal`.'],
   [
     'PI-11',
-    'Serviços, bens imateriais e itens fora da natureza do TROQ',
+    'Serviços, bens imateriais e itens fora da natureza do TROQS',
     '`política`, com componente `regulado` nas linhas financeiras e de apostas.',
   ],
   [

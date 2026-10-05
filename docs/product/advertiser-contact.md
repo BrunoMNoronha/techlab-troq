@@ -1,4 +1,4 @@
-# Contato do anunciante como pré-condição da solicitação — TROQ
+# Contato do anunciante como pré-condição da solicitação — TROQS
 
 Documento normativo que fecha [OD-13](../decisions/open-decisions.md) e registra **DEC-040**. Decisão do Bruno em 2026-10-01, registrada por F3-002 ([#92](https://github.com/BrunoMNoronha/techlab-troq/issues/92)).
 

@@ -1,6 +1,6 @@
 import { getAuth } from '@/modules/identity/auth';
 
-// Cadastro, login e logout do TROQ sao Server Actions (src/modules/identity/
+// Cadastro, login e logout do TROQS sao Server Actions (src/modules/identity/
 // actions.ts e google-actions.ts), que aplicam 18+, aceite de termos, status da
 // conta e revogacao de sessao. Os endpoints de escrita do Better Auth
 // contornariam essas regras, entao a rota expoe apenas leituras sem efeito

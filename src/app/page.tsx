@@ -8,7 +8,7 @@ import styles from './home.module.css';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'TROQ — anúncios entre pessoas com contato protegido',
+  title: 'TROQS — anúncios entre pessoas com contato protegido',
   description:
     'Veja ofertas publicadas sem precisar de login. O contato do anunciante só é liberado à pessoa escolhida, após solicitação paga de R$ 0,99.',
 };
@@ -169,7 +169,7 @@ export default function HomePage() {
                 <span className={styles.titleAccent}>contato protegido</span>
               </h1>
               <p className={styles.lead}>
-                No TROQ você vê as ofertas e os detalhes de cada anúncio sem precisar de login. O
+                No TROQS você vê as ofertas e os detalhes de cada anúncio sem precisar de login. O
                 WhatsApp/telefone do anunciante só é liberado à pessoa que ele escolher.
               </p>
               <div className={styles.actions}>
@@ -206,7 +206,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section aria-label="Por que usar o TROQ" className={styles.values}>
+        <section aria-label="Por que usar o TROQS" className={styles.values}>
           <div className={styles.container}>
             <ul className={styles.valueGrid}>
               {VALUES.map((value) => (
@@ -277,7 +277,7 @@ export default function HomePage() {
                 Seu contato fica com você
               </h2>
               <p className={styles.sectionLead}>
-                O TROQ foi desenhado para que telefone e WhatsApp não circulem à toa. Pedimos só o
+                O TROQS foi desenhado para que telefone e WhatsApp não circulem à toa. Pedimos só o
                 necessário e explicamos tudo na nossa política.
               </p>
               <div className={styles.trustLinks}>
@@ -309,7 +309,7 @@ export default function HomePage() {
                 </span>
                 <span>
                   <strong>Pix pelo Mercado Pago</strong>O pagamento é processado pelo Mercado Pago.
-                  O TROQ não armazena dados bancários.
+                  O TROQS não armazena dados bancários.
                 </span>
               </li>
               <li className={styles.trustItem}>

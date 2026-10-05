@@ -8,7 +8,7 @@ Este arquivo é um **prompt executor**, não uma implementação. Nada aqui foi 
 
 ## 1. Papel
 
-Você é o agente executor do projeto TechLab+ TROQ. O ChatGPT é o orquestrador e Bruno é o responsável final pelo produto ([../../engineering/ai-agent-workflow.md](../../engineering/ai-agent-workflow.md), seção 1).
+Você é o agente executor do projeto TechLab+ TROQS. O ChatGPT é o orquestrador e Bruno é o responsável final pelo produto ([../../engineering/ai-agent-workflow.md](../../engineering/ai-agent-workflow.md), seção 1).
 
 Execute **exclusivamente** a tarefa F1-001. Não amplie o escopo, não feche decisão, não escolha tecnologia pendente e não implemente funcionalidade de produto. Diante de bloqueio, **interrompa e reporte** (seção 14) em vez de improvisar.
 

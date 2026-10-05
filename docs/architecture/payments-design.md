@@ -1,4 +1,4 @@
-# Desenho técnico de pagamentos — TROQ
+# Desenho técnico de pagamentos — TROQS
 
 Desenho de pagamentos pré-implementação do MVP. Produzido por **F0-022**, junto com [overview.md](overview.md), [data-model.md](data-model.md) e [contact-release.md](contact-release.md).
 
@@ -35,7 +35,7 @@ Lugar no modelo em [data-model.md](data-model.md), seção 7. Aqui, o conteúdo 
 | Estado | Conforme PD-3.2 |
 | Pagamento canônico | Referência ao `Payment` eleito, quando houver (PE-3.1) |
 | Instante de acreditação autoritativo | Do provedor (CI-4) |
-| Instante de reconhecimento pelo TROQ | Quando o TROQ tomou conhecimento (CI-4) |
+| Instante de reconhecimento pelo TROQS | Quando o TROQS tomou conhecimento (CI-4) |
 | Origem do reconhecimento | `notificacao` ou `reconciliacao` (PE-10.1) |
 
 **PD-2.1 (invariante).** Uma tentativa por solicitação, garantida por restrição de banco (DM-7.1). Retentar a **mesma** solicitação é a **mesma** tentativa lógica; solicitações diferentes são tentativas diferentes (PE-2.1).
@@ -44,7 +44,7 @@ Lugar no modelo em [data-model.md](data-model.md), seção 7. Aqui, o conteúdo 
 
 Identificador do pagamento no provedor (único, DM-7.3), valor, estado autoritativo observado, `status_detail`, instante de acreditação, instantes de observação, e se é o canônico da tentativa.
 
-**PD-2.2.** `Payment` é um **espelho do que o provedor reportou**, não uma afirmação do TROQ. Ele existe para que a decisão de negócio seja tomada contra um fato registrado e auditável, e para que a duplicidade seja detectável.
+**PD-2.2.** `Payment` é um **espelho do que o provedor reportou**, não uma afirmação do TROQS. Ele existe para que a decisão de negócio seja tomada contra um fato registrado e auditável, e para que a duplicidade seja detectável.
 
 ### 2.3 `TechnicalRefund`
 
@@ -66,7 +66,7 @@ Tentativa alvo, tipo (`pendente`, `divergencia`, `reembolso_pendente`, `inconsis
 
 ### 3.1 Janela de reserva
 
-**PD-3.1 (decisão arquitetural).** A janela de reserva do TROQ é de **exatamente 30 minutos**.
+**PD-3.1 (decisão arquitetural).** A janela de reserva do TROQS é de **exatamente 30 minutos**.
 
 Fundamento: PE-4.4 fixa o piso normativo de 30 minutos e delega a duração concreta a F0-022; MP-1 registra que 30 minutos é o **menor** `expiration_time` que a Orders API aceita. Escolher exatamente o piso produz a única configuração em que a validade da cobrança no gateway pode ser **idêntica** ao fim da janela, sem que a cobrança sobreviva à reserva (PE-4.5) e sem que a reserva sobreviva à cobrança. Qualquer valor acima do piso obrigaria a cobrança a expirar antes da reserva — o que amplia, em vez de reduzir, a janela em que existe reserva viva sem cobrança válida.
 
@@ -75,7 +75,7 @@ Efeitos concretos:
 - `reservedUntil` = `reservedFrom` + 30 minutos;
 - o `expiration_time` enviado em `POST /v1/orders` é **exatamente** `reservedUntil`;
 - **não** há prorrogação automática, extensão silenciosa nem reabertura, inclusive em indisponibilidade do provedor (PE-4.7);
-- a validação da tempestividade **não** é delegada ao gateway: o TROQ compara o instante de acreditação autoritativo com `reservedUntil` por conta própria, e o `expiration_time` é apenas defesa adicional (PE-4.6).
+- a validação da tempestividade **não** é delegada ao gateway: o TROQS compara o instante de acreditação autoritativo com `reservedUntil` por conta própria, e o `expiration_time` é apenas defesa adicional (PE-4.6).
 
 **PD-3.2 (detalhe de implementação).** Se a operação futura demonstrar, com dados, que 30 minutos é curto demais para o comportamento real do Pix do público-alvo, aumentar a janela é ajuste de design, não decisão aberta — desde que o `expiration_time` continue igual ao fim da janela e o piso de 30 minutos seja respeitado.
 
@@ -83,7 +83,7 @@ _Atualização de 2026-10-01 (F3-004, [#94](https://github.com/BrunoMNoronha/tec
 
 1. "`expiration_time` = `reservedUntil`" **não é literalmente realizável**: a cobrança criada δ depois de `reservedFrom` (passo 2 de PD-4.1) expira δ depois da reserva, e δ nunca pode ser compensado reduzindo a duração abaixo de 30 minutos.
 2. O adaptador recebe o prazo em milissegundos e envia `PT…` arredondado para cima, **nunca** abaixo de `PT30M`. A janela de 30 minutos, PE-4.4 e PD-3.1 **não** foram alterados.
-3. O resíduo δ não cria direito: a tempestividade é verificada pelo próprio TROQ contra `reservedUntil` (PE-4.6), e pagamento acreditado depois dele é RT-2 (T-7). O provedor também devolve `date_of_expiration` absoluto, que permite medir δ por cobrança.
+3. O resíduo δ não cria direito: a tempestividade é verificada pelo próprio TROQS contra `reservedUntil` (PE-4.6), e pagamento acreditado depois dele é RT-2 (T-7). O provedor também devolve `date_of_expiration` absoluto, que permite medir δ por cobrança.
 4. **RECOMENDAÇÃO para F3-005 ([#95](https://github.com/BrunoMNoronha/techlab-troq/issues/95)):** executar o passo 2 imediatamente após o commit do passo 1, enviar `reservedUntil − agora` (que o adaptador eleva ao mínimo), persistir o `date_of_expiration` devolvido e registrar δ. Se a medição mostrar δ material, ajustar PD-3.1 é decisão a levar ao Bruno, não ajuste silencioso.
 
 ### 3.2 Estados da tentativa
@@ -105,7 +105,7 @@ Os estados são os de DEC-037, seção 15, sem acréscimo, sem renomeação e se
 | Retentativa de reembolso | **a cada cinco minutos**, com recuo exponencial por caso | Retenta reembolsos em `falhou_retentando` | Cadência do dispatcher autorizada no plano de ambientes em 2026-10-04; o horário elegível e o recuo exponencial de cada caso continuam sendo respeitados |
 | Higiene | **diária** | Materializa `publishedAt` de avaliações com janela vencida e aplica os prazos de retenção de DEC-033 que não sejam de imagem | Nenhuma invariante depende dela (AR-15.3, DM-9.4). Os originais temporários e a fila de exclusão de objetos de imagem **não** estão aqui: uma cadência diária permitiria a um original durar quase 48 horas, acima das 24 horas de DEC-028. Eles seguem o trabalho horário de [media-pipeline-contract.md](media-pipeline-contract.md), seções 11 a 13 (F2-007, 2026-09-29) |
 
-**PD-3.5 (decisão arquitetural).** Um caso em `reembolso_pendente` **nunca** é encerrado por esgotamento de tentativas. Depois de um número de tentativas automáticas sem sucesso, ele passa a `pendente_operacional` e **permanece aberto e visível** (AR-14.3), porque continua sendo dinheiro que o TROQ não tem direito de reter (PE-7.10).
+**PD-3.5 (decisão arquitetural).** Um caso em `reembolso_pendente` **nunca** é encerrado por esgotamento de tentativas. Depois de um número de tentativas automáticas sem sucesso, ele passa a `pendente_operacional` e **permanece aberto e visível** (AR-14.3), porque continua sendo dinheiro que o TROQS não tem direito de reter (PE-7.10).
 
 _Atualização de 2026-10-01 (F3-008, [#98](https://github.com/BrunoMNoronha/techlab-troq/issues/98)) — número de tentativas e recuo._
 
@@ -140,7 +140,7 @@ Chama `POST /v1/orders` com Pix, `total_amount` exatamente `0.99`, `expiration_t
 
 Persiste o identificador da order e move a tentativa para `aguardando_pagamento`.
 
-**PD-4.2 (decisão arquitetural — por que a intenção é commitada antes da chamada).** Se a aplicação falhar **entre** o passo 2 e o passo 3, existe uma order no provedor cujo identificador o TROQ não conhece. O passo 1, já commitado, é o que torna isso recuperável: a tentativa existe, está em estado não terminal, entra na reconciliação e é reencontrada pelo `external_reference` derivado da sua identidade. A ordem inversa — chamar o provedor e só depois persistir — produziria cobranças órfãs que o TROQ não teria como sequer procurar. Este é o desenho que satisfaz PE-6.7 a PE-6.10 na criação, e não apenas na confirmação.
+**PD-4.2 (decisão arquitetural — por que a intenção é commitada antes da chamada).** Se a aplicação falhar **entre** o passo 2 e o passo 3, existe uma order no provedor cujo identificador o TROQS não conhece. O passo 1, já commitado, é o que torna isso recuperável: a tentativa existe, está em estado não terminal, entra na reconciliação e é reencontrada pelo `external_reference` derivado da sua identidade. A ordem inversa — chamar o provedor e só depois persistir — produziria cobranças órfãs que o TROQS não teria como sequer procurar. Este é o desenho que satisfaz PE-6.7 a PE-6.10 na criação, e não apenas na confirmação.
 
 **PD-4.3 (invariante).** **Nunca** se cria uma segunda order para a mesma reserva enquanto a anterior não tiver desfecho terminal conhecido (PE-6.15). A tentativa única por solicitação (PD-2.1) torna essa regra estrutural: não há onde guardar uma segunda tentativa.
 
@@ -164,7 +164,7 @@ Só nesse modo confirmado, o `payer` enviado ao provedor é o fixture oficial `{
 
 ## 5. Identidade e idempotência
 
-**PD-5.1 (decisão arquitetural).** A chave de idempotência é derivada de forma **determinística** da identidade da tentativa, por função de hash sobre um espaço de nomes fixo do TROQ concatenado ao identificador da tentativa. Propriedades exigidas:
+**PD-5.1 (decisão arquitetural).** A chave de idempotência é derivada de forma **determinística** da identidade da tentativa, por função de hash sobre um espaço de nomes fixo do TROQS concatenado ao identificador da tentativa. Propriedades exigidas:
 
 1. a mesma tentativa, retentada, produz a mesma chave;
 2. tentativas diferentes **nunca** colidem;
@@ -202,7 +202,7 @@ _Atualização de 2026-10-01 (F3-001, DV-5)._ O "mínimo de segurança" é um ev
 
 **PD-6.4 (fato externo).** O endpoint deve responder `HTTP 200` ou `201` em até **22 segundos**; sem essa confirmação o reenvio ocorre a cada 15 minutos nas três primeiras tentativas e depois com prazo estendido (MP-4). O orçamento de tempo de PD-6.3 existe para caber com folga nesse limite.
 
-**PD-6.5 (decisão arquitetural — a consequência assumida).** Responder `200` sem ter concluído o processamento faz o provedor **parar de reenviar**. Isso é **deliberado e seguro**, porque a reconciliação por consulta reconstrói o estado sem nenhuma notificação (PE-1.3, PE-9.2, CI-3). O desenho alternativo — segurar a resposta até concluir — trocaria uma garantia que o TROQ controla (a reconciliação) por uma que depende da rede e das filas do provedor, e ainda arriscaria estourar os 22 segundos justamente sob carga.
+**PD-6.5 (decisão arquitetural — a consequência assumida).** Responder `200` sem ter concluído o processamento faz o provedor **parar de reenviar**. Isso é **deliberado e seguro**, porque a reconciliação por consulta reconstrói o estado sem nenhuma notificação (PE-1.3, PE-9.2, CI-3). O desenho alternativo — segurar a resposta até concluir — trocaria uma garantia que o TROQS controla (a reconciliação) por uma que depende da rede e das filas do provedor, e ainda arriscaria estourar os 22 segundos justamente sob carga.
 
 ### 6.2 A rotina de confirmação
 
@@ -243,9 +243,9 @@ _Atualização de 2026-10-01 (DEC-043, fecha OD-16)._ [../adr/0008-accreditation
 
 **PD-6.11 (resolvido pelas fontes, F3-001, DV-3 — reserva viva durante a pausa).** [listing-lifecycle.md](../product/listing-lifecycle.md), seção 5, diz que, em T3, solicitações iniciadas e não pagas "não avançam enquanto pausado", e não as encerra — ao contrário de T5 a T9, que as encerram e liberam a vaga. A leitura coerente com as demais fontes é:
 
-1. **"Não avançar" alcança os passos acionados pelo TROQ ou pelo solicitante:** nova reserva, criação da cobrança (passo 2 de PD-4.1) e reapresentação do QR Code são recusadas enquanto o anúncio estiver `paused` ([listing-lifecycle.md](../product/listing-lifecycle.md), seção 9: "qualquer tentativa de interesse, solicitação, pagamento ou escolha em anúncio que não esteja `published` é rejeitada no servidor" — tentativa de **iniciar** pagamento).
+1. **"Não avançar" alcança os passos acionados pelo TROQS ou pelo solicitante:** nova reserva, criação da cobrança (passo 2 de PD-4.1) e reapresentação do QR Code são recusadas enquanto o anúncio estiver `paused` ([listing-lifecycle.md](../product/listing-lifecycle.md), seção 9: "qualquer tentativa de interesse, solicitação, pagamento ou escolha em anúncio que não esteja `published` é rejeitada no servidor" — tentativa de **iniciar** pagamento).
 2. **Reconhecer um pagamento já acreditado não é avançar.** Se a acreditação autoritativa ocorreu dentro da janela, PE-4.1 e PE-4.2 determinam que a solicitação se torna paga válida e consome a vaga — a reserva continuava válida, pois a pausa não a encerra ("nada existente é perdido", mesma seção 9).
-3. **A leitura alternativa é excluída**, não apenas preterida: recusar a confirmação deixaria dinheiro acreditado contra reserva válida sem nenhuma das hipóteses exaustivas de reembolso (PE-7.2; RT-3 exige reserva **não** vigente), o que PE-12.2 proíbe ("o TROQ não pode reter dinheiro que recebeu por erro técnico"), e não há quarta saída. Por isso esta questão **não** foi aberta como decisão.
+3. **A leitura alternativa é excluída**, não apenas preterida: recusar a confirmação deixaria dinheiro acreditado contra reserva válida sem nenhuma das hipóteses exaustivas de reembolso (PE-7.2; RT-3 exige reserva **não** vigente), o que PE-12.2 proíbe ("o TROQS não pode reter dinheiro que recebeu por erro técnico"), e não há quarta saída. Por isso esta questão **não** foi aberta como decisão.
 4. A transação de efeito de PD-6.6, passo 4, portanto **não** consulta o estado do anúncio; ela continua exigindo `reserved` e acreditação ≤ `reservedUntil`. A pausa não cancela a order (PD-8.10 trata só das transições que **encerram** a reserva).
 
 **PD-6.12 (implementação, F3-006, [#96](https://github.com/BrunoMNoronha/techlab-troq/issues/96), 2026-10-01).** Como a seção 6 foi materializada, sem alterar regra:
@@ -304,7 +304,7 @@ A regra é determinística, total e não depende de ordem de chegada, de ordem d
 
 ## 8. Reembolso técnico e cancelamento
 
-**PD-8.1 (normativa).** As hipóteses são **exaustivas** (PE-7.2): RT-1 duplicidade (excedente); RT-2 acreditação depois do fim da janela; RT-3 acreditação sem reserva válida vigente, inclusive quando a vaga já foi legitimamente ocupada por outra solicitação; RT-4 cobrança criada por defeito técnico do TROQ. Nenhuma outra hipótese é autorizada.
+**PD-8.1 (normativa).** As hipóteses são **exaustivas** (PE-7.2): RT-1 duplicidade (excedente); RT-2 acreditação depois do fim da janela; RT-3 acreditação sem reserva válida vigente, inclusive quando a vaga já foi legitimamente ocupada por outra solicitação; RT-4 cobrança criada por defeito técnico do TROQS. Nenhuma outra hipótese é autorizada.
 
 **PD-8.2 (decisão arquitetural).** A hipótese é **determinada e persistida** no ato da classificação, e não recalculada depois. Razão: a condição que a caracterizou — por exemplo, "a vaga estava ocupada naquele instante" — pode não ser mais verdadeira quando o reembolso for retentado, e um recálculo tardio poderia reclassificar ou, pior, não encontrar hipótese alguma para um caso legítimo.
 
@@ -317,7 +317,7 @@ A regra é determinística, total e não depende de ordem de chegada, de ordem d
 
 **PD-8.5 (decisão arquitetural — tratamento dos erros documentados).**
 
-| Resposta do provedor | Interpretação do TROQ |
+| Resposta do provedor | Interpretação do TROQS |
 | --- | --- |
 | Sucesso | `concluido`. Registra os dados da devolução reportados pelo provedor |
 | `order_already_refunded` | **Desfecho de sucesso**, não erro a repetir (PE-7.11). O caso fecha como `concluido` |
@@ -347,7 +347,7 @@ Dois transitórios **documentados** passaram a retentar (`falhou_retentando`, co
 
 _Atualização de 2026-10-01 (DEC-045, [#98](https://github.com/BrunoMNoronha/techlab-troq/issues/98)) — saldo e 180 dias materializados sem código próprio._ Por autorização do Bruno para resolver o impedimento, as duas linhas passaram a ter tratamento verificável:
 
-| Linha de PD-8.5 | Como o TROQ a reconhece | Desfecho |
+| Linha de PD-8.5 | Como o TROQS a reconhece | Desfecho |
 | --- | --- | --- |
 | Fora do prazo de 180 dias | **Antes** da chamada: `payments.accredited_at` (instante autoritativo, ADR-0008) com 180 dias ou mais pelo relógio do banco (`REFUND_WINDOW_DAYS`, `src/modules/payments/refund.ts`) | `pendente_operacional` imediato, **sem** chamada e sem `inconsistente`; resultado `refund_window_expired` |
 | Saldo insuficiente | `409 cannot_refund_order` com a order, lida na mesma execução, em estado **acreditado** | `falhou_retentando` com o recuo de PD-3.5; resultado `refund_cannot_refund` |
@@ -359,7 +359,7 @@ _Atualização de 2026-10-01 (DEC-045, [#98](https://github.com/BrunoMNoronha/te
 
 **PD-8.6 (invariante).** Falha de reembolso **não** é ocultada, **não** é encerrada sem desfecho real e **nunca** vira receita reconhecida, vaga, elegibilidade ou silêncio (PE-7.9, PE-7.10). O caso permanece em AR-14.3.
 
-**PD-8.7 (fato externo).** Os dois limites são do provedor e não estão sob controle do TROQ: prazo de **180 dias** a partir da aprovação e exigência de **saldo suficiente** (MP-5). Ambos já estão registrados como R-11.
+**PD-8.7 (fato externo).** Os dois limites são do provedor e não estão sob controle do TROQS: prazo de **180 dias** a partir da aprovação e exigência de **saldo suficiente** (MP-5). Ambos já estão registrados como R-11.
 
 **PD-8.8 (normativa).** **Não** geram reembolso: não ter sido escolhido (RB-004 literal), desistência, reseleção, encerramento da negociação, anúncio pausado, encerrado ou removido, bloqueio cautelar etário, insatisfação e arrependimento (PE-7.5). Nenhum caminho deste desenho os alcança.
 
@@ -398,7 +398,7 @@ _Atualização de 2026-10-01 (DEC-045, [#98](https://github.com/BrunoMNoronha/te
 | Contato **já** liberado | A divulgação é fato consumado. **Não** se revoga, **não** se finge que pode ser desfeita. A negociação segue DEC-029 |
 | Sempre | **Não** gera nova cobrança, cobrança de recuperação nem dívida da pessoa usuária |
 
-**PD-9.3 (normativa — vocabulário).** `chargeback` é vocabulário de arranjos de cartão e **não** descreve o Pix (BC-5, PE-8.1). Quando um valor de status do provedor usa a palavra, trata-se de valor técnico da API. Desacordo comercial **não** é hipótese de MED (BC-4, PE-8.2). O TROQ **não** promete resultado que dependa de instituições financeiras (PE-8.3).
+**PD-9.3 (normativa — vocabulário).** `chargeback` é vocabulário de arranjos de cartão e **não** descreve o Pix (BC-5, PE-8.1). Quando um valor de status do provedor usa a palavra, trata-se de valor técnico da API. Desacordo comercial **não** é hipótese de MED (BC-4, PE-8.2). O TROQS **não** promete resultado que dependa de instituições financeiras (PE-8.3).
 
 **PD-9.4.** Pagamento técnico que nunca foi válido nunca consumiu vaga e, portanto, nada há a devolver ao limite (PE-8.11, PE-12.7).
 
@@ -416,9 +416,9 @@ _Atualização de 2026-10-01 (DEC-045, [#98](https://github.com/BrunoMNoronha/te
    - **Evento novo:** `payment.reversed` na trilha única, com o instante, a origem, o estado autoritativo e os efeitos: vaga mantida, solicitação `paid`, inelegível, se o contato já tinha sido liberado, sem revogação e sem cobrança nova. A aprovação original continua intacta: `payment.approved`, os dois instantes de CI-4, a origem do reconhecimento e o canônico (PE-8.5). O evento repete esses instantes em `approval`.
    - **Solicitação e vaga:** não são tocadas. A linha continua `paid`, a vaga continua consumida (DM-6.7, PE-8.9) e nenhuma quarta oportunidade se abre (PE-8.10).
    - **Liberação:** a autorização já concedida só é **lida**, para a auditoria registrar que a divulgação ocorreu (PE-8.7). A entrega continua olhando a solicitação, e não a tentativa, e por isso as releituras continuam permitidas (CR-4.3). A negociação não é encerrada (DEC-029).
-   - **Cobrança:** nenhuma cobrança nova, de recuperação ou devolução pelo TROQ (PE-8.8).
-   - **Antes da confirmação:** a reversão observada com a tentativa ainda em `aguardando_pagamento` ou `em_confirmacao` significa que o valor foi acreditado e devolvido sem o TROQ reconhecê-lo. A tentativa vai a `reembolsada_ou_revertida` com `payment.reversed` (`confirmed: false`). A reserva viva sai da vaga como `failed` (`charge_reversed`), porque não pode mais ser paga (uma tentativa por solicitação, PD-4.3), exatamente como no terminal sem acreditação de PD-6.6. Isso encerra também a reconsulta a cada 4 minutos que o caso `reversed_before_confirmation` provocava.
-5. **Ambiguidade com reembolso técnico RT-1.** Se a tentativa tem reembolso RT-1 (excedente de duplicidade, PD-8.11), a devolução do próprio TROQ pode explicar o estado de reversão da order. A order não diz qual pagamento saiu. Por isso abre-se caso `inconsistente` com motivo `reversal_with_technical_refund`, sem transição. A solução é operacional.
+   - **Cobrança:** nenhuma cobrança nova, de recuperação ou devolução pelo TROQS (PE-8.8).
+   - **Antes da confirmação:** a reversão observada com a tentativa ainda em `aguardando_pagamento` ou `em_confirmacao` significa que o valor foi acreditado e devolvido sem o TROQS reconhecê-lo. A tentativa vai a `reembolsada_ou_revertida` com `payment.reversed` (`confirmed: false`). A reserva viva sai da vaga como `failed` (`charge_reversed`), porque não pode mais ser paga (uma tentativa por solicitação, PD-4.3), exatamente como no terminal sem acreditação de PD-6.6. Isso encerra também a reconsulta a cada 4 minutos que o caso `reversed_before_confirmation` provocava.
+5. **Ambiguidade com reembolso técnico RT-1.** Se a tentativa tem reembolso RT-1 (excedente de duplicidade, PD-8.11), a devolução do próprio TROQS pode explicar o estado de reversão da order. A order não diz qual pagamento saiu. Por isso abre-se caso `inconsistente` com motivo `reversal_with_technical_refund`, sem transição. A solução é operacional.
 6. **Observabilidade.** O resumo de contagens da rota entra em `jobs.run` (F3-013), sob o nome `payments-reversals`. Nenhum sinal novo foi criado: o catálogo de sinais é fechado.
 
 ## 10. Reconciliação
@@ -493,7 +493,7 @@ Por isso os trabalhos de pagamento seguem PD-10.3 assim:
 
 **PD-11.4 (decisão arquitetural).** O endpoint de webhook não tem outra autorização senão a assinatura: ele é, por natureza, público e não autenticado por sessão. Os endpoints dos trabalhos periódicos, ao contrário, exigem o segredo de agendamento ([ADR-0006](../adr/0006-async-work-scheduling-concurrency.md)) e recusam qualquer chamada sem ele.
 
-**PD-11.5 (decisão arquitetural).** O adaptador do provedor é o **único** lugar que conhece `order`, `x-signature`, `data.id`, `X-Idempotency-Key` e os valores de `status`/`status_detail`. O domínio recebe apenas conceitos do TROQ: acreditado ou não, instante de acreditação, e uma classificação fechada (ADR-0004, decisão 10).
+**PD-11.5 (decisão arquitetural).** O adaptador do provedor é o **único** lugar que conhece `order`, `x-signature`, `data.id`, `X-Idempotency-Key` e os valores de `status`/`status_detail`. O domínio recebe apenas conceitos do TROQS: acreditado ou não, instante de acreditação, e uma classificação fechada (ADR-0004, decisão 10).
 
 ## 12. Rastreamento de CI-1 a CI-12
 
@@ -551,7 +551,7 @@ Os doze critérios necessários de DEC-037, seção 18, e onde este desenho os s
 | Segurar a resposta do webhook até concluir o processamento | **Rejeitada** | Arrisca os 22 segundos de MP-4 sob carga e troca uma garantia própria (reconciliação) por uma de terceiro (entrega). PD-6.5 |
 | Deduplicar o efeito pelo identificador de requisição da notificação | **Rejeitada** | Entregas do mesmo fato podem trazer identificadores diferentes; falharia exatamente no reenvio (PD-5.4) |
 | Rederivar a chave de idempotência a cada chamada | **Rejeitada** | Qualquer mudança futura na derivação faria a **retentativa** produzir chave nova e gerar a segunda cobrança (PD-5.2) |
-| Chamar o provedor antes de commitar a intenção | **Rejeitada** | Produz cobrança órfã que o TROQ não tem como procurar (PD-4.2) |
+| Chamar o provedor antes de commitar a intenção | **Rejeitada** | Produz cobrança órfã que o TROQS não tem como procurar (PD-4.2) |
 | Janela de reserva maior que 30 minutos | **Rejeitada** no MVP | Obrigaria a cobrança a expirar antes da reserva, ampliando a janela com reserva viva e cobrança inválida. O piso é o único ponto de coincidência exata (PD-3.1) |
 | Delegar ao gateway a validação da tempestividade | **Rejeitada** | PE-4.6; F0-010 registrou que o comportamento real da expiração não pôde ser observado |
 | Liberar vaga expirada por trabalho periódico | **Rejeitada** | O agendamento é best effort; uma execução perdida prenderia vagas e recusaria solicitações legítimas (DM-6.3) |
@@ -577,7 +577,7 @@ Os doze critérios necessários de DEC-037, seção 18, e onde este desenho os s
 | RF-022 | Os eventos de pagamento auditados estão em DM-11.1 |
 | RNF-016 | T-1, T-2 e T-18 são a verificação exigida |
 | R-02, R-04 | Residual reduzido a teste: o mecanismo atômico e o de reconciliação deixam de ser pendência de design |
-| R-11 | Tratamento operacional em PD-3.5 e PD-8.5; os dois limites continuam fora do controle do TROQ |
+| R-11 | Tratamento operacional em PD-3.5 e PD-8.5; os dois limites continuam fora do controle do TROQS |
 | [ADR-0006](../adr/0006-async-work-scheduling-concurrency.md) | PD-3.4, PD-10.3 e PD-10.6 aplicam suas decisões |
 | [testing.md](../engineering/testing.md) | O "contrato concreto de teste" que aquele documento condicionava a F0-022 está na seção 13 |
 

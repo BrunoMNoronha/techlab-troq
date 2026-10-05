@@ -19,7 +19,7 @@ import { TERMS_VERSION } from './terms';
 
 // Server Actions da entrada com Conta Google (#81; identity-contract.md, IC-15).
 // Os endpoints `/sign-in/social` e `/link-social` do Better Auth nao ficam
-// expostos por HTTP: sao chamados daqui, depois das regras do TROQ, e o unico
+// expostos por HTTP: sao chamados daqui, depois das regras do TROQS, e o unico
 // endpoint OAuth aberto e o callback (IC-13.1).
 
 export interface GoogleRedirectResult {
@@ -46,7 +46,7 @@ const GOOGLE_START_ERROR = 'Nao foi possivel iniciar a entrada com Google. Tente
 const SIGNUP_EXPIRED_ERROR =
   'Este cadastro com Google expirou ou ja foi concluido. Comece de novo pelo botao Continuar com Google.';
 const EMAIL_TAKEN_ERROR =
-  'Ja existe uma conta TROQ com este e-mail. Entre com e-mail e senha e vincule sua Conta Google em Minha conta.';
+  'Ja existe uma conta TROQS com este e-mail. Entre com e-mail e senha e vincule sua Conta Google em Minha conta.';
 const SIGNUP_ERROR = 'Nao foi possivel concluir o cadastro agora. Tente novamente.';
 const ACCOUNT_CREATED_SIGNIN_ERROR =
   'Sua conta foi criada, mas nao foi possivel entrar agora. Use o botao Continuar com Google na tela de login.';
@@ -82,7 +82,7 @@ function isGoogleAuthorizationURL(url: unknown): url is string {
  * Pede ao Better Auth a URL de autorizacao do Google para o navegador seguir.
  * O provedor gera o state (uso unico, ligado a este navegador por cookie
  * assinado gravado via `nextCookies()`) e o PKCE. `callbackURL` e um caminho
- * interno validado: o retorno pos-login nunca aponta para fora do TROQ.
+ * interno validado: o retorno pos-login nunca aponta para fora do TROQS.
  */
 async function googleAuthorizationRedirect(
   returnTo: string | null,
@@ -270,7 +270,7 @@ export async function cancelGoogleSignup(): Promise<GoogleRedirectResult> {
 }
 
 /**
- * Vinculacao explicita da Conta Google a conta TROQ ja autenticada (IC-15.4).
+ * Vinculacao explicita da Conta Google a conta TROQS ja autenticada (IC-15.4).
  * Exige sessao valida pelo guard (conta ativa e e-mail verificado). O Better
  * Auth guarda no state o id e o e-mail da sessao e, no callback, so vincula se
  * o Google confirmar o MESMO e-mail como verificado e se a identidade nao

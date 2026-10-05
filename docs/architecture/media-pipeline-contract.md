@@ -1,4 +1,4 @@
-# Contrato do pipeline de imagens — TROQ
+# Contrato do pipeline de imagens — TROQS
 
 Contrato técnico de upload, confirmação, processamento, recuperação, concorrência, privacidade, entrega, revogação, limpeza e retenção das imagens de anúncio. Entregável de F2-007 ([#45](https://github.com/BrunoMNoronha/techlab-troq/issues/45)); é o contrato que [#46](https://github.com/BrunoMNoronha/techlab-troq/issues/46) (upload e processamento) e [#47](https://github.com/BrunoMNoronha/techlab-troq/issues/47) (entrega, limpeza e expurgo) implementam.
 
@@ -56,15 +56,15 @@ Os fatos de ADR-0006 (V-1 a V-7, N-1, P-1, P-2, de 2026-09-14) continuam válido
 ## 3. Arquitetura
 
 ```
-navegador ──(1) pedir upload──► Server Action TROQ ──► PostgreSQL (reserva, trava do anúncio)
+navegador ──(1) pedir upload──► Server Action TROQS ──► PostgreSQL (reserva, trava do anúncio)
 navegador ──(2) PUT presigned──► R2 privado  originals/…
-navegador ──(3) confirmar─────► Server Action TROQ ──► HeadObject no R2 ──► PostgreSQL (fila)
+navegador ──(3) confirmar─────► Server Action TROQS ──► HeadObject no R2 ──► PostgreSQL (fila)
                                      └─ after(): tentativa imediata, sem garantia
-cron Vercel (CRON_SECRET) ──────► executor TROQ ──► PostgreSQL (claim SKIP LOCKED) ──► R2 (If-Match) ──► sharp ──► R2 derivatives/…
-navegador ──(4) GET /media/{imageId}/{kind} ──► Route Handler TROQ ──► PostgreSQL (estado atual) ──► R2 privado (stream)
+cron Vercel (CRON_SECRET) ──────► executor TROQS ──► PostgreSQL (claim SKIP LOCKED) ──► R2 (If-Match) ──► sharp ──► R2 derivatives/…
+navegador ──(4) GET /media/{imageId}/{kind} ──► Route Handler TROQS ──► PostgreSQL (estado atual) ──► R2 privado (stream)
 ```
 
-- **MP-3.1 — O bucket é privado e continua privado.** Sem `r2.dev`, sem custom domain, sem objeto público, sem URL estável que leia o objeto sem passar pela autorização do TROQ. Fundamento: R2-4 torna qualquer objeto público legível por quem retiver a URL, e sair de `published` precisa retirar a imagem de toda superfície pública imediatamente (DEC-027, DEC-028 seção 8, DM-5.5).
+- **MP-3.1 — O bucket é privado e continua privado.** Sem `r2.dev`, sem custom domain, sem objeto público, sem URL estável que leia o objeto sem passar pela autorização do TROQS. Fundamento: R2-4 torna qualquer objeto público legível por quem retiver a URL, e sair de `published` precisa retirar a imagem de toda superfície pública imediatamente (DEC-027, DEC-028 seção 8, DM-5.5).
 - **MP-3.2 — Nenhum componente novo.** Execução em Vercel Functions Node.js com o `sharp` já instalado; fila e travas no PostgreSQL (ADR-0006, decisões 1 a 6). Nada de Vercel Queues, Cloudflare Queues, Workers, Redis, SQS, RabbitMQ, processo dedicado ou microserviço.
 - **MP-3.3 — Chaves no bucket, todas geradas pelo servidor, nenhuma com nome de arquivo:**
 
@@ -94,7 +94,7 @@ O nome `uploaded` para "reserva ainda sem upload" é aceito conscientemente: ren
 
 ### 5.1 Autorização e reserva (#46)
 
-Quem emite a autorização é uma **Server Action do TROQ**, nunca o cliente. Sequência, toda no servidor:
+Quem emite a autorização é uma **Server Action do TROQS**, nunca o cliente. Sequência, toda no servidor:
 
 1. Sessão válida, e-mail verificado, conta `active` (`validateSession`).
 2. Tipo declarado ∈ `image/jpeg`, `image/png`, `image/webp`. É **pré-checagem de experiência**, não prova de formato (seção 7).
@@ -119,7 +119,7 @@ Limite de abuso: a emissão de autorizações de upload tem limite por usuário 
 | Validade | **900 s (15 min)**, preservada da versão anterior; não há evidência que justifique outro valor |
 | Cabeçalhos assinados | `Content-Type` igual ao tipo declarado (R2-1), `Content-Length` igual ao tamanho declarado (1 byte a 10 MB, validado no servidor antes da reserva) e `If-None-Match: *`, para que a URL só crie o objeto e não o sobrescreva (R2-2). **Provados contra o R2 de `development` em #46** (seção 20.2): tipo, tamanho ou `If-None-Match` diferentes → `403`; reuso da URL depois de o objeto existir → `412`. O SDK AWS 3.x **não** assina `Content-Type` por padrão (`X-Amz-SignedHeaders=host`): é preciso `signableHeaders` explícito, sem o qual o R2 aceita qualquer tipo |
 | Endpoint | domínio da API S3 do R2 (R2-1); presigned URL não funciona em custom domain |
-| CORS | política no bucket de cada ambiente: `AllowedOrigins` = origens TROQ daquele ambiente (development: `http://localhost:3000`; preview: padrão dos domínios de preview do projeto, com no máximo um `*` — R2-3); `AllowedMethods` = `PUT`; `AllowedHeaders` = `content-type` e `if-none-match` (`Content-Length` é definido pelo próprio navegador e não passa por CORS). CORS **não** é controle de acesso — a assinatura é —, apenas viabiliza o navegador. **Aplicada em 2026-09-30** (seção 20.4); a origem de preview é `https://techlab-troq-*-bruno-m-noronha.vercel.app` |
+| CORS | política no bucket de cada ambiente: `AllowedOrigins` = origens TROQS daquele ambiente (development: `http://localhost:3000`; preview: padrão dos domínios de preview do projeto, com no máximo um `*` — R2-3); `AllowedMethods` = `PUT`; `AllowedHeaders` = `content-type` e `if-none-match` (`Content-Length` é definido pelo próprio navegador e não passa por CORS). CORS **não** é controle de acesso — a assinatura é —, apenas viabiliza o navegador. **Aplicada em 2026-09-30** (seção 20.4); a origem de preview é `https://techlab-troq-*-bruno-m-noronha.vercel.app` |
 | Sigilo | a URL é credencial temporária (R2-1): nunca registrada em log, telemetria, auditoria ou mensagem de erro, nem persistida no banco |
 
 O binário **nunca** atravessa o corpo de uma Vercel Function (V-1, DEC-028 seção 5).
@@ -242,7 +242,7 @@ Como a geração faz parte das chaves, a limpeza da geração antiga nunca ating
 
 ### 9.1 Rota de mídia
 
-`GET /media/{imageId}/{kind}` é um Route Handler Node.js do TROQ, dinâmico (N-2), sem `use cache`. A cada requisição, no momento da requisição:
+`GET /media/{imageId}/{kind}` é um Route Handler Node.js do TROQS, dinâmico (N-2), sem `use cache`. A cada requisição, no momento da requisição:
 
 1. `imageId` é UUID e `kind` ∈ `thumb`, `medium`, `large`.
 2. Uma consulta junta `ListingImage` → `Listing` → `User` e `ImageDerivative` do `kind` pedido, exigindo imagem `ready` e, para **acesso público**, anúncio `published` e dono com conta `active`.
@@ -277,8 +277,8 @@ Uma resposta já em curso no instante da transição pode terminar; nenhuma requ
 | --- | --- | --- |
 | Bucket ou custom domain público + CDN | **Rejeitada** | URL retida continua funcionando (R2-4); retirada dependeria de apagar o objeto ou de purgar o cache |
 | Presigned `GET` de curta duração no DTO | **Rejeitada** | É bearer válido até expirar (R2-1); TTL curto não é revogação imediata; a URL ficaria embutida em HTML/RSC |
-| Rota do TROQ com cache no CDN e purga por tag na transição | **Rejeitada no MVP** | "Invalidate" serve stale (V-6); "delete" não documenta propagação instantânea; exigiria que toda transição purgasse com garantia, com mais um caminho de falha que manteria o conteúdo público |
-| Rota do TROQ com `private, no-store` | **Adotada** | Revogação imediata por construção, sem componente novo |
+| Rota do TROQS com cache no CDN e purga por tag na transição | **Rejeitada no MVP** | "Invalidate" serve stale (V-6); "delete" não documenta propagação instantânea; exigiria que toda transição purgasse com garantia, com mais um caminho de falha que manteria o conteúdo público |
+| Rota do TROQS com `private, no-store` | **Adotada** | Revogação imediata por construção, sem componente novo |
 
 **Trade-off aceito:**
 - cada exibição é uma invocação de função, uma consulta ao banco e uma leitura do R2;

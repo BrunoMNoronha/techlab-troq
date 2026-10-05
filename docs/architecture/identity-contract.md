@@ -1,6 +1,6 @@
-# Contrato técnico de identidade e autenticação — TROQ (F2-001)
+# Contrato técnico de identidade e autenticação — TROQS (F2-001)
 
-Especificação normativa de identidade, credencial, sessão, verificação de email e autorização de conta do TROQ sobre Better Auth. Produzida por **F2-001** ([#39](https://github.com/BrunoMNoronha/techlab-troq/issues/39)) e reconciliada em 2026-09-29 com as decisões de produto, o schema real e a documentação oficial atual do Better Auth. É a fonte que [#40](https://github.com/BrunoMNoronha/techlab-troq/issues/40) (núcleo server-side), [#41](https://github.com/BrunoMNoronha/techlab-troq/issues/41) (cadastro e verificação) e [#42](https://github.com/BrunoMNoronha/techlab-troq/issues/42) (login, logout e área da conta) implementam.
+Especificação normativa de identidade, credencial, sessão, verificação de email e autorização de conta do TROQS sobre Better Auth. Produzida por **F2-001** ([#39](https://github.com/BrunoMNoronha/techlab-troq/issues/39)) e reconciliada em 2026-09-29 com as decisões de produto, o schema real e a documentação oficial atual do Better Auth. É a fonte que [#40](https://github.com/BrunoMNoronha/techlab-troq/issues/40) (núcleo server-side), [#41](https://github.com/BrunoMNoronha/techlab-troq/issues/41) (cadastro e verificação) e [#42](https://github.com/BrunoMNoronha/techlab-troq/issues/42) (login, logout e área da conta) implementam.
 
 Os itens são identificados como `IC-x`. Cada item é classificado como **normativo** (derivado de regra de produto ou arquitetura já homologada), **decisão arquitetural** (fecha uma escolha técnica deste contrato) ou **decisão técnica ajustável** (valor escolhido com justificativa, alterável por PR que atualize este documento sem reabrir regra de produto).
 
@@ -33,7 +33,7 @@ Os itens são identificados como `IC-x`. Cada item é classificado como **normat
 
 **IC-3.1 (normativo).** O estado da conta é o enum real `UserStatus` (DM-3.1): `active`, `blocked_age` (bloqueio cautelar etário, DEC-034, seção 5), `blocked_admin` (sanção administrativa, DEC-031, seção 10) e `deletion_requested` (RF-023). **Não existe** `accountState`, nem estados `UNVERIFIED`, `ACTIVE`, `BLOCKED` ou `DELETED`.
 
-**IC-3.2 (normativo).** Verificação de email **não** é estado da conta: é o par `emailVerified` (booleano consultado pelo provedor) e `emailVerifiedAt` (instante, campo de negócio do TROQ). Os dois mudam juntos, na mesma escrita, apenas pela confirmação de token (IC-7) ou, no cadastro com Google, pela criação da conta a partir do `email_verified` do Google (IC-15.5). Conta recém-criada por senha é `status = active` com `emailVerified = false`.
+**IC-3.2 (normativo).** Verificação de email **não** é estado da conta: é o par `emailVerified` (booleano consultado pelo provedor) e `emailVerifiedAt` (instante, campo de negócio do TROQS). Os dois mudam juntos, na mesma escrita, apenas pela confirmação de token (IC-7) ou, no cadastro com Google, pela criação da conta a partir do `email_verified` do Google (IC-15.5). Conta recém-criada por senha é `status = active` com `emailVerified = false`.
 
 **IC-3.3 (normativo).** A solicitação de exclusão é o registro `AccountDeletionRequest` somado a `status = deletion_requested`, aplicados na mesma transação que produz o efeito imediato (DM-3.4). O expurgo em até 30 dias não muda este contrato.
 
@@ -56,7 +56,7 @@ O MVP não tem RBAC. O perfil de moderação (AR-7.4) não é modelado por este 
 
 **IC-4.3 (decisão técnica ajustável).** Senha com 8 a 128 caracteres, que são os limites padrão do provedor (`minPasswordLength`, `maxPasswordLength`). O cadastro valida os mesmos limites antes de gerar o hash.
 
-**IC-4.4 (normativo de verificação).** A compatibilidade da credencial é provada, e não presumida: teste de integração em PostgreSQL descartável cria a conta pelo cadastro do TROQ e autentica pelo `auth.api.signInEmail` real (#40/#41).
+**IC-4.4 (normativo de verificação).** A compatibilidade da credencial é provada, e não presumida: teste de integração em PostgreSQL descartável cria a conta pelo cadastro do TROQS e autentica pelo `auth.api.signInEmail` real (#40/#41).
 
 **IC-4.5 (escopo).** Troca e redefinição de senha não existem no MVP atual. Se forem introduzidas, usam os endpoints do provedor e revogam as demais sessões (`revokeOtherSessions` / `revokeSessionsOnPasswordReset: true`), com atualização deste contrato.
 
@@ -72,7 +72,7 @@ O MVP não tem RBAC. O perfil de moderação (AR-7.4) não é modelado por este 
 | Ler e validar | Better Auth | `auth.api.getSession({ headers: await headers() })`: confere assinatura, busca o token em `sessions`, confere expiração |
 | Expirar e renovar | Better Auth | `session.expiresIn` e `session.updateAge` (IC-5.4) |
 | Encerrar (logout) | Better Auth | `auth.api.signOut({ headers: await headers() })`, confirmado por IC-5.5 |
-| Autorização de domínio | TROQ | Guard de IC-8, **depois** da sessão validada pelo provedor |
+| Autorização de domínio | TROQS | Guard de IC-8, **depois** da sessão validada pelo provedor |
 
 **IC-5.2 (decisão arquitetural — proibições).** É proibido, em qualquer caminho de autenticação:
 
@@ -82,7 +82,7 @@ O MVP não tem RBAC. O perfil de moderação (AR-7.4) não é modelado por este 
 4. usar `getSessionCookie`/presença de cookie como autorização (a documentação oficial classifica esse uso como inseguro; serve só para redirecionamento otimista);
 5. expor token, id de sessão, `ipAddress` ou `userAgent` em DTO, HTML, payload RSC, log ou telemetria.
 
-A única escrita direta em `sessions` permitida ao TROQ é a **remoção** por `userId` na revogação administrativa de IC-5.6, que só retira autorização.
+A única escrita direta em `sessions` permitida ao TROQS é a **remoção** por `userId` na revogação administrativa de IC-5.6, que só retira autorização.
 
 **IC-5.3 (decisão arquitetural).** Configuração normativa do provedor:
 
@@ -103,7 +103,7 @@ A única escrita direta em `sessions` permitida ao TROQ é a **remoção** por `
 
 **IC-5.7 (normativo — cenários).** Resultado exigido no servidor e na interface:
 
-| Cenário | Resultado do provedor | Resultado TROQ |
+| Cenário | Resultado do provedor | Resultado TROQS |
 | --- | --- | --- |
 | Sem cookie | `getSession` → `null` | negado, motivo `no_session` → `/login?motivo=sessao` |
 | Cookie adulterado ou assinatura inválida | `null` | idem; nunca consultar `sessions` pelo valor bruto |
@@ -116,7 +116,7 @@ A única escrita direta em `sessions` permitida ao TROQ é a **remoção** por `
 
 ## 6. Cadastro
 
-**IC-6.1 (decisão arquitetural).** O cadastro é a Server Action do TROQ (`registerUser`), e não o `signUpEmail` do provedor, porque a declaração 18+ e o aceite dos termos precisam ser gravados **atomicamente** com a conta (DEC-034, seção 3). Em uma única transação Prisma ela cria `User` (`active`, `emailVerified = false`), a credencial de IC-4.2 e o `TermsAcceptance` do tipo `age_eligibility` com `termsVersion` e `acceptedAt`. Falha em qualquer escrita desfaz as três. O cadastro **não** cria sessão. O cadastro com Google segue a mesma regra, na Server Action própria de IC-15.3.
+**IC-6.1 (decisão arquitetural).** O cadastro é a Server Action do TROQS (`registerUser`), e não o `signUpEmail` do provedor, porque a declaração 18+ e o aceite dos termos precisam ser gravados **atomicamente** com a conta (DEC-034, seção 3). Em uma única transação Prisma ela cria `User` (`active`, `emailVerified = false`), a credencial de IC-4.2 e o `TermsAcceptance` do tipo `age_eligibility` com `termsVersion` e `acceptedAt`. Falha em qualquer escrita desfaz as três. O cadastro **não** cria sessão. O cadastro com Google segue a mesma regra, na Server Action própria de IC-15.3.
 
 **IC-6.2 (normativo).** Entradas: nome de exibição, email, senha, declaração explícita "Declaro que tenho 18 anos completos ou mais" (ato afirmativo, nunca pré-marcado) e aceite dos termos. A validação é feita no servidor, independentemente do formulário. **Não** se coleta data de nascimento, CPF, RG, CNH, documento, selfie ou biometria, nem se usa serviço externo de verificação etária (DEC-034, seção 4). Sem a declaração, o cadastro é recusado e nada é gravado.
 
@@ -128,7 +128,7 @@ A única escrita direta em `sessions` permitida ao TROQ é a **remoção** por `
 
 ## 7. Verificação de email
 
-**IC-7.1 (decisão arquitetural).** A verificação usa token **do TROQ**, e não o endpoint `/verify-email` do provedor. Na versão 1.7.6, o token de verificação do Better Auth é um JWT sem estado, assinado com o segredo (conferido no código-fonte; a documentação não o descreve): ele não é de uso único, um reenvio não invalida os anteriores e ele só grava `emailVerified`, sem `emailVerifiedAt`. Isso não atende #41. A verificação do TROQ **não autentica**: não cria sessão nem cookie, e o login continua exclusivo do provedor (IC-5).
+**IC-7.1 (decisão arquitetural).** A verificação usa token **do TROQS**, e não o endpoint `/verify-email` do provedor. Na versão 1.7.6, o token de verificação do Better Auth é um JWT sem estado, assinado com o segredo (conferido no código-fonte; a documentação não o descreve): ele não é de uso único, um reenvio não invalida os anteriores e ele só grava `emailVerified`, sem `emailVerifiedAt`. Isso não atende #41. A verificação do TROQS **não autentica**: não cria sessão nem cookie, e o login continua exclusivo do provedor (IC-5).
 
 **IC-7.2 (decisão técnica ajustável).** Formato e armazenamento, na tabela existente `verifications`:
 
@@ -151,7 +151,7 @@ Confirmações concorrentes do mesmo token resultam em exatamente uma confirmaç
 
 ## 8. Autorização de domínio
 
-**IC-8.1 (decisão arquitetural).** Autenticação (provedor) e autorização (TROQ) são camadas separadas. O guard do TROQ implementa o nível **N1** de AR-7.2 para toda ação protegida — Server Action, Route Handler e página privada — no instante da execução:
+**IC-8.1 (decisão arquitetural).** Autenticação (provedor) e autorização (TROQS) são camadas separadas. O guard do TROQS implementa o nível **N1** de AR-7.2 para toda ação protegida — Server Action, Route Handler e página privada — no instante da execução:
 
 1. `auth.api.getSession({ headers: await headers() })` é a única fonte de identidade; `null` ou erro → negado (IC-5.7);
 2. lê de `users`, pelo `session.user.id`, o `status` e o `emailVerified` **atuais**;
@@ -174,11 +174,11 @@ Confirmações concorrentes do mesmo token resultam em exatamente uma confirmaç
 2. invalida os tokens anteriores da conta, fazendo `expiresAt = now()` (o link antigo passa a responder "expirado");
 3. emite novo token (IC-7.2) e envia.
 
-**IC-9.4 (decisão técnica ajustável).** Limites por conta: intervalo mínimo de **60 segundos** entre emissões e no máximo **5 emissões em 24 horas**, contando a do cadastro. Justificativa: o provedor não limita chamadas `auth.api` (IC-10.1), e o reenvio sem limite permite usar o TROQ para inundar a caixa de terceiros e degradar a reputação do domínio remetente. 60 segundos cobrem a entrega normal, e 5 por dia bastam para recuperar erro de digitação ou filtro de spam. Os limites são aplicados no servidor e persistidos no PostgreSQL (nunca em memória, que não sobrevive entre invocações serverless). Linhas expiradas há mais de 24 horas podem ser removidas por qualquer limpeza oportunista.
+**IC-9.4 (decisão técnica ajustável).** Limites por conta: intervalo mínimo de **60 segundos** entre emissões e no máximo **5 emissões em 24 horas**, contando a do cadastro. Justificativa: o provedor não limita chamadas `auth.api` (IC-10.1), e o reenvio sem limite permite usar o TROQS para inundar a caixa de terceiros e degradar a reputação do domínio remetente. 60 segundos cobrem a entrega normal, e 5 por dia bastam para recuperar erro de digitação ou filtro de spam. Os limites são aplicados no servidor e persistidos no PostgreSQL (nunca em memória, que não sobrevive entre invocações serverless). Linhas expiradas há mais de 24 horas podem ser removidas por qualquer limpeza oportunista.
 
 ## 10. Proteção contra abuso no login
 
-**IC-10.1 (fato oficial).** O limitador embutido do Better Auth **não se aplica** a chamadas `auth.api` feitas no servidor, e seu armazenamento padrão é em memória. Como o login do TROQ é uma Server Action que chama `auth.api.signInEmail`, a proteção é responsabilidade do TROQ.
+**IC-10.1 (fato oficial).** O limitador embutido do Better Auth **não se aplica** a chamadas `auth.api` feitas no servidor, e seu armazenamento padrão é em memória. Como o login do TROQS é uma Server Action que chama `auth.api.signInEmail`, a proteção é responsabilidade do TROQS.
 
 **IC-10.2 (decisão técnica ajustável).** Limite de **5 falhas de credencial em 15 minutos** por email normalizado. Ao atingir o limite, novas tentativas para aquele email são recusadas sem chamar o provedor, com a mensagem genérica "muitas tentativas; aguarde alguns minutos" até a janela expirar. O contador é chaveado pelo SHA-256 do email normalizado, **exista ou não a conta**, para não revelar existência. Conta como falha apenas `INVALID_EMAIL_OR_PASSWORD`; sucesso zera o contador. Armazenamento persistente no PostgreSQL: linhas `login-failure:<sha256>` em `verifications` com expiração de 15 minutos, ou tabela própria criada por migration aditiva na própria #42. Nenhum IP é usado nem persistido. Justificativa: a janela limita a força bruta online a cerca de 480 tentativas por dia por conta, e o bloqueio temporário, e não permanente, limita o uso do limite para travar a conta de outra pessoa.
 
@@ -194,7 +194,7 @@ Confirmações concorrentes do mesmo token resultam em exatamente uma confirmaç
 
 ## 12. Segredos, URL e origens por ambiente
 
-**IC-12.1 (decisão arquitetural — fail-closed).** A instância do Better Auth só é construída com configuração completa e coerente. O código **não** contém segredo literal nem URL de fallback, e o TROQ passa `secret` e `baseURL` explicitamente, depois de validá-los, para que o segredo padrão interno do provedor nunca seja alcançado. Configuração ausente ou incoerente lança erro na primeira construção da instância, que é lazy, e a requisição falha. Nunca se autentica com configuração parcial.
+**IC-12.1 (decisão arquitetural — fail-closed).** A instância do Better Auth só é construída com configuração completa e coerente. O código **não** contém segredo literal nem URL de fallback, e o TROQS passa `secret` e `baseURL` explicitamente, depois de validá-los, para que o segredo padrão interno do provedor nunca seja alcançado. Configuração ausente ou incoerente lança erro na primeira construção da instância, que é lazy, e a requisição falha. Nunca se autentica com configuração parcial.
 
 | Item | `development` | `preview` | `production` |
 | --- | --- | --- | --- |
@@ -246,7 +246,7 @@ Provas exigidas pelas issues continuam pendentes: credencial e sessões reais em
 
 ## 15. Entrada e cadastro com Conta Google (#81)
 
-**IC-15.1 (decisão arquitetural — autoridade e superfície).** O Google só **identifica**; quem conduz o OAuth é o Better Auth e quem decide o que a identidade pode fazer é o TROQ. O provedor gera o `state` (aleatório, de uso único, guardado em `verifications` e ligado ao navegador por cookie assinado), o PKCE `S256`, troca o código no servidor com o segredo do cliente e lê o `id_token` recebido diretamente do endpoint de token do Google. A sessão continua sendo criada só pelo provedor (IC-5.1). O início do fluxo e a vinculação são Server Actions (`startGoogleSignIn`, `completeGoogleSignup`, `cancelGoogleSignup`, `linkGoogleAccount` em `src/modules/identity/google-actions.ts`) que chamam `auth.api.signInSocial` e `auth.api.linkSocialAccount` depois das regras do TROQ; o único endpoint OAuth exposto por HTTP é `GET /api/auth/callback/google` (IC-13.1).
+**IC-15.1 (decisão arquitetural — autoridade e superfície).** O Google só **identifica**; quem conduz o OAuth é o Better Auth e quem decide o que a identidade pode fazer é o TROQS. O provedor gera o `state` (aleatório, de uso único, guardado em `verifications` e ligado ao navegador por cookie assinado), o PKCE `S256`, troca o código no servidor com o segredo do cliente e lê o `id_token` recebido diretamente do endpoint de token do Google. A sessão continua sendo criada só pelo provedor (IC-5.1). O início do fluxo e a vinculação são Server Actions (`startGoogleSignIn`, `completeGoogleSignup`, `cancelGoogleSignup`, `linkGoogleAccount` em `src/modules/identity/google-actions.ts`) que chamam `auth.api.signInSocial` e `auth.api.linkSocialAccount` depois das regras do TROQS; o único endpoint OAuth exposto por HTTP é `GET /api/auth/callback/google` (IC-13.1).
 
 **IC-15.2 (decisão arquitetural — identidade nova não vira conta no callback).** O gate `user.validateUserInfo` do provedor é chamado antes de criar usuário. Para criação vinda do Google ele **não cria nada**: exige `email_verified`, grava uma **pendência de cadastro** e recusa com `google_signup_required`, que leva o navegador a `/cadastro/google`. A pendência:
 
@@ -254,7 +254,7 @@ Provas exigidas pelas issues continuam pendentes: credencial e sessões reais em
 - expira em **15 minutos** pelo relógio do PostgreSQL e é removida ao concluir, ao cancelar ou, vencida, pela limpeza oportunista da próxima pendência;
 - é referenciada por um handle de 32 bytes aleatórios num cookie `httpOnly`, `SameSite=Lax`, de 15 minutos, com prefixo `__Host-` em `https`; o banco nunca guarda o handle em claro.
 
-Criação de usuário por qualquer outro caminho do provedor é recusada (`signup_disabled`), e `databaseHooks.user.create.before` recusa sempre, como defesa em profundidade: usuário só nasce pelas Server Actions do TROQ.
+Criação de usuário por qualquer outro caminho do provedor é recusada (`signup_disabled`), e `databaseHooks.user.create.before` recusa sempre, como defesa em profundidade: usuário só nasce pelas Server Actions do TROQS.
 
 **IC-15.3 (normativo — cadastro só depois de 18+ e termos).** `completeGoogleSignup` valida no servidor nome de exibição, declaração 18+ e aceite dos termos, ambos como ato afirmativo `true`; não infere idade pelo perfil Google e não coleta data de nascimento nem documento (DEC-034). Numa **única transação**: consome a pendência (`DELETE ... RETURNING`, uso único), recusa se o e-mail já existe em qualquer linha de `users` (IC-2.5), e cria `User` (`active`, `emailVerified = true`, `emailVerifiedAt = now()`), a linha `accounts` do Google (`provider_id = 'google'`, `account_id = sub`, sem tokens) e o `TermsAcceptance` `age_eligibility` com a versão vigente (`TERMS_VERSION`). Falha em qualquer escrita desfaz tudo e preserva a pendência. A conclusão não cria sessão: o navegador volta ao Google (`login_hint`) e o provedor abre a sessão da conta agora vinculada. Recusar ou abandonar não deixa conta: cancelar descarta pendência e cookie, e a pendência abandonada expira.
 
@@ -262,7 +262,7 @@ Criação de usuário por qualquer outro caminho do provedor é recusada (`signu
 
 | Situação no callback | Resultado |
 | --- | --- |
-| Identidade (`google` + `sub`) já vinculada | Entra na conta dona, qualquer que seja o e-mail atual no Google; o e-mail TROQ não muda |
+| Identidade (`google` + `sub`) já vinculada | Entra na conta dona, qualquer que seja o e-mail atual no Google; o e-mail TROQS não muda |
 | Identidade nova e e-mail inexistente | Pendência de cadastro (IC-15.2) |
 | Identidade nova e e-mail de conta existente — verificada ou não, por senha ou não, em qualquer status | **Recusada** (`account_not_linked`): nada é vinculado e nenhuma sessão é criada. A pessoa entra com e-mail e senha e vincula em Minha conta |
 | E-mail não verificado pelo Google | Recusada (`google_email_not_verified`), sem pendência |
@@ -283,13 +283,13 @@ Não há vinculação implícita por igualdade de e-mail (`disableImplicitLinkin
 | qualquer outro (`state_mismatch`, `invalid_code`, falha do provedor...) | `/login?motivo=google_falha` |
 | vinculação: `email_does_not_match`, `account_already_linked_to_different_user`, `access_denied`, outros | `/conta?google=email_diferente`, `ja_vinculada`, `cancelado`, `falha` |
 
-**IC-15.7 (normativo — minimização e retenção).** Escopos pedidos: só `openid` e `email` (`disableDefaultScope`), sem `profile` — o nome de exibição é digitado na conclusão —, sem foto, sem acesso offline e com `include_granted_scopes=false`. Tokens do Google (`access_token`, `refresh_token`, `id_token`) **não são guardados**: os hooks de criação e atualização de `accounts` os descartam e `updateAccountOnSignIn: false` evita reescrevê-los; a retenção é zero, porque o TROQ não chama APIs do Google depois da entrada. Ficam só `provider_id`, `account_id` (`sub`) e `scope`. A pendência guarda `sub` e e-mail por no máximo 15 minutos. Nada disso vai a log, Sentry, DTO ou URL (IC-11.2).
+**IC-15.7 (normativo — minimização e retenção).** Escopos pedidos: só `openid` e `email` (`disableDefaultScope`), sem `profile` — o nome de exibição é digitado na conclusão —, sem foto, sem acesso offline e com `include_granted_scopes=false`. Tokens do Google (`access_token`, `refresh_token`, `id_token`) **não são guardados**: os hooks de criação e atualização de `accounts` os descartam e `updateAccountOnSignIn: false` evita reescrevê-los; a retenção é zero, porque o TROQS não chama APIs do Google depois da entrada. Ficam só `provider_id`, `account_id` (`sub`) e `scope`. A pendência guarda `sub` e e-mail por no máximo 15 minutos. Nada disso vai a log, Sentry, DTO ou URL (IC-11.2).
 
 **IC-15.8 (decisão arquitetural — configuração).** `GOOGLE_CLIENT_ID` e `GOOGLE_CLIENT_SECRET` são server-side e por ambiente; `development` pode rodar sem elas, mas `preview` e `production` exigem o par completo no release gate (DEC-047) ([../engineering/environments.md](../engineering/environments.md), seção 5.5). Sem as duas, com placeholder, parciais ou com client ID fora do formato, o provedor Google não é registrado, os layouts de `/login` e `/cadastro` não mostram o botão, as actions respondem "indisponível" e `/conta` informa a indisponibilidade; o login por senha não muda. A URI de redirecionamento é sempre `<BETTER_AUTH_URL>/api/auth/callback/google`, cadastrada exata no cliente OAuth de cada ambiente.
 
 **IC-15.9 (normativo — status, sessão e permissões).** O hook de criação de sessão (IC-5.3) vale também no callback: conta `blocked_*` ou `deletion_requested` volta com `ACCOUNT_NOT_ACTIVE` e sem sessão. Logout (IC-5.5), revogação (IC-5.6) e o guard (IC-8) não mudam. Entrar pelo Google não concede contato, pagamento nem qualquer permissão além das de uma conta por senha.
 
-**IC-15.10 (normativo de verificação).** Os testes automatizados (`google-signin.integration.test.ts`, contra Better Auth e PostgreSQL reais, com só o endpoint de token do Google simulado) provam o comportamento do TROQ diante de cada resposta do Google; **não** provam a configuração real do cliente OAuth. A prova com o Google real, em ambiente autorizado, é registrada à parte em [../delivery/google-sign-in-proof.md](../delivery/google-sign-in-proof.md).
+**IC-15.10 (normativo de verificação).** Os testes automatizados (`google-signin.integration.test.ts`, contra Better Auth e PostgreSQL reais, com só o endpoint de token do Google simulado) provam o comportamento do TROQS diante de cada resposta do Google; **não** provam a configuração real do cliente OAuth. A prova com o Google real, em ambiente autorizado, é registrada à parte em [../delivery/google-sign-in-proof.md](../delivery/google-sign-in-proof.md).
 
 ## 16. Testes negativos obrigatórios
 

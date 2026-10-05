@@ -1,4 +1,4 @@
-# Política de imagens do anúncio — TROQ
+# Política de imagens do anúncio — TROQS
 
 Documento normativo das imagens de anúncio no MVP. Fecha [OD-05](../decisions/open-decisions.md) e é registrado como DEC-028 em [../decisions/decision-log.md](../decisions/decision-log.md).
 
@@ -215,7 +215,7 @@ Para o MVP:
 
 Consultadas como fundamentação, não como dependência a instalar nesta fase.
 
-| Fonte | Padrão observado | Uso no TROQ |
+| Fonte | Padrão observado | Uso no TROQS |
 | --- | --- | --- |
 | [OWASP — File Upload Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html) | Allowlist, validação por conteúdo/assinatura, nome gerado pela aplicação, limites, regravação e defesa em profundidade | Base da seção 6. |
 | [Cloudflare R2](https://developers.cloudflare.com/r2/) | API S3-compatible; limites de armazenamento muito acima dos limites de produto adotados | Confirma ADR-0003 e o upload direto da seção 5. |

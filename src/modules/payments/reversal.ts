@@ -62,7 +62,7 @@ export type ConfirmedReversalOutcome =
   | 'not_confirmed'
   /**
    * A tentativa tem reembolso tecnico RT-1 (excedente de duplicidade): a
-   * devolucao do proprio TROQ pode explicar o estado de reversao da order, e a
+   * devolucao do proprio TROQS pode explicar o estado de reversao da order, e a
    * order nao diz qual pagamento saiu. Contradicao: caso `inconsistente`, sem
    * transicao (PD-10.5).
    */
@@ -142,9 +142,9 @@ export async function reverseConfirmedPaymentInTx(
 
 /**
  * Reversao observada ANTES da confirmacao (PD-6.6, linha "Reversao"; PD-9.4):
- * o valor foi acreditado e devolvido sem que o TROQ o tivesse reconhecido.
+ * o valor foi acreditado e devolvido sem que o TROQS o tivesse reconhecido.
  * Nunca houve solicitacao paga nem vaga consumida, e o valor ja nao esta com o
- * TROQ: a tentativa vai a `reembolsada_ou_revertida`. O caso
+ * TROQS: a tentativa vai a `reembolsada_ou_revertida`. O caso
  * `reversed_before_confirmation` que F3-006 abriu para esta entrega, se houver,
  * fecha com o desfecho real. A reserva viva, que nao pode mais ser paga (uma
  * tentativa por solicitacao, PD-4.3), e liberada por `request`.
