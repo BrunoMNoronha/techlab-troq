@@ -4,6 +4,8 @@ Documento de arquitetura pré-implementação do MVP. Produzido por **F0-022**, 
 
 Este documento **converte decisões já homologadas em arquitetura**. Ele não cria regra de negócio, não reabre decisão registrada e não implementa código. Onde uma decisão já existe, ela é citada e obedecida; onde faltava escolha técnica, ela é feita aqui e marcada como decisão arquitetural; onde a escolha depende de informação que ainda não existe, ela é marcada como detalhe de implementação.
 
+**Atualização de 2026-10-05 (PT-00, [#186](https://github.com/BrunoMNoronha/techlab-troq/issues/186)).** O TROQS passou a ter duas regras de troca cadastradas ([ADR-0009](../adr/0009-trade-rules-environment-selector.md), DEC-052). Este documento continua descrevendo a arquitetura comum e, onde fala de solicitação, vaga e escolha, a regra **solicitação paga**. O desenho da regra **proposta de troca** está em [trade-proposal-design.md](trade-proposal-design.md). As mudanças aqui são o décimo módulo de AR-3.3, as notas de AR-3.5 e AR-5.1 e a jornada 6.4. Nenhuma outra afirmação foi alterada.
+
 ## 1. Como ler este documento
 
 Cada afirmação pertence a exatamente uma destas três classes, sempre indicada:
@@ -18,7 +20,7 @@ Os itens deste documento são identificados como `AR-x.y` e são referenciáveis
 
 ## 2. Contexto e objetivos arquiteturais
 
-O TROQS é uma plataforma de anúncios entre pessoas em que o contato (WhatsApp/telefone) do anunciante só é liberado a um interessado **escolhido** e com **pagamento aprovado** de R$ 0,99, com no máximo três solicitações pagas por anúncio ([product/mvp-scope.md](../product/mvp-scope.md), [product/business-rules.md](../product/business-rules.md)).
+O TROQS é uma plataforma de anúncios entre pessoas em que o contato (WhatsApp/telefone) do anunciante só é liberado a um interessado **escolhido** e com **pagamento aprovado** de R$ 0,99, com no máximo três solicitações pagas por anúncio ([product/mvp-scope.md](../product/mvp-scope.md), [product/business-rules.md](../product/business-rules.md)). Essa é a regra de troca solicitação paga. Na proposta de troca, o contato é liberado às duas partes de uma proposta aceita e paga (RB-010).
 
 **AR-2.1 (decisão arquitetural).** A arquitetura é julgada por cinco objetivos, nesta ordem de prioridade. A ordem importa: quando dois objetivos colidirem, o de cima vence.
 
@@ -54,7 +56,7 @@ O TROQS é uma plataforma de anúncios entre pessoas em que o contato (WhatsApp/
 
 Um módulo de domínio **nunca** importa de `src/app`. Um componente React **nunca** importa de persistência ou de adaptador. Essa direção é o que torna as regras de [engineering/conventions.md](../engineering/conventions.md) verificáveis, e não apenas desejáveis.
 
-**AR-3.3 (decisão arquitetural).** Os módulos de domínio do MVP são exatamente estes nove. A lista fecha o que [conventions.md](../engineering/conventions.md), seção 2, deixou expressamente para este documento:
+**AR-3.3 (decisão arquitetural).** Os módulos de domínio do MVP são exatamente estes dez: os nove fixados por F0-022 e `proposal`, acrescentado por [ADR-0009](../adr/0009-trade-rules-environment-selector.md), decisão 11. A lista fecha o que [conventions.md](../engineering/conventions.md), seção 2, deixou expressamente para este documento:
 
 | Módulo | Responsabilidade | Entidades próprias (ver [data-model.md](data-model.md)) |
 | --- | --- | --- |
@@ -67,12 +69,17 @@ Um módulo de domínio **nunca** importa de `src/app`. Um componente React **nun
 | `negotiation` | Escolha, reseleção, negociação e encerramento | `Selection`, `Negotiation` |
 | `reputation` | Avaliações e reputação pública | `Rating` |
 | `moderation` | Denúncia, decisão, sanção, contestação | `Report`, `ModerationDecision`, `Sanction`, `Appeal` |
+| `proposal` | Proposta de troca, aceite e efeito do pagamento da proposta, na regra `trade_proposal` | `TradeProposal`, `ProposalBlock` |
+
+Na regra proposta de troca, `listing` passa a ser dono de `ListingCommitment` e `negotiation` de `NegotiationDeclaration` ([trade-proposal-design.md](trade-proposal-design.md), seção 2). `proposal` e essas entidades são contrato: nenhum existe no código até a entrega correspondente ([../delivery/trade-proposal-plan.md](../delivery/trade-proposal-plan.md)).
 
 Mais dois módulos transversais, que **não** são de domínio e não possuem regra própria: `audit` (trilha imutável, seção 9) e `platform` (configuração, relógio, identificadores, log estruturado).
 
 **AR-3.4 (decisão arquitetural).** `contact` é um módulo separado de `identity` e de `listing` **de propósito**. O telefone/WhatsApp não é um campo do usuário nem do anúncio: é uma entidade sob guarda de um módulo cujo único ponto de entrada público exige autorização. Nenhum outro módulo lê esse dado diretamente. Isso transforma o objetivo AR-2.1 em propriedade estrutural, e não em disciplina de revisão. Detalhamento em [contact-release.md](contact-release.md).
 
 **AR-3.5 (decisão arquitetural).** `request` e `payments` são módulos distintos. `request` é dono da vaga de RB-003; `payments` é dono do dinheiro. A vaga é reservada **antes** da cobrança (DEC-019) e `payments` nunca cria, devolve nem reabre vaga por conta própria: ele informa um fato de pagamento, e `request` decide o efeito sobre a vaga. Essa fronteira é o que impede que uma exceção financeira produza uma quarta vaga por caminho indireto.
+
+_Atualização de 2026-10-05 (ADR-0009, decisão 13)._ A mesma fronteira vale para a regra proposta de troca: `payments` informa o fato de pagamento ao dono do sujeito da tentativa — `request` para a solicitação, `proposal` para a proposta — e continua sem conhecer vaga nem proposta.
 
 ## 4. Fronteiras de confiança
 
@@ -92,6 +99,8 @@ Mais dois módulos transversais, que **não** são de domínio e não possuem re
 ## 5. Componentes externos
 
 **AR-5.1 (normativa).** Nenhum componente externo além dos já decididos é introduzido por F0-022. Em particular, **não** se adota broker de mensagens, fila gerenciada, Redis, cache distribuído, motor de busca, serviço de feature flag nem provedor de verificação de identidade.
+
+_Atualização de 2026-10-05 (ADR-0009)._ O seletor da regra de troca é uma variável de ambiente lida pelo próprio servidor (`TRADE_RULE`). Ele não é serviço de feature flag nem componente externo, e esta norma continua valendo como está.
 
 | Componente | Papel no MVP | Decisão de origem |
 | --- | --- | --- |
@@ -129,6 +138,16 @@ As jornadas abaixo mostram **onde cada garantia mora**. Nenhuma delas cria compo
 1. Qualquer uma das duas partes encerra a negociação, de forma unilateral, imediata, irreversível e auditada (DEC-029).
 2. `closed` habilita a avaliação: uma nota inteira de 1 a 5 por direção, janela de 14 dias corridos, publicação cega bilateral e imutabilidade após a publicação (DEC-030).
 3. Denúncia por usuário autenticado e verificado, única por par (denunciante, anúncio), que **não** altera o estado do anúncio; a moderação decide `procedente`, `improcedente` ou `sem_acao`, e a remoção usa exclusivamente T7 a T9 (DEC-031, DEC-027).
+
+### 6.4 Propor, aceitar, pagar e declarar (regra proposta de troca)
+
+Jornada da regra `trade_proposal`, que só existe em ambiente cuja variável `TRADE_RULE` a indique. Desenho em [trade-proposal-design.md](trade-proposal-design.md).
+
+1. Quem tem anúncio `published` propõe um anúncio seu por um anúncio de outra pessoa. A proposta é gratuita, não tem texto e ocupa uma das três vagas do anúncio alvo e uma das três do anúncio oferecido (RB-007, RB-008).
+2. O anunciante aceita uma proposta. Sob as travas dos dois anúncios, em ordem fixa, nascem os dois compromissos: os anúncios saem do feed **sem mudar de estado** (DEC-027).
+3. O proponente pede o Pix e paga em até 24 horas. A tentativa pertence à proposta e grava o valor da cobrança (RB-009).
+4. O pagamento acreditado dentro do prazo cria, num único ato, a negociação `active` e as **duas** autorizações de liberação de contato (RB-010).
+5. Cada parte declara "Trocamos" ou "Não deu certo". A primeira declaração encerra a negociação, e cada parte encerra ou devolve ao feed o seu próprio anúncio. `closed` habilita a avaliação (RB-002, DEC-030).
 
 ## 7. Autenticação e autorização
 
@@ -313,6 +332,8 @@ Consequências concretas, cada uma detalhada no documento indicado:
 | ADR-0001 a ADR-0005 | Obedecidos integralmente; nenhum é alterado |
 | [ADR-0006](../adr/0006-async-work-scheduling-concurrency.md) | **Criado** por F0-022 (DEC-038), para o tema que a seção 15 exigia decidir |
 | [ADR-0007](../adr/0007-observability-sentry.md) | **Criado** por F1-008 (DEC-039), que fechou a lacuna de ferramenta e escopo de AR-14.1. **Preserva integralmente AR-14.2, AR-14.3 — os seis sinais mínimos, sem redução — e AR-14.4**; nenhuma outra parte deste documento é alterada |
+| [ADR-0009](../adr/0009-trade-rules-environment-selector.md) | **Criado** por PT-00 (DEC-052). Acrescenta o módulo `proposal` a AR-3.3, a jornada 6.4 e as notas de AR-3.5 e AR-5.1; nenhuma outra parte deste documento é alterada |
+| RB-007 a RB-010 | Sustentadas por [trade-proposal-design.md](trade-proposal-design.md); a jornada está em 6.4 |
 | DEC-019 | Materializada: a reserva atômica antes da cobrança deixa de ser recomendação e ganha mecanismo |
 | DEC-037 | Obedecida integralmente; CI-1 a CI-12 são rastreados em [payments-design.md](payments-design.md) |
 | R-02, R-04 | Mitigação sai do plano normativo e ganha mecanismo; residual fica no teste de concorrência do gate da Fase 3 |

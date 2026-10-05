@@ -8,6 +8,8 @@ Os itens são identificados como `DM-x`.
 
 **Atualização de 2026-10-01 ([F3-001](https://github.com/BrunoMNoronha/techlab-troq/issues/91)).** Reconciliação com o código entregue pela Fase 2, sem alterar regra de negócio: a trava do anúncio e o relógio da alocação (DM-6.3, DM-6.12), o formato do contato (DM-4.5) e o papel de `ContactAccessEvent` diante das negativas (DM-4.4, DM-11.3). Cada ponto tem nota datada no próprio item; o inventário completo está em [../delivery/phase-3-plan.md](../delivery/phase-3-plan.md), seção 2.1.
 
+**Atualização de 2026-10-05 (PT-00, [#186](https://github.com/BrunoMNoronha/techlab-troq/issues/186)).** O TROQS passou a ter duas regras de troca cadastradas ([ADR-0009](../adr/0009-trade-rules-environment-selector.md), DEC-052). As seções 6 a 8 modelam a regra **solicitação paga** e não mudam de significado. O modelo da regra **proposta de troca** — as entidades novas e as mudanças compatíveis em `PaymentAttempt`, `Negotiation` e `ContactRelease` — está em [trade-proposal-design.md](trade-proposal-design.md). Aqui entram só notas datadas, no fim da seção 6 e no início das seções 7 e 8, apontando para lá.
+
 ## 1. Convenções
 
 **DM-1.1.** Identificador: toda entidade tem identificador interno, opaco, gerado pela aplicação, estável e **não sequencial adivinhável**. Identificador de recurso exposto em URL pública nunca revela volume nem ordem.
@@ -49,6 +51,8 @@ AuditEvent   (trilha unica, referencia alvo por tipo + id; ver DM-11)
 ```
 
 **Não existe entidade `Interest`.** A demonstração de interesse é ação de interface sem persistência (DEC-035, IF-7). Telemetria agregada de funil, se existir, não é entidade funcional e não pertence a este modelo.
+
+**Regra proposta de troca.** `TradeProposal`, `ProposalBlock`, `ListingCommitment` e `NegotiationDeclaration` estão modelados em [trade-proposal-design.md](trade-proposal-design.md), seção 2, e não existem no schema. Eles entram neste mapa quando forem materializados.
 
 ## 3. Identidade e conta
 
@@ -153,6 +157,8 @@ _Atualização de 2026-10-01 (F3-001, DV-4)._ `ContactAccessEvent` registra **so
 
 ## 6. Solicitação, vaga e o limite de três — o núcleo de concorrência
 
+_Escopo (DEC-052)._ Esta seção modela a regra de troca **solicitação paga**. A proposta de troca não usa `ContactRequest` nem as três vagas pagas: os limites dela estão em [trade-proposal-design.md](trade-proposal-design.md), seção 4.
+
 Esta seção responde ao critério de aceite mais exigente de F0-022: **como o limite de três é protegido sob concorrência, no banco, e não por verificação prévia da aplicação.**
 
 ### 6.1 `ContactRequest`
@@ -237,9 +243,13 @@ _Atualização de 2026-10-05 (DEC-051, #148; substitui a admissão irrestrita fo
    - **Colisão no índice que escape da trava** refaz a transação até três vezes; a releitura escolhe outra vaga ou recusa por falta dela. A prova por mutação mostrou que, sem trava, o índice sozinho manteve o limite, mas devolvia "sem vaga" falso nas colisões; a retentativa corrige isso.
    - **Achado para F3-006 ([#96](https://github.com/BrunoMNoronha/techlab-troq/issues/96)).** Uma reserva com pagamento acreditado dentro da janela mas ainda não reconhecido (tentativa em `em_confirmacao`) pode ser expirada por uma alocação concorrente depois de `reservedUntil` e ter a vaga reutilizada. A confirmação tardia encontraria a solicitação fora de `reserved`. O caso é o T-6 de PD-13 e deve ser resolvido por F3-006 antes de aprovar esse teste, sem enfraquecer RB-003.
 
+_Atualização de 2026-10-05 (ADR-0009, decisão 12) — DM-6.12._ A trava do anúncio continua sendo a trava de linha. Uma transação que precise de dois anúncios, o que só acontece na regra proposta de troca, adquire as duas travas de uma vez, em ordem crescente de identificador, por um único ajudante de `listing`, antes de qualquer outra trava. Os fluxos desta seção usam um anúncio só e já cumprem a ordem.
+
 ## 7. Pagamento
 
 As entidades desta seção são especificadas em [payments-design.md](payments-design.md); aqui ficam apenas o lugar no modelo e as invariantes estruturais.
+
+_Atualização de 2026-10-05 (ADR-0009, decisão 13) — DM-7.1._ A tentativa passa a pertencer a exatamente um sujeito, uma solicitação ou uma proposta aceita, e a gravar o valor da cobrança. Para a solicitação, DM-7.1 vale como está: uma tentativa por solicitação. A mudança é materializada por PT-04 e PT-06 ([trade-proposal-design.md](trade-proposal-design.md), seção 6).
 
 | Entidade | Papel | Cardinalidade |
 | --- | --- | --- |
@@ -266,6 +276,8 @@ _Atualização de 2026-10-01 (DEC-043)._ A fonte do instante de acreditação au
 **DM-7.7 (invariante, aplicação).** Os metadados financeiros mínimos são retidos por 5 anos após a transação e **não** justificam conservar telefone, WhatsApp, descrição de anúncio, imagens ou conteúdo pessoal não relacionado (DEC-033, seção 8).
 
 ## 8. Escolha, negociação e liberação
+
+_Escopo (DEC-052)._ Esta seção modela a regra de troca **solicitação paga**. DM-8.5 e DM-8.6 valem para as duas regras. Na proposta de troca não há `Selection`: a negociação nasce do pagamento da proposta aceita, tem dois anúncios e admite uma declaração por parte, e há duas liberações de contato por negociação, uma por destinatário. DM-8.7 e DM-8.8 continuam valendo, como estão, para a solicitação paga. Ver [trade-proposal-design.md](trade-proposal-design.md), seções 7 e 9.
 
 ### 8.1 `Selection`
 
@@ -453,6 +465,7 @@ Consolidação verificável. A coluna "protegida por" é o compromisso que a Fas
 | DEC-037 | PE-2.1, PE-3.x, PE-4.x, PE-5.x, PE-8.x e PE-12.x têm proteção estrutural correspondente |
 | [ADR-0005](../adr/0005-prisma-orm-migrations.md) | Este documento é a entrada do schema inicial; nenhuma migration é criada aqui |
 | [ADR-0006](../adr/0006-async-work-scheduling-concurrency.md) | DM-6.3, DM-6.5 e DM-9.4 aplicam suas decisões |
+| [ADR-0009](../adr/0009-trade-rules-environment-selector.md), DEC-052 e DEC-053 | Notas datadas no fim da seção 6 e no início das seções 7 e 8. O modelo da regra proposta de troca está em [trade-proposal-design.md](trade-proposal-design.md). Nenhuma invariante de I-1 a I-14 é alterada |
 | R-02 | Mitigação deixa de ser recomendação e passa a ser restrição de banco (I-1) |
 
 ## 16. Revisão
