@@ -88,7 +88,7 @@ Os limites abaixo são **contrato técnico do formulário do MVP**, e não regra
 | `title` | `trim` | obrigatório; de **5 a 60** caracteres após `trim`; sem contato nem endereço detectável (seção 10.1) |
 | `description` | `trim` | obrigatório; de **1 a 1000** caracteres após `trim` (vazio ou só espaços é inválido); sem contato nem endereço detectável (seção 10.1) |
 | `city` | `trim` | obrigatório; não vazio após `trim`; texto informado pelo anunciante, sem integração com serviço de CEP |
-| `state` (UF) | `trim` + maiúsculas | obrigatório; exatamente **duas letras** (`A`–`Z`) após normalização |
+| `state` (UF) | `trim` + maiúsculas | obrigatório; após normalização, uma das **27 siglas** da lista de UFs (seção 3.2). `ZZ` e outras siglas inexistentes são recusadas |
 
 Regras de aplicação:
 
@@ -116,6 +116,24 @@ O anunciante informa **três alternativas do que aceita receber** em troca do it
 - **Privacidade.** É texto livre, com o mesmo tratamento da seção 10: a instrução do formulário pede para não incluir telefone, WhatsApp, e-mail ou endereço, o texto é sempre renderizado como texto e a recusa de contato e endereço de [#86](https://github.com/BrunoMNoronha/techlab-troq/issues/86) (seção 10.1) vale também aqui, em qualquer estado, com erro no campo da alternativa. Nada do dono entra no DTO por causa delas.
 - **Não confundir com RB-003.** As três alternativas de troca **não** têm relação com o limite de **três solicitações pagas** por anúncio (RB-003, [data-model.md](data-model.md), seção 6). Esta regra não altera cobrança, vaga, escolha do solicitante nem liberação de contato, e o solicitante não precisa escolher uma das alternativas.
 - **Fora do escopo:** chat, contraproposta de interessado, escolha obrigatória de uma alternativa pelo solicitante, matching automático, vínculo a outros anúncios e oferta em dinheiro.
+
+### 3.2 Lista de UFs ([#90](https://github.com/BrunoMNoronha/techlab-troq/issues/90))
+
+| Aspecto | Regra |
+| --- | --- |
+| Lista | as **27 unidades federativas** (26 estados e o Distrito Federal), com sigla e nome, numa fonte única: `src/modules/listing/uf.ts`. A validação do servidor, o formulário e o filtro de `/explorar` leem a mesma lista |
+| Interface | seletor (`<select>`) com as opções em ordem alfabética pelo nome, no formato "Nome (UF)". No cadastro, a opção inicial é "Selecione o estado", sem valor válido; nenhuma UF vem escolhida. No filtro, a opção vazia é "Todos os estados" |
+| Contrato | inalterado: `state` nos DTOs e parâmetros, `uf` (`CHAR(2)`) com a sigla na persistência, cidade como campo independente. Sem migration |
+| Servidor | criação, edição, publicação (T1) e reativação (T4) aplicam a mesma regra (seção 3, linha `state`). `trim` + maiúsculas continua valendo para chamadas diretas: ` sp ` grava `SP`. Valor vazio, que não seja texto ou fora da lista é recusado com "Selecione o estado.", sem escrita parcial. Na edição, `state` omitido mantém o valor gravado |
+| Filtro público | sigla inexistente informada na URL **continua filtrando** e não corresponde a nenhum anúncio (seção 9.1): o filtro nunca é removido em silêncio para devolver a vitrine inteira. O seletor mostra a sigla como "UF inválida (XX)", em vez de "Todos os estados" ou de outra UF, e o link "Limpar filtro" continua disponível |
+
+**Registros anteriores a #90 com UF fora da lista.** A regra anterior aceitava qualquer par de letras, então pode existir anúncio gravado com sigla inexistente. Nenhum dado é corrigido para um estado presumido, apagado ou retirado do ar:
+
+- a edição mostra o seletor **sem UF escolhida** (nunca outra UF no lugar), com o aviso de que a UF gravada não é válida; salvar exige escolher uma UF da lista, e nada é gravado antes disso;
+- publicar (T1) ou reativar (T4) recusa a UF com erro de campo, como qualquer conteúdo inválido;
+- um anúncio já `published` com UF fora da lista **continua público** até a próxima edição do dono, como os anúncios anteriores a DEC-046 (seção 17.3). Retirá-lo, pausá-lo ou restringi-lo automaticamente seria decisão de produto nova e não foi tomada.
+
+**Provas.** Unitárias: `uf.test.ts` (27 UFs únicas e em ordem, `SP`, `DF`, normalização, `ZZ`, vazio, tipo inválido, patch omitido, filtro), `listing-form-uf.test.tsx` (seletor sem escolha inicial, erro e foco no seletor, escolha preservada em erro de outro campo, edição selecionada, legado sem UF escolhida) e `explorar.test.tsx` ("Todos os estados" e UF inválida da URL). Integração em PostgreSQL descartável com o Better Auth real: `listing-uf.integration.test.ts` (criação e edição sem escrita parcial, reabertura, legado em rascunho recusado em T1 e liberado depois da escolha, legado pausado recusado em T4, legado publicado visível e filtro `ZZ`/`XX1` vazio).
 
 ## 4. Rascunho, edição e publicação
 
@@ -283,7 +301,7 @@ A consulta do MVP é simples: listagem paginada e detalhe. **Não** há busca te
 | `page` | inteiro | `1` | inteiro `>= 1`; ausente, não numérico, fracionário ou `< 1` é tratado como `1` |
 | `limit` | inteiro | `20` | inteiro de `1` a **`50`**; ausente ou inválido vale `20`; acima de `50` é limitado a `50` |
 | `city` | string | — | opcional; `trim`; vazio após `trim` é ignorado; comparação exata, sem diferenciar maiúsculas |
-| `state` | string (UF) | — | opcional; `trim` + maiúsculas; vazio é ignorado; UF fora do formato de duas letras não corresponde a nenhum anúncio |
+| `state` | string (UF) | — | opcional; `trim` + maiúsculas; vazio é ignorado; sigla fora da lista de UFs (seção 3.2), como `ZZ` ou `XX1`, não corresponde a nenhum anúncio |
 
 - O teto de `limit` (**50**) é **limite técnico deste contrato**, e não regra de negócio: impede payload arbitrariamente grande. Ele vale na própria função de consulta, porque `getPublicFeed` é exportada de um módulo `'use server'` e, portanto, pode ser invocada diretamente como Server Action com argumentos arbitrários.
 - `/explorar` não expõe `limit` na URL: usa o padrão `20`. Chamadores internos podem pedir página menor — a home usa a primeira página com `limit = 12` —, sem alterar o contrato geral.

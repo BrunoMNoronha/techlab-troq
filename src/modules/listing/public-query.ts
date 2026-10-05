@@ -4,18 +4,19 @@
 // chamada como Server Action com argumentos arbitrarios: nada aqui confia no
 // tipo declarado.
 
+import { isBrazilianUf } from './uf';
+
 export const PUBLIC_FEED_DEFAULT_LIMIT = 20;
 /** Limite tecnico do contrato (nao e regra de negocio): impede payload arbitrario. */
 export const PUBLIC_FEED_MAX_LIMIT = 50;
 
-const UF_PATTERN = /^[A-Z]{2}$/;
 const DIGITS = /^\d+$/;
 
 export interface PublicFeedQuery {
   page: number;
   limit: number;
   city?: string;
-  /** UF normalizada. `null` quando informada fora do formato: nao corresponde a nada. */
+  /** UF normalizada. `null` quando informada fora da lista: nao corresponde a nada. */
   state?: string | null;
 }
 
@@ -52,14 +53,15 @@ export function normalizeCity(value: unknown): string | undefined {
 }
 
 /**
- * `state`: trim + maiusculas; vazio e ignorado (`undefined`); fora de duas
- * letras A-Z vira `null`, que nao corresponde a nenhum anuncio.
+ * `state`: trim + maiusculas; vazio e ignorado (`undefined`); sigla fora da
+ * lista de UFs (uf.ts) vira `null`, que nao corresponde a nenhum anuncio -- o
+ * filtro nunca e removido em silencio para devolver a vitrine inteira.
  */
 export function normalizeState(value: unknown): string | null | undefined {
   if (typeof value !== 'string') return undefined;
   const state = value.trim().toUpperCase();
   if (state === '') return undefined;
-  return UF_PATTERN.test(state) ? state : null;
+  return isBrazilianUf(state) ? state : null;
 }
 
 export function normalizePublicFeedQuery(options: unknown): PublicFeedQuery {

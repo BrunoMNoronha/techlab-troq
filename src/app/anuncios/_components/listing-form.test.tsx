@@ -39,7 +39,7 @@ const valid = {
   title: 'Bicicleta aro 29',
   description: 'Em bom estado.',
   city: 'Recife',
-  state: 'pe',
+  state: 'PE',
 };
 
 const options: [string, string, string] = ['Um notebook', 'Um videogame', 'Uma câmera'];
@@ -242,7 +242,7 @@ describe('ListingForm', () => {
       success: false,
       reason: 'validation',
       error: 'Revise os campos destacados.',
-      fieldErrors: { state: 'Use duas letras, como SP.' },
+      fieldErrors: { state: 'Selecione o estado.' },
     });
     render(<ListingForm mode="create" />);
     fill(valid);
@@ -251,7 +251,7 @@ describe('ListingForm', () => {
 
     const uf = screen.getByLabelText('UF');
     expect(uf).toHaveAttribute('aria-invalid', 'true');
-    expect(document.getElementById('state-error')).toHaveTextContent('duas letras');
+    expect(document.getElementById('state-error')).toHaveTextContent('Selecione o estado');
     expect(document.activeElement).toBe(uf);
     expect(uf).toHaveValue('PE');
     expect(push).not.toHaveBeenCalled();

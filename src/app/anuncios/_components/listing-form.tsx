@@ -17,6 +17,7 @@ import {
   type TradeOptionField,
   type TradeOptionSlots,
 } from '@/modules/listing/validation';
+import { BRAZILIAN_UFS, isBrazilianUf, ufOptionLabel } from '@/modules/listing/uf';
 
 export interface ListingFormValues {
   title: string;
@@ -128,9 +129,15 @@ export function ListingForm({
   const [attempt, setAttempt] = useState(0);
   const inFlight = useRef(false);
   const formErrorRef = useRef<HTMLDivElement>(null);
-  const fieldRefs = useRef<Partial<Record<FocusableField, HTMLInputElement | HTMLTextAreaElement>>>(
-    {},
-  );
+  const fieldRefs = useRef<
+    Partial<Record<FocusableField, HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>>
+  >({});
+  // UF gravada fora da lista (registro anterior a #90): nao e corrigida nem
+  // trocada por outra; o seletor fica sem escolha e o dono precisa escolher.
+  const [legacyState] = useState(() => {
+    const stored = initialValues?.state.trim() ?? '';
+    return stored !== '' && !isBrazilianUf(stored.toUpperCase()) ? stored : null;
+  });
 
   // Foco previsivel: primeiro campo invalido, na ordem do formulario; sem erro
   // de campo, a mensagem geral. Erro da lista inteira de alternativas leva a
@@ -228,7 +235,9 @@ export function ListingForm({
         <label htmlFor={field} style={labelStyle}>
           {LABELS[field]}
         </label>
-        {field === 'description' ? (
+        {field === 'state' ? (
+          renderStateSelect(common, error)
+        ) : field === 'description' ? (
           <textarea
             {...common}
             ref={(el) => {
@@ -246,13 +255,9 @@ export function ListingForm({
               fieldRefs.current[field] = el ?? undefined;
             }}
             type="text"
-            autoComplete={
-              field === 'city' ? 'address-level2' : field === 'state' ? 'address-level1' : 'off'
-            }
-            maxLength={field === 'title' ? TITLE_MAX_LENGTH : field === 'state' ? 2 : undefined}
-            onChange={(e) =>
-              update(field, field === 'state' ? e.target.value.toUpperCase() : e.target.value)
-            }
+            autoComplete={field === 'city' ? 'address-level2' : 'off'}
+            maxLength={field === 'title' ? TITLE_MAX_LENGTH : undefined}
+            onChange={(e) => update(field, e.target.value)}
           />
         )}
         {hint && (
@@ -266,6 +271,51 @@ export function ListingForm({
           </p>
         )}
       </div>
+    );
+  }
+
+  // UF por lista (#90; listing-contract.md, secao 3): as 27 UFs por nome, sem
+  // escolha inicial. Valor fora da lista nunca aparece como outra UF selecionada.
+  function renderStateSelect(
+    common: { 'aria-describedby'?: string; style: React.CSSProperties },
+    error: string | undefined,
+  ) {
+    const normalized = values.state.trim().toUpperCase();
+    const selected = isBrazilianUf(normalized) ? normalized : '';
+    const legacyId = 'state-legacy';
+    const showLegacy = legacyState !== null && selected === '';
+    const describedBy = [showLegacy ? legacyId : null, common['aria-describedby']]
+      .filter(Boolean)
+      .join(' ');
+
+    return (
+      <>
+        <select
+          id="state"
+          name="state"
+          ref={(el) => {
+            fieldRefs.current.state = el ?? undefined;
+          }}
+          value={selected}
+          autoComplete="address-level1"
+          aria-invalid={error ? true : undefined}
+          aria-describedby={describedBy || undefined}
+          onChange={(e) => update('state', e.target.value)}
+          style={{ ...common.style, backgroundColor: 'white', minHeight: '44px' }}
+        >
+          <option value="">Selecione o estado</option>
+          {BRAZILIAN_UFS.map((uf) => (
+            <option key={uf.code} value={uf.code}>
+              {ufOptionLabel(uf)}
+            </option>
+          ))}
+        </select>
+        {showLegacy && (
+          <p id={legacyId} style={{ color: '#92400e', fontSize: '13px', margin: '4px 0 0' }}>
+            A UF gravada (“{legacyState}”) não é uma UF válida. Selecione o estado para salvar.
+          </p>
+        )}
+      </>
     );
   }
 
@@ -363,7 +413,14 @@ export function ListingForm({
       {renderField('description')}
       {renderTradeOptions()}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 88px', gap: '12px' }}>
+      {/* Cidade e UF lado a lado quando cabem; empilhadas no celular. */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))',
+          gap: '12px',
+        }}
+      >
         {renderField('city')}
         {renderField('state')}
       </div>

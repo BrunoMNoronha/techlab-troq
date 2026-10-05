@@ -160,4 +160,22 @@ describe('ExplorarPage', () => {
     render(await ExplorarPage({ searchParams: Promise.resolve({}) }));
     expect(screen.queryByRole('link', { name: 'Limpar filtro' })).not.toBeInTheDocument();
   });
+
+  it('UF por lista (#90): "Todos os estados" sem filtro e as 27 UFs', async () => {
+    render(await ExplorarPage({ searchParams: Promise.resolve({}) }));
+    const select = screen.getByRole('combobox', { name: 'UF' });
+    const opts = within(select).getAllByRole('option');
+    expect(select).toHaveValue('');
+    expect(opts[0]).toHaveTextContent('Todos os estados');
+    expect(opts).toHaveLength(28);
+    expect(within(select).getByRole('option', { name: 'Pernambuco (PE)' })).toHaveValue('PE');
+  });
+
+  it('UF inexistente na URL continua no formulario como invalida, sem virar outra UF', async () => {
+    render(await ExplorarPage({ searchParams: Promise.resolve({ state: 'zz' }) }));
+    const select = screen.getByRole('combobox', { name: 'UF' });
+    expect(select).toHaveValue('ZZ');
+    expect(within(select).getByRole('option', { name: 'UF inválida (ZZ)' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Limpar filtro' })).toBeInTheDocument();
+  });
 });

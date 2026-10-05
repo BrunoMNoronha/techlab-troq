@@ -3,6 +3,7 @@
 // autoridade e o formulario a reutiliza apenas para antecipar a mensagem.
 
 import { CONTACT_DATA_MESSAGE, containsContactData } from './contact-detection';
+import { isBrazilianUf } from './uf';
 
 export { CONTACT_DATA_MESSAGE };
 
@@ -35,13 +36,11 @@ export const TITLE_MIN_LENGTH = 5;
 export const TITLE_MAX_LENGTH = 60;
 export const DESCRIPTION_MAX_LENGTH = 1000;
 
-const UF_PATTERN = /^[A-Z]{2}$/;
-
 export const LISTING_FIELD_MESSAGES: Record<ListingField, string> = {
   title: `Informe um título entre ${TITLE_MIN_LENGTH} e ${TITLE_MAX_LENGTH} caracteres.`,
   description: `Informe a descrição, com até ${DESCRIPTION_MAX_LENGTH} caracteres.`,
   city: 'Informe a cidade.',
-  state: 'Use duas letras, como SP.',
+  state: 'Selecione o estado.',
 };
 
 type FieldCheck = (value: string) => boolean;
@@ -50,7 +49,8 @@ const CHECKS: Record<ListingField, FieldCheck> = {
   title: (v) => v.length >= TITLE_MIN_LENGTH && v.length <= TITLE_MAX_LENGTH,
   description: (v) => v.length >= 1 && v.length <= DESCRIPTION_MAX_LENGTH,
   city: (v) => v.length >= 1,
-  state: (v) => UF_PATTERN.test(v),
+  // Uma das 27 UFs (uf.ts), nao apenas duas letras: `ZZ` e recusada.
+  state: (v) => isBrazilianUf(v),
 };
 
 /**
