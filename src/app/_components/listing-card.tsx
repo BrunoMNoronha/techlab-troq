@@ -1,3 +1,4 @@
+import { productCategoryLabel } from '@/modules/listing/categories';
 import Link from 'next/link';
 import { MediaFrame } from '@/components/data-display';
 import { Card, CardBody, CardFooter, Heading, Text } from '@/components/ui';
@@ -35,6 +36,9 @@ export function ListingCard({ item }: { item: PublicListingFeedItem }) {
         </Heading>
         <Text size="small" tone="muted" clamp={2} wrapAnywhere>
           {item.description}
+        </Text>
+        <Text size="small" tone="muted">
+          {productCategoryLabel(item.category)}
         </Text>
         <CardFooter>
           <Text size="small" tone="muted" icon="map-pin">

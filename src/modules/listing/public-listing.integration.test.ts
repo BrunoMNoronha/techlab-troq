@@ -281,7 +281,16 @@ describe.skipIf(!enabled)('consulta publica contra banco real (#49)', () => {
   it('DTO so tem a allowlist, sem contato, email, dono ou estado', async () => {
     const feed = await getPublicFeed({ city: CITY, limit: 50 });
     const detail = await getPublicListingDetail(visibleWithImages);
-    const allowlist = ['city', 'createdAt', 'description', 'id', 'images', 'state', 'title'];
+    const allowlist = [
+      'category',
+      'city',
+      'createdAt',
+      'description',
+      'id',
+      'images',
+      'state',
+      'title',
+    ];
     for (const item of feed.listings) {
       expect(Object.keys(item).sort()).toEqual(allowlist.sort());
     }

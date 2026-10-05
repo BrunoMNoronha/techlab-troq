@@ -14,7 +14,7 @@ import { getPrismaClient } from '@/persistence/prisma';
 // anuncio `published` lido depois da trava (DM-6.9) -> o ator nao e o dono ->
 // anunciante com contato cadastrado (DEC-040) -> `now()` do banco -> expira
 // as reservas vencidas do anuncio (DM-6.3, passo 2) -> o ator nao tem outra
-// reserva viva no anuncio (DEC-041) -> menor `slotIndex`
+// solicitacao paga no anuncio (DEC-051) nem reserva viva (DEC-041) -> menor `slotIndex`
 // livre ou recusa (RB-003) -> `ContactRequest` em `reserved` por 30 minutos
 // (PD-3.1) -> `PaymentAttempt` com a chave persistida (modulo `payments`,
 // AR-3.5) -> auditoria -> COMMIT.
@@ -42,6 +42,7 @@ export type ContactRequestFailureReason =
   | 'own_listing'
   | 'not_accepting'
   | 'active_reservation'
+  | 'already_paid'
   | 'no_slots'
   | 'error';
 
@@ -63,6 +64,8 @@ const MESSAGES: Record<ContactRequestFailureReason, string> = {
   // DEC-041 (OD-14): uma reserva viva por conta em cada anuncio.
   active_reservation:
     'Você já tem uma solicitação aguardando pagamento neste anúncio. Conclua o Pix gerado ou aguarde o prazo terminar.',
+  already_paid:
+    'Você já pagou por uma solicitação neste anúncio. Acompanhe a solicitação existente.',
   no_slots: 'As vagas de solicitação deste anúncio estão ocupadas no momento.',
   error: 'Não foi possível concluir a solicitação. Tente novamente.',
 };
@@ -91,7 +94,7 @@ export function lowestFreeSlot(occupied: readonly number[]): number | null {
   return SLOT_INDEXES.find((slot) => !occupied.includes(slot)) ?? null;
 }
 
-/** Violacao de unicidade (P2002), como identity/actions.ts: so o indice de vaga pode colidir aqui. */
+/** Violacao de unicidade (P2002): vaga, reserva viva ou guard de conta paga. */
 function isSlotCollision(err: unknown): boolean {
   return (err as { code?: unknown } | null)?.code === 'P2002';
 }
@@ -205,6 +208,16 @@ async function allocate(
       const [{ at }] = await tx.$queryRaw<{ at: Date }[]>`SELECT now() AS "at"`;
 
       await expireOverdueReservations(tx, listing.id, requesterId, at);
+
+      // DEC-051 (#148): paid continua bloqueando mesmo apos reversao ou perda
+      // de elegibilidade. Antes da vaga/tentativa e de qualquer chamada ao provedor.
+      if (
+        (await tx.contactRequest.count({
+          where: { listingId: listing.id, requesterId, status: 'paid' },
+        })) > 0
+      ) {
+        throw new ReservationAbort('already_paid');
+      }
 
       // DEC-041 (fecha OD-14): no maximo uma reserva viva por conta em cada
       // anuncio, lida sob a trava e depois de expirar as vencidas. A garantia e

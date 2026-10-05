@@ -4,6 +4,7 @@
 
 import { CONTACT_DATA_MESSAGE, containsContactData } from './contact-detection';
 import { isBrazilianUf } from './uf';
+import { isProductCategory } from './categories';
 
 export { CONTACT_DATA_MESSAGE };
 
@@ -21,11 +22,12 @@ export const TRADE_OPTION_FIELDS = ['tradeOption1', 'tradeOption2', 'tradeOption
 export type TradeOptionField = (typeof TRADE_OPTION_FIELDS)[number];
 
 export type ListingFieldErrors = Partial<
-  Record<ListingField | TradeOptionField | 'tradeOptions', string>
+  Record<ListingField | TradeOptionField | 'tradeOptions' | 'category', string>
 >;
 
 /** Conteudo normalizado, com o nome fisico `uf` para a UF. */
 export interface ListingContent {
+  category: string | null;
   title: string;
   description: string;
   city: string;
@@ -71,6 +73,7 @@ export type ListingValidationResult<T> =
 function validate(
   input: unknown,
   requireAll: boolean,
+  requireCategory = false,
 ): ListingValidationResult<Partial<ListingContent>> {
   const source: Record<string, unknown> =
     input !== null && typeof input === 'object' ? (input as Record<string, unknown>) : {};
@@ -95,12 +98,36 @@ function validate(
     data[field === 'state' ? 'uf' : field] = value;
   }
 
+  if (requireAll || source.category !== undefined) {
+    const category = validateListingCategory(source.category, requireCategory);
+    if (category.ok) data.category = category.data;
+    else Object.assign(fieldErrors, category.fieldErrors);
+  }
   return Object.keys(fieldErrors).length > 0 ? { ok: false, fieldErrors } : { ok: true, data };
 }
 
-/** Criacao: os quatro campos sao obrigatorios. */
-export function validateListingContent(input: unknown): ListingValidationResult<ListingContent> {
-  const result = validate(input, true);
+/** Categoria opcional no rascunho; completude na publicacao e reativacao. */
+export function validateListingCategory(
+  input: unknown,
+  required = false,
+): ListingValidationResult<string | null> {
+  const value = typeof input === 'string' ? input.trim() : input;
+  if (value === undefined || value === null || value === '') {
+    return required
+      ? { ok: false, fieldErrors: { category: 'Selecione a categoria do produto.' } }
+      : { ok: true, data: null };
+  }
+  return typeof value === 'string' && isProductCategory(value)
+    ? { ok: true, data: value }
+    : { ok: false, fieldErrors: { category: 'Selecione uma categoria válida.' } };
+}
+
+/** Conteudo textual obrigatorio; categoria conforme a completude do estado. */
+export function validateListingContent(
+  input: unknown,
+  requireCategory = false,
+): ListingValidationResult<ListingContent> {
+  const result = validate(input, true, requireCategory);
   if (!result.ok) return result;
 
   const { title, description, city, uf } = result.data;
@@ -108,7 +135,10 @@ export function validateListingContent(input: unknown): ListingValidationResult<
     // Inalcancavel com requireAll: todo campo ausente ja virou erro acima.
     return { ok: false, fieldErrors: { ...LISTING_FIELD_MESSAGES } };
   }
-  return { ok: true, data: { title, description, city, uf } };
+  return {
+    ok: true,
+    data: { title, description, city, uf, category: result.data.category ?? null },
+  };
 }
 
 /** Edicao: os campos informados seguem exatamente a regra da criacao. */

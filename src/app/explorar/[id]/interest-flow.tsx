@@ -26,6 +26,7 @@ const FINAL_REASONS: ReadonlySet<PixChargeFailureReason> = new Set([
   'account_restricted',
   'email_unverified',
   'active_reservation',
+  'already_paid',
 ]);
 
 export function InterestFlow({ listingId }: { listingId: string }) {
@@ -126,7 +127,7 @@ export function InterestFlow({ listingId }: { listingId: string }) {
         {error && (
           <Alert ref={errorRef} tabIndex={-1} role="alert" tone="error">
             <p>{error.message}</p>
-            {error.reason === 'active_reservation' && (
+            {(error.reason === 'active_reservation' || error.reason === 'already_paid') && (
               <p>
                 <TextLink href="/solicitacoes">Ver minhas solicitações</TextLink>
               </p>

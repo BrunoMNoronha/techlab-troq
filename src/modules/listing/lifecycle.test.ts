@@ -78,6 +78,7 @@ function fakeDb(listing: FakeListing | null, ready = 1): FakeDb {
                 description: 'Descricao sintetica.',
                 city: 'Recife',
                 uf: 'PE',
+                category: 'esportes',
                 ...db.listing,
               },
             ]

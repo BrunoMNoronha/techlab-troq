@@ -1,3 +1,4 @@
+import { productCategoryLabel } from '@/modules/listing/categories';
 import { redirect } from 'next/navigation';
 import { Alert, EmptyState, ErrorState } from '@/components/feedback';
 import { CardList } from '@/components/data-display';
@@ -100,6 +101,9 @@ export default async function MeusAnunciosPage() {
 
                     <Text size="small" tone="muted" clamp={2} wrapAnywhere>
                       {item.description}
+                    </Text>
+                    <Text size="small" tone="muted">
+                      {productCategoryLabel(item.category)}
                     </Text>
 
                     <Cluster justify="between">

@@ -68,6 +68,7 @@ function listing(status: listingModule.ListingDTO['status'], title = `Anúncio $
   return {
     id: `${status}-id`,
     title,
+    category: 'esportes',
     description: 'Descrição sintética',
     city: 'Recife',
     state: 'PE',

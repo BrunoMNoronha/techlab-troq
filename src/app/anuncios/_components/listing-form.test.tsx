@@ -49,6 +49,66 @@ describe('ListingForm', () => {
     vi.clearAllMocks();
   });
 
+  describe('categoria do produto (#89)', () => {
+    it('rascunho envia a escolha do catalogo e permite ausencia', async () => {
+      createDraftListing.mockResolvedValue({ success: true, listingId: 'novo' });
+      render(<ListingForm mode="create" />);
+      fill(valid);
+      const category = screen.getByLabelText('Categoria do produto');
+      expect(category).toHaveAccessibleDescription(
+        expect.stringContaining('obrigatória para publicar'),
+      );
+      expect(category.querySelectorAll('option')).toHaveLength(15);
+      fireEvent.change(category, { target: { value: 'esportes' } });
+      await submit();
+      expect(createDraftListing).toHaveBeenCalledWith(
+        expect.objectContaining({ category: 'esportes' }),
+      );
+    });
+
+    it('reabre categoria gravada e envia mudanca sem perder os outros campos', async () => {
+      updateListing.mockResolvedValue({ success: true });
+      render(
+        <ListingForm
+          mode="edit"
+          listingId="id"
+          requireTradeOptions
+          initialValues={{ ...valid, tradeOptions: options, category: 'esportes' }}
+        />,
+      );
+      const category = screen.getByLabelText('Categoria do produto');
+      expect(category).toHaveValue('esportes');
+      fireEvent.change(category, { target: { value: 'games' } });
+      await submit();
+      expect(updateListing).toHaveBeenCalledWith('id', {
+        ...valid,
+        tradeOptions: options,
+        category: 'games',
+      });
+    });
+
+    it('legado publicado sem categoria recebe erro acessivel e foco; nao envia', async () => {
+      render(
+        <ListingForm
+          mode="edit"
+          listingId="id"
+          requireTradeOptions
+          initialValues={{ ...valid, tradeOptions: options, category: null }}
+        />,
+      );
+      await submit();
+      const category = screen.getByLabelText('Categoria do produto');
+      expect(category).toHaveValue('');
+      expect(category).toHaveAttribute('aria-invalid', 'true');
+      expect(category).toHaveAccessibleDescription(
+        expect.stringContaining('Selecione a categoria do produto.'),
+      );
+      expect(category).toHaveFocus();
+      expect(updateListing).not.toHaveBeenCalled();
+      expect(screen.getByLabelText('Título do anúncio')).toHaveValue(valid.title);
+    });
+  });
+
   // Contato e endereco no texto livre (#86; listing-contract.md, 10.1 e 10.2).
   describe('contato e endereco no titulo e na descricao (#86)', () => {
     const CONTACT = 'Não inclua telefone, WhatsApp, e-mail ou endereço neste campo.';
@@ -157,6 +217,7 @@ describe('ListingForm', () => {
         ...valid,
         state: 'PE',
         tradeOptions: ['', 'Um videogame', ''],
+        category: '',
       });
     });
 
@@ -166,7 +227,7 @@ describe('ListingForm', () => {
           mode="edit"
           listingId="22222222-2222-4222-8222-222222222222"
           requireTradeOptions
-          initialValues={{ ...valid, state: 'PE', tradeOptions: options }}
+          initialValues={{ ...valid, state: 'PE', tradeOptions: options, category: 'esportes' }}
         />,
       );
       fillOptions(['Um notebook', '   ', '']);
@@ -195,7 +256,7 @@ describe('ListingForm', () => {
           mode="edit"
           listingId="22222222-2222-4222-8222-222222222222"
           requireTradeOptions={false}
-          initialValues={{ ...valid, state: 'PE', tradeOptions: options }}
+          initialValues={{ ...valid, state: 'PE', tradeOptions: options, category: 'esportes' }}
         />,
       );
 
@@ -268,7 +329,7 @@ describe('ListingForm', () => {
         mode="edit"
         listingId="22222222-2222-4222-8222-222222222222"
         requireTradeOptions
-        initialValues={{ ...valid, state: 'PE', tradeOptions: options }}
+        initialValues={{ ...valid, state: 'PE', tradeOptions: options, category: 'esportes' }}
       />,
     );
     fill({ title: 'Bicicleta aro 29 revisada' });
@@ -317,7 +378,7 @@ describe('ListingForm', () => {
         mode="edit"
         listingId={id}
         requireTradeOptions
-        initialValues={{ ...valid, state: 'PE', tradeOptions: options }}
+        initialValues={{ ...valid, state: 'PE', tradeOptions: options, category: 'esportes' }}
       />,
     );
 
@@ -327,6 +388,7 @@ describe('ListingForm', () => {
       ...valid,
       state: 'PE',
       tradeOptions: options,
+      category: 'esportes',
     });
     expect(push).toHaveBeenCalledWith('/anuncios');
   });

@@ -110,6 +110,8 @@ async function legacyListing(ownerId: string, path: ListingStatus[]): Promise<st
       description: 'Fixture sintetica com UF fora da lista.',
       city: CITY,
       uf: 'ZZ',
+      // Categoria ja regularizada para isolar a regra de UF; #89 cobre ausencia.
+      category: 'esportes',
       tradeOptions: { create: OPTIONS.map((label, i) => ({ position: i + 1, label })) },
     },
     select: { id: true },

@@ -1,3 +1,4 @@
+import { productCategoryLabel } from '@/modules/listing/categories';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { cache } from 'react';
@@ -110,6 +111,7 @@ export default async function DetalheAnuncioPublicoPage({
         {/* Alternativas de troca (listing-contract.md, 3.1 e 9.4): texto puro, na
             ordem do anunciante. Anuncio anterior a #76 ainda sem elas nao mostra
             a secao (secao 17.3). */}
+        <Text tone="muted">Categoria: {productCategoryLabel(listing.category)}</Text>
         {listing.tradeOptions.length > 0 ? (
           <Card variant="muted">
             <Section

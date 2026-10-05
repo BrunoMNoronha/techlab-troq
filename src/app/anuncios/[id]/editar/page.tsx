@@ -1,3 +1,4 @@
+import { productCategoryLabel } from '@/modules/listing/categories';
 import { notFound, redirect } from 'next/navigation';
 import { DescriptionList } from '@/components/data-display';
 import { Alert, ErrorState } from '@/components/feedback';
@@ -96,6 +97,7 @@ export default async function EditarAnuncioPage({ params }: { params: Promise<{ 
               city: listing.city,
               state: listing.state,
               tradeOptions: listing.tradeOptions,
+              category: listing.category,
             }}
           />
         ) : null}
@@ -141,6 +143,7 @@ export default async function EditarAnuncioPage({ params }: { params: Promise<{ 
                     </Text>
                   ),
                 },
+                { term: 'Categoria', detail: productCategoryLabel(listing.category) },
                 {
                   term: 'Aceita em troca',
                   detail: listing.tradeOptions.some(Boolean)
