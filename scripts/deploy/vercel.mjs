@@ -1,5 +1,4 @@
 import { appendFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { spawn } from 'node:child_process';
 import {
   PROJECT_ID,
   TEAM_ID,
@@ -7,7 +6,6 @@ import {
   PRODUCTION_URL,
   REPOSITORY,
   SHA_PATTERN,
-  redactCliOutput,
   requireEnvironmentMetadata,
 } from './policy.mjs';
 
@@ -20,44 +18,53 @@ const headers = {
   Authorization: `Bearer ${process.env.VERCEL_TOKEN}`,
   'Content-Type': 'application/json',
 };
-async function api(path) {
-  const response = await fetch(`https://api.vercel.com${path}`, { headers });
-  if (!response.ok)
-    throw new Error(`Vercel: acesso recusado ou recurso indisponível (HTTP ${response.status}).`);
-  return response.json();
-}
-async function cli(args) {
-  const result = await new Promise((resolve, reject) => {
-    const child = spawn(
-      'pnpm',
-      ['dlx', 'vercel@62.2.0', ...args, '--token', process.env.VERCEL_TOKEN],
-      { stdio: ['ignore', 'pipe', 'pipe'] },
+async function api(path, init = {}) {
+  const response = await fetch(`https://api.vercel.com${path}`, { headers, ...init });
+  if (!response.ok) {
+    // O corpo de erro da Vercel traz código e mensagem do provedor, nunca o
+    // token; sai só isso, curto, para a falha não ficar muda.
+    const body = await response.json().catch(() => ({}));
+    const detail = [body.error?.code, body.error?.message].filter(Boolean).join(': ');
+    throw new Error(
+      `Vercel: acesso recusado ou recurso indisponível (HTTP ${response.status})` +
+        (detail ? ` — ${detail.slice(0, 300)}` : '') +
+        '.',
     );
-    let output = '';
-    let errors = '';
-    child.stdout.on('data', (chunk) => {
-      output += chunk.toString();
-    });
-    child.stderr.on('data', (chunk) => {
-      errors += chunk.toString();
-    });
-    child.on('error', reject);
-    child.on('close', (code) => {
-      if (code === 0) return resolve(output);
-      // Sem o stderr a falha é muda: a CLI explica ali o motivo (token, escopo,
-      // argumento, upload). Sai só o fim, com os segredos do job redigidos.
-      const secrets = [
-        process.env.VERCEL_TOKEN,
-        process.env.VERCEL_AUTOMATION_BYPASS_SECRET,
-        process.env.CRON_SECRET,
-      ];
-      console.error(`::group::Saída de erro da CLI Vercel (${args[0]})`);
-      console.error(redactCliOutput(errors, secrets) || '(vazia)');
-      console.error('::endgroup::');
-      reject(new Error(`CLI Vercel falhou (código ${code}); ver a saída de erro redigida acima.`));
-    });
+  }
+  return response.status === 204 ? {} : response.json().catch(() => ({}));
+}
+function post(path, body) {
+  return api(path, { method: 'POST', body: JSON.stringify(body ?? {}) });
+}
+/**
+ * Deploy pela API REST, a partir do commit no GitHub (`gitSource`): o build
+ * remoto usa as variáveis do escopo na Vercel e nada é enviado do runner. A
+ * CLI deixou de servir porque recusa o token ao carregar o usuário ("User not
+ * found", run 37259818575), embora o mesmo token funcione na API do projeto.
+ */
+async function createDeployment() {
+  const created = await post(`/v13/deployments?teamId=${TEAM_ID}&forceNew=1`, {
+    name: 'techlab-troq',
+    project: PROJECT_ID,
+    gitSource: {
+      type: 'github',
+      org: 'BrunoMNoronha',
+      repo: 'techlab-troq',
+      ref: target === 'preview' ? 'preview' : 'main',
+      sha: process.env.RELEASE_SHA,
+    },
+    ...(target === 'production' ? { target: 'production', autoAssignCustomDomains: false } : {}),
   });
-  return result.trim();
+  if (!/^dpl_[a-zA-Z0-9]+$/.test(created.id ?? '')) throw new Error('Vercel não criou deployment.');
+  const deadline = Date.now() + 20 * 60 * 1000;
+  for (;;) {
+    const item = await api(`/v13/deployments/${created.id}?teamId=${TEAM_ID}`);
+    if (item.readyState === 'READY') return { item, url: `https://${item.url}` };
+    if (['ERROR', 'CANCELED'].includes(item.readyState))
+      throw new Error(`Build ${created.id} terminou em ${item.readyState}; ver logs na Vercel.`);
+    if (Date.now() > deadline) throw new Error(`Build ${created.id} não ficou pronto em 20 min.`);
+    await new Promise((resolve) => setTimeout(resolve, 10000));
+  }
 }
 async function deployment(url) {
   return api(
@@ -144,29 +151,7 @@ if (command === 'preflight') {
   }
   console.log(`Preflight ${target} aprovado. Nenhum segredo foi recuperado da Vercel.`);
 } else if (command === 'deploy') {
-  mkdirSync('.vercel', { recursive: true });
-  writeFileSync('.vercel/project.json', JSON.stringify({ projectId: PROJECT_ID, orgId: TEAM_ID }));
-  const args = [
-    'deploy',
-    '--yes',
-    '--scope',
-    'bruno-m-noronha',
-    '--meta',
-    'githubDeployment=1',
-    '--meta',
-    `githubCommitSha=${process.env.RELEASE_SHA}`,
-    '--meta',
-    `githubCommitRef=${target === 'preview' ? 'preview' : 'main'}`,
-    '--meta',
-    'githubCommitOrg=BrunoMNoronha',
-    '--meta',
-    'githubCommitRepo=techlab-troq',
-  ];
-  if (target === 'production') args.push('--prod', '--skip-domain');
-  const output = await cli(args);
-  const url = output.match(/https:\/\/[^\s]+\.vercel\.app/g)?.at(-1);
-  if (!url) throw new Error('CLI não retornou URL de deployment válida.');
-  const item = await deployment(url);
+  const { item, url } = await createDeployment();
   checkDeployment(item);
   await smoke(url);
   mkdirSync('release-proof', { recursive: true });
@@ -175,7 +160,9 @@ if (command === 'preflight') {
     JSON.stringify({ deploymentId: item.id, url, sha: process.env.RELEASE_SHA, target }),
   );
   if (target === 'preview') {
-    await cli(['alias', 'set', url, new URL(PREVIEW_URL).hostname, '--scope', 'bruno-m-noronha']);
+    await post(`/v2/deployments/${item.id}/aliases?teamId=${TEAM_ID}`, {
+      alias: new URL(PREVIEW_URL).hostname,
+    });
     await smoke(PREVIEW_URL);
     writeFileSync(
       'release-proof/release.json',
@@ -201,7 +188,7 @@ if (command === 'preflight') {
   const candidate = JSON.parse(readFileSync('release-proof/candidate.json', 'utf8'));
   const item = await deployment(candidate.url);
   checkDeployment(item);
-  await cli(['promote', item.id, '--yes', '--scope', 'bruno-m-noronha']);
+  await post(`/v10/projects/${PROJECT_ID}/promote/${item.id}?teamId=${TEAM_ID}`);
   await smoke(PRODUCTION_URL);
   appendFileSync(
     process.env.GITHUB_STEP_SUMMARY,
@@ -210,7 +197,7 @@ if (command === 'preflight') {
 } else if (command === 'rollback') {
   if (!/^dpl_[a-zA-Z0-9]+$/.test(process.env.PREVIOUS_ID ?? ''))
     throw new Error('Deployment anterior inválido.');
-  await cli(['rollback', process.env.PREVIOUS_ID, '--yes', '--scope', 'bruno-m-noronha']);
+  await post(`/v1/projects/${PROJECT_ID}/rollback/${process.env.PREVIOUS_ID}?teamId=${TEAM_ID}`);
   console.log('Deployment anterior restaurado; nenhuma migration foi revertida.');
 } else {
   throw new Error('Comando de release desconhecido.');
