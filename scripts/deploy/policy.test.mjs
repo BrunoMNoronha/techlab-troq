@@ -6,6 +6,7 @@ import {
   PROJECT_ID,
   PREVIEW_URL,
   RUNTIME_KEYS,
+  requirePreviewCiSha,
   requireSuccessfulRun,
   requirePreviewProof,
   requireDirectConnection,
@@ -83,6 +84,35 @@ test('CI de PR não autoriza deploy com secrets', () => {
     requireSuccessfulRun(run({ ...ci, head_branch: 'feature' }), { event: 'push' }),
   );
   assert.throws(() => requireSuccessfulRun(run(ci), { sha: 'b'.repeat(40) }));
+});
+test('merge commit em production só usa CI de main com árvore idêntica', () => {
+  const releaseSha = 'a'.repeat(40);
+  const mergeBaseSha = 'b'.repeat(40);
+  const treeSha = 'c'.repeat(40);
+  const comparison = {
+    status: 'behind',
+    base_commit: { sha: releaseSha, commit: { tree: { sha: treeSha } } },
+    merge_base_commit: { sha: mergeBaseSha, commit: { tree: { sha: treeSha } } },
+  };
+  assert.equal(requirePreviewCiSha({ status: 'ahead' }, releaseSha), releaseSha);
+  assert.equal(requirePreviewCiSha({ status: 'identical' }, releaseSha), releaseSha);
+  assert.equal(requirePreviewCiSha(comparison, releaseSha), mergeBaseSha);
+  assert.throws(() =>
+    requirePreviewCiSha(
+      {
+        ...comparison,
+        base_commit: { ...comparison.base_commit, commit: { tree: { sha: 'd'.repeat(40) } } },
+      },
+      releaseSha,
+    ),
+  );
+  assert.throws(() => requirePreviewCiSha({ ...comparison, status: 'diverged' }, releaseSha));
+  assert.throws(() =>
+    requirePreviewCiSha(
+      { ...comparison, base_commit: { ...comparison.base_commit, sha: 'e'.repeat(40) } },
+      releaseSha,
+    ),
+  );
 });
 test('conexões direta e pooled devem identificar o mesmo banco', () => {
   const direct = 'postgresql://test:fake@ep-example.aws.neon.tech/troq?sslmode=require';

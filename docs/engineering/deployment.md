@@ -18,7 +18,7 @@ Branches de trabalho continuam permitidas e são removidas depois do merge.
    - Exige CI de push aprovado em `main` para esse SHA e que `production` seja ancestral dele. Em seguida, avança `production` sem force-push.
    - Por fim, dispara `Deploy Preview` com `--ref production`. O push feito com `GITHUB_TOKEN` não dispara workflows; o `workflow_dispatch` dispara.
 2. **Preview (automático após a promoção).** `Deploy Preview` roda só no ref `production`, por `workflow_dispatch` ou por push direto do responsável em `production`.
-   - Recusa a execução se o SHA não for o HEAD atual de `production`, não estiver contido em `main` ou não tiver CI aprovado.
+   - Recusa a execução se o SHA não for o HEAD atual de `production`. Normalmente ele precisa estar contido em `main`; se `production` tiver um commit de merge fora de `main`, só é aceito quando a árvore do commit for idêntica à do merge-base comum, e nesse caso exige o CI de push aprovado desse merge-base.
    - Depois executa preflight, `prisma migrate deploy` no Neon preview, build remoto na Vercel (target preview), alias estável e smoke, e guarda a evidência.
 3. **Production (manual).** `Deploy Production` só tem `workflow_dispatch` e roda só no ref `production`. `preview_run_id` é opcional: sem ele, usa o Deploy Preview aprovado mais recente do HEAD de `production`.
    - Confere execução, tentativa e artefato da evidência, e exige que o SHA seja o HEAD de `production`.

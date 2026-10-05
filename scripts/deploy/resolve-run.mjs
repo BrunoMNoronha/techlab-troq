@@ -1,5 +1,11 @@
 import { appendFileSync } from 'node:fs';
-import { PREVIEW_EVENTS, RELEASE_BRANCH, REPOSITORY, requireSuccessfulRun } from './policy.mjs';
+import {
+  PREVIEW_EVENTS,
+  RELEASE_BRANCH,
+  REPOSITORY,
+  requirePreviewCiSha,
+  requireSuccessfulRun,
+} from './policy.mjs';
 
 const target = process.env.RELEASE_TARGET;
 if (!['preview', 'production'].includes(target)) throw new Error('Ambiente de release inválido.');
@@ -26,14 +32,13 @@ if (target === 'preview') {
   if (process.env.GITHUB_SHA !== head)
     throw new Error(`Execução obsoleta: ${RELEASE_BRANCH} já avançou. Aguarde a mais recente.`);
   const comparison = await github(`/compare/${head}...main`);
-  if (!['ahead', 'identical'].includes(comparison.status))
-    throw new Error(`${RELEASE_BRANCH} contém commits fora de main; a release foi recusada.`);
+  const ciSha = requirePreviewCiSha(comparison, head);
   const { workflow_runs: runs } = await github(
-    `/actions/workflows/ci.yml/runs?head_sha=${head}&event=push&branch=main&status=success&per_page=1`,
+    `/actions/workflows/ci.yml/runs?head_sha=${ciSha}&event=push&branch=main&status=success&per_page=1`,
   );
   if (!runs?.length) throw new Error('Revisão sem CI aprovado de push em main.');
   run = runs[0];
-  requireSuccessfulRun(run, { path: '.github/workflows/ci.yml', event: 'push', sha: head });
+  requireSuccessfulRun(run, { path: '.github/workflows/ci.yml', event: 'push', sha: ciSha });
 } else {
   let runId = process.env.SOURCE_RUN_ID?.trim();
   if (!runId) {

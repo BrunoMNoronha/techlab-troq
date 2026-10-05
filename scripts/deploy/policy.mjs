@@ -96,6 +96,22 @@ export function requireSuccessfulRun(run, { path, event, sha, branch = 'main' } 
   return run.head_sha;
 }
 
+export function requirePreviewCiSha(comparison, releaseSha) {
+  if (['ahead', 'identical'].includes(comparison.status)) return releaseSha;
+  const mergeBase = comparison.merge_base_commit;
+  const releaseTree = comparison.base_commit?.commit?.tree?.sha;
+  if (
+    comparison.status === 'behind' &&
+    comparison.base_commit?.sha === releaseSha &&
+    SHA_PATTERN.test(mergeBase?.sha ?? '') &&
+    SHA_PATTERN.test(releaseTree ?? '') &&
+    mergeBase.commit?.tree?.sha === releaseTree
+  ) {
+    return mergeBase.sha;
+  }
+  throw new Error(`${RELEASE_BRANCH} contém commits fora de main; a release foi recusada.`);
+}
+
 export function requirePreviewProof(proof, run) {
   const sha = requireSuccessfulRun(run, {
     path: '.github/workflows/deploy-preview.yml',
