@@ -1,4 +1,7 @@
 import type { Metadata } from 'next';
+import { DescriptionList } from '@/components/data-display';
+import { PageContainer, PageHeader, Section, Stack } from '@/components/layout';
+import { Card, Heading, Text, TextLink } from '@/components/ui';
 
 // Politica de itens proibidos acessivel a partir da publicacao (F2-010, #48;
 // prohibited-items.md, secao 5, item 2). Todo texto abaixo e copiado LITERALMENTE
@@ -78,85 +81,67 @@ const CATEGORIES = [
 
 /** Mostra os termos entre crases como codigo, como no documento de origem. */
 function withCode(text: string) {
-  return text.split(/(`[^`]+`)/).map((part, i) =>
-    part.startsWith('`') ? (
-      <code key={i} style={{ fontSize: '0.95em' }}>
-        {part.slice(1, -1)}
-      </code>
-    ) : (
-      <span key={i}>{part}</span>
-    ),
-  );
+  return text
+    .split(/(`[^`]+`)/)
+    .map((part, i) =>
+      part.startsWith('`') ? <code key={i}>{part.slice(1, -1)}</code> : <span key={i}>{part}</span>,
+    );
 }
 
 export default function PoliticaItensProibidosPage() {
   return (
-    <main
-      style={{
-        maxWidth: '720px',
-        margin: '24px auto',
-        padding: '16px',
-        fontFamily: 'sans-serif',
-        color: '#111827',
-        lineHeight: 1.5,
-        overflowWrap: 'anywhere',
-      }}
-    >
-      <h1 style={{ fontSize: '26px', fontWeight: 'bold', margin: '0 0 8px' }}>
-        Política de itens proibidos
-      </h1>
-      <p style={{ fontSize: '15px', color: '#374151' }}>
-        Ao publicar, o anunciante declara que o item anunciado não pertence a nenhuma das categorias
-        abaixo. Os títulos e fundamentos desta página são reproduzidos do documento normativo da
-        política; o texto completo, com definições, exemplos e casos limítrofes, está no{' '}
-        <a href={POLICY_SOURCE_URL} style={{ color: '#1d4ed8', fontWeight: '600' }}>
-          documento da Política de itens proibidos
-        </a>
-        .
-      </p>
+    <PageContainer width="content">
+      <PageHeader
+        title="Política de itens proibidos"
+        description={
+          <>
+            Ao publicar, o anunciante declara que o item anunciado não pertence a nenhuma das
+            categorias abaixo. Os títulos e fundamentos desta página são reproduzidos do documento
+            normativo da política; o texto completo, com definições, exemplos e casos limítrofes,
+            está no{' '}
+            <TextLink href={POLICY_SOURCE_URL} reload>
+              documento da Política de itens proibidos
+            </TextLink>
+            .
+          </>
+        }
+      />
 
-      <h2 style={{ fontSize: '20px', fontWeight: '600', margin: '24px 0 8px' }}>
-        Como ler o catálogo
-      </h2>
-      <p style={{ fontSize: '15px' }}>
-        Cada categoria registra um <strong>fundamento</strong>, classificado em um de três tipos.
-      </p>
-      <dl style={{ fontSize: '15px' }}>
-        {FUNDAMENTOS.map((f) => (
-          <div key={f.code} style={{ margin: '0 0 12px' }}>
-            <dt style={{ fontWeight: '700' }}>
-              <code>{f.code}</code>
-            </dt>
-            <dd style={{ margin: '4px 0 0' }}>
-              {f.meaning}. Leitura correta: {f.reading}.
-            </dd>
-          </div>
-        ))}
-      </dl>
-      <p style={{ fontSize: '15px' }}>
-        Os exemplos são <strong>não exaustivos</strong> e ilustram a categoria; não constituem a
-        definição.
-      </p>
+      <Stack gap={8}>
+        <Section title="Como ler o catálogo">
+          <Text tone="muted">
+            Cada categoria registra um <strong>fundamento</strong>, classificado em um de três
+            tipos.
+          </Text>
+          <DescriptionList
+            items={FUNDAMENTOS.map((f) => ({
+              term: f.code,
+              detail: `${f.meaning}. Leitura correta: ${f.reading}.`,
+            }))}
+          />
+          <Text tone="muted">
+            Os exemplos são <strong>não exaustivos</strong> e ilustram a categoria; não constituem a
+            definição.
+          </Text>
+        </Section>
 
-      <h2 style={{ fontSize: '20px', fontWeight: '600', margin: '24px 0 8px' }}>Categorias</h2>
-      <ol style={{ listStyle: 'none', padding: 0, margin: 0, fontSize: '15px' }}>
-        {CATEGORIES.map(([code, title, fundamento]) => (
-          <li
-            key={code}
-            style={{
-              padding: '12px 0',
-              borderTop: '1px solid #e5e7eb',
-            }}
-          >
-            <h3 style={{ fontSize: '16px', fontWeight: '600', margin: '0 0 4px' }}>
-              {code} — {title}
-            </h3>
-            <p style={{ margin: 0, color: '#374151' }}>
-              <strong>Fundamento:</strong> {withCode(fundamento)}
-            </p>
-          </li>
-        ))}
-      </ol>
-    </main>
+        <Section title="Categorias">
+          <Stack as="ol" gap={3}>
+            {CATEGORIES.map(([code, title, fundamento]) => (
+              <Card as="li" key={code}>
+                <Stack gap={1}>
+                  <Heading level={3} size="h4">
+                    {code} — {title}
+                  </Heading>
+                  <Text size="small" tone="muted">
+                    <strong>Fundamento:</strong> {withCode(fundamento)}
+                  </Text>
+                </Stack>
+              </Card>
+            ))}
+          </Stack>
+        </Section>
+      </Stack>
+    </PageContainer>
   );
 }

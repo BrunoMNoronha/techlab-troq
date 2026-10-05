@@ -1,5 +1,7 @@
 'use client';
 
+import '@/styles/globals.css';
+
 // Fronteira de erro global do App Router (F1-010).
 //
 // O React trata erro de renderizacao nao tratado sem propaga-lo ao `window`,
@@ -10,6 +12,8 @@
 
 import * as Sentry from '@sentry/nextjs';
 import { useEffect } from 'react';
+import { ErrorState } from '@/components/feedback';
+import { PageContainer } from '@/components/layout';
 
 export default function GlobalError({ error }: { error: Error & { digest?: string } }) {
   useEffect(() => {
@@ -19,10 +23,13 @@ export default function GlobalError({ error }: { error: Error & { digest?: strin
   return (
     <html lang="pt-BR">
       <body>
-        <main>
-          <h1>Algo deu errado</h1>
-          <p>Nao foi possivel carregar esta pagina. Tente novamente em instantes.</p>
-        </main>
+        <PageContainer width="narrow">
+          <ErrorState
+            title="Algo deu errado"
+            titleAs="h1"
+            description="Nao foi possivel carregar esta pagina. Tente novamente em instantes."
+          />
+        </PageContainer>
       </body>
     </html>
   );

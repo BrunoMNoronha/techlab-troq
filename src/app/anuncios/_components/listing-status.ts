@@ -1,17 +1,16 @@
+import type { Tone } from '@/components/ui';
 import type { ListingDTO } from '@/modules/listing';
 
 type ListingStatus = ListingDTO['status'];
 
-// Nomes de apresentacao dos cinco estados (listing-lifecycle.md, secao 2).
-export const LISTING_STATUS_LABELS: Record<
-  ListingStatus,
-  { label: string; bg: string; color: string }
-> = {
-  draft: { label: 'Rascunho', bg: '#f3f4f6', color: '#374151' },
-  published: { label: 'Publicado', bg: '#dcfce7', color: '#166534' },
-  paused: { label: 'Pausado', bg: '#fef3c7', color: '#92400e' },
-  closed: { label: 'Encerrado', bg: '#e5e7eb', color: '#374151' },
-  removed: { label: 'Removido', bg: '#fee2e2', color: '#991b1b' },
+// Nomes de apresentacao dos cinco estados (listing-lifecycle.md, secao 2). O
+// tom so reforca o rotulo no `Badge`; o significado esta no texto.
+export const LISTING_STATUS_LABELS: Record<ListingStatus, { label: string; tone: Tone }> = {
+  draft: { label: 'Rascunho', tone: 'neutral' },
+  published: { label: 'Publicado', tone: 'success' },
+  paused: { label: 'Pausado', tone: 'warning' },
+  closed: { label: 'Encerrado', tone: 'neutral' },
+  removed: { label: 'Removido', tone: 'error' },
 };
 
 /** `draft`, `published` e `paused` sao editaveis pelo dono; `closed`/`removed` sao historico. */

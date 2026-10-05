@@ -2,6 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { MediaFrame } from '@/components/data-display';
+import { Alert, Skeleton } from '@/components/feedback';
+import { Field, Textarea } from '@/components/forms';
+import { Cluster, Stack } from '@/components/layout';
+import { Button, Card, Heading, Text, TextLink } from '@/components/ui';
 import { getPixPayment } from '@/modules/request/actions';
 import type { PixPaymentDetails } from '@/modules/payments';
 import { TIME } from '../_components/phase';
@@ -91,124 +96,93 @@ export function PixPanel({
   }
 
   return (
-    <section
-      aria-labelledby="pix-titulo"
-      style={{
-        padding: '20px',
-        backgroundColor: 'white',
-        border: '1px solid #e5e7eb',
-        borderRadius: '8px',
-      }}
-    >
-      <h2 id="pix-titulo" style={{ fontSize: '18px', margin: '0 0 8px' }}>
-        Pague R$ 0,99 via Pix
-      </h2>
-      <Deadline reservedUntil={reservedUntil} serverNow={serverNow} />
+    <Card as="section" aria-labelledby="pix-titulo" padding="lg">
+      <Stack gap={4}>
+        <Stack gap={2}>
+          <Heading level={2} size="h3" id="pix-titulo">
+            Pague R$ 0,99 via Pix
+          </Heading>
+          <Deadline reservedUntil={reservedUntil} serverNow={serverNow} />
+        </Stack>
 
-      {state.kind === 'loading' && (
-        <p role="status" aria-live="polite" style={{ margin: '16px 0 0', color: '#374151' }}>
-          Gerando o Pix…
-        </p>
-      )}
+        {state.kind === 'loading' && (
+          <Stack role="status" aria-live="polite" gap={3}>
+            <Skeleton variant="block" />
+            <Text tone="muted">Gerando o Pix…</Text>
+          </Stack>
+        )}
 
-      {state.kind === 'retry' && (
-        <div role="alert" style={alertBox}>
-          <p style={{ margin: '0 0 12px' }}>{state.message}</p>
-          <button type="button" onClick={() => void load()} style={primaryButton}>
-            Tentar novamente
-          </button>
-        </div>
-      )}
-
-      {state.kind === 'unavailable' && (
-        <p role="status" style={{ margin: '16px 0 0', color: '#374151' }}>
-          {state.message}
-        </p>
-      )}
-
-      {state.kind === 'ready' && (
-        <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          {state.pix.qrCodeBase64 && BASE64.test(state.pix.qrCodeBase64) && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={`data:image/png;base64,${state.pix.qrCodeBase64}`}
-              alt="QR Code do Pix de R$ 0,99. Leia com o aplicativo do seu banco."
-              width={220}
-              height={220}
-              style={{
-                display: 'block',
-                width: '220px',
-                maxWidth: '100%',
-                height: 'auto',
-                alignSelf: 'center',
-                border: '1px solid #e5e7eb',
-                borderRadius: '8px',
-              }}
-            />
-          )}
-          <div>
-            <label
-              htmlFor="pix-copia-e-cola"
-              style={{ display: 'block', fontWeight: 600, marginBottom: '6px' }}
-            >
-              Pix copia e cola
-            </label>
-            <textarea
-              id="pix-copia-e-cola"
-              readOnly
-              rows={4}
-              value={state.pix.copyPaste}
-              onFocus={(e) => e.currentTarget.select()}
-              style={{
-                width: '100%',
-                boxSizing: 'border-box',
-                padding: '8px',
-                fontFamily: 'monospace',
-                fontSize: '13px',
-                border: '1px solid #d1d5db',
-                borderRadius: '6px',
-                resize: 'vertical',
-                wordBreak: 'break-all',
-              }}
-            />
-            <div
-              style={{
-                marginTop: '8px',
-                display: 'flex',
-                flexWrap: 'wrap',
-                alignItems: 'center',
-                gap: '12px',
-              }}
-            >
-              <button
-                type="button"
-                onClick={() => void copy(state.pix.copyPaste)}
-                style={primaryButton}
-              >
-                Copiar código Pix
-              </button>
-              <span aria-live="polite" style={{ fontSize: '14px', color: '#166534' }}>
-                {copied}
-              </span>
+        {state.kind === 'retry' && (
+          <Alert tone="error" role="alert">
+            <p>{state.message}</p>
+            <div>
+              <Button iconStart="refresh" onClick={() => void load()}>
+                Tentar novamente
+              </Button>
             </div>
-          </div>
-          {state.pix.ticketUrl?.startsWith('https://') && (
-            <a
-              href={state.pix.ticketUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ color: '#1d4ed8', fontWeight: 600 }}
-            >
-              Abrir o Pix no Mercado Pago (nova aba)
-            </a>
-          )}
-          <p style={{ margin: 0, fontSize: '14px', color: '#4b5563', lineHeight: 1.5 }}>
-            Depois de pagar, a confirmação pode levar alguns instantes. Esta página mostra quando o
-            pagamento for confirmado.
-          </p>
-        </div>
-      )}
-    </section>
+          </Alert>
+        )}
+
+        {state.kind === 'unavailable' && (
+          <Text role="status" tone="muted">
+            {state.message}
+          </Text>
+        )}
+
+        {state.kind === 'ready' && (
+          <Stack gap={4}>
+            {state.pix.qrCodeBase64 && BASE64.test(state.pix.qrCodeBase64) && (
+              <MediaFrame fit="contain" ratio="square" rounded size="sm">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={`data:image/png;base64,${state.pix.qrCodeBase64}`}
+                  alt="QR Code do Pix de R$ 0,99. Leia com o aplicativo do seu banco."
+                  width={220}
+                  height={220}
+                />
+              </MediaFrame>
+            )}
+            <Stack gap={2}>
+              <Field label="Pix copia e cola" htmlFor="pix-copia-e-cola">
+                <Textarea
+                  id="pix-copia-e-cola"
+                  readOnly
+                  rows={4}
+                  value={state.pix.copyPaste}
+                  onFocus={(e) => e.currentTarget.select()}
+                  mono
+                />
+              </Field>
+              <Cluster gap={3}>
+                <Button iconStart="copy" onClick={() => void copy(state.pix.copyPaste)}>
+                  Copiar código Pix
+                </Button>
+                <Text as="span" size="small" tone="success" aria-live="polite">
+                  {copied}
+                </Text>
+              </Cluster>
+            </Stack>
+            {state.pix.ticketUrl?.startsWith('https://') && (
+              <div>
+                <TextLink
+                  reload
+                  href={state.pix.ticketUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  iconEnd="arrow-right"
+                >
+                  Abrir o Pix no Mercado Pago (nova aba)
+                </TextLink>
+              </div>
+            )}
+            <Text size="small" tone="muted">
+              Depois de pagar, a confirmação pode levar alguns instantes. Esta página mostra quando
+              o pagamento for confirmado.
+            </Text>
+          </Stack>
+        )}
+      </Stack>
+    </Card>
   );
 }
 
@@ -235,32 +209,11 @@ function Deadline({ reservedUntil, serverNow }: { reservedUntil: string; serverN
 
   const minutes = Math.max(0, Math.ceil(remainingMs / 60_000));
   return (
-    <p style={{ margin: 0, color: '#374151', lineHeight: 1.5 }}>
+    <Text>
       Pague até <strong>{TIME.format(new Date(reservedUntil))}</strong> (horário de Brasília).{' '}
       {minutes > 0
         ? `Faltam cerca de ${minutes} ${minutes === 1 ? 'minuto' : 'minutos'}.`
         : 'O prazo terminou.'}
-    </p>
+    </Text>
   );
 }
-
-const alertBox = {
-  marginTop: '16px',
-  padding: '12px',
-  backgroundColor: '#fef2f2',
-  border: '1px solid #fecaca',
-  borderRadius: '6px',
-  color: '#991b1b',
-  fontSize: '14px',
-} as const;
-
-const primaryButton = {
-  padding: '10px 16px',
-  backgroundColor: '#1d4ed8',
-  color: 'white',
-  border: 'none',
-  borderRadius: '6px',
-  fontWeight: 600,
-  fontSize: '14px',
-  cursor: 'pointer',
-} as const;

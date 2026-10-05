@@ -9,6 +9,10 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import { Alert } from '@/components/feedback';
+import { FieldHint } from '@/components/forms';
+import { Stack } from '@/components/layout';
+import { Button, Divider } from '@/components/ui';
 import type { GoogleRedirectResult } from '@/modules/identity/google-actions';
 import { startGoogleSignIn } from '@/modules/identity/google-actions';
 
@@ -80,23 +84,11 @@ export function useGoogleRedirect(action: () => Promise<GoogleRedirectResult>) {
   return { pending, error, run };
 }
 
-const buttonStyle = (pending: boolean) => ({
-  width: '100%',
-  padding: '12px',
-  backgroundColor: pending ? '#f3f4f6' : 'white',
-  color: '#111827',
-  border: '1px solid #d1d5db',
-  borderRadius: '6px',
-  fontSize: '16px',
-  fontWeight: '600',
-  cursor: pending ? 'not-allowed' : 'pointer',
-});
-
 export function GoogleSignInButton({ returnTo, hint }: { returnTo?: string; hint?: string }) {
   const available = useGoogleAvailable();
   const errorId = useId();
   const hintId = useId();
-  const errorRef = useRef<HTMLParagraphElement>(null);
+  const errorRef = useRef<HTMLDivElement>(null);
   const { pending, error, run } = useGoogleRedirect(() => startGoogleSignIn(returnTo));
 
   useEffect(() => {
@@ -108,34 +100,25 @@ export function GoogleSignInButton({ returnTo, hint }: { returnTo?: string; hint
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-      <button
-        type="button"
+    <Stack gap={2}>
+      <Button
+        variant="outline"
+        fullWidth
         onClick={run}
+        loading={pending}
         disabled={pending}
         aria-busy={pending}
         aria-describedby={[hint ? hintId : '', error ? errorId : ''].join(' ').trim() || undefined}
-        style={buttonStyle(pending)}
       >
         {pending ? 'Abrindo o Google...' : 'Continuar com Google'}
-      </button>
-      {hint && (
-        <p id={hintId} style={{ margin: 0, color: '#6b7280', fontSize: '13px' }}>
-          {hint}
-        </p>
-      )}
+      </Button>
+      {hint && <FieldHint id={hintId}>{hint}</FieldHint>}
       {error && (
-        <p
-          id={errorId}
-          ref={errorRef}
-          tabIndex={-1}
-          role="alert"
-          style={{ margin: 0, color: '#991b1b', fontSize: '14px' }}
-        >
+        <Alert id={errorId} ref={errorRef} tabIndex={-1} role="alert" tone="error">
           {error}
-        </p>
+        </Alert>
       )}
-    </div>
+    </Stack>
   );
 }
 
@@ -145,11 +128,8 @@ export function GoogleDivider() {
     return null;
   }
   return (
-    <p
-      aria-hidden="true"
-      style={{ textAlign: 'center', color: '#6b7280', fontSize: '14px', margin: '16px 0' }}
-    >
-      ou
-    </p>
+    <div aria-hidden="true">
+      <Divider>ou</Divider>
+    </div>
   );
 }

@@ -118,6 +118,7 @@ interface LockedListing {
   description: string;
   city: string;
   uf: string;
+  category: string | null;
 }
 
 /**
@@ -131,7 +132,7 @@ export async function lockOwnedListing(
   ownerId: string,
 ): Promise<LockedListing | null> {
   const rows = await tx.$queryRaw<LockedListing[]>`
-    SELECT "id", "status"::text AS "status", "title", "description", "city", "uf"
+    SELECT "id", "status"::text AS "status", "title", "description", "city", "uf", "category"
     FROM "listings"
     WHERE "id" = ${listingId}::uuid AND "owner_id" = ${ownerId}::uuid
     FOR UPDATE`;
@@ -244,12 +245,16 @@ export async function transitionListing(
       }
 
       if (rule.goesPublic) {
-        const content = validateListingContent({
-          title: listing.title,
-          description: listing.description,
-          city: listing.city,
-          state: listing.uf,
-        });
+        const content = validateListingContent(
+          {
+            title: listing.title,
+            description: listing.description,
+            city: listing.city,
+            state: listing.uf,
+            category: listing.category,
+          },
+          true,
+        );
         // As alternativas sao lidas depois da trava: uma edicao concorrente que
         // as esvaziasse espera esta transacao, e vice-versa.
         const tradeOptions = validateTradeOptions(

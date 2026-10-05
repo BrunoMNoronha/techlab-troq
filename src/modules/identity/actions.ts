@@ -316,7 +316,8 @@ export async function resendVerificationToken(email: string): Promise<ResendResu
  * A ordem do provedor e senha -> verificacao do e-mail -> criacao da sessao,
  * e o hook de criacao recusa conta nao ativa; por isso status e verificacao so
  * sao revelados depois da senha correta (IC-10.3). `returnTo` so e usado se for
- * caminho interno valido (sanitizeReturnPath); caso contrario o destino e `/conta`.
+ * caminho interno valido (sanitizeReturnPath); caso contrario o destino e a
+ * vitrine publica de anuncios (`/explorar`).
  * Antes do provedor, aplica o limite de 5 falhas em 15 min por e-mail (IC-10.2).
  */
 export async function loginUser(
@@ -389,7 +390,7 @@ export async function loginUser(
     console.error('[Login Action Error] limite de tentativas', authErrorLabel(err)),
   );
 
-  return { success: true, redirectTo: sanitizeReturnPath(returnTo) ?? '/conta' };
+  return { success: true, redirectTo: sanitizeReturnPath(returnTo) ?? '/explorar' };
 }
 
 /**

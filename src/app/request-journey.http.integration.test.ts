@@ -435,4 +435,74 @@ describe.skipIf(!enabled)('jornada de solicitacao por HTTP real (F3-012, #102)',
     expect(other.body).not.toContain('Você foi escolhido');
     expect(other.body).toContain('Pagamento confirmado');
   });
+
+  it('DEC-051 (#148): chamada HTTP direta de quem ja pagou nao cria reserva, tentativa ou pagamento', async () => {
+    const unlock = actionId('requestContactUnlock', 'src/modules/request/actions.ts');
+    const snapshot = async () => ({
+      requests: await prisma().contactRequest.findMany({
+        where: { listingId },
+        orderBy: { id: 'asc' },
+      }),
+      attempts: await prisma().paymentAttempt.findMany({
+        where: { contactRequest: { listingId } },
+        orderBy: { id: 'asc' },
+      }),
+      payments: await prisma().payment.findMany({
+        where: { paymentAttempt: { contactRequest: { listingId } } },
+        orderBy: { id: 'asc' },
+      }),
+      audits: await prisma().auditEvent.count({ where: { actorId: ids.paid2 } }),
+    });
+    const before = await snapshot();
+    const reply = await callAction(`/explorar/${listingId}`, unlock, cookies.paid2, [listingId]);
+    expect(reply.status).toBe(200);
+    expect(reply.body).toContain('"reason":"already_paid"');
+    expectNoSecrets(reply.body);
+    expect(await snapshot()).toEqual(before);
+
+    // A reversao retira a elegibilidade financeira, mas paid e a vaga ficam.
+    const attempt = await prisma().paymentAttempt.findUniqueOrThrow({
+      where: { contactRequestId: paid2Id },
+    });
+    await prisma().paymentAttempt.update({
+      where: { id: attempt.id },
+      data: { status: 'reembolsada_ou_revertida' },
+    });
+    try {
+      const reversed = await snapshot();
+      const again = await callAction(`/explorar/${listingId}`, unlock, cookies.paid2, [listingId]);
+      expect(again.status).toBe(200);
+      expect(again.body).toContain('"reason":"already_paid"');
+      expect(await snapshot()).toEqual(reversed);
+      const own = await fetchPage(`/explorar/${listingId}`, cookies.paid2);
+      expect(own.body).toContain(`/solicitacoes/${paid2Id}`);
+      expect(own.body).not.toContain('Confirmar e gerar Pix');
+      const candidates = await fetchPage(`/anuncios/${listingId}/solicitacoes`, cookies.owner);
+      expect(candidates.body).not.toContain(names.paid2);
+    } finally {
+      await prisma().paymentAttempt.update({
+        where: { id: attempt.id },
+        data: { status: 'pagamento_confirmado' },
+      });
+    }
+    // Nao escolhido depois do encerramento da negociacao: o bloqueio permanece.
+    await prisma().negotiation.updateMany({
+      where: { listingId },
+      data: { status: 'closed', closedAt: new Date(), closedById: ids.owner },
+    });
+    const ended = await snapshot();
+    const notChosen = await callAction(`/explorar/${listingId}`, unlock, cookies.paid2, [
+      listingId,
+    ]);
+    expect(notChosen.body).toContain('"reason":"already_paid"');
+    expect(await snapshot()).toEqual(ended);
+    // Encerramento do anuncio usa a recusa comum de indisponibilidade.
+    await prisma().listing.update({ where: { id: listingId }, data: { status: 'closed' } });
+    const closed = await snapshot();
+    const unavailable = await callAction(`/explorar/${listingId}`, unlock, cookies.paid2, [
+      listingId,
+    ]);
+    expect(unavailable.body).toContain('"reason":"unavailable"');
+    expect(await snapshot()).toEqual(closed);
+  });
 });

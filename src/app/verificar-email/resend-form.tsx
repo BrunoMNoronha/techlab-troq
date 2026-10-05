@@ -2,12 +2,16 @@
 
 import { useEffect, useId, useRef, useState } from 'react';
 import { resendVerificationToken } from '@/modules/identity/actions';
+import { Alert } from '@/components/feedback';
+import { Field, Form, FormActions, Input } from '@/components/forms';
+import { Section } from '@/components/layout';
+import { Button, Card } from '@/components/ui';
 
 // Reenvio do e-mail de verificacao (identity-contract.md, IC-9.3). A mensagem
 // de sucesso e generica e nao revela se o e-mail tem cadastro.
 export function ResendVerificationForm({ initialEmail = '' }: { initialEmail?: string }) {
   const inputId = useId();
-  const feedbackRef = useRef<HTMLParagraphElement>(null);
+  const feedbackRef = useRef<HTMLDivElement>(null);
   const [email, setEmail] = useState(initialEmail);
   const [loading, setLoading] = useState(false);
   const [feedback, setFeedback] = useState<{ ok: boolean; text: string } | null>(null);
@@ -32,70 +36,37 @@ export function ResendVerificationForm({ initialEmail = '' }: { initialEmail?: s
   }
 
   return (
-    <div
-      style={{
-        padding: '20px',
-        backgroundColor: '#f9fafb',
-        border: '1px solid #e5e7eb',
-        borderRadius: '8px',
-      }}
-    >
-      <h2 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '8px' }}>
-        Solicitar novo link de verificação
-      </h2>
-      <form
-        onSubmit={handleSubmit}
-        style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}
-        aria-busy={loading}
-      >
-        <label htmlFor={inputId} style={{ fontSize: '14px', fontWeight: '600' }}>
-          E-mail cadastrado
-        </label>
-        <input
-          id={inputId}
-          type="email"
-          required
-          autoComplete="email"
-          placeholder="seu@email.com"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          style={{
-            padding: '10px 12px',
-            border: '1px solid #d1d5db',
-            borderRadius: '6px',
-            fontSize: '16px',
-          }}
-        />
-        <button
-          type="submit"
-          disabled={loading}
-          style={{
-            padding: '10px',
-            backgroundColor: loading ? '#9ca3af' : '#2563eb',
-            color: 'white',
-            border: 'none',
-            borderRadius: '6px',
-            fontWeight: '600',
-            cursor: loading ? 'not-allowed' : 'pointer',
-          }}
-        >
-          {loading ? 'Enviando...' : 'Reenviar e-mail'}
-        </button>
-      </form>
-      {feedback && (
-        <p
-          ref={feedbackRef}
-          tabIndex={-1}
-          role={feedback.ok ? 'status' : 'alert'}
-          style={{
-            marginTop: '12px',
-            fontSize: '14px',
-            color: feedback.ok ? '#166534' : '#b91c1c',
-          }}
-        >
-          {feedback.text}
-        </p>
-      )}
-    </div>
+    <Card variant="muted">
+      <Section title="Solicitar novo link de verificação" gap={4}>
+        <Form onSubmit={handleSubmit} aria-busy={loading}>
+          <Field label="E-mail cadastrado" htmlFor={inputId}>
+            <Input
+              id={inputId}
+              type="email"
+              required
+              autoComplete="email"
+              placeholder="seu@email.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </Field>
+          <FormActions>
+            <Button type="submit" loading={loading} fullWidth>
+              {loading ? 'Enviando...' : 'Reenviar e-mail'}
+            </Button>
+          </FormActions>
+        </Form>
+        {feedback && (
+          <Alert
+            ref={feedbackRef}
+            tabIndex={-1}
+            role={feedback.ok ? 'status' : 'alert'}
+            tone={feedback.ok ? 'success' : 'error'}
+          >
+            {feedback.text}
+          </Alert>
+        )}
+      </Section>
+    </Card>
   );
 }

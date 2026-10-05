@@ -118,7 +118,7 @@ _Atualização de 2026-10-01 (F3-001, DV-4)._ `ContactAccessEvent` registra **so
 | --- | --- |
 | Estados | `draft`, `published`, `paused`, `closed`, `removed` (DEC-027, seção 2) |
 | Inicial / terminais | Inicial `draft`; terminais `closed` e `removed` |
-| Campos de negócio | Dono, título, descrição, cidade, UF, ordenação das imagens, alternativas de troca (DM-5.10), instantes de cada transição |
+| Campos de negócio | Dono, título, descrição, categoria de produto (DM-5.11), cidade, UF, ordenação das imagens, alternativas de troca (DM-5.10), instantes de cada transição |
 | Localização | Apenas cidade e UF. **Sem** coordenadas, endereço, CEP ou bairro (RF-007, RB-005) |
 
 **DM-5.1 (invariante, restrição de banco + transação).** As transições permitidas são exatamente T1 a T9 de DEC-027, seção 4. Toda transição é aplicada por atualização condicionada ao estado de origem esperado — de modo que duas transições concorrentes não se sobreponham — e qualquer par (origem, destino) fora da matriz é rejeitado. `closed` e `removed` não têm transição de saída.
@@ -142,6 +142,8 @@ _Atualização de 2026-10-01 (F3-001, DV-4)._ `ContactAccessEvent` registra **so
 | Estados da imagem | `uploaded` (geração de upload autorizada e ainda não processada; a confirmação é `sourceConfirmedAt`), `processing`, `ready`, `failed`. Semântica técnica, execução e delta de campos para #46 em [media-pipeline-contract.md](media-pipeline-contract.md), seções 4 e 15 |
 | Campos | Anúncio, posição na ordenação, chave do objeto gerada pela aplicação, dimensões, instantes |
 | Derivados | `thumb` 320 px, `medium` 768 px, `large` 1600 px, em WebP qualidade 80, com dimensões conhecidas (DEC-028, seção 7) |
+
+**DM-5.11 (#89).** `Listing.category` é nullable, com código único de catálogo comercial e CHECK no banco. Publicar, reativar e editar `published`/`paused` exigem categoria sob a trava do anúncio. Migration sem backfill; legados permanecem legíveis e visíveis segundo DM-5.2 até regularização pelo dono. Regras e catálogo: [product-categories.md](../product/product-categories.md).
 
 **DM-5.7 (invariante, restrição de banco).** No máximo **6** imagens por anúncio, e a posição na ordenação é única dentro do anúncio. A primeira posição é a capa (DEC-028, seção 3).
 
@@ -218,6 +220,8 @@ Se não houver índice livre, a transação termina recusando a solicitação �
 _Atualização de 2026-10-01 (F3-001)._ A consequência — uma conta pode ocupar as três vagas com reservas não pagas, repetidamente — foi registrada como decisão aberta **OD-14** em [../decisions/open-decisions.md](../decisions/open-decisions.md). Até o seu fechamento, DM-6.11 vale como está.
 
 _Atualização de 2026-10-01 (DEC-041, fecha OD-14)._ Cada conta tem **no máximo uma reserva viva** (`reserved`) em cada anúncio ([../product/reservation-limit.md](../product/reservation-limit.md)). A verificação roda sob a trava do anúncio (DM-6.12), depois de expirar as vencidas (DM-6.3); a garantia é o índice único parcial `contact_requests_live_reservation_per_requester_key` sobre `(listing_id, requester_id)` restrito a `status = 'reserved'`. Fora de `reserved`, DM-6.11 continua valendo: a mesma pessoa pode ter mais de uma solicitação no mesmo anúncio ao longo do tempo.
+
+_Atualização de 2026-10-05 (DEC-051, #148; substitui a admissão irrestrita fora de reserved)._ Qualquer solicitação `paid` da conta no anúncio impede **nova** solicitação, mesmo revertida, não escolhida ou inelegível. Reservas expiradas/falhas permitem nova tentativa sem pagamento anterior. A verificação roda sob a trava do anúncio, após expirar vencidas, com recusa `already_paid` sem efeito financeiro. A garantia é a tabela auxiliar `contact_request_paid_guards` (PK `listing_id, requester_id`, booleano `has_paid`) e triggers com UPSERT atômico: novas linhas reservadas/pagas não entram após o marcador verdadeiro; a confirmação de reservas previamente admitidas é preservada. Backfill por pares distintos pagos preserva todas as linhas históricas, inclusive duplicidades. FKs com cascade acompanham a exclusão física do anúncio/conta após a retenção, sem mudar DM-6.7, vagas consumidas, pagamentos ou liberações de contato. Fonte: [../product/reservation-limit.md](../product/reservation-limit.md), RL-5 a RL-7.
 
 **DM-6.12 (decisão técnica, F3-001, DV-6 e DV-7 — a trava e o relógio).**
 
