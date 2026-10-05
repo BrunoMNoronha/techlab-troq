@@ -44,7 +44,8 @@ async function send(opts: Send = {}) {
   const ts = String(Date.now());
   const dataId = opts.dataId === undefined ? ORDER : opts.dataId;
   const query = dataId === null ? 'type=order' : `type=order&data.id=${encodeURIComponent(dataId)}`;
-  const manifest = `id:${(opts.manifestId ?? dataId ?? '').toLowerCase()};request-id:${requestId};ts:${ts};`;
+  // Vetor independente do adaptador: perfil de caixa do SDK Node 3.6.1 (DEC-052).
+  const manifest = `id:${opts.manifestId ?? dataId ?? ''};request-id:${requestId};ts:${ts};`;
   const v1 = createHmac('sha256', opts.secret ?? SECRET)
     .update(manifest)
     .digest('hex');
@@ -80,6 +81,28 @@ const rejection = (requestId: string) =>
       details: { path: ['providerRequestId'], equals: requestId },
     },
   });
+
+async function financialSnapshot() {
+  const out: Record<string, unknown> = {};
+  for (const table of [
+    'contact_requests',
+    'contact_request_paid_guards',
+    'payment_attempts',
+    'payments',
+    'payment_notifications',
+    'reconciliation_cases',
+    'technical_refunds',
+    'selections',
+    'negotiations',
+    'contact_releases',
+    'contact_access_events',
+  ]) {
+    out[table] = await getPrismaClient().$queryRawUnsafe(
+      `SELECT md5(coalesce(string_agg(t::text, '|' ORDER BY t::text), '')) AS digest, count(*)::int AS n FROM "${table}" t`,
+    );
+  }
+  return out;
+}
 
 describe.skipIf(!enabled)('webhook do Mercado Pago pela rota real (#96, T-13/T-14)', () => {
   afterAll(async () => {
@@ -133,7 +156,7 @@ describe.skipIf(!enabled)('webhook do Mercado Pago pela rota real (#96, T-13/T-1
     expect(await notifications(other.requestId)).toHaveLength(0);
   });
 
-  it('valida de order desconhecida: 200, registrada sem tentativa', async () => {
+  it('vetor SDK com query maiuscula: 200, registrada no caixa original sem tentativa', async () => {
     const res = await send();
 
     expect(res.status).toBe(200);
@@ -147,6 +170,23 @@ describe.skipIf(!enabled)('webhook do Mercado Pago pela rota real (#96, T-13/T-1
     expect(await rejection(res.requestId)).toHaveLength(0);
   });
 
+  it('query maiuscula assinada em minusculas: 401 vazio, sem fallback nem efeito financeiro', async () => {
+    const before = await financialSnapshot();
+    const res = await send({ manifestId: ORDER.toLowerCase() });
+
+    expect(res.status).toBe(401);
+    expect(res.body).toBe('');
+    expect(res.headers.get('cache-control')).toBe('no-store');
+    expect(await financialSnapshot()).toEqual(before);
+    expect(await notifications(res.requestId)).toHaveLength(0);
+    const events = await rejection(res.requestId);
+    expect(events).toHaveLength(1);
+    expect(events[0]).toMatchObject({ actorId: null, result: 'rejected' });
+    expect(events[0].details).toMatchObject({ reason: 'signature_invalid' });
+    for (const secret of [res.v1, SECRET, res.ts])
+      expect(JSON.stringify(events)).not.toContain(secret);
+  });
+
   it('so POST: outro metodo nao processa', async () => {
     const res = await fetch(`${BASE_URL}/api/webhooks/mercadopago?data.id=${ORDER}`, {
       redirect: 'manual',
@@ -155,29 +195,8 @@ describe.skipIf(!enabled)('webhook do Mercado Pago pela rota real (#96, T-13/T-1
   });
 
   it('F3-014 (#104): rajada de rejeicoes nao altera fatos financeiros nem vaza contato', async () => {
-    const snapshot = async () => {
-      const out: Record<string, unknown> = {};
-      for (const table of [
-        'contact_requests',
-        'contact_request_paid_guards',
-        'payment_attempts',
-        'payments',
-        'payment_notifications',
-        'reconciliation_cases',
-        'technical_refunds',
-        'selections',
-        'negotiations',
-        'contact_releases',
-        'contact_access_events',
-      ]) {
-        out[table] = await getPrismaClient().$queryRawUnsafe(
-          `SELECT md5(coalesce(string_agg(t::text, '|' ORDER BY t::text), '')) AS digest, count(*)::int AS n FROM "${table}" t`,
-        );
-      }
-      return out;
-    };
     const phone = '+5511912345678';
-    const before = await snapshot();
+    const before = await financialSnapshot();
     const responses = await Promise.all(
       Array.from({ length: 32 }, () =>
         send({
@@ -191,7 +210,7 @@ describe.skipIf(!enabled)('webhook do Mercado Pago pela rota real (#96, T-13/T-1
         }),
       ),
     );
-    expect(await snapshot()).toEqual(before);
+    expect(await financialSnapshot()).toEqual(before);
     for (const reply of responses) {
       expect(reply.status).toBe(401);
       expect(reply.body).toBe('');
