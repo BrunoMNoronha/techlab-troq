@@ -22,7 +22,9 @@ O estado detalhado — o que existe, o que está validado, o que tem evidência 
 6. A negociação pode ser encerrada; após o encerramento, avaliações são permitidas.
 7. Anúncios podem ser denunciados e moderados, conforme a política de itens proibidos.
 
-As regras de negócio homologadas (RB-001 a RB-006) estão em [docs/product/business-rules.md](docs/product/business-rules.md).
+As regras de negócio homologadas (RB-001 a RB-010) estão em [docs/product/business-rules.md](docs/product/business-rules.md).
+
+O fluxo acima é o da regra de troca **solicitação paga**, a única implementada. Desde 2026-10-05 há uma segunda regra cadastrada, a **proposta de troca** — proposta gratuita de um anúncio por outro, pagamento só depois do aceite e contato liberado para os dois —, ainda sem implementação e selecionável por ambiente: [docs/product/trade-proposal.md](docs/product/trade-proposal.md) e [docs/adr/0009-trade-rules-environment-selector.md](docs/adr/0009-trade-rules-environment-selector.md).
 
 ## Stack decidida (Fase 0)
 

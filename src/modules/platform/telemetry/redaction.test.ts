@@ -11,7 +11,13 @@
 
 import { describe, expect, it } from 'vitest';
 import { REDACTED, isForbiddenKey, redactText, sanitizeRecord, sanitizeUrl } from './redaction';
-import { sanitizeBreadcrumb, sanitizeEvent, sanitizeLog, sanitizeSpan } from './sentry-options';
+import {
+  createTelemetryOptions,
+  sanitizeBreadcrumb,
+  sanitizeEvent,
+  sanitizeLog,
+  sanitizeSpan,
+} from './sentry-options';
 
 /** Sentinelas ficticias. Nenhuma delas pode aparecer em telemetria. */
 const SENTINELS = {
@@ -298,4 +304,131 @@ describe('correlacao tecnica', () => {
     expect(sanitized.telefoneTruncado).toBe(REDACTED);
     expect(sanitized.correlationKey).not.toContain(SENTINELS.whatsapp);
   });
+});
+
+describe('credencial de protecao de Preview nas superficies reais de telemetria', () => {
+  // Valores opacos sinteticos: nenhuma regra generica de token/telefone deve
+  // reconhece-los. A protecao depende do NOME, nunca destes conteudos.
+  const canaries = ['aBcDeFgHjKmNoPqRsTuVwXyZ', 'qR_sT-uV.wX~yZ+/='];
+  const keys = [
+    'x-vercel-protection-bypass',
+    'X_VERCEL_PROTECTION_BYPASS',
+    'xVercelProtectionBypass',
+    'x%2Dvercel%2Dprotection%2Dbypass',
+    '%78%2dvercel%2dprotection%2dbypass',
+    'x%252Dvercel%252Dprotection%252Dbypass',
+    'sentry.x-vercel-protection-bypass',
+  ];
+  const percentEncode = (value: string) =>
+    [...value].map((char) => `%${char.charCodeAt(0).toString(16).padStart(2, '0')}`).join('');
+
+  it.each(keys)('redige o campo canonico/codificado %s', (key) => {
+    expect(isForbiddenKey(key)).toBe(true);
+    expect(sanitizeRecord({ [key]: canaries[0], requestId: 'req-safe' })).toEqual({
+      [key]: REDACTED,
+      requestId: 'req-safe',
+    });
+  });
+
+  it.each(canaries)(
+    'remove a credencial opaca em texto/URL, sem depender do valor (%s)',
+    (canary) => {
+      expect(redactText(canary)).toBe(canary);
+      for (const key of keys) {
+        const query = `${key}=${encodeURIComponent(canary)}&status=processed`;
+        const url = `https://app.example.invalid/api/webhooks/mercadopago?${query}`;
+        const inputs = [
+          query,
+          url,
+          `POST ${url}`,
+          `${key}: "${canary}"`,
+          JSON.stringify({ [key]: canary }),
+          encodeURIComponent(url),
+          percentEncode(query),
+          encodeURIComponent(percentEncode(query)),
+          `%ZZ ${percentEncode(query)}`,
+        ];
+        for (const input of inputs) expect(redactText(input)).toBe(REDACTED);
+      }
+    },
+  );
+
+  it('mantem URLs sem bypass e a remocao integral da query da requisicao', () => {
+    const safe = 'https://app.example.invalid/api/webhooks/mercadopago';
+    expect(redactText(`${safe}?status=processed&requestId=req-safe`)).toBe(
+      `${safe}?status=processed&requestId=req-safe`,
+    );
+    expect(
+      sanitizeUrl(`${safe}?x-vercel-protection-bypass=${canaries[0]}&status=processed#fragment`),
+    ).toBe(safe);
+  });
+
+  it.each(canaries)(
+    'hooks reais removem bypass de erros, transacoes, spans, breadcrumbs e logs (%s)',
+    (canary) => {
+      const hooks = createTelemetryOptions();
+      const key = 'x-vercel-protection-bypass';
+      const query = `${key}=${encodeURIComponent(canary)}&status=processed`;
+      const url = `https://app.example.invalid/api/webhooks/mercadopago?${query}`;
+      const encodedUrl = percentEncode(url);
+      const span = {
+        span_id: 'a1',
+        trace_id: 'b2',
+        start_timestamp: 1,
+        op: 'http.server',
+        description: `POST ${url}`,
+        data: {
+          'url.full': url,
+          'url.query': query,
+          'http.url': encodedUrl,
+          'http.target': `/api/webhooks/mercadopago?${query}`,
+          [key]: canary,
+          'sentry.x-vercel-protection-bypass': canary,
+          'http.route': '/api/webhooks/mercadopago',
+        },
+      };
+      const breadcrumb = {
+        category: 'fetch',
+        message: `POST ${url}`,
+        data: { url, target: encodedUrl, [key]: canary, status_code: 401 },
+      };
+      const event = {
+        message: `falha ${url}`,
+        transaction: `POST ${encodedUrl}`,
+        request: {
+          method: 'POST',
+          url,
+          headers: { [key]: canary },
+          query_string: query,
+        },
+        exception: { values: [{ type: 'Error', value: `callback ${url}` }] },
+        tags: { target: url, [key]: canary, requestId: 'req-safe' },
+        extra: { destination: encodedUrl, [key]: canary },
+        contexts: { response: { url, status_code: 401 } },
+        breadcrumbs: [breadcrumb],
+        spans: [span],
+      };
+      const outputs = [
+        hooks.beforeSend({ ...event, type: undefined }, {}),
+        hooks.beforeSendTransaction({ ...event, type: 'transaction' }, {}),
+        hooks.beforeSendSpan(span),
+        hooks.beforeBreadcrumb(breadcrumb),
+        hooks.beforeSendLog({
+          level: 'info',
+          message: `callback ${encodedUrl}`,
+          attributes: { 'url.full': url, 'url.query': query, [key]: canary, requestId: 'req-safe' },
+        }),
+      ];
+      expectNoSentinels(outputs, [canary, encodeURIComponent(canary), percentEncode(canary)]);
+      const sanitizedEvent = outputs[0] as typeof event;
+      expect(sanitizedEvent.request).toEqual({
+        method: 'POST',
+        url: 'https://app.example.invalid/api/webhooks/mercadopago',
+      });
+      expect(sanitizedEvent.tags.requestId).toBe('req-safe');
+      expect(sanitizedEvent.spans[0].data['http.route']).toBe('/api/webhooks/mercadopago');
+      expect(sanitizedEvent.breadcrumbs[0].data.status_code).toBe(401);
+      expect(sanitizedEvent.contexts.response.status_code).toBe(401);
+    },
+  );
 });

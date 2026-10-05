@@ -57,6 +57,9 @@ export type {
   RegisteredNotification,
 } from './confirmation';
 
+// Diagnostico temporario de Preview: observacao limitada, nunca autenticacao.
+export { recordPreviewSignatureDiagnostic } from './signature-diagnostic';
+
 // F3-007 (#97): reembolso tecnico e cancelamento, fora de transacao (PD-8).
 export {
   cancelUnaccreditedCharge,

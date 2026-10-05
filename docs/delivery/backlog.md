@@ -12,7 +12,7 @@ Fontes: [roadmap.md](roadmap.md), [../decisions/open-decisions.md](../decisions/
 
 ## Convenções
 
-- IDs por fase — `F0-xxx` na Fase 0, `F1-xxx` na Fase 1, `F2-xxx` na Fase 2, `F3-xxx` na Fase 3 —, sequenciais dentro da fase e nunca reutilizados.
+- IDs por fase — `F0-xxx` na Fase 0, `F1-xxx` na Fase 1, `F2-xxx` na Fase 2, `F3-xxx` na Fase 3 —, sequenciais dentro da fase e nunca reutilizados. A frente proposta de troca, que não é fase, usa `PT-xx` ([trade-proposal-plan.md](trade-proposal-plan.md)).
 - **Estados:** `concluído`, `próximo` (o próximo trabalho a executar), `pendente` (pode ser executado assim que houver capacidade, sem bloqueio) e `bloqueado` (depende de outro item ainda não concluído).
 - Cada item resulta em documento versionado, em código versionado ou em decisão registrada em [../decisions/decision-log.md](../decisions/decision-log.md) e, quando houver, no fechamento da OD correspondente em [../decisions/open-decisions.md](../decisions/open-decisions.md).
 - Ordem de execução segue a hierarquia de dependências; itens `pendente` sem dependência entre si podem correr em paralelo.
@@ -322,6 +322,18 @@ A Fase 3 está **liberada para execução** desde a aprovação do gate da Fase 
 O [plano das Fases 4 e 5](phase-4-5-plan.md) reúne as 17 issues executoras, vinculadas como subissues: [#163–#169](https://github.com/BrunoMNoronha/techlab-troq/issues/55) na Fase 4 e [#170–#179](https://github.com/BrunoMNoronha/techlab-troq/issues/56) na Fase 5. Todas estão abertas; nenhuma fase foi implementada ou homologada por esta decomposição. O gate #105 permanece pré-requisito da execução da Fase 4.
 
 A release operacional #135 está encerrada. #179 verifica a release final e a autorização comercial, sem duplicar a publicação já feita. Responsáveis, datas, prioridades e valores das métricas permanecem TBD até decisão na issue correspondente.
+
+## Frente proposta de troca — decomposição em 2026-10-05
+
+O [plano da frente proposta de troca](trade-proposal-plan.md) reúne as doze issues executoras [#186–#197](https://github.com/BrunoMNoronha/techlab-troq/issues/185), vinculadas como subissues de #185. A frente está fora das fases e não altera os gates das Fases 3 a 5 (DEC-055).
+
+| ID | Título | Objetivo | Dependências | Estado |
+| --- | --- | --- | --- | --- |
+| PT-00 | Registrar decisões, ADR e contratos ([#186](https://github.com/BrunoMNoronha/techlab-troq/issues/186)) | DEC-053 a DEC-055, OD-17 e OD-18, ADR-0009, contrato de produto e desenho técnico da proposta de troca, e as issues PT-01 a PT-11 | — | em revisão |
+| PT-01 | Provar no sandbox a cobrança de R$ 2,99 com validade de 24 horas ([#187](https://github.com/BrunoMNoronha/techlab-troq/issues/187)) | Evidência para OD-17 e para o valor por tentativa | — | próximo |
+| PT-02 a PT-11 | Seletor, compromisso do anúncio, pagamentos, proposta, aceite, efeito do pagamento, desfecho, jornada, moderação e homologação ([#188](https://github.com/BrunoMNoronha/techlab-troq/issues/188) a [#197](https://github.com/BrunoMNoronha/techlab-troq/issues/197)) | Detalhe, dependências e testes de cada uma no [plano](trade-proposal-plan.md), seção 4 | PT-00; gate #105 | bloqueado |
+
+Nenhuma parte da regra proposta de troca foi implementada. Responsáveis, datas e prioridades permanecem TBD.
 
 ## Fora deste backlog
 

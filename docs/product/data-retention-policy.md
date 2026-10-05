@@ -4,6 +4,8 @@ Documento normativo que fecha [OD-10](../decisions/open-decisions.md) e registra
 
 Fontes: [business-rules.md](business-rules.md) (RB-001, RB-005), [image-policy.md](image-policy.md) (DEC-028), [listing-lifecycle.md](listing-lifecycle.md) (DEC-027), [negotiation-lifecycle.md](negotiation-lifecycle.md) (DEC-029), [ratings.md](ratings.md) (DEC-030), [prohibited-items.md](prohibited-items.md) (DEC-031), [requirements.md](requirements.md) (RF-006, RF-020, RF-022, RF-023, RNF-008, RNF-009, RNF-011), [../delivery/risks.md](../delivery/risks.md) (R-03, R-06).
 
+**Escopo de regra (DEC-053, 2026-10-05).** Este documento vale para as duas regras de troca e não foi alterado. As categorias da seção 2 alcançam as entidades da regra **proposta de troca** sem mudança: proposta e negociação são dado operacional, os eventos são auditoria, o pagamento é metadado financeiro e cada uma das duas liberações de contato tem a trilha da seção 6 ([trade-proposal.md](trade-proposal.md), DEC-054, seção 14).
+
 ## 1. Princípio — minimização de dados
 
 O TROQS coleta e conserva o mínimo necessário para operar, e conserva cada dado apenas enquanto a finalidade que o justificou permanecer válida. Quando a finalidade se esgota, o dado é eliminado ou anonimizado irreversivelmente.

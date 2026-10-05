@@ -22,6 +22,10 @@ export const REDACTED = '[redacted]';
 /** Profundidade máxima percorrida ao sanear uma estrutura aninhada. */
 const MAX_DEPTH = 8;
 
+// Credencial de automacao da protecao de Preview, inclusive quando a SDK a
+// inclui numa URL em vez de um campo chamado token/secret.
+const PROTECTION_BYPASS_KEY_FRAGMENT = 'vercelprotectionbypass';
+
 /**
  * Fragmentos de nome de campo que tornam o valor proibido, sem exceção.
  *
@@ -75,6 +79,7 @@ const FORBIDDEN_KEY_FRAGMENTS: readonly string[] = [
   'bearer',
   'signature',
   'assinatura',
+  PROTECTION_BYPASS_KEY_FRAGMENT,
   // Dado financeiro sensível.
   'card',
   'cartao',
@@ -160,7 +165,18 @@ const VALUE_RULES: ReadonlyArray<{ readonly pattern: RegExp; readonly replacemen
 
 /** Minúsculas, sem acento e sem separador: `E-Mail` e `e_mail` viram `email`. */
 function normalizeKey(key: string): string {
-  return key
+  // Nomes ASCII codificados na query, inclusive codificacoes adicionais. Cada
+  // passada encurta a entrada; o limite e seu tamanho original, e o ponto fixo
+  // encerra antes. Decodifica SOMENTE para detectar; nunca emite o dado assim.
+  let decoded = key;
+  for (let pass = 0; pass < key.length; pass++) {
+    const next = decoded.replace(/%(?:25)*([0-9a-f]{2})/gi, (_, byte: string) =>
+      String.fromCharCode(Number.parseInt(byte, 16)),
+    );
+    if (next === decoded) break;
+    decoded = next;
+  }
+  return decoded
     .normalize('NFD')
     .replace(/\p{Diacritic}/gu, '')
     .toLowerCase()
@@ -169,10 +185,11 @@ function normalizeKey(key: string): string {
 
 /** `true` quando o nome do campo, por si só, torna o valor proibido. */
 export function isForbiddenKey(key: string): boolean {
+  const normalized = normalizeKey(key);
+  if (normalized.includes(PROTECTION_BYPASS_KEY_FRAGMENT)) return true;
   if (key.startsWith(SDK_RESERVED_KEY_PREFIX)) {
     return false;
   }
-  const normalized = normalizeKey(key);
   if (normalized.length === 0) {
     return false;
   }
@@ -189,6 +206,11 @@ export function isForbiddenKey(key: string): boolean {
  * seja telefone — um carimbo de tempo em texto, por exemplo — também é redigida.
  */
 export function redactText(value: string): string {
+  // A mesma URL pode aparecer em url.full, descricao de span, breadcrumb ou
+  // mensagem, que nao passam por sanitizeUrl. Descarta o valor inteiro quando
+  // contiver o nome da credencial, sem depender do formato do segredo ou de
+  // delimitadores/encoding e sem emitir uma versao decodificada da entrada.
+  if (normalizeKey(value).includes(PROTECTION_BYPASS_KEY_FRAGMENT)) return REDACTED;
   return VALUE_RULES.reduce((text, rule) => text.replace(rule.pattern, rule.replacement), value);
 }
 

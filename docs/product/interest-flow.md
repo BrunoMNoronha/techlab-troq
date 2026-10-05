@@ -4,6 +4,8 @@ Documento normativo que fecha [OD-12](../decisions/open-decisions.md) e registra
 
 Fontes: [mvp-scope.md](mvp-scope.md) (fluxo central), [business-rules.md](business-rules.md) (RB-003, RB-004), [listing-lifecycle.md](listing-lifecycle.md) (DEC-027), [requirements.md](requirements.md) (RF-008, RF-009, RF-010).
 
+**Escopo de regra (DEC-053, 2026-10-05).** Este documento rege a regra de troca **solicitação paga** (`paid_request`) e não foi alterado. Na regra **proposta de troca** (`trade_proposal`) não existe demonstração de interesse: a proposta é gratuita, persistida e visível ao anunciante por decisão própria daquela regra ([trade-proposal.md](trade-proposal.md), DEC-054, seção 3). Isso não reabre, para a solicitação paga, nenhuma das alternativas rejeitadas na seção 9.
+
 ## 1. Decisão
 
 **A demonstração de interesse NÃO é uma entidade persistida independente no MVP.**

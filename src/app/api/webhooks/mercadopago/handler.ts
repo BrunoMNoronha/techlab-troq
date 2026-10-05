@@ -3,6 +3,7 @@ import {
   markNotificationProcessed,
   MercadoPagoConfigError,
   readWebhookConfig,
+  recordPreviewSignatureDiagnostic,
   recordRejectedNotification,
   registerNotification,
   verifyNotification,
@@ -111,6 +112,9 @@ export async function handleMercadoPagoWebhook(
       providerRequestId: request.headers.get('x-request-id'),
       providerDataId: query.get('data.id'),
     });
+    if (verification.reason === 'signature_invalid') {
+      await recordPreviewSignatureDiagnostic({ query, headers: request.headers, body }, config);
+    }
     return empty(statusFor(verification.reason, body));
   }
 
