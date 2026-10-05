@@ -1,3 +1,4 @@
+import { productCategoryLabel } from '@/modules/listing/categories';
 import { redirect } from 'next/navigation';
 import { getOwnContactStatus } from '@/modules/contact';
 import { validateSession, loginRedirectPath } from '@/modules/identity';
@@ -205,6 +206,9 @@ export default async function MeusAnunciosPage() {
                   }}
                 >
                   {item.description}
+                </p>
+                <p style={{ color: '#4b5563', fontSize: '13px' }}>
+                  {productCategoryLabel(item.category)}
                 </p>
 
                 <div

@@ -112,6 +112,7 @@ async function draft(
     city: 'Recife',
     state: 'PE',
     tradeOptions,
+    category: 'esportes',
   });
   expect(res.success).toBe(true);
   return res.listingId!;

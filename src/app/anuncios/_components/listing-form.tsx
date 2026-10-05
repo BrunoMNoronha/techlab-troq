@@ -17,9 +17,11 @@ import {
   type TradeOptionField,
   type TradeOptionSlots,
 } from '@/modules/listing/validation';
+import { PRODUCT_CATEGORIES } from '@/modules/listing/categories';
 import { BRAZILIAN_UFS, isBrazilianUf, ufOptionLabel } from '@/modules/listing/uf';
 
 export interface ListingFormValues {
+  category?: string | null;
   title: string;
   description: string;
   city: string;
@@ -28,6 +30,7 @@ export interface ListingFormValues {
 }
 
 const EMPTY_VALUES: ListingFormValues = {
+  category: '',
   title: '',
   description: '',
   city: '',
@@ -35,12 +38,13 @@ const EMPTY_VALUES: ListingFormValues = {
   tradeOptions: EMPTY_TRADE_OPTIONS,
 };
 
-type FocusableField = ListingField | TradeOptionField;
+type FocusableField = ListingField | TradeOptionField | 'category';
 
 /** Ordem visual do formulario, usada para focar o primeiro campo invalido. */
 const FIELD_ORDER: readonly FocusableField[] = [
   'title',
   'description',
+  'category',
   ...TRADE_OPTION_FIELDS,
   'city',
   'state',
@@ -154,7 +158,7 @@ export function ListingForm({
     }
   }, [attempt, fieldErrors, formError]);
 
-  function update(field: ListingField, value: string) {
+  function update(field: ListingField | 'category', value: string) {
     setValues((current) => ({ ...current, [field]: value }));
   }
 
@@ -170,7 +174,7 @@ export function ListingForm({
     e.preventDefault();
     if (inFlight.current) return;
 
-    const local = validateListingContent(values);
+    const local = validateListingContent(values, requireTradeOptions);
     const localOptions = validateTradeOptions(values.tradeOptions, requireTradeOptions);
     if (!local.ok || !localOptions.ok) {
       setFieldErrors({
@@ -411,6 +415,44 @@ export function ListingForm({
 
       {renderField('title')}
       {renderField('description')}
+      <div style={{ minWidth: 0 }}>
+        <label htmlFor="category" style={labelStyle}>
+          Categoria do produto
+        </label>
+        <select
+          id="category"
+          name="category"
+          ref={(el) => {
+            fieldRefs.current.category = el ?? undefined;
+          }}
+          value={values.category ?? ''}
+          onChange={(e) => update('category', e.target.value)}
+          aria-invalid={fieldErrors.category ? true : undefined}
+          aria-describedby={fieldErrors.category ? 'category-hint category-error' : 'category-hint'}
+          style={{
+            ...inputStyle(Boolean(fieldErrors.category)),
+            backgroundColor: 'white',
+            minHeight: '44px',
+          }}
+        >
+          <option value="">Selecione a categoria</option>
+          {PRODUCT_CATEGORIES.map((category) => (
+            <option key={category.code} value={category.code}>
+              {category.label}
+            </option>
+          ))}
+        </select>
+        <p id="category-hint" style={{ color: '#4b5563', fontSize: '13px', margin: '4px 0 0' }}>
+          {requireTradeOptions
+            ? 'Selecione uma categoria para salvar este anúncio.'
+            : 'Você pode escolher depois; a categoria é obrigatória para publicar.'}
+        </p>
+        {fieldErrors.category && (
+          <p id="category-error" style={fieldErrorStyle}>
+            {fieldErrors.category}
+          </p>
+        )}
+      </div>
       {renderTradeOptions()}
 
       {/* Cidade e UF lado a lado quando cabem; empilhadas no celular. */}

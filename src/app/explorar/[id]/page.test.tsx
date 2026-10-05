@@ -30,6 +30,7 @@ function derivatives(imageId: string) {
 const listing = {
   id: ID,
   title: 'Bicicleta aro 29',
+  category: 'esportes',
   description: 'Bicicleta em ótimo estado.',
   city: 'Campinas',
   state: 'SP',

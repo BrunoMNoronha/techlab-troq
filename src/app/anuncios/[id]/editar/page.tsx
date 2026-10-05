@@ -1,3 +1,4 @@
+import { productCategoryLabel } from '@/modules/listing/categories';
 import { notFound, redirect } from 'next/navigation';
 import { loginRedirectPath, validateSession } from '@/modules/identity';
 import { getListingForEdit } from '@/modules/listing';
@@ -102,6 +103,7 @@ export default async function EditarAnuncioPage({ params }: { params: Promise<{ 
             city: listing.city,
             state: listing.state,
             tradeOptions: listing.tradeOptions,
+            category: listing.category,
           }}
         />
       ) : null}
@@ -148,6 +150,8 @@ export default async function EditarAnuncioPage({ params }: { params: Promise<{ 
             <dd style={{ margin: '4px 0 0' }}>{listing.title}</dd>
             <dt style={{ fontWeight: '600', marginTop: '16px' }}>Descrição</dt>
             <dd style={{ margin: '4px 0 0', whiteSpace: 'pre-wrap' }}>{listing.description}</dd>
+            <dt>Categoria</dt>
+            <dd>{productCategoryLabel(listing.category)}</dd>
             <dt style={{ fontWeight: '600', marginTop: '16px' }}>Aceita em troca</dt>
             <dd style={{ margin: '4px 0 0' }}>
               {listing.tradeOptions.some(Boolean)

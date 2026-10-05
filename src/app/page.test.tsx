@@ -12,6 +12,7 @@ function offer(id: string, title: string) {
   return {
     id,
     title,
+    category: 'esportes',
     description: `Descrição de ${title}`,
     city: 'Recife',
     state: 'PE',
