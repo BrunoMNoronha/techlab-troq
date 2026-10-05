@@ -992,8 +992,14 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
           ['reembolso_pendente', 'rt_2', 'refunded'],
         ]);
         expect(await audits('request.paid', [r.contactRequestId])).toHaveLength(0);
-        // F3-013: excecao nao e pagamento confirmado; nenhum aviso de TE-1/TE-2.
-        expect(sent()).toHaveLength(0);
+        // F3-013: excecao nao e pagamento confirmado; nenhum TE-1/TE-2. A
+        // devolucao concluida avisa quem pagou, uma vez (TE-6, DEC-048).
+        const refund = await prisma().technicalRefund.findFirstOrThrow({
+          where: { payment: { paymentAttemptId: r.attemptId } },
+        });
+        expect(sent().map((m) => [m.to, m.idempotencyKey])).toEqual([
+          [email('r4'), `troq-notice/refund_concluded/${refund.id}`],
+        ]);
       });
 
       it('dois pagamentos aprovados na busca: canonico eleito e excedente RT-1 (F3-007)', async () => {

@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { Prisma } from '@/generated/prisma/client';
 import { recordAuditEvent } from '@/modules/audit';
+import { notifyUser } from '@/modules/identity';
 import { getPrismaClient } from '@/persistence/prisma';
 import { openCaseInTx, type ConfirmationDeps } from './confirmation';
 import {
@@ -71,6 +72,9 @@ interface RefundRow {
   attemptId: string;
   attemptStatus: string;
   providerOrderId: string | null;
+  /** Quem pagou e o anuncio, para o aviso TE-6 (F3-013, DEC-048). */
+  requesterId: string;
+  listingId: string;
   /** Aprovacao ha `REFUND_WINDOW_DAYS` dias ou mais, pelo relogio do banco. */
   windowExpired: boolean;
 }
@@ -84,11 +88,13 @@ async function readRefund(refundId: string): Promise<RefundRow | null> {
            p."is_canonical" AS "isCanonical",
            pa."id"::text AS "attemptId", pa."status"::text AS "attemptStatus",
            pa."provider_order_id" AS "providerOrderId",
+           cr."requester_id"::text AS "requesterId", cr."listing_id"::text AS "listingId",
            COALESCE(p."accredited_at" <= now() - make_interval(days => ${REFUND_WINDOW_DAYS}::int),
                     false) AS "windowExpired"
     FROM "technical_refunds" tr
     JOIN "payments" p ON p."id" = tr."payment_id"
     JOIN "payment_attempts" pa ON pa."id" = p."payment_attempt_id"
+    JOIN "contact_requests" cr ON cr."id" = pa."contact_request_id"
     WHERE tr."id" = ${refundId}::uuid`;
   return row ?? null;
 }
@@ -276,12 +282,23 @@ export async function processTechnicalRefund(
       transaction,
     );
     if (result.ok) {
-      await recordAttempt(
+      const recorded = await recordAttempt(
         refund,
         'concluido',
         result.value.alreadyRefunded ? 'order_already_refunded' : 'refunded',
         { providerRefundId: result.value.providerRefundId },
       );
+      // TE-6, depois do COMMIT e so por quem gravou a conclusao (F3-013,
+      // DEC-048). Execucao concorrente que perdeu o UPDATE recebe `null` e nao
+      // avisa. `notifyUser` nunca lanca.
+      if (recorded === 'concluido') {
+        await notifyUser({
+          kind: 'refund_concluded',
+          recipientId: refund.requesterId,
+          technicalRefundId: refund.id,
+          listingId: refund.listingId,
+        });
+      }
       return 'concluded';
     }
     if (result.kind === 'unavailable' && result.reason === 'cannot_refund') {

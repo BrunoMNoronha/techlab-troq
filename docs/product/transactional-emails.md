@@ -19,7 +19,7 @@ Este documento **não** define:
 | --- | --- |
 | Email de verificação de conta | [../architecture/identity-contract.md](../architecture/identity-contract.md), IC-9 (DEC-015) |
 | Emails de encerramento de negociação, avaliação e moderação | Fase 4 ([#55](https://github.com/BrunoMNoronha/techlab-troq/issues/55)), no design de cada fluxo |
-| Emails que dependem de decisão de produto ainda não tomada | Seção 5, escalados ao Bruno |
+| Avisos recusados ou adiados | Seção 5 |
 | Telas e textos de interface | F3-012 ([#102](https://github.com/BrunoMNoronha/techlab-troq/issues/102)) |
 
 ## 2. Catálogo
@@ -29,6 +29,7 @@ Este documento **não** define:
 | **TE-1** | Solicitação `reserved` → `paid` com a tentativa em `pagamento_confirmado` (PD-6.6, passo 4) | Quem pagou | "TROQ: pagamento da sua solicitação confirmado" | `/explorar/<anúncio>` | O Pix é pago fora do TROQ e a confirmação pode chegar minutos depois, inclusive pela reconciliação (PE-4.2, PE-6.6). Sem aviso, quem pagou não sabe que a solicitação entrou na lista do anunciante |
 | **TE-2** | A mesma transição de TE-1 | O anunciante dono do anúncio | "TROQ: nova solicitação paga em um anúncio seu" | `/anuncios` | A escolha (RF-013) depende de o anunciante saber que existe solicitação paga elegível. Sem aviso, a vaga consumida fica parada |
 | **TE-3** | Escolha ou reseleção que grava `Selection`, `Negotiation` `active` e `ContactRelease` (CR-3.3, DEC-032) | A pessoa escolhida | "TROQ: o anunciante escolheu você e liberou o contato" | `/contatos` | A liberação é o produto pago (RB-001). Quem foi escolhido precisa saber que o contato está disponível — e onde, porque ele não vai por email |
+| **TE-6** | `TechnicalRefund` → `concluido` (RT-1 a RT-4; PD-8), gravado pela execução que recebeu a devolução do provedor | Quem pagou | "TROQ: devolvemos um pagamento seu" | `/explorar/<anúncio>` | Decisão do Bruno em 2026-10-04 (seção 5). Quem pagou e não recebeu o que pagou precisa saber que o dinheiro voltou. O texto não diz a causa técnica nem o valor, e vale igualmente para duplicidade, fora da janela e sem vaga |
 
 Uma transição que não está na tabela **não** envia email. Acrescentar uma linha é decisão registrada neste documento, com a transição e a justificativa no fluxo.
 
@@ -56,20 +57,20 @@ Por quê: esses textos são livres e podem conter telefone/WhatsApp. O bloqueio 
 
 **TE-5.5 (decisão técnica).** Destinatário em domínio reservado (RFC 2606 e RFC 6761: `.test`, `.invalid`, `.example`, `.localhost`, `example.com`, `example.net`, `example.org`) nunca chega ao provedor. Os dados sintéticos dos testes usam esses domínios, e um servidor de teste com chave de desenvolvimento não manda email a endereço inexistente.
 
-## 5. Pendências de produto (escaladas ao Bruno)
+## 5. Decisões de produto sobre avisos candidatos
 
-Estes avisos são plausíveis, mas cada um depende de uma escolha de produto que não está em nenhum documento vigente. **Não** foram implementados.
+Três avisos plausíveis dependiam de escolha de produto. O Bruno decidiu em 2026-10-04:
 
-| Candidato | Transição | O que precisa ser decidido |
+| Candidato | Transição | Decisão |
 | --- | --- | --- |
-| Reembolso técnico concluído | `TechnicalRefund` → `concluido` (RT-1 a RT-4) | Se quem pagou deve ser avisado da devolução e com que texto, dado que a causa (duplicidade, fora da janela, sem vaga) pode exigir explicação |
-| Reserva expirada sem pagamento | `reserved` → `expired`/`failed` | Se um aviso de "sua reserva expirou" ajuda ou só gera ruído, já que a pessoa não pagou |
-| Solicitação paga não escolhida | Escolha de outra pessoa no mesmo anúncio | Se e quando avisar quem não foi escolhido, considerando que a reseleção ainda pode escolhê-lo (DEC-032) |
+| Reembolso técnico concluído | `TechnicalRefund` → `concluido` (RT-1 a RT-4) | **Avisar**: virou TE-6, sem a causa técnica |
+| Reserva expirada sem pagamento | `reserved` → `expired`/`failed` | **Não avisar**: a pessoa não pagou, e o aviso seria ruído. Ela pode solicitar de novo se houver vaga |
+| Solicitação paga não escolhida | Escolha de outra pessoa no mesmo anúncio | **Não avisar agora**: pela reseleção (DEC-032) a pessoa ainda pode ser escolhida, e "não foi escolhido" seria enganoso. Revisitar na Fase 4, com o encerramento |
 | Negociação anterior encerrada na reseleção | Reseleção | Fase 4: o encerramento é de [#55](https://github.com/BrunoMNoronha/techlab-troq/issues/55) |
 
 ## 6. Rastreabilidade
 
 - **Registra:** DEC-048 em [../decisions/decision-log.md](../decisions/decision-log.md).
-- **Implementação:** `src/modules/identity/notifications.ts` (catálogo e templates), `src/modules/identity/email-transport.ts` (transporte), chamadas em `src/modules/request/payment-confirmation.ts` (TE-1, TE-2) e `src/modules/negotiation/selection.ts` (TE-3).
-- **Provas:** testes unitários de template e transporte; integração sobre PostgreSQL efêmero com transporte simulado, inclusive T-3 (cinco notificações simultâneas, um aviso de cada tipo), T-4 (reentrega e reconciliação depois da confirmação, sem reenvio) e C-9 (N escolhas concorrentes, um aviso).
+- **Implementação:** `src/modules/identity/notifications.ts` (catálogo e templates), `src/modules/identity/email-transport.ts` (transporte), chamadas em `src/modules/request/payment-confirmation.ts` (TE-1, TE-2), `src/modules/negotiation/selection.ts` (TE-3) e `src/modules/payments/refund.ts` (TE-6).
+- **Provas:** testes unitários de template e transporte; integração sobre PostgreSQL efêmero com transporte simulado, inclusive T-3 (cinco notificações simultâneas, um aviso de cada tipo), T-4 (reentrega e reconciliação depois da confirmação, sem reenvio) C-9 (N escolhas concorrentes, um aviso) e T-7/T-16 (um TE-6 por devolução, nenhum enquanto o reembolso falha, nenhum na reexecução já concluída).
 - **Não altera:** nenhuma regra de negócio, RB-001 a RB-006, DEC-015, DEC-032 ou DEC-037.

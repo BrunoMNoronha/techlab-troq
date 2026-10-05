@@ -5,7 +5,7 @@ import { escapeHtml } from './email-config';
 import { sendTransactionalEmail } from './email-transport';
 
 // Catalogo dos emails transacionais da Fase 3 (F3-013, #103; RF-021; DEC-048;
-// docs/product/transactional-emails.md, TE-1 a TE-3).
+// docs/product/transactional-emails.md, TE-1 a TE-3 e TE-6).
 //
 // `identity` e dono do endereco de email (AR-3.3): os outros modulos pedem um
 // aviso por TIPO, para um destinatario identificado por id interno, e nunca
@@ -36,7 +36,9 @@ export type UserNotice =
   /** TE-2: chegou uma solicitacao paga num anuncio; vai ao anunciante. */
   | { kind: 'request_paid_owner'; recipientId: string; contactRequestId: string }
   /** TE-3: a pessoa foi escolhida e o contato foi liberado a ela. */
-  | { kind: 'contact_released'; recipientId: string; contactReleaseId: string };
+  | { kind: 'contact_released'; recipientId: string; contactReleaseId: string }
+  /** TE-6: um pagamento foi devolvido por reembolso tecnico; vai a quem pagou. */
+  | { kind: 'refund_concluded'; recipientId: string; technicalRefundId: string; listingId: string };
 
 export type NoticeKind = UserNotice['kind'];
 
@@ -67,6 +69,8 @@ function subjectIdOf(notice: UserNotice): string {
       return notice.contactRequestId;
     case 'contact_released':
       return notice.contactReleaseId;
+    case 'refund_concluded':
+      return notice.technicalRefundId;
   }
 }
 
@@ -141,12 +145,29 @@ export function renderNotice(notice: UserNotice, baseURL: string): RenderedNotic
         html: layout(title, paragraphs, { label: 'Ver o contato', url }),
       };
     }
+    case 'refund_concluded': {
+      // TE-6: sem a causa tecnica (duplicidade, fora da janela, sem vaga) e sem
+      // valor: o texto vale para RT-1 a RT-4 e nao depende de dado do pagamento.
+      const url = `${baseURL}/explorar/${encodeURIComponent(notice.listingId)}`;
+      const title = 'Pagamento devolvido';
+      const paragraphs = [
+        'Um pagamento Pix que você fez no TROQ não pôde ser usado e foi devolvido integralmente à conta de origem.',
+        'A devolução pode levar alguns instantes para aparecer no seu extrato. Ela não altera nenhuma solicitação que já esteja confirmada na sua conta.',
+      ];
+      return {
+        subject: 'TROQ: devolvemos um pagamento seu',
+        text: textOf(paragraphs, url),
+        html: layout(title, paragraphs, { label: 'Ver o anúncio', url }),
+      };
+    }
   }
 }
 
 function hasValidIds(notice: UserNotice): boolean {
   const ids = [notice.recipientId, subjectIdOf(notice)];
-  if (notice.kind === 'request_paid_requester') ids.push(notice.listingId);
+  if (notice.kind === 'request_paid_requester' || notice.kind === 'refund_concluded') {
+    ids.push(notice.listingId);
+  }
   return ids.every((id) => typeof id === 'string' && UUID_PATTERN.test(id));
 }
 

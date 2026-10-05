@@ -36,6 +36,21 @@ vi.mock('next/headers', () => ({
   },
 }));
 
+// F3-013 (#103): o transporte dos avisos transacionais e SIMULADO (TE-6).
+const sentEmails = vi.hoisted(() => ({
+  send: vi
+    .fn<(email: { to: string; idempotencyKey: string }) => Promise<{ ok: true }>>()
+    .mockResolvedValue({ ok: true }),
+}));
+vi.mock('@/modules/identity/email-transport', () => ({
+  sendTransactionalEmail: sentEmails.send,
+}));
+/** Avisos TE-6 enviados desde o ultimo `mockClear`. */
+const refundNotices = () =>
+  sentEmails.send.mock.calls
+    .map(([e]) => e)
+    .filter((e) => e.idempotencyKey.startsWith('troq-notice/refund_concluded/'));
+
 vi.mock('@/modules/identity/email', () => ({
   sendVerificationEmail: vi.fn().mockResolvedValue({ ok: true }),
 }));
@@ -393,6 +408,7 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
     });
 
     beforeEach(() => {
+      sentEmails.send.mockClear();
       sim.refundMode = 'ok';
       vi.stubEnv('MERCADO_PAGO_ACCESS_TOKEN', TOKEN);
     });
@@ -494,6 +510,10 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
       ]);
       expect(await audits('request.paid', [r.contactRequestId])).toHaveLength(0);
       expect(await audits('payment.refund_classified', [s.refunds[0].id])).toHaveLength(1);
+      // TE-6 (F3-013, DEC-048): um aviso a quem pagou, depois da conclusao.
+      expect(refundNotices().map((m) => [m.to, m.idempotencyKey])).toEqual([
+        [email('r0'), `troq-notice/refund_concluded/${s.refunds[0].id}`],
+      ]);
     });
 
     it('T-9: tres vagas consumidas e chega pagamento acreditado -> RB-003 prevalece, RT-3', async () => {
@@ -527,6 +547,8 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
       expect(first.refunds[0]).toMatchObject({ status: 'falhou_retentando', attemptCount: 1 });
       expect(first.attempt.status).toBe('reembolso_pendente');
       expect(first.cases.every((c) => c.closedAt === null)).toBe(true);
+      // Falha ainda nao e devolucao: nenhum aviso TE-6.
+      expect(refundNotices()).toEqual([]);
 
       expect(await processTechnicalRefund(first.refunds[0].id, { gateway })).toBe('concluded');
       // Retentar de novo, ja concluido: nada muda e nada e chamado.
@@ -545,6 +567,8 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
       expect(calls.map((c) => c.applied)).toEqual([true, false]);
       // A MESMA chave persistida nas duas chamadas (PD-5.2).
       expect(new Set(calls.map((c) => c.key))).toEqual(new Set([after.refunds[0].idempotencyKey]));
+      // TE-6 uma unica vez: a conclusao avisa; a reexecucao ja concluida, nao.
+      expect(refundNotices().map((m) => m.to)).toEqual([email('r1')]);
     });
 
     // -----------------------------------------------------------------------
