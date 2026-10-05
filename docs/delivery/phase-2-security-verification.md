@@ -113,7 +113,7 @@ Nenhum achado crítico ou alto.
 
 ## 9. Prova em Preview
 
-Deployment `dpl_5MhUGyNvNYGsJHHHpxBVZAmmJGQa` (branch `test/f2-012-security-verification`, commit `1c7a229`), sobre o Neon de `preview`. A prova foi feita sem sessão do TROQ, com acesso temporário de compartilhamento da Vercel e somente leitura. Nada foi gravado. A matriz de atores autenticados fica na camada local (seções 3 e 4): o Preview não tem anúncio publicado nem conta sintética com sessão ativa, e criar uma exigiria a senha do responsável.
+Deployment `dpl_5MhUGyNvNYGsJHHHpxBVZAmmJGQa` (branch `test/f2-012-security-verification`, commit `1c7a229`), sobre o Neon de `preview`. A prova foi feita sem sessão do TROQS, com acesso temporário de compartilhamento da Vercel e somente leitura. Nada foi gravado. A matriz de atores autenticados fica na camada local (seções 3 e 4): o Preview não tem anúncio publicado nem conta sintética com sessão ativa, e criar uma exigiria a senha do responsável.
 
 ### 9.1 Resultado
 

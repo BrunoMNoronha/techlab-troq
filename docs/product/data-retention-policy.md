@@ -1,4 +1,4 @@
-# Política de retenção e exclusão de dados — TROQ
+# Política de retenção e exclusão de dados — TROQS
 
 Documento normativo que fecha [OD-10](../decisions/open-decisions.md) e registra DEC-033. Define prazos de retenção, exclusão de conta, anonimização e retenção das trilhas de auditoria.
 
@@ -6,7 +6,7 @@ Fontes: [business-rules.md](business-rules.md) (RB-001, RB-005), [image-policy.m
 
 ## 1. Princípio — minimização de dados
 
-O TROQ coleta e conserva o mínimo necessário para operar, e conserva cada dado apenas enquanto a finalidade que o justificou permanecer válida. Quando a finalidade se esgota, o dado é eliminado ou anonimizado irreversivelmente.
+O TROQS coleta e conserva o mínimo necessário para operar, e conserva cada dado apenas enquanto a finalidade que o justificou permanecer válida. Quando a finalidade se esgota, o dado é eliminado ou anonimizado irreversivelmente.
 
 Não existe retenção indefinida genérica. Todo prazo abaixo é expresso, e toda exceção precisa de fundamento registrado (seção 9).
 
@@ -154,7 +154,7 @@ Essa retenção **não** justifica conservar desnecessariamente:
 
 O período e o conjunto mínimo de registros financeiros **deverão ser revisados por responsável jurídico e contábil antes da produção comercial**. Esta política fixa um baseline operacional para o MVP, não um parecer jurídico.
 
-Os dados mantidos pelo próprio gateway seguem também as obrigações e políticas do controlador ou operador correspondente. Este documento **não** pressupõe o comportamento de um provedor específico, nem antes nem depois da homologação do gateway em [../adr/0004-mercado-pago-pix.md](../adr/0004-mercado-pago-pix.md) (DEC-036): a retenção definida aqui é do TROQ, e o que o gateway retém por conta própria segue a política dele.
+Os dados mantidos pelo próprio gateway seguem também as obrigações e políticas do controlador ou operador correspondente. Este documento **não** pressupõe o comportamento de um provedor específico, nem antes nem depois da homologação do gateway em [../adr/0004-mercado-pago-pix.md](../adr/0004-mercado-pago-pix.md) (DEC-036): a retenção definida aqui é do TROQS, e o que o gateway retém por conta própria segue a política dele.
 
 ## 9. Legal hold
 

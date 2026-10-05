@@ -77,7 +77,7 @@ Prova **atual**, gerada pela própria PR desta tarefa, e não evidência histór
 | Estado | status do deployment `success`; check `Vercel` da PR `pass` — "Deployment has completed" —, equivalente a `READY`; check `Vercel Preview Comments` `pass` |
 | Host | deployment de preview do projeto `bruno-m-noronha/techlab-troq`, servido pela região `gru1` |
 | Proteção | requisição sem sessão → `HTTP 302` para o SSO da Vercel, comportamento esperado da proteção por autenticação Vercel dos previews, que **não** foi alterada nem contornada |
-| Requisição real | pela sessão autenticada do titular no navegador: `GET /` → **`HTTP 200`**, sem redirecionamento, HTML com assets `/_next/static/`, título `TechLab+ TROQ` e corpo "Fundação técnica operacional. Nenhuma funcionalidade de produto foi implementada." — idêntico a `src/app/page.tsx` e `src/app/layout.tsx`; `GET /rota-inexistente-f1011` → `HTTP 404` da própria aplicação |
+| Requisição real | pela sessão autenticada do titular no navegador: `GET /` → **`HTTP 200`**, sem redirecionamento, HTML com assets `/_next/static/`, título `TechLab+ TROQS` e corpo "Fundação técnica operacional. Nenhuma funcionalidade de produto foi implementada." — idêntico a `src/app/page.tsx` e `src/app/layout.tsx`; `GET /rota-inexistente-f1011` → `HTTP 404` da própria aplicação |
 | CI da mesma PR | run `35086651948`, job `Validação (format, lint, typecheck, test, build)`, todos os passos `success` |
 
 A consulta ao deployment pelo conector da Vercel respondeu `403` para o escopo `bruno-m-noronha`, fato já conhecido; a observação foi feita pela API do GitHub, pelos checks da PR e pela requisição HTTP, sem nenhum token ou URL com parâmetro sensível registrado aqui. Nenhum *protection bypass* foi criado.
@@ -256,7 +256,7 @@ A aprovação vale para o gate de saída da Fase 1. Ela **não** afirma que exis
 
 ## 12. Próximo trabalho recomendado
 
-**F2-001 — Consolidar o contrato técnico de identidade e autenticação da Fase 2**, `próximo`: validar a integração atual do Better Auth com Next.js/App Router e Prisma, consolidar o modelo de identidade, sessão e verificação de email do TROQ e definir o contrato técnico necessário antes da implementação funcional da autenticação.
+**F2-001 — Consolidar o contrato técnico de identidade e autenticação da Fase 2**, `próximo`: validar a integração atual do Better Auth com Next.js/App Router e Prisma, consolidar o modelo de identidade, sessão e verificação de email do TROQS e definir o contrato técnico necessário antes da implementação funcional da autenticação.
 
 F2-001 **não** foi executado, e o seu prompt executor não é produzido aqui.
 

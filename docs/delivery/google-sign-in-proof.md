@@ -1,6 +1,6 @@
 # Prova real da entrada com Conta Google (#81 e #133)
 
-Registro da evidência com o **Google real** exigida por [#81](https://github.com/BrunoMNoronha/techlab-troq/issues/81), mantido à parte dos testes automatizados ([../architecture/identity-contract.md](../architecture/identity-contract.md), IC-15.10). Os testes provam o comportamento do TROQ diante de cada resposta do Google, com o endpoint de token simulado; só esta prova mostra que o cliente OAuth, a tela de consentimento e as URIs de cada ambiente estão corretos.
+Registro da evidência com o **Google real** exigida por [#81](https://github.com/BrunoMNoronha/techlab-troq/issues/81), mantido à parte dos testes automatizados ([../architecture/identity-contract.md](../architecture/identity-contract.md), IC-15.10). Os testes provam o comportamento do TROQS diante de cada resposta do Google, com o endpoint de token simulado; só esta prova mostra que o cliente OAuth, a tela de consentimento e as URIs de cada ambiente estão corretos.
 
 A entrada com Google foi aprovada por DEC-047 (2026-10-04) e é oferecida **só em `preview` e `production`**; `development` não é provisionado.
 
@@ -19,7 +19,7 @@ No console do projeto `troq-510700`, o público foi publicado e confirmado como 
 | Release Preview com Google | SHA `9447b8af344201ac60d25721dbce78c7982ae01e`, [run 37332427023, tentativa 1](https://github.com/BrunoMNoronha/techlab-troq/actions/runs/37332427023), deployment `dpl_H2coTZhL45V7t52PTzJtfNcGM4hj`; preflight, migrations, build e smoke aprovados |
 | Jornada de Preview estável | Botão, pedido OAuth, callback real, recusa de vinculação implícita, vinculação explícita pelo Bruno, acesso posterior pelo Google e logout observados pelo agente. Cadastro novo com aceite, cancelamento e links de e-mail confirmados pelo Bruno conforme o roteiro abaixo |
 
-A publicação do consentimento remove a limitação de usuários de teste para o login básico. Ela não comprova verificação de marca pelo Google nem aprovação da operação comercial do TROQ. O aceite específico de #133 foi concluído em 2026-10-05 com as evidências de configuração, navegador e homologação humana abaixo; o fechamento é feito pela [PR #180](https://github.com/BrunoMNoronha/techlab-troq/pull/180), sem fechar os gates das Fases 4 e 5.
+A publicação do consentimento remove a limitação de usuários de teste para o login básico. Ela não comprova verificação de marca pelo Google nem aprovação da operação comercial do TROQS. O aceite específico de #133 foi concluído em 2026-10-05 com as evidências de configuração, navegador e homologação humana abaixo; o fechamento é feito pela [PR #180](https://github.com/BrunoMNoronha/techlab-troq/pull/180), sem fechar os gates das Fases 4 e 5.
 
 ## Prova atual do Preview estável em 2026-10-05 (#133)
 
@@ -37,15 +37,15 @@ A publicação do consentimento remove a limitação de usuários de teste para 
 | Vinculação explícita | PASS — realizada e confirmada pelo Bruno; `/conta` informa conta ativa/verificada e Google vinculado. Não equivale à prova de cadastro novo |
 | Acesso posterior com Google | PASS — após logout e guard anônimo, "Continuar com Google" retorna a `/explorar`; `/conta` mostra o perfil vinculado, ativo/verificado, sem novo cadastro |
 | Logout da sessão Google | PASS — saída após a entrada Google; nova visita a `/conta` redireciona para `/login?motivo=sessao` |
-| Cadastro Google com nome, 18+ e termos | PASS por homologação humana — Bruno confirmou a conclusão do roteiro com outra identidade Google controlada, ainda sem conta TROQ; não reproduzido pelo agente |
+| Cadastro Google com nome, 18+ e termos | PASS por homologação humana — Bruno confirmou a conclusão do roteiro com outra identidade Google controlada, ainda sem conta TROQS; não reproduzido pelo agente |
 | Cancelamento do cadastro | PASS por homologação humana — roteiro de cancelar uma vez em `/cadastro/google` e repetir para concluir confirmado pelo Bruno; a recusa por colisão foi observada pelo agente separadamente |
 | Cadastro por e-mail/senha, verificação e login | PASS por homologação humana — Bruno confirmou cadastro de teste, abertura do link recebido e login no Preview estável; senha, código e link não foram solicitados ou compartilhados |
 
-Uma tentativa com a segunda conta selecionada terminou em **401 na tela do próprio Google**, antes do retorno ao TROQ. O callback bem-sucedido da primeira conta demonstra que o par funciona; o erro da segunda não foi tratado como sucesso de cadastro nem como falha comprovada do TROQ. O cadastro foi deixado aberto para autenticação e aceite pelo Bruno. A primeira tentativa ocorreu com uma sessão TROQ preexistente; por isso a recusa e o guard foram repetidos depois de logout, em vez de inferir ausência de sessão a partir dela.
+Uma tentativa com a segunda conta selecionada terminou em **401 na tela do próprio Google**, antes do retorno ao TROQS. O callback bem-sucedido da primeira conta demonstra que o par funciona; o erro da segunda não foi tratado como sucesso de cadastro nem como falha comprovada do TROQS. O cadastro foi deixado aberto para autenticação e aceite pelo Bruno. A primeira tentativa ocorreu com uma sessão TROQS preexistente; por isso a recusa e o guard foram repetidos depois de logout, em vez de inferir ausência de sessão a partir dela.
 
 Na continuação, o Bruno entregou uma sessão com Google vinculado e confirmou que havia feito **vinculação à conta existente**. O agente encerrou essa sessão, conferiu o guard, iniciou nova entrada pelo botão Google, acessou a conta vinculada e encerrou a sessão criada pelo Google. O cadastro novo foi novamente preparado para uma identidade diferente; não houve novo aceite legal pelo agente. A captura do vínculo foi limitada à seção "Conta Google", sem dados do perfil.
 
-**Aceite humano dos passos restantes.** Em 2026-10-05, foi pedido ao Bruno executar no Preview estável: (1) usar outra Conta Google controlada, ainda sem conta TROQ, cancelar uma vez em `/cadastro/google` e repetir, concluindo com nome, declaração 18+ e termos; (2) cadastrar por e-mail/senha uma conta de teste, abrir o link recebido e conferir o login. Ele respondeu **"Concluí as duas provas"**. Esse relato é a evidência dos três últimos itens da matriz; não foi convertido em observação direta do agente nem em prova de contagens no banco. A aba retomada pelo agente continuava em `/cadastro`, e não foi usada como captura de conclusão desses passos.
+**Aceite humano dos passos restantes.** Em 2026-10-05, foi pedido ao Bruno executar no Preview estável: (1) usar outra Conta Google controlada, ainda sem conta TROQS, cancelar uma vez em `/cadastro/google` e repetir, concluindo com nome, declaração 18+ e termos; (2) cadastrar por e-mail/senha uma conta de teste, abrir o link recebido e conferir o login. Ele respondeu **"Concluí as duas provas"**. Esse relato é a evidência dos três últimos itens da matriz; não foi convertido em observação direta do agente nem em prova de contagens no banco. A aba retomada pelo agente continuava em `/cadastro`, e não foi usada como captura de conclusão desses passos.
 
 **Conferência final do alvo.** Depois do aceite, a API da Vercel confirmou que o alias estável ainda aponta para `dpl_H2coTZhL45V7t52PTzJtfNcGM4hj`, `READY`, SHA `9447b8af344201ac60d25721dbce78c7982ae01e`. A PR de fechamento altera somente documentação; não cria outra release nem atribui suas provas a um SHA de runtime diferente. A proteção do Preview não foi reduzida, e nenhum bypass foi incluído em callback ou link de e-mail.
 
@@ -55,7 +55,7 @@ Na continuação, o Bruno entregou uma sessão com Google vinculado e confirmou 
 
 | Item | Situação |
 | --- | --- |
-| Projeto Google Cloud do TROQ | criado: `troq-510700` ("TROQ"), conduzido pelo agente no Chrome com a sessão do Bruno |
+| Projeto Google Cloud do TROQS | criado: `troq-510700` ("TROQ"), conduzido pelo agente no Chrome com a sessão do Bruno |
 | Tela de consentimento OAuth | público **Externo**, em **modo de teste**; escopos declarados só `openid` e `userinfo.email`; um usuário de teste (a conta do Bruno) |
 | Cliente OAuth "Aplicativo da Web" de `preview` | "TROQ preview", sem origem JavaScript; URI de redirecionamento só a do alias da branch de prova |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` e `BETTER_AUTH_URL` em `preview` | restritas à branch `proof/81-google-preview`; o segredo foi gravado pelo Bruno como Sensitive |
@@ -64,7 +64,7 @@ Na continuação, o Bruno entregou uma sessão com Google vinculado e confirmou 
 ## Prova histórica em `preview` de branch descartável (2026-10-05)
 
 - **Ambiente:** deployment de `preview` da branch `proof/81-google-preview` (alias `techlab-troq-git-proof-81-google-preview-bruno-m-noronha.vercel.app`), revisão `39307fe`, código de `main` em `0a95e0c` (inclui a PR [#123](https://github.com/BrunoMNoronha/techlab-troq/pull/123), `d70bc8f`), Neon `preview` com a migration `20261004120000_account_provider_identity_unique` aplicada pelo workflow.
-- **Método:** o agente conduziu o TROQ e o console no Chrome. As telas do Google (escolha da conta e consentimento) e o ato afirmativo de 18+ e termos ficaram com o Bruno. As evidências de banco vêm de consultas só com agregados; as de log, dos registros de requisição da Vercel.
+- **Método:** o agente conduziu o TROQS e o console no Chrome. As telas do Google (escolha da conta e consentimento) e o ato afirmativo de 18+ e termos ficaram com o Bruno. As evidências de banco vêm de consultas só com agregados; as de log, dos registros de requisição da Vercel.
 
 | # | Passo | Resultado |
 | --- | --- | --- |

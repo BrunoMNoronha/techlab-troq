@@ -1,4 +1,4 @@
-# Catálogo de requisitos — TROQ
+# Catálogo de requisitos — TROQS
 
 Catálogo inicial de requisitos rastreáveis do MVP. Contém **apenas** requisitos derivados das decisões já vigentes na Fase 0 ([../project-state.md](../project-state.md), [business-rules.md](business-rules.md), [listing-lifecycle.md](listing-lifecycle.md), [image-policy.md](image-policy.md), [negotiation-lifecycle.md](negotiation-lifecycle.md), [ratings.md](ratings.md), [prohibited-items.md](prohibited-items.md), [reselection-policy.md](reselection-policy.md), [data-retention-policy.md](data-retention-policy.md), [age-eligibility.md](age-eligibility.md), [interest-flow.md](interest-flow.md), [payment-exceptions.md](payment-exceptions.md), ADRs em [../adr/](../adr/), [../decisions/decision-log.md](../decisions/decision-log.md)). Nenhum requisito aqui fecha uma decisão listada em [../decisions/open-decisions.md](../decisions/open-decisions.md).
 

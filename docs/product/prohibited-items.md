@@ -1,4 +1,4 @@
-# Política de itens proibidos — TROQ
+# Política de itens proibidos — TROQS
 
 Documento normativo da política de itens proibidos, denúncia, moderação e remoção no MVP. Fecha [OD-03](../decisions/open-decisions.md) e é registrado como DEC-031 em [../decisions/decision-log.md](../decisions/decision-log.md).
 
@@ -16,28 +16,28 @@ Objetivos, em ordem de prioridade:
 
 1. reduzir risco legal e regulatório para a plataforma e para os usuários;
 2. reduzir risco sanitário e de segurança física;
-3. reduzir risco de fraude e de uso do TROQ como canal de escoamento de bens de origem ilícita;
+3. reduzir risco de fraude e de uso do TROQS como canal de escoamento de bens de origem ilícita;
 4. manter a moderação operável por uma equipe pequena, com critérios verificáveis.
 
 Princípios adotados:
 
-1. **A política do TROQ pode ser mais restritiva que a legislação.** Proibir uma categoria no TROQ **não** afirma que negociá-la seja ilegal no Brasil. A recíproca também vale: permitir um item não atesta legalidade.
+1. **A política do TROQS pode ser mais restritiva que a legislação.** Proibir uma categoria no TROQS **não** afirma que negociá-la seja ilegal no Brasil. A recíproca também vale: permitir um item não atesta legalidade.
 2. **Ausência na lista não é permissão.** O catálogo é por categorias e critérios, não por enumeração de produtos. Um item duvidoso não se torna permitido por não estar nomeado; ele é resolvido pela regra da seção 4.
-3. **Conservadorismo deliberado por ausência de capacidade de compliance.** Quando um item depende de licença, autorização, prescrição, registro do vendedor, certificado de procedência, controle etário ou mecanismo equivalente que o TROQ não possui, a solução do MVP é **não permitir o anúncio**. Ver seção 2.
+3. **Conservadorismo deliberado por ausência de capacidade de compliance.** Quando um item depende de licença, autorização, prescrição, registro do vendedor, certificado de procedência, controle etário ou mecanismo equivalente que o TROQS não possui, a solução do MVP é **não permitir o anúncio**. Ver seção 2.
 4. **O moderador não produz parecer jurídico.** As decisões usam critérios de categoria e de evidência observável no anúncio, não análise normativa caso a caso.
 5. **Toda decisão administrativa é motivada e auditável.** Sem exceção (seção 12).
 6. **Simplicidade.** O MVP não constrói uma plataforma de trust & safety. O que não é necessário para satisfazer RB-006 de forma defensável fica fora.
 
 ## 2. Decisão estruturante: sem fluxo de documentação no MVP
 
-**Decisão: o TROQ não implementa, no MVP, nenhum fluxo de autorização documental para categorias reguladas.** Não existe, nesta fase, a categoria funcional "permitido mediante documento", "permitido mediante licença" ou "permitido mediante comprovação".
+**Decisão: o TROQS não implementa, no MVP, nenhum fluxo de autorização documental para categorias reguladas.** Não existe, nesta fase, a categoria funcional "permitido mediante documento", "permitido mediante licença" ou "permitido mediante comprovação".
 
-Consequência direta: **se a legalidade da oferta depender de licença, autorização, prescrição, registro sanitário, certificado de procedência, habilitação do vendedor como estabelecimento comercial, ou de verificação de idade do adquirente, a categoria é proibida no TROQ MVP.**
+Consequência direta: **se a legalidade da oferta depender de licença, autorização, prescrição, registro sanitário, certificado de procedência, habilitação do vendedor como estabelecimento comercial, ou de verificação de idade do adquirente, a categoria é proibida no TROQS MVP.**
 
 Fundamentação:
 
-- O TROQ é um marketplace C2C simples entre pessoas. Não há cadastro de pessoa jurídica, não há verificação de licença, não há verificação de idade — a elegibilidade etária foi definida depois em [age-eligibility.md](age-eligibility.md) (DEC-034) como declaração contratual de 18 anos completos ou mais, **sem** verificação documental ou biométrica — e não há verificação de procedência.
-- A pesquisa externa (seção 16) mostra que várias categorias reguladas só são lícitas quando o **vendedor** é um estabelecimento autorizado: medicamentos só podem ser dispensados a distância por farmácia ou drogaria licenciada e com farmacêutico presente; fauna silvestre só pode ser comercializada por criadouro ou empreendimento licenciado, com marcação individual e documentação de origem; armas, munições e produtos controlados dependem de autorização e registro. Nenhuma dessas condições pode ser verificada pelo TROQ no MVP.
+- O TROQS é um marketplace C2C simples entre pessoas. Não há cadastro de pessoa jurídica, não há verificação de licença, não há verificação de idade — a elegibilidade etária foi definida depois em [age-eligibility.md](age-eligibility.md) (DEC-034) como declaração contratual de 18 anos completos ou mais, **sem** verificação documental ou biométrica — e não há verificação de procedência.
+- A pesquisa externa (seção 16) mostra que várias categorias reguladas só são lícitas quando o **vendedor** é um estabelecimento autorizado: medicamentos só podem ser dispensados a distância por farmácia ou drogaria licenciada e com farmacêutico presente; fauna silvestre só pode ser comercializada por criadouro ou empreendimento licenciado, com marcação individual e documentação de origem; armas, munições e produtos controlados dependem de autorização e registro. Nenhuma dessas condições pode ser verificada pelo TROQS no MVP.
 - Construir um fluxo de compliance documental exigiria coleta e guarda de documentos, verificação de autenticidade e decisão sobre validade — atividade de risco alto, custo alto e fora do escopo das fases previstas no [roadmap](../delivery/roadmap.md).
 - Proibir a categoria é reversível: se o produto amadurecer e ganhar capacidade de verificação, uma permissão condicionada pode ser criada por decisão nova e registrada. O inverso — permitir e não conseguir verificar — não é reversível quanto ao dano já causado.
 
@@ -52,8 +52,8 @@ Cada categoria registra um **fundamento**, classificado em um de três tipos. A 
 | Fundamento | Significado | Leitura correta |
 | --- | --- | --- |
 | `ilegal` | A conduta de vender, oferecer ou expor à venda é vedada por legislação, conforme fonte registrada na seção 16 | "Isto é proibido por lei" |
-| `regulado` | A comercialização é lícita apenas sob licença, autorização, registro, prescrição ou controle equivalente, incompatível com um marketplace C2C sem verificação; bloqueado no TROQ pela decisão da seção 2 | "Isto pode ser lícito no Brasil, mas o TROQ não tem como verificar as condições, então não aceita" |
-| `política` | Não há vedação legal clara aplicável, mas o risco jurídico, sanitário, de segurança ou operacional é desproporcional para o MVP | "O TROQ escolheu não aceitar" |
+| `regulado` | A comercialização é lícita apenas sob licença, autorização, registro, prescrição ou controle equivalente, incompatível com um marketplace C2C sem verificação; bloqueado no TROQS pela decisão da seção 2 | "Isto pode ser lícito no Brasil, mas o TROQS não tem como verificar as condições, então não aceita" |
+| `política` | Não há vedação legal clara aplicável, mas o risco jurídico, sanitário, de segurança ou operacional é desproporcional para o MVP | "O TROQS escolheu não aceitar" |
 
 Os exemplos são **não exaustivos** e ilustram a categoria; não constituem a definição.
 
@@ -78,7 +78,7 @@ Os exemplos são **não exaustivos** e ilustram a categoria; não constituem a d
 - **Definição:** armas de fogo e suas partes, munições, insumos de recarga, pólvora, explosivos, artefatos explosivos, fogos de artifício de potencial lesivo e simulacros ou réplicas que possam ser confundidos com arma de fogo.
 - **Fundamento:** `ilegal` para a transferência entre particulares sem autorização e para simulacros que se confundam com arma de fogo; `regulado` para o restante.
 - **Exemplos não exaustivos:** revólveres, pistolas, espingardas, carregadores, munição virgem ou recarregada, pólvora, explosivos, airsoft e airgun com aparência de arma de fogo, armas de choque.
-- **Casos limítrofes:** itens de colecionismo, desportivos ou de caça **também** são proibidos no TROQ, porque a transferência lícita exige autorização e registro que o TROQ não verifica. Facas e ferramentas de uso comum não pertencem a PI-03, salvo quando o anúncio as apresente como arma ou as associe a violência; nesse caso, PI-12.
+- **Casos limítrofes:** itens de colecionismo, desportivos ou de caça **também** são proibidos no TROQS, porque a transferência lícita exige autorização e registro que o TROQS não verifica. Facas e ferramentas de uso comum não pertencem a PI-03, salvo quando o anúncio as apresente como arma ou as associe a violência; nesse caso, PI-12.
 
 #### PI-04 — Drogas, entorpecentes e substâncias controladas
 
@@ -92,7 +92,7 @@ Os exemplos são **não exaustivos** e ilustram a categoria; não constituem a d
 - **Definição:** medicamentos de qualquer natureza, incluindo os isentos de prescrição e os manipulados; produtos para saúde, dispositivos médicos, testes diagnósticos, vacinas e insumos correlatos; cosméticos, saneantes e suplementos sem registro ou de procedência não identificável.
 - **Fundamento:** `regulado`.
 - **Exemplos não exaustivos:** sobras de medicamento de uso domiciliar; medicamentos controlados; injetáveis; lentes de contato com grau; aparelhos médicos; produtos importados sem registro.
-- **Casos limítrofes:** a dispensação a distância é reservada a farmácias e drogarias licenciadas com farmacêutico presente. Uma pessoa física anunciando medicamento no TROQ nunca satisfaz essa condição, o que torna a categoria integralmente proibida no MVP, **independentemente** de o medicamento ser ou não de venda livre. Cosméticos e suplementos lacrados, com marca e registro identificáveis, não são alcançados por esta linha; sem isso, aplica-se a seção 4.
+- **Casos limítrofes:** a dispensação a distância é reservada a farmácias e drogarias licenciadas com farmacêutico presente. Uma pessoa física anunciando medicamento no TROQS nunca satisfaz essa condição, o que torna a categoria integralmente proibida no MVP, **independentemente** de o medicamento ser ou não de venda livre. Cosméticos e suplementos lacrados, com marca e registro identificáveis, não são alcançados por esta linha; sem isso, aplica-se a seção 4.
 
 #### PI-06 — Tabaco, dispositivos eletrônicos para fumar e correlatos
 
@@ -106,14 +106,14 @@ Os exemplos são **não exaustivos** e ilustram a categoria; não constituem a d
 - **Definição:** bebidas alcoólicas e qualquer item cuja oferta lícita dependa de verificação de idade do adquirente.
 - **Fundamento:** `regulado`, combinado com a decisão da seção 2.
 - **Exemplos não exaustivos:** destilados, vinhos, cervejas, coleções de bebidas fechadas, fogos de artifício, bilhetes de loteria e equivalentes.
-- **Casos limítrofes:** a vedação de venda desses itens a menores é legal e expressa. O TROQ **não possui** verificação de idade no MVP: [age-eligibility.md](age-eligibility.md) (DEC-034) fixou a elegibilidade de 18 anos completos ou mais por declaração contratual, sem verificação documental, e uma declaração não cumpre o controle exigido por essas categorias. A proibição é da categoria, **não** uma afirmação de que a venda entre adultos seja ilegal. Garrafa vazia de valor decorativo, sem conteúdo alcoólico, não pertence a PI-07.
+- **Casos limítrofes:** a vedação de venda desses itens a menores é legal e expressa. O TROQS **não possui** verificação de idade no MVP: [age-eligibility.md](age-eligibility.md) (DEC-034) fixou a elegibilidade de 18 anos completos ou mais por declaração contratual, sem verificação documental, e uma declaração não cumpre o controle exigido por essas categorias. A proibição é da categoria, **não** uma afirmação de que a venda entre adultos seja ilegal. Garrafa vazia de valor decorativo, sem conteúdo alcoólico, não pertence a PI-07.
 
 #### PI-08 — Fauna, flora, partes de animais e produtos de origem biológica controlada
 
 - **Definição:** animais vivos silvestres ou exóticos, partes, ovos, ninhos, produtos e subprodutos de fauna, espécies de flora protegidas, madeira e produtos florestais de origem controlada.
 - **Fundamento:** `ilegal` quando não houver origem autorizada; `regulado` no restante, porque a comercialização lícita exige criadouro ou empreendimento licenciado, marcação individual e documentação de origem.
 - **Exemplos não exaustivos:** aves, répteis, primatas, peles e couros de espécie protegida, penas, marfim, corais, cactos e orquídeas de espécie protegida, madeira de espécie controlada.
-- **Casos limítrofes:** animais domésticos não são alcançados por esta linha quanto à origem, mas a **oferta de animais mediante pagamento** envolve legislação de bem-estar e regulação local heterogênea; por decisão de produto (`política`), anúncios de animais vivos de qualquer espécie são proibidos no TROQ MVP.
+- **Casos limítrofes:** animais domésticos não são alcançados por esta linha quanto à origem, mas a **oferta de animais mediante pagamento** envolve legislação de bem-estar e regulação local heterogênea; por decisão de produto (`política`), anúncios de animais vivos de qualquer espécie são proibidos no TROQS MVP.
 
 #### PI-09 — Substâncias e materiais perigosos
 
@@ -127,14 +127,14 @@ Os exemplos são **não exaustivos** e ilustram a categoria; não constituem a d
 - **Definição:** produtos falsificados, contrafeitos, cópias não autorizadas de obra protegida e itens que violem marca, patente, desenho industrial ou direito autoral de forma evidente no próprio anúncio.
 - **Fundamento:** `ilegal`.
 - **Exemplos não exaustivos:** vestuário, calçados, acessórios, eletrônicos e peças com marca falsificada; réplicas anunciadas como "primeira linha", "AAA" ou "réplica premium"; mídias piratas; chaves de software ou credenciais de serviço revendidas; dispositivos de acesso irregular a conteúdo por assinatura.
-- **Casos limítrofes:** a evidência exigida é a do próprio anúncio — declaração de réplica, preço e descrição incompatíveis com o produto original, marca adulterada. O TROQ **não** julga autenticidade técnica de produto usado nem atua como perito. Dúvida sem evidência no anúncio não sustenta remoção por PI-10; havendo dúvida material em categoria de alto risco, aplica-se a seção 4.
+- **Casos limítrofes:** a evidência exigida é a do próprio anúncio — declaração de réplica, preço e descrição incompatíveis com o produto original, marca adulterada. O TROQS **não** julga autenticidade técnica de produto usado nem atua como perito. Dúvida sem evidência no anúncio não sustenta remoção por PI-10; havendo dúvida material em categoria de alto risco, aplica-se a seção 4.
 
-#### PI-11 — Serviços, bens imateriais e itens fora da natureza do TROQ
+#### PI-11 — Serviços, bens imateriais e itens fora da natureza do TROQS
 
 - **Definição:** ofertas que não são um bem físico pessoal transferível: serviços, empregos, empréstimos e crédito, investimentos, criptoativos, valores mobiliários, jogos de azar e apostas, ingressos revendidos acima do valor, cotas, rifas e sorteios, arrecadação de valores e conteúdo adulto.
 - **Fundamento:** `política`, com componente `regulado` nas linhas financeiras e de apostas.
 - **Exemplos não exaustivos:** "faço bicos", "empresto dinheiro", "invista comigo", venda de criptoativo, rifa de eletrônico, conteúdo íntimo.
-- **Casos limítrofes:** o TROQ é uma plataforma de anúncios de itens entre pessoas com liberação controlada de contato. Categorias financeiras e de apostas possuem regulação própria e são vetor conhecido de fraude; conteúdo adulto exigiria controle etário inexistente — a declaração de 18 anos de [age-eligibility.md](age-eligibility.md) (DEC-034) não é controle de idade. Nenhuma dessas linhas é afirmada como ilegal por este documento.
+- **Casos limítrofes:** o TROQS é uma plataforma de anúncios de itens entre pessoas com liberação controlada de contato. Categorias financeiras e de apostas possuem regulação própria e são vetor conhecido de fraude; conteúdo adulto exigiria controle etário inexistente — a declaração de 18 anos de [age-eligibility.md](age-eligibility.md) (DEC-034) não é controle de idade. Nenhuma dessas linhas é afirmada como ilegal por este documento.
 
 #### PI-12 — Conteúdo e conduta do anúncio
 
@@ -147,7 +147,7 @@ Os exemplos são **não exaustivos** e ilustram a categoria; não constituem a d
 
 - Não enumera produtos existentes. Enumeração envelhece e cria a leitura falsa de que o não enumerado é permitido.
 - Não cria subcategorias por marca, modelo ou faixa de preço.
-- Não copia catálogo de outra plataforma. Políticas de marketplaces brasileiros foram observadas apenas como referência operacional comparativa e **não** são fonte normativa do TROQ.
+- Não copia catálogo de outra plataforma. Políticas de marketplaces brasileiros foram observadas apenas como referência operacional comparativa e **não** são fonte normativa do TROQS.
 - Não cria classificação automática por risco, score ou fila priorizada por algoritmo.
 
 ## 4. Casos ambíguos — regra operacional
@@ -162,12 +162,12 @@ Esta seção é a regra de decisão para o que o catálogo não resolve diretame
 2. **O anúncio é deliberadamente evasivo** — descrição genérica incompatível com a imagem, código, grafia alterada, convite a tratar o produto fora do anúncio? Se sim, decide por PI-12, sem necessidade de identificar a categoria final.
 3. **O contexto ou as imagens contradizem a descrição?** Prevalece o conjunto observável, não o texto declarado. As imagens seguem [image-policy.md](image-policy.md) e são parte do anúncio para efeito de avaliação.
 4. **Há dúvida material razoável sobre pertencer a uma categoria de alto risco?** Então o anúncio é **removido** e o motivo registra expressamente que a decisão se deu por dúvida material em categoria de alto risco, indicando a categoria suspeitada. O ônus de tornar o anúncio verificável é do anunciante, não da moderação.
-5. **Há dúvida em categoria que não é de alto risco?** Então o anúncio é **mantido**, a denúncia é decidida como improcedente e o motivo registra a dúvida. O TROQ não remove por suspeita fraca fora de alto risco.
+5. **Há dúvida em categoria que não é de alto risco?** Então o anúncio é **mantido**, a denúncia é decidida como improcedente e o motivo registra a dúvida. O TROQS não remove por suspeita fraca fora de alto risco.
 6. **A legalidade ou a procedência simplesmente não podem ser determinadas** e a categoria é de alto risco? Recai no item 4.
 
 **Vedação expressa.** O moderador **não** deve, para decidir, produzir análise jurídica, consultar assessoria jurídica como etapa do fluxo, nem exigir do anunciante documento, licença, receita ou certificado — isso reintroduziria o fluxo de documentação rejeitado na seção 2. Consultar um registro público, gratuito e de consulta direta, quando existir e for pertinente — por exemplo, um cadastro público de aparelhos com restrição por roubo ou furto —, é permitido como auxílio ao moderador, **não** é etapa obrigatória do fluxo e **não** é condição para decidir.
 
-**Ausência de estado intermediário.** O TROQ **não** cria estado de anúncio "em análise", "suspenso" ou "oculto por moderação". DEC-027 é preservada integralmente: os estados do anúncio continuam sendo `draft`, `published`, `paused`, `closed` e `removed`, e `removed` é terminal. Consequentemente, "manter fora do ar até decisão administrativa" **não** existe como estado próprio: a saída do ar por decisão administrativa é a própria remoção (T7 a T9 de [listing-lifecycle.md](listing-lifecycle.md)), que é definitiva. O remédio para uma remoção equivocada está na seção 11, não em uma restauração de estado.
+**Ausência de estado intermediário.** O TROQS **não** cria estado de anúncio "em análise", "suspenso" ou "oculto por moderação". DEC-027 é preservada integralmente: os estados do anúncio continuam sendo `draft`, `published`, `paused`, `closed` e `removed`, e `removed` é terminal. Consequentemente, "manter fora do ar até decisão administrativa" **não** existe como estado próprio: a saída do ar por decisão administrativa é a própria remoção (T7 a T9 de [listing-lifecycle.md](listing-lifecycle.md)), que é definitiva. O remédio para uma remoção equivocada está na seção 11, não em uma restauração de estado.
 
 ## 5. Prevenção na publicação (RF-004, RF-020)
 
@@ -396,7 +396,7 @@ Definido aqui apenas o necessário para OD-03. Retenção, exclusão e anonimiza
 2. **Dados administrativos de moderação** — denúncias, categorias, motivos, decisões, sanções, contestações e trilha de auditoria — **não** integram nenhum payload público e não são expostos a outros usuários.
 3. **Privilégio mínimo.** O acesso administrativo é restrito ao perfil de moderação e limitado ao necessário para as decisões deste documento. O perfil de moderação **não** recebe, por ser moderação, acesso a telefone/WhatsApp; DEC-023 continua governando esse dado.
 4. **Minimização.** A denúncia e a contestação coletam apenas os campos previstos nas seções 6 e 11 (RNF-008).
-5. **Cooperação com autoridades.** O TROQ preserva a trilha de auditoria e o conteúdo removido para permitir resposta a requisição de autoridade competente. Este documento **não** define procedimento de atendimento a requisições, prazo, autoridade legitimada nem canal formal: isso depende de retenção, definida depois em [data-retention-policy.md](data-retention-policy.md) (DEC-033), incluindo o legal hold, e de termos de uso e política de privacidade completos, que estão fora deste escopo.
+5. **Cooperação com autoridades.** O TROQS preserva a trilha de auditoria e o conteúdo removido para permitir resposta a requisição de autoridade competente. Este documento **não** define procedimento de atendimento a requisições, prazo, autoridade legitimada nem canal formal: isso depende de retenção, definida depois em [data-retention-policy.md](data-retention-policy.md) (DEC-033), incluindo o legal hold, e de termos de uso e política de privacidade completos, que estão fora deste escopo.
 
 ## 14. Limites explícitos desta política
 
@@ -467,10 +467,10 @@ Fontes oficiais brasileiras consultadas em **2026-09-12**. Foram usadas para fun
 
 Registradas de forma explícita, para que nenhuma afirmação deste documento seja lida como conclusão jurídica definitiva:
 
-1. **A aplicabilidade dos decretos de 2026 ao TROQ não é inequívoca.** Os Decretos 12.975/2026 e 12.976/2026 alcançam provedores de aplicações que intermedeiam conteúdo de terceiros e preveem critérios diferenciados por porte econômico e nível de risco, ainda a serem detalhados pela ANPD. Não está determinado se, e em que medida, um marketplace C2C de pequeno porte como o TROQ será alcançado, nem quais prazos e obrigações específicas lhe serão aplicáveis. O fluxo desta política foi desenhado de forma compatível com esse conjunto de obrigações, **sem** afirmar que elas já incidem sobre o TROQ.
+1. **A aplicabilidade dos decretos de 2026 ao TROQS não é inequívoca.** Os Decretos 12.975/2026 e 12.976/2026 alcançam provedores de aplicações que intermedeiam conteúdo de terceiros e preveem critérios diferenciados por porte econômico e nível de risco, ainda a serem detalhados pela ANPD. Não está determinado se, e em que medida, um marketplace C2C de pequeno porte como o TROQS será alcançado, nem quais prazos e obrigações específicas lhe serão aplicáveis. O fluxo desta política foi desenhado de forma compatível com esse conjunto de obrigações, **sem** afirmar que elas já incidem sobre o TROQS.
 2. **A tese do STF sobre o art. 19 do Marco Civil** trata de responsabilidade civil por conteúdo de terceiros em hipóteses de ilícitos graves. Sua extensão exata a anúncios de itens proibidos em marketplace não está delimitada por este documento.
 3. **A classificação `ilegal` da seção 3 é de categoria, não de item.** Ela afirma que a categoria abrange condutas vedadas por legislação, com fonte registrada. Não afirma que todo item concebível dentro da categoria seja ilegal em toda circunstância.
-4. **A classificação `regulado` não afirma ilegalidade.** Afirma que a licitude depende de condições que o TROQ não verifica. A proibição correspondente é decisão de produto (seção 2).
+4. **A classificação `regulado` não afirma ilegalidade.** Afirma que a licitude depende de condições que o TROQS não verifica. A proibição correspondente é decisão de produto (seção 2).
 5. **Legislação estadual e municipal não foi levantada.** Podem existir exigências locais adicionais, especialmente quanto a animais, bebidas e comércio, não refletidas neste documento.
 6. **Fontes de texto legal.** O portal do Planalto esteve inacessível na data da consulta; os dispositivos legais foram confirmados por fontes oficiais alternativas — Câmara dos Deputados, Senado Federal, Polícia Federal, Ministério da Defesa e as próprias agências reguladoras. A verificação final da redação vigente de cada dispositivo continua recomendada antes da redação de termos de uso.
 7. **Este documento não substitui assessoria jurídica** antes da abertura da plataforma ao público, especialmente para termos de uso, política de privacidade e procedimento de atendimento a requisições de autoridade.

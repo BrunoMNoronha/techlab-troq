@@ -6,7 +6,7 @@ Aceito — Fase 0 (2026-09-07).
 
 ## Contexto
 
-O domínio do TROQ é fortemente relacional e transacional: anúncios, usuários, solicitações pagas, pagamentos, liberações de contato, encerramentos, avaliações e denúncias. Várias regras exigem garantias de consistência:
+O domínio do TROQS é fortemente relacional e transacional: anúncios, usuários, solicitações pagas, pagamentos, liberações de contato, encerramentos, avaliações e denúncias. Várias regras exigem garantias de consistência:
 
 - no máximo 3 solicitações pagas por anúncio (RB-003), mesmo sob concorrência;
 - liberação de contato somente ao escolhido com pagamento aprovado (RB-001), com auditoria;

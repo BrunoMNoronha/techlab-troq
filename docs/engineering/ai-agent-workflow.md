@@ -1,4 +1,4 @@
-# Workflow de agentes de IA — TROQ
+# Workflow de agentes de IA — TROQS
 
 Modo operacional do projeto: como Bruno, ChatGPT, Claude Code e Antigravity trabalham juntos, qual fonte prevalece em caso de conflito, como prompts e relatórios são estruturados e quais autorizações e restrições valem para operações Git. Este documento é a fonte oficial da decisão DEC-025 em [../decisions/decision-log.md](../decisions/decision-log.md).
 

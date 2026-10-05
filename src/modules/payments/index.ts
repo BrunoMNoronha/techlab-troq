@@ -111,7 +111,7 @@ export { readConfirmedPaymentEvidence } from './eligibility';
 export type { PaymentEvidenceReader } from './eligibility';
 
 // F3-004 (#94): adaptador do Mercado Pago. O dominio recebe snapshot e veredito
-// em termos do TROQ; o vocabulario do provedor fica em ./mercado-pago.
+// em termos do TROQS; o vocabulario do provedor fica em ./mercado-pago.
 export {
   createMercadoPagoClient,
   MercadoPagoConfigError,

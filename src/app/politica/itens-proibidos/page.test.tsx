@@ -44,8 +44,8 @@ describe('/politica/itens-proibidos', () => {
     render(<PoliticaItensProibidosPage />);
     for (const reading of [
       'Isto é proibido por lei',
-      'Isto pode ser lícito no Brasil, mas o TROQ não tem como verificar as condições, então não aceita',
-      'O TROQ escolheu não aceitar',
+      'Isto pode ser lícito no Brasil, mas o TROQS não tem como verificar as condições, então não aceita',
+      'O TROQS escolheu não aceitar',
     ]) {
       expect(policy).toContain(reading);
       expect(screen.getByText(new RegExp(reading))).toBeInTheDocument();

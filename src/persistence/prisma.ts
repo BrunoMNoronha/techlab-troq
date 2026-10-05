@@ -1,4 +1,4 @@
-// Fronteira de persistencia do TROQ: o UNICO ponto da aplicacao que instancia o
+// Fronteira de persistencia do TROQS: o UNICO ponto da aplicacao que instancia o
 // Prisma Client (docs/architecture/overview.md, AR-3.2 — a camada de
 // persistencia e "o unico lugar que fala Prisma/SQL").
 //

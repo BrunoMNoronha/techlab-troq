@@ -20,7 +20,7 @@ const REASON_MESSAGES: Record<string, string> = {
   google_cancelado:
     'A entrada com Google foi cancelada e nenhuma conta foi criada. Tente de novo ou use seu e-mail e senha.',
   google_conta_existente:
-    'Ja existe uma conta TROQ com o e-mail desta Conta Google. Entre com e-mail e senha e vincule a Conta Google em Minha conta.',
+    'Ja existe uma conta TROQS com o e-mail desta Conta Google. Entre com e-mail e senha e vincule a Conta Google em Minha conta.',
   google_email_nao_verificado:
     'O Google nao confirmou o e-mail desta conta. Verifique o e-mail no Google ou cadastre-se com e-mail e senha.',
   google_falha: 'Nao foi possivel entrar com Google. Tente novamente.',
@@ -65,7 +65,7 @@ export default function LoginPage({
   return (
     <PageContainer width="narrow">
       <PageHeader
-        title="Entrar no TROQ"
+        title="Entrar no TROQS"
         description="Informe suas credenciais para acessar sua conta."
       />
 

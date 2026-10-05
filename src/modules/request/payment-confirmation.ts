@@ -85,7 +85,7 @@ export type PaymentConfirmationOutcome =
   | 'no_effect';
 
 export interface PaymentConfirmationOptions {
-  /** Como o TROQ tomou conhecimento (PE-10.1). */
+  /** Como o TROQS tomou conhecimento (PE-10.1). */
   origin: RecognitionOrigin;
   deps?: ConfirmationDeps;
 }

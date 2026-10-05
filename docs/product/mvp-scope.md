@@ -1,4 +1,4 @@
-# Escopo do MVP — TROQ
+# Escopo do MVP — TROQS
 
 Documento de escopo inicial do MVP. Registra apenas o que foi definido até a Fase 0. Detalhes ainda não definidos estão em [../decisions/open-decisions.md](../decisions/open-decisions.md) e não devem ser inferidos deste documento.
 

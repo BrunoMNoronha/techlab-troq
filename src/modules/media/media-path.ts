@@ -1,6 +1,6 @@
 // Endereco publico de um derivado (media-pipeline-contract.md, secao 9.1). E a
 // UNICA forma de apontar para uma imagem de anuncio: uma rota relativa do
-// proprio TROQ, que reconfere a autorizacao a cada requisicao. Nunca chave de
+// proprio TROQS, que reconfere a autorizacao a cada requisicao. Nunca chave de
 // objeto, host do R2, bucket ou URL assinada. Sem dependencia de servidor: pode
 // ser usada por componente cliente.
 

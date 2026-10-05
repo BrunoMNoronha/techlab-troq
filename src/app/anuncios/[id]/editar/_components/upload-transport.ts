@@ -1,6 +1,6 @@
 // Envio do binario do navegador DIRETO ao R2 pela presigned PUT
 // (media-pipeline-contract.md, secao 5.2). XMLHttpRequest, e nao fetch, porque
-// so ele informa o progresso do envio. Nenhum byte passa pelo servidor do TROQ.
+// so ele informa o progresso do envio. Nenhum byte passa pelo servidor do TROQS.
 // A URL e credencial temporaria: nunca vai para log nem para mensagem de erro.
 
 export interface PutResult {

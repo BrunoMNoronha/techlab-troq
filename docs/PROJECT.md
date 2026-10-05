@@ -1,4 +1,4 @@
-# Projeto — TechLab+ TROQ
+# Projeto — TechLab+ TROQS
 
 Use como **briefing e instrução permanente**. Preencha o conhecido, use `TBD` nas lacunas e não repita contexto já existente no repositório.
 

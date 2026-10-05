@@ -1,6 +1,6 @@
 import type { Tone } from '@/components/ui';
 
-// Dados fictícios das páginas-modelo. Nenhuma relação com o domínio do TROQ.
+// Dados fictícios das páginas-modelo. Nenhuma relação com o domínio do TROQS.
 
 export interface SampleRecord {
   id: string;

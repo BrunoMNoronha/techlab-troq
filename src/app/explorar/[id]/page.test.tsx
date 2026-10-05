@@ -89,7 +89,7 @@ describe('detalhe publico /explorar/[id]', () => {
     getPublicListingDetail.mockResolvedValue(null);
     await expect(DetalheAnuncioPublicoPage(params(ID))).rejects.toThrow('NEXT_NOT_FOUND');
     expect(getContactRequestEntry).not.toHaveBeenCalled();
-    expect(await generateMetadata(params(ID))).toEqual({ title: 'Anúncio indisponível — TROQ' });
+    expect(await generateMetadata(params(ID))).toEqual({ title: 'Anúncio indisponível — TROQS' });
   });
 
   it('mostra as tres alternativas de troca como texto, na ordem, sem login (#76)', async () => {
@@ -138,7 +138,7 @@ describe('detalhe publico /explorar/[id]', () => {
   it('metadata usa so titulo, cidade e UF', async () => {
     getPublicListingDetail.mockResolvedValue(listing);
     expect(await generateMetadata(params(ID))).toEqual({
-      title: 'Bicicleta aro 29 — TROQ',
+      title: 'Bicicleta aro 29 — TROQS',
       description: 'Campinas - SP',
     });
   });

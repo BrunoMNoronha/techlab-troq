@@ -1,4 +1,4 @@
-# Visão geral da arquitetura — TROQ
+# Visão geral da arquitetura — TROQS
 
 Documento de arquitetura pré-implementação do MVP. Produzido por **F0-022**, junto com [data-model.md](data-model.md), [payments-design.md](payments-design.md) e [contact-release.md](contact-release.md).
 
@@ -18,7 +18,7 @@ Os itens deste documento são identificados como `AR-x.y` e são referenciáveis
 
 ## 2. Contexto e objetivos arquiteturais
 
-O TROQ é uma plataforma de anúncios entre pessoas em que o contato (WhatsApp/telefone) do anunciante só é liberado a um interessado **escolhido** e com **pagamento aprovado** de R$ 0,99, com no máximo três solicitações pagas por anúncio ([product/mvp-scope.md](../product/mvp-scope.md), [product/business-rules.md](../product/business-rules.md)).
+O TROQS é uma plataforma de anúncios entre pessoas em que o contato (WhatsApp/telefone) do anunciante só é liberado a um interessado **escolhido** e com **pagamento aprovado** de R$ 0,99, com no máximo três solicitações pagas por anúncio ([product/mvp-scope.md](../product/mvp-scope.md), [product/business-rules.md](../product/business-rules.md)).
 
 **AR-2.1 (decisão arquitetural).** A arquitetura é julgada por cinco objetivos, nesta ordem de prioridade. A ordem importa: quando dois objetivos colidirem, o de cima vence.
 
@@ -186,7 +186,7 @@ Eventos auditados: os de RF-022, os de DEC-031 seção 12 e os de DEC-037 seçã
 
 **AR-10.3 (decisão arquitetural).** O processamento da imagem é um **trabalho assíncrono**, disparado pela confirmação do upload e reprocessável com segurança, nos termos de [ADR-0006](../adr/0006-async-work-scheduling-concurrency.md). Motivos: a decodificação de entrada não confiável de até 50 megapixels não pertence ao caminho de uma requisição interativa, e o resultado precisa sobreviver a falhas parciais. Enquanto não houver ao menos uma imagem processada com sucesso, o anúncio não publica — a própria regra de DEC-028 é o critério de conclusão.
 
-**AR-10.4 (decisão arquitetural).** O bucket tem **duas áreas lógicas**: temporária (`originals/`, nunca servida, expurgo em até 24 horas) e de derivados (`derivatives/`, apenas derivados aprovados). **O bucket é privado**: nenhum objeto é público por URL direta, e os derivados chegam ao público somente por uma rota de mídia do TROQ que verifica o estado atual a cada requisição e responde sem cache compartilhável ([media-pipeline-contract.md](media-pipeline-contract.md), seções 3 e 9, F2-007, 2026-09-29). Nenhum derivado entregue contém dado protegido nem metadado que o revele (DEC-028, critério 17).
+**AR-10.4 (decisão arquitetural).** O bucket tem **duas áreas lógicas**: temporária (`originals/`, nunca servida, expurgo em até 24 horas) e de derivados (`derivatives/`, apenas derivados aprovados). **O bucket é privado**: nenhum objeto é público por URL direta, e os derivados chegam ao público somente por uma rota de mídia do TROQS que verifica o estado atual a cada requisição e responde sem cache compartilhável ([media-pipeline-contract.md](media-pipeline-contract.md), seções 3 e 9, F2-007, 2026-09-29). Nenhum derivado entregue contém dado protegido nem metadado que o revele (DEC-028, critério 17).
 
 ## 11. Pagamentos e webhooks — visão macro
 
@@ -262,7 +262,7 @@ O tema é estruturante e foi registrado em ADR própria: [ADR-0006](../adr/0006-
 
 **AR-15.2 (fato externo, verificado em 2026-09-14).** A documentação oficial da Vercel declara que a entrega do agendamento é **best effort**: uma execução agendada pode não ocorrer e pode ocorrer mais de uma vez; falha **não** é retentada; duas execuções do mesmo trabalho podem se sobrepor; e no plano Hobby o agendamento é limitado a **uma vez por dia**, com invocação em qualquer ponto da hora indicada.
 
-**AR-15.3 (decisão arquitetural — a consequência que governa todo o resto).** **Nenhuma invariante do TROQ pode depender de um trabalho periódico disparar.** Todo trabalho periódico é higiene e convergência, nunca a fonte de uma garantia. Onde uma regra depende do tempo, o estado correto é resolvido no **instante da escrita** (dentro da transação que aplica o efeito) ou **derivado no instante da leitura** — nunca esperado de um disparo futuro.
+**AR-15.3 (decisão arquitetural — a consequência que governa todo o resto).** **Nenhuma invariante do TROQS pode depender de um trabalho periódico disparar.** Todo trabalho periódico é higiene e convergência, nunca a fonte de uma garantia. Onde uma regra depende do tempo, o estado correto é resolvido no **instante da escrita** (dentro da transação que aplica o efeito) ou **derivado no instante da leitura** — nunca esperado de um disparo futuro.
 
 Consequências concretas, cada uma detalhada no documento indicado:
 
@@ -275,7 +275,7 @@ Consequências concretas, cada uma detalhada no documento indicado:
 
 **AR-15.4 (decisão arquitetural).** O plano Hobby da Vercel é **incompatível** com a operação do MVP, e não apenas com o uso comercial: a reconciliação de pagamentos exige cadência de minutos, e o Hobby permite uma execução diária. Isso **reforça** a decisão já vigente de que a produção comercial não depende do Hobby (DEC-011, R-09) e acrescenta que qualquer ambiente onde se pretenda exercitar o fluxo de pagamento de ponta a ponta precisa do mesmo tratamento.
 
-**AR-15.5 (fato externo, verificado em 2026-09-14).** O endpoint **pooled** do Neon usa PgBouncer em modo transação e **não suporta locks consultivos de sessão**. Consequência normativa para o TROQ: usa-se exclusivamente trava de **escopo de transação** (`pg_advisory_xact_lock`) ou trava de linha; a trava consultiva de **sessão** (`pg_advisory_lock`) é **proibida** no caminho da aplicação. Uma trava de sessão sobre conexão em modo transação vaza para outra requisição e deixa de proteger o que deveria.
+**AR-15.5 (fato externo, verificado em 2026-09-14).** O endpoint **pooled** do Neon usa PgBouncer em modo transação e **não suporta locks consultivos de sessão**. Consequência normativa para o TROQS: usa-se exclusivamente trava de **escopo de transação** (`pg_advisory_xact_lock`) ou trava de linha; a trava consultiva de **sessão** (`pg_advisory_lock`) é **proibida** no caminho da aplicação. Uma trava de sessão sobre conexão em modo transação vaza para outra requisição e deixa de proteger o que deveria.
 
 ## 16. Evolução sem microserviços prematuros
 

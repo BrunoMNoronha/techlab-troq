@@ -19,7 +19,7 @@ const GOOGLE_LINK_MESSAGES: Record<string, { text: string; ok: boolean }> = {
     ok: false,
   },
   ja_vinculada: {
-    text: 'Esta Conta Google ja esta vinculada a outra conta TROQ e nao pode ser transferida.',
+    text: 'Esta Conta Google ja esta vinculada a outra conta TROQS e nao pode ser transferida.',
     ok: false,
   },
   falha: {
@@ -64,7 +64,7 @@ export default async function ContaPage({
     <PageContainer width="content">
       <PageHeader
         title="Minha Conta"
-        description="Área privada de gerenciamento do seu perfil no TROQ."
+        description="Área privada de gerenciamento do seu perfil no TROQS."
       />
 
       <Stack gap={6}>
@@ -116,7 +116,7 @@ export default async function ContaPage({
             )}
             {googleLinked ? (
               <Text size="small" icon="check-circle">
-                Sua Conta Google está vinculada e pode ser usada para entrar no TROQ.
+                Sua Conta Google está vinculada e pode ser usada para entrar no TROQS.
               </Text>
             ) : googleAvailable ? (
               <>

@@ -111,7 +111,7 @@ Com evidência nova, em [risks.md](risks.md): **R-03** (RF-014 provado na CI com
 | Cron de 5 min e de 1 h e lifecycle do R2 (bloqueados pelo plano Hobby, ADR-0006, decisão 11) | [#56](https://github.com/BrunoMNoronha/techlab-troq/issues/56) |
 | Três alternativas de troca aceitas pelo anunciante: requisito novo, fora dos critérios do gate | [#76](https://github.com/BrunoMNoronha/techlab-troq/issues/76), sem decisão |
 | Login com Conta Google: conflita com a decisão "login social fora do núcleo inicial" | [#81](https://github.com/BrunoMNoronha/techlab-troq/issues/81), sem decisão |
-| Domínio: a issue pede `troq.app`, e o domínio registrado do TROQ é `troqs.app` | [#77](https://github.com/BrunoMNoronha/techlab-troq/issues/77), sem decisão |
+| Domínio: a issue pede `troq.app`, e o domínio registrado do TROQS é `troqs.app` | [#77](https://github.com/BrunoMNoronha/techlab-troq/issues/77), sem decisão |
 | Job `Integração (PostgreSQL efêmero)` como required check | decisão do responsável pelo ruleset `Protect main` |
 
 Limpeza depois da prova: a variável `BETTER_AUTH_URL` da branch foi removida da Vercel; a branch remota `test/f2-013-ci-integracao` já tinha sido apagada pelo merge da PR #85; os contêineres locais `troq-f2013-*` foram parados e removidos. O resultado de cada item, conferido por leitura, está na PR desta verificação.

@@ -80,7 +80,7 @@ const LABELS: Record<ListingField, string> = {
 const HINTS: Partial<Record<ListingField, string>> = {
   title: 'Diga o que é o item. Não inclua telefone, WhatsApp, e-mail ou endereço.',
   description:
-    'Descreva o item. Não inclua telefone, WhatsApp, e-mail ou endereço: o contato só é liberado pelo TROQ.',
+    'Descreva o item. Não inclua telefone, WhatsApp, e-mail ou endereço: o contato só é liberado pelo TROQS.',
 };
 
 type ListingFormProps =

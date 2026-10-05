@@ -160,7 +160,7 @@ function handle(req: IncomingMessage, res: ServerResponse, raw: string) {
       : reply(res, 404, { errors: [{ code: 'order_not_found' }] });
   }
   if (req.method === 'POST' && action?.[2]) {
-    // A reversao NAO gera reembolso nem cancelamento do TROQ: qualquer chamada
+    // A reversao NAO gera reembolso nem cancelamento do TROQS: qualquer chamada
     // aqui e registrada e reprova as provas.
     sim.refundPosts.push(`${action[2]}:${order?.id ?? ''}`);
     return reply(res, 409, { errors: [{ code: 'cannot_refund_order' }] });
@@ -562,7 +562,7 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
           },
         },
       });
-      // Nenhuma cobranca nova, de recuperacao ou devolucao pelo TROQ (PE-8.8).
+      // Nenhuma cobranca nova, de recuperacao ou devolucao pelo TROQS (PE-8.8).
       expect(sim.creates).toBe(creates);
       expect(sim.refundPosts.length).toBe(calls);
       expect(
@@ -728,7 +728,7 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
     });
 
     // -----------------------------------------------------------------------
-    it('excedente RT-1 devolvido pelo proprio TROQ: reversao ambigua vira inconsistencia, sem transicao', async () => {
+    it('excedente RT-1 devolvido pelo proprio TROQS: reversao ambigua vira inconsistencia, sem transicao', async () => {
       const listingId = await publishedListing();
       const r = await paid('r1', listingId);
       // Duplicidade ja tratada por F3-007: um segundo pagamento com RT-1 concluido.
@@ -768,7 +768,7 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
         where: { id: r.contactRequestId },
         select: { reservedFrom: true },
       });
-      // Acreditado e devolvido antes de o TROQ reconhecer (nenhuma notificacao).
+      // Acreditado e devolvido antes de o TROQS reconhecer (nenhuma notificacao).
       accredit(r.orderId, new Date(reservedFrom.getTime() + 2_000));
       providerReports(r.orderId, 'refunded', 'refunded');
       await park([r.attemptId]);

@@ -33,11 +33,11 @@ A referência da API de `GET /v1/orders/{id}` ainda cita `invalid_credentials` p
 
 | Alternativa | Desfecho | Motivo |
 | --- | --- | --- |
-| **A** — `GET /v1/payments/search?external_reference=…` | **Adotada** | Usa o identificador que o TROQ já controla e persiste (`external_reference` única por tentativa, `troq-pa-<id>`); funciona depois que a `ticket_url` some; não exige extrair nada de URL |
+| **A** — `GET /v1/payments/search?external_reference=…` | **Adotada** | Usa o identificador que o TROQS já controla e persiste (`external_reference` única por tentativa, `troq-pa-<id>`); funciona depois que a `ticket_url` some; não exige extrair nada de URL |
 | **B** — `GET /v1/payments/{id}` com o id numérico extraído da `ticket_url` | Rejeitada | Depende do formato de uma URL de apresentação, não de campo de contrato; a `ticket_url` some depois da acreditação, então o id teria de ser extraído e persistido na criação, e uma cobrança retomada depois da acreditação não o teria |
 | **C** — `GET /v1/payments/{id}` com `PAY01…` ou `reference_id` | Rejeitada | `404` nas duas execuções |
 | **D** — campo não documentado da order (opção 2 de OD-16) | Rejeitada | Não existe: a order não traz campo de aprovação |
-| **E** — primeiro instante em que o TROQ observou a acreditação (opção 3 de OD-16) | Rejeitada | Alteraria o efeito de PE-4.2; desnecessária, porque a fonte autoritativa existe |
+| **E** — primeiro instante em que o TROQS observou a acreditação (opção 3 de OD-16) | Rejeitada | Alteraria o efeito de PE-4.2; desnecessária, porque a fonte autoritativa existe |
 
 ## Decisão
 
@@ -47,7 +47,7 @@ A referência da API de `GET /v1/orders/{id}` ainda cita `invalid_credentials` p
    - a order está acreditada pela classificação de PD-6.6 (`processed`/`accredited` na order e na transação Pix);
    - o pagamento tem `status = approved`, `status_detail = accredited`, `external_reference` igual à da tentativa, valor igual ao da cobrança e `date_approved` presente e interpretável.
 
-   O valor é usado como o provedor o reporta, com a precisão e o fuso que ele declara. O TROQ não o refina, não o arredonda e não o substitui por `last_updated_date`, pelo instante de chegada da notificação nem pelo de processamento (PD-6.7).
+   O valor é usado como o provedor o reporta, com a precisão e o fuso que ele declara. O TROQS não o refina, não o arredonda e não o substitui por `last_updated_date`, pelo instante de chegada da notificação nem pelo de processamento (PD-6.7).
 4. **Falhas e divergências nunca viram aprovação:**
    - consulta indisponível, erro `5xx`, tempo esgotado ou **nenhum resultado** com a order já acreditada: a tentativa fica pendente e sob reconciliação (PD-6.9), porque a busca pode ter atraso de indexação;
    - resultado que contradiz a order (pagamento não aprovado, `external_reference` ou valor divergentes, `date_approved` ausente ou ilegível): `inconsistente`, sem eleição por analogia (PE-1.5, CI-9);

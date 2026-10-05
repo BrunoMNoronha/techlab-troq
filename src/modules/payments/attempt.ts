@@ -8,7 +8,7 @@ import { recordAuditEvent } from '@/modules/audit';
 // cobranca e o passo 2 (F3-005, #95).
 //
 // Chave de idempotencia (PD-5.1): UUID versao 5 (RFC 9562, secao 5.5) sobre um
-// espaco de nomes fixo do TROQ e o identificador da tentativa. Deterministica,
+// espaco de nomes fixo do TROQS e o identificador da tentativa. Deterministica,
 // sem colisao pratica entre tentativas diferentes e sem nada da pessoa, do
 // anuncio ou do valor. No formato UUID, o mesmo que a documentacao do provedor
 // usa nos exemplos de `X-Idempotency-Key`.
@@ -17,7 +17,7 @@ import { recordAuditEvent } from '@/modules/audit';
 // (`readPersistedIdempotencyKey`); ela nunca e recalculada no momento da
 // chamada. Mudar o espaco de nomes no futuro nao muda a chave de tentativa antiga.
 
-/** Espaco de nomes v5 das chaves de idempotencia de tentativa do TROQ. Nunca muda. */
+/** Espaco de nomes v5 das chaves de idempotencia de tentativa do TROQS. Nunca muda. */
 export const PAYMENT_ATTEMPT_KEY_NAMESPACE = '6b3f2a8e-9d41-4c7b-a0e5-3f1d9c2b7e64';
 
 /** Prefixo do `external_reference` enviado ao provedor (PD-2.1). */
