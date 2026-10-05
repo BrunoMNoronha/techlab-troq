@@ -33,6 +33,8 @@ A entrada com Google foi aprovada por DEC-047 (2026-10-04) e é oferecida **só 
 | 10 | Acesso posterior com Google → mesma conta (5 usuários, 1 identidade), nova sessão, tokens ainda nulos | PASS |
 | 11 | Logs de requisição do alias (29 registros, 4 callbacks): nenhum segredo do cliente, token do Google, JWT, cookie de sessão ou handle de pendência | PASS |
 
+**Limpeza (2026-10-05).** Removidos: as três variáveis restritas à branch, a branch `proof/81-google-preview` e a URI do alias no cliente "TROQ preview". A conta de teste foi apagada do Neon de `preview` (usuário, identidade, aceite e sessões), e o banco voltou à linha de base: 4 usuários, 0 identidades Google, 0 pendências. Ficam o projeto `troq-510700`, a tela de consentimento em modo de teste e o cliente sem URI.
+
 **Não provados com o Google real** (cobertos só pelos testes automatizados de `google-signin.integration.test.ts`):
 
 - colisão com conta por senha e vinculação explícita, porque não havia uma segunda conta de teste autorizada com e-mail de conta por senha;
