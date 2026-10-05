@@ -32,7 +32,7 @@ Estão fora deste contrato: execução do pipeline de imagens ([media-pipeline-c
 
 ## 2. Campos do anúncio (RF-004)
 
-O MVP adota o **conjunto mínimo já homologado** de conteúdo fornecido pelo anunciante: **título, descrição, imagens e cidade/UF** e, desde DEC-046 ([#76](https://github.com/BrunoMNoronha/techlab-troq/issues/76)), as **três alternativas de troca** aceitas pelo anunciante (seção 3.1). Não há outro campo de conteúdo. Isso fecha a lacuna que mantinha RF-004 em `parcialmente definido` sem criar regra ou decisão nova.
+O MVP adota o **conjunto mínimo já homologado** de conteúdo fornecido pelo anunciante: **título, descrição, imagens e cidade/UF** e, desde DEC-046 ([#76](https://github.com/BrunoMNoronha/techlab-troq/issues/76)), as **três alternativas de troca** aceitas pelo anunciante (seção 3.1). Desde [#89](https://github.com/BrunoMNoronha/techlab-troq/issues/89), inclui também uma categoria de produto, segundo [product-categories.md](../product/product-categories.md). Isso fecha a lacuna que mantinha RF-004 em `parcialmente definido` sem criar regra ou decisão nova.
 
 ### 2.1 Conteúdo fornecido pelo anunciante
 
@@ -42,6 +42,7 @@ O MVP adota o **conjunto mínimo já homologado** de conteúdo fornecido pelo an
 | `description` | `description` | sim | sim |
 | `city` | `city` | sim | sim |
 | `state` (UF) | `uf` (`CHAR(2)`) | sim | sim |
+| `category` | `category` (`VARCHAR(40)`, nullable) | opcional no rascunho; obrigatória para publicar, reativar e editar `published`/`paused` | sim, código do catálogo comum; nome no card/detalhe |
 | imagens | entidade `ListingImage` (seção 2.4) | não no rascunho; de 1 a 6 prontas para publicar | somente derivados processados |
 | `tradeOptions` (alternativas de troca) | entidade `ListingTradeOption` (`position` 1 a 3, `label`) | de 0 a 3 no rascunho; exatamente 3 para publicar, reativar e editar `published`/`paused` (seção 3.1) | sim, somente no detalhe (seção 6.1) |
 
@@ -77,7 +78,9 @@ Imagens não são campo textual do anúncio. Cada uma é um `ListingImage` (`pos
 
 ### 2.5 Fora do MVP
 
-Não existem, e não devem ser introduzidos sem decisão própria: categoria, preço, valor estimado, estoque, quantidade, condição do produto, CEP, bairro, endereço, coordenadas, geolocalização ou qualquer outro campo comercial. A localização coletada e exibida é **somente cidade/UF** (RB-005, RF-007, RNF-008).
+Não existem, e não devem ser introduzidos sem decisão própria: preço, valor estimado, estoque, quantidade, condição do produto, CEP, bairro, endereço, coordenadas, geolocalização ou qualquer outro campo comercial. A localização coletada e exibida é **somente cidade/UF** (RB-005, RF-007, RNF-008).
+
+A categoria comercial é distinta das categorias de denúncia/moderação. Catálogo, cardinalidade única, normalização, patches e compatibilidade de legados são normativos em [product-categories.md](../product/product-categories.md).
 
 ## 3. Validação do formulário
 
@@ -195,7 +198,7 @@ Não existe estado `INACTIVE`, "inativo", "vendido", "expirado" ou "em análise"
 | T1 | `draft` → `published` | dono | Publicar (seção 4.4) |
 | T2 | `draft` → `closed` | dono | Descartar rascunho, com confirmação explícita |
 | T3 | `published` → `paused` | dono | Pausar |
-| T4 | `paused` → `published` | dono | Reativar; exige pelo menos 1 imagem `ready` e as três alternativas de troca (seção 3.1) |
+| T4 | `paused` → `published` | dono | Reativar; exige pelo menos 1 imagem `ready` e as três alternativas de troca (seção 3.1), além da categoria comercial válida (seção 19) |
 | T5 | `published` → `closed` | dono | Encerrar, com confirmação explícita |
 | T6 | `paused` → `closed` | dono | Encerrar, com confirmação explícita |
 | T7–T9 | `draft`/`published`/`paused` → `removed` | **somente moderação** | Nenhuma ação do dono produz `removed` |
@@ -213,6 +216,7 @@ Usado por listagem, detalhe, home e metadata. Somente estes campos existem; qual
 | `id` | UUID | `Listing.id` |
 | `title` | string | `Listing.title` |
 | `description` | string | `Listing.description` |
+| `category` | string ou null | código do catálogo comercial (#89); null em rascunhos/legados sem escolha |
 | `city` | string | `Listing.city` |
 | `state` | string (UF) | `Listing.uf` |
 | `createdAt` | data/hora | `Listing.createdAt` |
@@ -229,6 +233,7 @@ Usado por listagem, detalhe, home e metadata. Somente estes campos existem; qual
   "description": "Bicicleta em ótimo estado.",
   "city": "Campinas",
   "state": "SP",
+  "category": "esportes",
   "createdAt": "2026-09-29T12:00:00.000Z",
   "images": [
     {
@@ -264,12 +269,12 @@ A projeção é explícita (`select` campo a campo); serializar a entidade intei
 
 ### 6.3 DTO privado do dono
 
-Usado em "meus anúncios" e na edição, somente para o dono autenticado: `id`, `title`, `description`, `city`, `state`, `tradeOptions` (as três posições, com texto vazio onde nada foi informado), `status`, `createdAt`, `updatedAt` e, para a gestão de imagens, as imagens do próprio anúncio com seu estado de processamento. `ownerId` não é devolvido: o dono é a própria sessão. O aceite de termos não é exibido como campo editável.
+Usado em "meus anúncios" e na edição, somente para o dono autenticado: `id`, `title`, `description`, `category` (código ou null), `city`, `state`, `tradeOptions` (as três posições, com texto vazio onde nada foi informado), `status`, `createdAt`, `updatedAt` e, para a gestão de imagens, as imagens do próprio anúncio com seu estado de processamento. `ownerId` não é devolvido: o dono é a própria sessão. O aceite de termos não é exibido como campo editável.
 
 ### 6.4 Entrada
 
-- Criação: `{ title, description, city, state }`, todos obrigatórios, e `tradeOptions` opcional (seção 3.1).
-- Edição: subconjunto dos mesmos quatro campos e `tradeOptions`; os informados são validados como na criação, e a completude das alternativas depende do estado (seção 3.1).
+- Criação: `{ title, description, city, state }`, todos obrigatórios, `category` opcional (#89, seção 19) e `tradeOptions` opcional (seção 3.1).
+- Edição: subconjunto dos mesmos quatro campos, `category` e `tradeOptions`; os informados são validados como na criação, e a completude das alternativas depende do estado (seção 3.1).
 - Publicação: identificador do anúncio e confirmação explícita da declaração de conformidade.
 - Pausar, reativar, encerrar e descartar: identificador do anúncio e, quando exigida, confirmação explícita.
 
@@ -650,3 +655,7 @@ Nenhuma migration, dependência ou variável de ambiente nova. Nada é registrad
 | Navegador embutido, 375 px, build de produção local com banco descartável | Criar com telefone no título e endereço na descrição → erro nos dois campos, foco no título, texto mantido, sem rolagem horizontal → corrigir e salvar ("aro 29, 21 marchas" aceito) → editar com e-mail ofuscado na alternativa → erro no campo → corrigir e salvar → publicar (imagem pronta semeada no banco; sem R2 neste ambiente) → pausar → contato gravado direto no banco → edição abre com a descrição marcada → reativar recusado, segue `paused`, alerta sem o número → status forçado a `published` → detalhe com a descrição mascarada e título intacto; HTML e RSC anônimos de detalhe, `/explorar` e home sem o número → salvar sem corrigir recusado → corrigir → detalhe anônimo com o texto novo. Log do servidor sem nenhum dos dados | — |
 
 **Não executado:** homologação em `preview`. Não há migration; a prova em `preview` depende do deploy da branch com `BETTER_AUTH_URL` restrita a ela e de login assistido, como na seção 17.5.
+
+## 19. Categoria de produto (#89)
+
+As allowlists de entrada, DTO do dono, feed público e detalhe público incluem explicitamente `category: string | null`. Somente códigos do catálogo comercial são aceitos. Ausência é exibida como “Categoria não informada”. O patch omitido não altera a categoria; null/vazio limpa somente rascunhos. Categoria e demais alterações são gravadas na mesma transação, sob a trava do anúncio. Publicar, reativar e editar `published`/`paused` exigem categoria válida no conteúdo resultante. Legados continuam visíveis conforme os gates anteriores, sem backfill ou mudança de estado, e são regularizados pelo dono. Cards da home/explorar compartilham catálogo e apresentação; não há filtro por categoria. Regras completas: [product-categories.md](../product/product-categories.md).

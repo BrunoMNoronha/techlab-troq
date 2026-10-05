@@ -357,6 +357,8 @@ model AccountDeletionRequest {
 model Listing {
   id          String        @id @default(uuid()) @db.Uuid
   ownerId     String        @map("owner_id") @db.Uuid
+  /// Categoria comercial; nullable para rascunhos e legados (#89).
+  category    String?       @db.VarChar(40)
   title       String
   description String
   city        String

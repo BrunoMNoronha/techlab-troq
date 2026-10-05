@@ -118,7 +118,7 @@ _Atualização de 2026-10-01 (F3-001, DV-4)._ `ContactAccessEvent` registra **so
 | --- | --- |
 | Estados | `draft`, `published`, `paused`, `closed`, `removed` (DEC-027, seção 2) |
 | Inicial / terminais | Inicial `draft`; terminais `closed` e `removed` |
-| Campos de negócio | Dono, título, descrição, cidade, UF, ordenação das imagens, alternativas de troca (DM-5.10), instantes de cada transição |
+| Campos de negócio | Dono, título, descrição, categoria de produto (DM-5.11), cidade, UF, ordenação das imagens, alternativas de troca (DM-5.10), instantes de cada transição |
 | Localização | Apenas cidade e UF. **Sem** coordenadas, endereço, CEP ou bairro (RF-007, RB-005) |
 
 **DM-5.1 (invariante, restrição de banco + transação).** As transições permitidas são exatamente T1 a T9 de DEC-027, seção 4. Toda transição é aplicada por atualização condicionada ao estado de origem esperado — de modo que duas transições concorrentes não se sobreponham — e qualquer par (origem, destino) fora da matriz é rejeitado. `closed` e `removed` não têm transição de saída.
@@ -142,6 +142,8 @@ _Atualização de 2026-10-01 (F3-001, DV-4)._ `ContactAccessEvent` registra **so
 | Estados da imagem | `uploaded` (geração de upload autorizada e ainda não processada; a confirmação é `sourceConfirmedAt`), `processing`, `ready`, `failed`. Semântica técnica, execução e delta de campos para #46 em [media-pipeline-contract.md](media-pipeline-contract.md), seções 4 e 15 |
 | Campos | Anúncio, posição na ordenação, chave do objeto gerada pela aplicação, dimensões, instantes |
 | Derivados | `thumb` 320 px, `medium` 768 px, `large` 1600 px, em WebP qualidade 80, com dimensões conhecidas (DEC-028, seção 7) |
+
+**DM-5.11 (#89).** `Listing.category` é nullable, com código único de catálogo comercial e CHECK no banco. Publicar, reativar e editar `published`/`paused` exigem categoria sob a trava do anúncio. Migration sem backfill; legados permanecem legíveis e visíveis segundo DM-5.2 até regularização pelo dono. Regras e catálogo: [product-categories.md](../product/product-categories.md).
 
 **DM-5.7 (invariante, restrição de banco).** No máximo **6** imagens por anúncio, e a posição na ordenação é única dentro do anúncio. A primeira posição é a capa (DEC-028, seção 3).
 

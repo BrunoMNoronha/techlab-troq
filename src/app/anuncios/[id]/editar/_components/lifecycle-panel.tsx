@@ -28,6 +28,7 @@ type Confirmable = 'discard' | 'close';
 const FIELD_LABELS: Record<string, string> = {
   title: 'título',
   description: 'descrição',
+  category: 'categoria do produto',
   city: 'cidade',
   state: 'UF',
   tradeOption1: 'alternativa de troca 1',
