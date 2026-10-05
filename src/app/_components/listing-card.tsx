@@ -1,5 +1,7 @@
 import { productCategoryLabel } from '@/modules/listing/categories';
 import Link from 'next/link';
+import { MediaFrame } from '@/components/data-display';
+import { Card, CardBody, CardFooter, Heading, Text } from '@/components/ui';
 import type { PublicListingFeedItem } from '@/modules/listing';
 import { derivativeSrcSet, listingImageAlt, pickDerivative } from './listing-image';
 
@@ -12,30 +14,8 @@ export function ListingCard({ item }: { item: PublicListingFeedItem }) {
   const coverImage = cover ? pickDerivative(cover.derivatives, 'medium') : null;
 
   return (
-    <Link
-      href={`/explorar/${item.id}`}
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        backgroundColor: 'white',
-        border: '1px solid #e5e7eb',
-        borderRadius: '8px',
-        overflow: 'hidden',
-        textDecoration: 'none',
-        color: 'inherit',
-        minWidth: 0,
-      }}
-    >
-      <div
-        style={{
-          width: '100%',
-          height: '180px',
-          backgroundColor: '#f3f4f6',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
+    <Card as={Link} href={`/explorar/${item.id}`} interactive media>
+      <MediaFrame ratio="wide">
         {cover && coverImage ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -46,63 +26,26 @@ export function ListingCard({ item }: { item: PublicListingFeedItem }) {
             height={coverImage.height}
             alt={listingImageAlt(item.title, 0, item.images.length)}
             loading="lazy"
-            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
           />
-        ) : (
-          <span aria-hidden="true" style={{ fontSize: '32px', color: '#6b7280' }}>
-            📷
-          </span>
-        )}
-      </div>
+        ) : null}
+      </MediaFrame>
 
-      <div
-        style={{
-          padding: '16px',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '8px',
-          flex: 1,
-        }}
-      >
-        <h3
-          style={{
-            fontSize: '16px',
-            fontWeight: '600',
-            color: '#111827',
-            margin: 0,
-            overflowWrap: 'anywhere',
-          }}
-        >
+      <CardBody>
+        <Heading level={3} size="h4" wrapAnywhere>
           {item.title}
-        </h3>
-        <p
-          style={{
-            color: '#4b5563',
-            fontSize: '14px',
-            margin: 0,
-            display: '-webkit-box',
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: 'vertical',
-            overflow: 'hidden',
-            overflowWrap: 'anywhere',
-          }}
-        >
+        </Heading>
+        <Text size="small" tone="muted" clamp={2} wrapAnywhere>
           {item.description}
-        </p>
-        <span style={{ color: '#4b5563', fontSize: '13px' }}>
+        </Text>
+        <Text size="small" tone="muted">
           {productCategoryLabel(item.category)}
-        </span>
-        <div style={{ marginTop: 'auto', paddingTop: '8px', fontSize: '13px', color: '#4b5563' }}>
-          <span aria-hidden="true">📍 </span>
-          {item.city} - {item.state}
-        </div>
-      </div>
-    </Link>
+        </Text>
+        <CardFooter>
+          <Text size="small" tone="muted" icon="map-pin">
+            {item.city} - {item.state}
+          </Text>
+        </CardFooter>
+      </CardBody>
+    </Card>
   );
 }
-
-export const listingGridStyle = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fill, minmax(min(260px, 100%), 1fr))',
-  gap: '20px',
-} as const;

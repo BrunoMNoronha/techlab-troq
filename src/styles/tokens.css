@@ -1,0 +1,205 @@
+/*
+ * Design tokens do TROQ — fonte única de cor, tipografia, espaçamento, raio,
+ * sombra, camada, container, transição e foco (docs/engineering/design-system.md).
+ *
+ * Componentes consomem apenas os tokens semânticos (`--color-*`, `--space-*`,
+ * `--text-*`...). A paleta crua (`--palette-*`) existe só para compor os
+ * semânticos neste arquivo e não deve ser usada fora dele.
+ *
+ * Breakpoints: media queries não aceitam custom properties, então os valores
+ * são fixos por convenção — sm 480px, md 768px, lg 1024px, xl 1280px —, sempre
+ * com `min-width` (mobile-first).
+ */
+
+:root {
+  /* Paleta crua */
+  --palette-blue-50: #eff6ff;
+  --palette-blue-100: #dbeafe;
+  --palette-blue-200: #bfdbfe;
+  --palette-blue-700: #1d4ed8;
+  --palette-blue-800: #1e40af;
+  --palette-blue-900: #1e3a8a;
+  --palette-teal-50: #f0fdfa;
+  --palette-teal-200: #99f6e4;
+  --palette-teal-700: #0f766e;
+  --palette-teal-900: #134e4a;
+  --palette-slate-0: #ffffff;
+  --palette-slate-50: #f8fafc;
+  --palette-slate-100: #f1f5f9;
+  --palette-slate-200: #e2e8f0;
+  --palette-slate-300: #cbd5e1;
+  --palette-slate-450: #76859b;
+  --palette-slate-500: #64748b;
+  --palette-slate-600: #475569;
+  --palette-slate-800: #1e293b;
+  --palette-slate-900: #0f172a;
+  --palette-green-50: #f0fdf4;
+  --palette-green-200: #bbf7d0;
+  --palette-green-700: #15803d;
+  --palette-green-900: #14532d;
+  --palette-amber-50: #fffbeb;
+  --palette-amber-200: #fde68a;
+  --palette-amber-700: #b45309;
+  --palette-amber-900: #78350f;
+  --palette-red-50: #fef2f2;
+  --palette-red-200: #fecaca;
+  --palette-red-700: #b91c1c;
+  --palette-red-800: #991b1b;
+  --palette-sky-50: #f0f9ff;
+  --palette-sky-200: #bae6fd;
+  --palette-sky-700: #0369a1;
+  --palette-sky-900: #0c4a6e;
+
+  /* Cores semânticas */
+  --color-primary: var(--palette-blue-700);
+  --color-primary-hover: var(--palette-blue-800);
+  --color-primary-active: var(--palette-blue-900);
+  --color-primary-soft: var(--palette-blue-50);
+  --color-primary-soft-hover: var(--palette-blue-100);
+  --color-primary-border: var(--palette-blue-200);
+  --color-on-primary: var(--palette-slate-0);
+
+  --color-secondary: var(--palette-slate-900);
+  --color-secondary-hover: var(--palette-slate-800);
+  --color-on-secondary: var(--palette-slate-0);
+
+  --color-accent: var(--palette-teal-700);
+  --color-accent-soft: var(--palette-teal-50);
+  --color-accent-border: var(--palette-teal-200);
+  --color-accent-text: var(--palette-teal-900);
+
+  --color-background: var(--palette-slate-50);
+  --color-surface: var(--palette-slate-0);
+  --color-surface-muted: var(--palette-slate-100);
+  --color-surface-hover: var(--palette-slate-100);
+  --color-overlay: rgb(15 23 42 / 0.5);
+
+  --color-text: var(--palette-slate-900);
+  --color-text-muted: var(--palette-slate-600);
+  --color-text-subtle: var(--palette-slate-500);
+  --color-text-disabled: var(--palette-slate-500);
+  --color-link: var(--palette-blue-700);
+  --color-link-hover: var(--palette-blue-900);
+
+  --color-border: var(--palette-slate-200);
+  --color-border-strong: var(--palette-slate-300);
+  /* Borda de controle de formulário: >= 3:1 sobre a superfície (WCAG 1.4.11). */
+  --color-border-control: var(--palette-slate-450);
+
+  --color-success: var(--palette-green-700);
+  --color-success-soft: var(--palette-green-50);
+  --color-success-border: var(--palette-green-200);
+  --color-success-text: var(--palette-green-900);
+
+  --color-warning: var(--palette-amber-700);
+  --color-warning-soft: var(--palette-amber-50);
+  --color-warning-border: var(--palette-amber-200);
+  --color-warning-text: var(--palette-amber-900);
+
+  --color-error: var(--palette-red-700);
+  --color-error-hover: var(--palette-red-800);
+  --color-error-soft: var(--palette-red-50);
+  --color-error-border: var(--palette-red-200);
+  --color-error-text: var(--palette-red-800);
+
+  --color-info: var(--palette-sky-700);
+  --color-info-soft: var(--palette-sky-50);
+  --color-info-border: var(--palette-sky-200);
+  --color-info-text: var(--palette-sky-900);
+
+  /* Tipografia */
+  --font-sans:
+    'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
+    sans-serif;
+  --font-mono: ui-monospace, 'SFMono-Regular', Menlo, Consolas, 'Liberation Mono', monospace;
+
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  --text-display: clamp(1.75rem, 1.2rem + 2.6vw, 2.5rem);
+  --text-h1: clamp(1.5rem, 1.35rem + 0.7vw, 1.75rem);
+  --text-h2: 1.25rem;
+  --text-h3: 1.125rem;
+  --text-h4: 1rem;
+  --text-body: 1rem;
+  --text-body-small: 0.875rem;
+  --text-caption: 0.75rem;
+  --text-label: 0.875rem;
+
+  --leading-display: 1.15;
+  --leading-heading: 1.3;
+  --leading-body: 1.5;
+  --leading-compact: 1.4;
+
+  /* Espaçamento: 4 / 8 / 12 / 16 / 24 / 32 / 40 / 48 / 64 */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+
+  /* Raio */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-full: 999px;
+
+  /* Sombra: três níveis, usados com parcimônia */
+  --shadow-sm: 0 1px 2px rgb(15 23 42 / 0.06);
+  --shadow-md: 0 4px 12px rgb(15 23 42 / 0.08), 0 1px 2px rgb(15 23 42 / 0.06);
+  --shadow-lg: 0 16px 40px rgb(15 23 42 / 0.16), 0 2px 6px rgb(15 23 42 / 0.08);
+
+  /* Camadas */
+  --z-base: 0;
+  --z-sticky: 100;
+  --z-nav: 200;
+  --z-dropdown: 300;
+  --z-overlay: 400;
+  --z-toast: 500;
+
+  /* Containers (largura máxima do conteúdo) */
+  --container-narrow: 30rem;
+  --container-content: 40rem;
+  --container-wide: 65rem;
+  --gutter: var(--space-4);
+
+  /* Dimensões de controle: alvo de toque mínimo de 44px */
+  --control-height: 2.75rem;
+  --control-height-sm: 2.25rem;
+  --header-height: 3.5rem;
+  --bottom-nav-height: 3.75rem;
+
+  /* Movimento */
+  --duration-fast: 150ms;
+  --duration-base: 200ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --transition-control:
+    background-color var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard),
+    color var(--duration-fast) var(--ease-standard),
+    box-shadow var(--duration-fast) var(--ease-standard);
+
+  /* Foco */
+  --focus-ring-color: var(--palette-blue-700);
+  --focus-ring: 0 0 0 2px var(--color-surface), 0 0 0 4px var(--focus-ring-color);
+}
+
+@media (min-width: 768px) {
+  :root {
+    --gutter: var(--space-6);
+  }
+}
+
+/* Movimento reduzido: as transições baseadas em token deixam de animar. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast: 0ms;
+    --duration-base: 0ms;
+  }
+}

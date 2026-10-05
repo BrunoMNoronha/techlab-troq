@@ -3,6 +3,10 @@
 import { use, useEffect, useRef, useState } from 'react';
 import { loginUser } from '@/modules/identity/actions';
 import { GoogleDivider, GoogleSignInButton } from '@/app/_components/google-sign-in';
+import { Alert } from '@/components/feedback';
+import { Field, Form, FormActions, Input } from '@/components/forms';
+import { PageContainer, PageHeader, Stack } from '@/components/layout';
+import { Button, Text, TextLink } from '@/components/ui';
 
 // Motivos repassados por redirecionamentos server-side (area da conta, logout
 // e retorno do Google pela rota /login/google, que so emite motivos desta lista).
@@ -59,143 +63,69 @@ export default function LoginPage({
   }
 
   return (
-    <main
-      style={{ maxWidth: '440px', margin: '40px auto', padding: '24px', fontFamily: 'sans-serif' }}
-    >
-      <h1 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '8px' }}>Entrar no TROQ</h1>
-      <p style={{ color: '#6b7280', fontSize: '14px', marginBottom: '24px' }}>
-        Informe suas credenciais para acessar sua conta.
-      </p>
+    <PageContainer width="narrow">
+      <PageHeader
+        title="Entrar no TROQ"
+        description="Informe suas credenciais para acessar sua conta."
+      />
 
-      {reasonMessage && !errorMessage && (
-        <div
-          role="status"
-          style={{
-            padding: '12px 16px',
-            backgroundColor: '#eff6ff',
-            border: '1px solid #bfdbfe',
-            borderRadius: '6px',
-            color: '#1e3a8a',
-            marginBottom: '16px',
-            fontSize: '14px',
-          }}
-        >
-          {reasonMessage}
-        </div>
-      )}
+      <Stack gap={6}>
+        {reasonMessage && !errorMessage && (
+          <Alert tone="info" role="status">
+            {reasonMessage}
+          </Alert>
+        )}
 
-      {errorMessage && (
-        <div
-          id="login-error"
-          ref={errorRef}
-          tabIndex={-1}
-          role="alert"
-          style={{
-            padding: '12px 16px',
-            backgroundColor: '#fef2f2',
-            border: '1px solid #fecaca',
-            borderRadius: '6px',
-            color: '#991b1b',
-            marginBottom: '16px',
-            fontSize: '14px',
-          }}
-        >
-          {errorMessage}
-        </div>
-      )}
+        {errorMessage && (
+          <Alert id="login-error" ref={errorRef} tabIndex={-1} role="alert" tone="error">
+            {errorMessage}
+          </Alert>
+        )}
 
-      <form
-        onSubmit={handleSubmit}
-        style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}
-      >
-        <div>
-          <label
-            htmlFor="email"
-            style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '4px' }}
-          >
-            E-mail
-          </label>
-          <input
-            id="email"
-            type="email"
-            autoComplete="email"
-            required
-            aria-describedby={errorMessage ? 'login-error' : undefined}
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            style={{
-              width: '100%',
-              boxSizing: 'border-box',
-              padding: '10px 12px',
-              border: '1px solid #d1d5db',
-              borderRadius: '6px',
-              fontSize: '16px',
-            }}
-            placeholder="seu@email.com"
-          />
-        </div>
+        <Form onSubmit={handleSubmit}>
+          <Field label="E-mail" htmlFor="email">
+            <Input
+              id="email"
+              type="email"
+              autoComplete="email"
+              required
+              aria-describedby={errorMessage ? 'login-error' : undefined}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="seu@email.com"
+            />
+          </Field>
 
-        <div>
-          <label
-            htmlFor="password"
-            style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '4px' }}
-          >
-            Senha
-          </label>
-          <input
-            id="password"
-            type="password"
-            autoComplete="current-password"
-            required
-            aria-describedby={errorMessage ? 'login-error' : undefined}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            style={{
-              width: '100%',
-              boxSizing: 'border-box',
-              padding: '10px 12px',
-              border: '1px solid #d1d5db',
-              borderRadius: '6px',
-              fontSize: '16px',
-            }}
-            placeholder="Sua senha"
-          />
-        </div>
+          <Field label="Senha" htmlFor="password">
+            <Input
+              id="password"
+              type="password"
+              autoComplete="current-password"
+              required
+              aria-describedby={errorMessage ? 'login-error' : undefined}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Sua senha"
+            />
+          </Field>
 
-        <button
-          type="submit"
-          disabled={loading}
-          style={{
-            marginTop: '8px',
-            width: '100%',
-            padding: '12px',
-            backgroundColor: loading ? '#9ca3af' : '#2563eb',
-            color: 'white',
-            border: 'none',
-            borderRadius: '6px',
-            fontSize: '16px',
-            fontWeight: '600',
-            cursor: loading ? 'not-allowed' : 'pointer',
-          }}
-        >
-          {loading ? 'Entrando...' : 'Entrar'}
-        </button>
-      </form>
+          <FormActions>
+            <Button type="submit" loading={loading} fullWidth>
+              {loading ? 'Entrando...' : 'Entrar'}
+            </Button>
+          </FormActions>
+        </Form>
 
-      <GoogleDivider />
-      <GoogleSignInButton returnTo={returnTo} />
+        <GoogleDivider />
+        <GoogleSignInButton returnTo={returnTo} />
 
-      <div>
-        <p style={{ marginTop: '16px', textAlign: 'center', fontSize: '14px', color: '#4b5563' }}>
+        <Text tone="muted" size="small" align="center">
           Não tem uma conta?{' '}
-          <a
-            href="/cadastro"
-            style={{ color: '#2563eb', textDecoration: 'none', fontWeight: '600' }}
-          >
+          <TextLink href="/cadastro" reload>
             Cadastre-se
-          </a>
-        </p>
-      </div>
-    </main>
+          </TextLink>
+        </Text>
+      </Stack>
+    </PageContainer>
   );
 }
