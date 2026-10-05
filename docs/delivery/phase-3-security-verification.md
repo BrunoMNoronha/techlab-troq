@@ -1,6 +1,30 @@
 # Verificação de segurança da Fase 3 — F3-014 (#104)
 
-Baseline: `23b503d` (inclui #147, #148 e #89). Branch: `codex/issue-104-seguranca`. Revisão técnica: Codex, no escopo da execução solicitada por Bruno. Status: **parcial; Preview e Sentry remoto pendentes**. Este documento não aprova #105/#54 nem o lançamento #130.
+Reauditoria documental em 2026-10-05: código e CI de `main@9447b8af344201ac60d25721dbce78c7982ae01e` conferidos. Status: **parcial; C-8 no Preview e Sentry remoto pendente**. Este documento não aprova #105/#54 nem o lançamento #130. O gate e a transição são acompanhados em [phase-4-transition.md](phase-4-transition.md).
+
+Baseline histórica da implementação: `23b503d` (inclui #147, #148 e #89), branch `codex/issue-104-seguranca`. Revisão técnica: Codex, no escopo da execução solicitada por Bruno. Os resultados locais abaixo pertencem à execução original; a seção seguinte identifica a CI revalidada nesta sprint.
+
+## Reauditoria da CI e do aceite em 2026-10-05
+
+Leitura somente dos metadados e logs da [CI 37296179216](https://github.com/BrunoMNoronha/techlab-troq/actions/runs/37296179216), executada sobre o SHA completo acima. Os dois jobs terminaram em `success`: Validação e Integração (PostgreSQL efêmero). Não houve nova execução local dos testes durante esta leitura.
+
+| Camada | Resultado verificado | Limite da prova |
+| --- | --- | --- |
+| Formatação, lint, typecheck e build | Etapas aprovadas no job Validação | Checkout da CI, sem homologação no navegador |
+| Unitários | 67 arquivos; 1.109 testes aprovados | Não usam provedores reais |
+| PostgreSQL e HTTP real | 32 arquivos; 473 testes aprovados; 3 arquivos e 19 testes pulados | Banco descartável e provedores simulados; R2 real e sandbox do Mercado Pago pulados por pré-requisitos externos |
+| Matriz de atores | 25 testes aprovados | Negativas exercitadas por sessões reais no banco efêmero |
+| Confirmação, C-8 e F3-S1 | 33 testes aprovados | SDK real com transporte local; C-8 remoto não é provado por esse resultado |
+| Contato por HTTP; webhook por HTTP | 30 e 11 testes aprovados, respectivamente | Servidor Next.js real ligado ao banco do job |
+| Pipeline e recuperação | 10 testes do pipeline aprovados; backup cifrado e restauração em PostgreSQL isolado aprovados | Artefatos e dados sintéticos do job, sem restauração de ambiente compartilhado |
+
+Os logs confirmam a execução no mesmo SHA das suítes de reserva (22), confirmação (33), reconciliação (21), reversão (9), reembolso técnico (11), escolha (21), duplicidade tardia (3), cobrança (10), contato direto (9), superfície pública HTTP (10), matriz de atores (25), contato HTTP (30) e webhook HTTP (11). A rastreabilidade T-1 a T-18 e C-1 a C-11 permanece na tabela deste relatório. A inspeção da fonte confirma concorrência observada em `pg_stat_activity` nos casos aplicáveis e repetição real de notificações/reembolsos; aprovação não decorre apenas de quantidade de testes.
+
+O [Deploy Preview 37332427023](https://github.com/BrunoMNoronha/techlab-troq/actions/runs/37332427023), tentativa 1, publicou o mesmo SHA no deployment `dpl_H2coTZhL45V7t52PTzJtfNcGM4hj`, origem estável `https://techlab-troq-git-preview-bruno-m-noronha.vercel.app`. Seu sucesso identifica o alvo disponível, mas não comprova C-8. As issues [#104](https://github.com/BrunoMNoronha/techlab-troq/issues/104) e [#105](https://github.com/BrunoMNoronha/techlab-troq/issues/105) continuam abertas e sem comentários de aceite remoto na leitura desta auditoria.
+
+A prova histórica de [#103](https://github.com/BrunoMNoronha/techlab-troq/issues/103#issuecomment-5988935258) recebeu sinais de jobs no Sentry de Preview em `dc51132`, com contagens financeiras zero. O comentário registra ausência de `jobs.run` de uma segunda chamada e falta de verificação de sinal não zero/alerta. Esses limites permanecem explícitos; a evidência não substitui a varredura remota de C-8 na revisão vigente.
+
+Para concluir C-8, registrar jornada completa no Preview, SHA/deployment e intervalo; buscar o contato sintético e suas grafias nas mensagens de erro, console, logs de runtime e Sentry, sem registrar seu valor no relatório. A resposta de entrega autorizada fica fora das superfícies proibidas. A busca exige controle não vazio ligado ao mesmo fluxo/intervalo, para distinguir ausência do número de ausência de telemetria. C-5 conserva a prova substituta de DV-13 até a introdução do perfil real de moderação.
 
 ## Método e matriz
 
@@ -85,11 +109,13 @@ Nenhuma dependência nova ou migration criada. As mudanças de produção se lim
 
 A revisão reforçada de **código e CI** está registrada acima. A entrega permanece parcial por causa da prova remota explicitamente exigida por #104. O contêiner PostgreSQL descartável `troq-issue104-ephemeral` e seu volume anônimo foram removidos após as provas locais, sem tocar os demais recursos. A atualização deste relatório após o run altera apenas documentação.
 
-## Pendências de aceite
+## Pendências registradas na implementação original
+
+A seção de reauditoria acima identifica o Preview republicado e o estado vigente. Os impedimentos de acesso e publicação abaixo descrevem a execução original, sem declarar que o deployment atual continua ausente.
 
 1. Revalidar o fluxo completo no Preview identificado, incluindo o recebimento e a busca no Sentry remoto, logs da Vercel e erros da interface. A tentativa de ler a aba Edge autenticada do Sentry falhou duas vezes por timeout de CDP; nenhum resultado remoto foi presumido.
 2. Registrar SHA, deployment, intervalo e controles que comprovem que a varredura observou eventos do fluxo. Os registros históricos de #103 demonstram sinais de jobs na release `dc51132`; não substituem C-8 desta revisão.
 3. Promoção/publicação do Preview requer pedido explícito conforme `ai-agent-workflow.md`, seção Publicação por ambientes. Nenhuma promoção foi realizada nesta entrega.
 4. Reexecutar C-5 com moderador real quando a Fase 4 introduzir o papel (#55).
 
-Não há achado de código conhecido deixado sem correção nesta entrega. Não se atribui dono ou prazo inventado para acesso/homologação pendentes. Até concluir a prova remota, a PR usa **Refs #104**, permanece aberta e #104 não fecha; #105/#54 também permanecem pendentes.
+Não há achado de código conhecido deixado sem correção nesta entrega. Não se atribui dono ou prazo inventado para acesso/homologação pendentes. A [PR #154](https://github.com/BrunoMNoronha/techlab-troq/pull/154) foi mesclada como entrega parcial, com **Refs #104**. Até concluir a prova remota, #104 não fecha; #105/#54 também permanecem pendentes.

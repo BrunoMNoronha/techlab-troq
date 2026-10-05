@@ -187,6 +187,7 @@ export async function deliverAuthorizedContact(
 
 export interface OwnContactRelease {
   contactReleaseId: string;
+  negotiationId: string;
   listingId: string;
   /** ISO 8601. */
   authorizedAt: string;
@@ -203,10 +204,11 @@ export async function listOwnContactReleases(): Promise<OwnContactRelease[] | nu
   const releases = await getPrismaClient().contactRelease.findMany({
     where: { recipientId: session.user.id },
     orderBy: { authorizedAt: 'desc' },
-    select: { id: true, listingId: true, authorizedAt: true },
+    select: { id: true, negotiationId: true, listingId: true, authorizedAt: true },
   });
   return releases.map((r) => ({
     contactReleaseId: r.id,
+    negotiationId: r.negotiationId,
     listingId: r.listingId,
     authorizedAt: r.authorizedAt.toISOString(),
   }));

@@ -14,7 +14,10 @@ vi.mock('@/modules/identity', () => ({
   loginRedirectPath: (reason?: string) => `/login?motivo=${reason ?? 'sessao'}`,
 }));
 vi.mock('@/modules/listing', () => ({ getListingTitles: vi.fn() }));
-vi.mock('@/modules/negotiation', () => ({ getSelectionOptions: vi.fn() }));
+vi.mock('@/modules/negotiation', () => ({
+  getSelectionOptions: vi.fn(),
+  listOwnedListingNegotiations: vi.fn(),
+}));
 vi.mock('@/modules/negotiation/actions', () => ({ chooseRequester: vi.fn() }));
 vi.mock('next/navigation', () => ({
   notFound: () => {
@@ -28,6 +31,7 @@ vi.mock('next/navigation', () => ({
 
 const validateSession = vi.mocked(identityModule.validateSession);
 const getSelectionOptions = vi.mocked(negotiationModule.getSelectionOptions);
+const listOwnedListingNegotiations = vi.mocked(negotiationModule.listOwnedListingNegotiations);
 const getListingTitles = vi.mocked(listingModule.getListingTitles);
 
 const ID = '0b6f2d9e-3c4a-4e8b-9f1a-2d3c4b5a6e7f';
@@ -62,6 +66,7 @@ describe('/anuncios/[id]/solicitacoes (F3-012)', () => {
     vi.clearAllMocks();
     validateSession.mockResolvedValue({ user, isValid: true });
     getListingTitles.mockResolvedValue(new Map([[ID, 'Bicicleta aro 29']]));
+    listOwnedListingNegotiations.mockResolvedValue({ success: true, negotiations: [] });
   });
 
   it('sem sessao vai ao login e volta para esta tela', async () => {
@@ -133,5 +138,40 @@ describe('/anuncios/[id]/solicitacoes (F3-012)', () => {
 
     expect(screen.getByRole('alert')).toHaveTextContent('Não foi possível carregar');
     expect(getListingTitles).not.toHaveBeenCalled();
+  });
+
+  it('historico inclui negociação encerrada após reseleção com link privado', async () => {
+    getSelectionOptions.mockResolvedValue({ success: true, options: options() });
+    listOwnedListingNegotiations.mockResolvedValue({
+      success: true,
+      negotiations: [
+        {
+          negotiationId: 'n-antiga',
+          listingId: ID,
+          status: 'closed',
+          closedAt: '2026-10-05T15:00:00.000Z',
+          role: 'owner',
+          counterpartDisplayName: 'Carla Sintética',
+        },
+      ],
+    });
+    render(await SolicitacoesDoAnuncioPage(params));
+    expect(screen.getByRole('heading', { name: 'Histórico de negociações' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Ver negociação' })).toHaveAttribute(
+      'href',
+      '/negociacoes/n-antiga',
+    );
+    expect(screen.getByText(/Encerrada em/)).toHaveTextContent('05/10/2026');
+  });
+
+  it('falha do historico não se apresenta como lista vazia', async () => {
+    getSelectionOptions.mockResolvedValue({ success: true, options: options() });
+    listOwnedListingNegotiations.mockResolvedValue({
+      success: false,
+      reason: 'error',
+      error: 'Falha de leitura.',
+    });
+    render(await SolicitacoesDoAnuncioPage(params));
+    expect(screen.getByRole('alert')).toHaveTextContent('carregar o histórico');
   });
 });
