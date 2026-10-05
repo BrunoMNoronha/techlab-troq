@@ -155,4 +155,4 @@ jobs:
         run: |
           echo 'Publicação interrompida. Nenhuma migration é revertida automaticamente.' >> "$GITHUB_STEP_SUMMARY"
           echo "Deployment anterior: ${PREVIOUS_ID:-nenhum}. Conferir compatibilidade com o schema antes do rollback." >> "$GITHUB_STEP_SUMMARY"
-          echo 'Rollback seguro: pnpm dlx vercel@62.2.0 rollback <deployment-anterior> --scope bruno-m-noronha' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Rollback seguro: POST /v1/projects/<projeto>/rollback/<deployment-anterior> na API da Vercel, ou Instant Rollback no painel' >> "$GITHUB_STEP_SUMMARY"

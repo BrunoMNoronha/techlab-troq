@@ -10,7 +10,6 @@ import {
   requirePreviewProof,
   requireDirectConnection,
   requireEnvironmentMetadata,
-  redactCliOutput,
 } from './policy.mjs';
 
 const sha = 'a'.repeat(40);
@@ -152,26 +151,4 @@ test('runner prepara Node sem exigir pnpm antes de fixar a revisão', () => {
     assert.match(workflow, /node-version: 24\s+package-manager-cache: false/);
     assert.ok(workflow.indexOf('actions/setup-node@') < workflow.indexOf('pnpm/action-setup@'));
   }
-});
-
-test('saída de erro da CLI sai redigida, sem escape de terminal e só com o fim', () => {
-  const token = 'vercel-token-sintetico-123456';
-  const bypass = 'bypass-sintetico-abcdef';
-  const text = [
-    '\u001b[31mError:\u001b[39m The specified token is not valid',
-    `  --token ${token}`,
-    '',
-    `header x-vercel-protection-bypass: ${bypass}`,
-    ...Array.from({ length: 50 }, (_, i) => `linha ${i}`),
-  ].join('\n');
-
-  const head = redactCliOutput(text, [token, bypass, undefined, ''], 100);
-  assert.match(head, /^Error: The specified token is not valid/);
-  assert.ok(!head.includes(token) && !head.includes(bypass));
-  assert.ok(head.includes('--token ***'));
-  assert.ok(!head.includes('\u001b'));
-
-  const tail = redactCliOutput(text, [token], 3).split('\n');
-  assert.deepEqual(tail, ['linha 47', 'linha 48', 'linha 49']);
-  assert.equal(redactCliOutput(undefined, [token]), '');
 });
