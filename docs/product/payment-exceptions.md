@@ -4,6 +4,8 @@ Documento normativo que fecha [OD-07](../decisions/open-decisions.md) e registra
 
 Fontes internas: [business-rules.md](business-rules.md) (RB-001, RB-003, RB-004), [requirements.md](requirements.md) (RF-009 a RF-012, RF-020, RF-022), [interest-flow.md](interest-flow.md) (DEC-035), [listing-lifecycle.md](listing-lifecycle.md) (DEC-027), [negotiation-lifecycle.md](negotiation-lifecycle.md) (DEC-029), [reselection-policy.md](reselection-policy.md) (DEC-032), [prohibited-items.md](prohibited-items.md) (DEC-031), [data-retention-policy.md](data-retention-policy.md) (DEC-033), [../adr/0004-mercado-pago-pix.md](../adr/0004-mercado-pago-pix.md) (DEC-036) e [../delivery/spikes/f0-010-mercado-pago-pix-r099.md](../delivery/spikes/f0-010-mercado-pago-pix-r099.md).
 
+**Escopo de regra (DEC-053, 2026-10-05).** Este documento vale para as duas regras de troca quanto à fonte de verdade do pagamento, à idempotência, à reconciliação, ao reembolso técnico e às reversões, e não foi alterado. Onde fala em reserva de vaga, em janela de reserva e em R$ 0,99, ele descreve a regra **solicitação paga**. Na regra **proposta de troca**, o prazo é o de pagamento depois do aceite, o valor é o da proposta e as hipóteses RT-1 a RT-4 são lidas como em [trade-proposal.md](trade-proposal.md) (DEC-054), TP-7.6.
+
 ## 1. Objetivo
 
 Eliminar a ambiguidade sobre **o que o TROQS faz** quando o fluxo de pagamento sai do caminho feliz, de modo que o design de pagamentos (F0-022) e a implementação (Fase 3) não precisem inventar comportamento de negócio.

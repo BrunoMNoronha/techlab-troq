@@ -89,7 +89,7 @@ Fora dessas áreas vale o julgamento normal: testar onde há decisão, e não te
 
 ## 5. Regras críticas a provar
 
-Os futuros testes devem provar explicitamente, entre outras invariantes, as seis regras homologadas em [../product/business-rules.md](../product/business-rules.md). A lista abaixo enuncia o que precisa ser provado; ela **não** altera, amplia nem reinterpreta nenhuma regra.
+Os futuros testes devem provar explicitamente, entre outras invariantes, as regras homologadas em [../product/business-rules.md](../product/business-rules.md). A lista abaixo enuncia o que precisa ser provado; ela **não** altera, amplia nem reinterpreta nenhuma regra.
 
 | Regra | Invariante que o teste deve provar |
 | --- | --- |
@@ -99,6 +99,12 @@ Os futuros testes devem provar explicitamente, entre outras invariantes, as seis
 | **RB-004** | Não há reembolso pelo fato de o solicitante não ter sido escolhido. O valor cobrado é exatamente R$ 0,99, sem erro de arredondamento ([conventions.md](conventions.md), seção 4) |
 | **RB-005** | Nenhuma superfície pública expõe localização mais precisa que cidade/UF |
 | **RB-006** | Um anúncio com item proibido, decidido conforme a política vigente ([../product/prohibited-items.md](../product/prohibited-items.md)), é removido pelas transições administrativas previstas e deixa de ser público |
+| **RB-007** | Só propõe quem tem anúncio publicado. A proposta é um par de anúncios, sem texto e sem cobrança no envio. Antes do pagamento, nenhuma resposta ao anunciante traz o nome de quem propõe |
+| **RB-008** | Nunca existem mais de 3 propostas abertas para o mesmo anúncio, mais de 3 propostas abertas oferecendo o mesmo anúncio nem duas propostas abertas da mesma conta no mesmo anúncio, **inclusive sob propostas concorrentes**. Quem foi aceito e não pagou, ou desistiu depois do aceite, não propõe de novo àquele anúncio |
+| **RB-009** | Só o proponente paga, só depois do aceite e só dentro do prazo. Pagamento acreditado fora do prazo ou sem aceite vigente não cria negociação e vai a reembolso técnico. Não há reembolso por "Não deu certo". O valor cobrado é o gravado na proposta, sem erro de arredondamento |
+| **RB-010** | Cada parte só recebe o contato da outra, e só depois do pagamento aprovado. Quem propôs e não foi aceito, quem foi aceito e não pagou e qualquer terceiro não recebem contato por nenhum caminho — resposta, payload, cache público ou log —, em nenhum dos dois sentidos. Cada liberação é autorizada no servidor e auditada |
+
+**Regras de troca.** RB-001, RB-003 e RB-004 são provadas em fluxos da regra de troca solicitação paga, pelos contratos T-1 a T-18 e C-1 a C-11. RB-007 a RB-010 são provadas em fluxos da proposta de troca, pelo contrato TT-1 a TT-28 de [../architecture/trade-proposal-design.md](../architecture/trade-proposal-design.md), seção 13. O seletor de regra de [../adr/0009-trade-rules-environment-selector.md](../adr/0009-trade-rules-environment-selector.md) tem prova própria (TT-24): o mesmo build com cada valor válido e com valor inválido.
 
 **Cenários de exceção de pagamento:** o comportamento esperado deixou de ser indefinido e está em [../product/payment-exceptions.md](../product/payment-exceptions.md) (DEC-037), que é a fonte das asserções. Os testes devem provar, no mínimo, que uma mesma tentativa lógica nunca gera duas cobranças; que dois pagamentos acreditados para a mesma reserva produzem uma única solicitação paga válida, consomem uma única vaga e levam o excedente a reembolso; que pagamento acreditado dentro da janela vale mesmo quando a confirmação chega atrasada; que pagamento acreditado fora da janela não cria solicitação nem consome vaga; que estado incerto ou não mapeado nunca concede direito de negócio; e que reversão posterior não devolve vaga nem revoga contato já liberado. A escolha de mecanismo — deduplicação, reconciliação, atomicidade, tempos — foi feita por F0-022 em [../architecture/payments-design.md](../architecture/payments-design.md), e é contra esse desenho que os testes são escritos. O termo `chargeback` não é usado para Pix.
 

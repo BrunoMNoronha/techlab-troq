@@ -4,6 +4,8 @@ Use como **briefing e instrução permanente**. Preencha o conhecido, use `TBD` 
 
 ## 1. Briefing
 
+**Nota de 2026-10-05 (PT-00, #186).** O fluxo e as regras desta síntese são os da regra de troca **solicitação paga**, a única implementada. Há uma segunda regra cadastrada, a **proposta de troca**, sem implementação e selecionável por ambiente: [product/trade-proposal.md](product/trade-proposal.md) e [adr/0009-trade-rules-environment-selector.md](adr/0009-trade-rules-environment-selector.md). As decisões abertas atuais são OD-17 e OD-18, em [decisions/open-decisions.md](decisions/open-decisions.md); o restante desta síntese não foi revisado nesta data.
+
 **Revisão documental local: 2026-09-29.** Nova instância do modelo TechLab+ Starter: os documentos existentes têm estrutura especializada e foram preservados. Esta síntese referencia suas regras; não substitui o acervo normativo. O texto fixo das seções 2 a 6 foi preservado do modelo. Esta revisão executa apenas documentação; não comprova nem executa publicação, migrations ou aprovação de ambiente. **Reconciliada em 2026-09-29** sobre `main` em `e8ad1ae`, depois da integração da PR #61 (que trouxe este documento) e com a aprovação do gate da Fase 2 retificada em [delivery/phase-3-transition.md](delivery/phase-3-transition.md); a reconciliação também é apenas documental.
 
 - **Produto/problema/evidências:** plataforma de anúncios entre pessoas com acesso controlado ao contato do anunciante. Problema descrito pelo produto: permitir descoberta e negociação sem exposição pública de telefone/WhatsApp. Evidência disponível: [escopo](product/mvp-scope.md), contratos e código; pesquisa com usuários e validação de demanda: **TBD**.

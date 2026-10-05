@@ -212,7 +212,7 @@ A profundidade da revisão é proporcional ao risco da mudança.
 - dados e modelo de dados;
 - migrations;
 - LGPD e dados pessoais;
-- regras críticas: RB-001 a RB-006 e os requisitos rastreados a elas em [../product/requirements.md](../product/requirements.md).
+- regras críticas: RB-001 a RB-010 e os requisitos rastreados a elas em [../product/requirements.md](../product/requirements.md).
 
 **Revisão padrão** para o restante: revisão do diff e das validações pelo orquestrador; merge autorizado ao executor quando os critérios de aceite forem satisfeitos.
 

@@ -4,6 +4,8 @@ Documento normativo que fecha [OD-06](../decisions/open-decisions.md) e registra
 
 Fontes: [business-rules.md](business-rules.md) (RB-001, RB-003, RB-004), [listing-lifecycle.md](listing-lifecycle.md) (DEC-027), [negotiation-lifecycle.md](negotiation-lifecycle.md) (DEC-029), [requirements.md](requirements.md) (RF-013, RF-015, RF-022).
 
+**Escopo de regra (DEC-053, 2026-10-05).** Este documento rege a regra de troca **solicitação paga** (`paid_request`) e não foi alterado. Na regra **proposta de troca** não existe reseleção: depois de "Não deu certo", os anúncios voltam ao feed e qualquer nova proposta é um fluxo novo ([trade-proposal.md](trade-proposal.md), DEC-054, TP-10.8).
+
 ## 1. Escopo
 
 Este documento define:

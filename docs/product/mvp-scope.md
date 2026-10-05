@@ -6,6 +6,8 @@ Documento de escopo inicial do MVP. Registra apenas o que foi definido até a Fa
 
 Permitir que pessoas publiquem anúncios e que interessados obtenham o contato (WhatsApp/telefone) do anunciante de forma controlada: o contato só é liberado a um interessado escolhido pelo anunciante, mediante uma solicitação paga de R$ 0,99, com no máximo 3 solicitações pagas por anúncio.
 
+Esse é o objetivo sob a regra de troca **solicitação paga**, a que está implementada. Desde 2026-10-05 o MVP tem uma segunda regra cadastrada, a **proposta de troca**, descrita na seção "Regras de troca cadastradas". O objetivo dela é o mesmo — contato liberado de forma controlada —, por outro caminho: a pessoa propõe um anúncio seu por um anúncio de outra, só paga depois de aceita, e o contato é liberado para os dois.
+
 ## Público principal
 
 ### Perfil do público-alvo
@@ -51,6 +53,31 @@ A escolha do passo 7 está definida em [reselection-policy.md](reselection-polic
 
 As regras de negócio que governam este fluxo estão em [business-rules.md](business-rules.md).
 
+## Regras de troca cadastradas
+
+O fluxo central acima é o da regra de troca **solicitação paga** (`paid_request`). Por decisão do Bruno em 2026-10-05, o MVP tem duas regras de troca cadastradas, e ele opta por qual usar ([../adr/0009-trade-rules-environment-selector.md](../adr/0009-trade-rules-environment-selector.md), DEC-053):
+
+- a regra dos fluxos novos de cada ambiente é a da variável `TRADE_RULE`; não há tela administrativa nem papel de operador;
+- cada fluxo termina na regra em que nasceu: trocar a variável não muda nada em andamento;
+- cadastrar a segunda regra **não** substitui a primeira, e nenhuma decisão da solicitação paga foi alterada.
+
+A segunda regra é a **proposta de troca** (`trade_proposal`), definida em [trade-proposal.md](trade-proposal.md) (DEC-054). O seu fluxo:
+
+- P1. Usuário cria conta.
+- P2. Publica um anúncio. Só propõe quem tem anúncio publicado.
+- P3. Propõe um anúncio seu por um anúncio de outra pessoa, de graça e sem texto.
+- P4. Cada anúncio recebe no máximo 3 propostas abertas.
+- P5. O anunciante aceita uma proposta. Os dois anúncios saem do feed.
+- P6. O proponente paga em até 24 horas.
+- P7. Com o pagamento aprovado, o contato é liberado para os dois.
+- P8. Cada parte declara "Trocamos" ou "Não deu certo".
+- P9. Após o encerramento, avaliações são permitidas.
+- P10. Anúncios podem ser denunciados e moderados.
+
+Nesta regra os papéis são o **anunciante**, dono do anúncio que recebe a proposta, e o **proponente**, dono do anúncio oferecido. A diferença em dinheiro entre os itens fica fora do produto.
+
+A proposta de troca é contrato, não comportamento: nenhum ambiente a opera. A implementação está em [../delivery/trade-proposal-plan.md](../delivery/trade-proposal-plan.md), fora das fases, e **não** faz parte do núcleo exigido para o lançamento comercial (DEC-055).
+
 ## Capacidades obrigatórias
 
 | Capacidade | Regras relacionadas | Observação |
@@ -65,6 +92,8 @@ As regras de negócio que governam este fluxo estão em [business-rules.md](busi
 | Avaliação após encerramento | RB-002 | Regras detalhadas em [ratings.md](ratings.md) (DEC-030) |
 | Denúncia e moderação de anúncios | RB-006 | Política de itens proibidos, denúncia, moderação, remoção e prazos definida em [prohibited-items.md](prohibited-items.md) (DEC-031) |
 | Email transacional | — | Resend como provedor inicial |
+
+As capacidades de solicitação, cobrança, escolha e liberação desta tabela são as da regra solicitação paga. As da proposta de troca (RB-007 a RB-010) estão em [trade-proposal.md](trade-proposal.md) e não são obrigatórias para o lançamento comercial.
 
 ## Capacidades explicitamente adiáveis
 
@@ -89,3 +118,4 @@ Fora do núcleo inicial do MVP:
 | Cadastro | Elegibilidade etária definida em [age-eligibility.md](age-eligibility.md) (DEC-034); sem dependência aberta |
 | Escolha e reseleção | Regras definidas em [reselection-policy.md](reselection-policy.md) (DEC-032); sem dependência aberta |
 | Demonstração de interesse | Natureza definida em [interest-flow.md](interest-flow.md) (DEC-035); sem dependência aberta |
+| Proposta de troca | Regra definida em [trade-proposal.md](trade-proposal.md) (DEC-054), seletor em [../adr/0009-trade-rules-environment-selector.md](../adr/0009-trade-rules-environment-selector.md) (DEC-053) e desenho em [../architecture/trade-proposal-design.md](../architecture/trade-proposal-design.md). Abertas: preço final ([OD-17](../decisions/open-decisions.md)) e aviso prévio com a forma final do consentimento ([OD-18](../decisions/open-decisions.md)) |

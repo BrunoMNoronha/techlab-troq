@@ -16,6 +16,7 @@ Fontes: [../product/mvp-scope.md](../product/mvp-scope.md), [../product/requirem
 | 3 | Solicitações, pagamentos e contato | em execução; gate #105 aberto |
 | 4 | Encerramento, avaliações e moderação | decomposta em #163–#169; execução depende de #105 |
 | 5 | Hardening e lançamento | decomposta em #170–#179; homologação depende de #55 |
+| — | Frente proposta de troca (fora das fases) | registrada em 2026-10-05 (DEC-053 a DEC-055) e decomposta em #186–#197; o código depende de #105 |
 | — | Pós-MVP (candidatos) | não planejado |
 
 **Estado em 2026-09-30.** A **Fase 2 está concluída**: o seu gate de saída foi reverificado por F2-013 (Issue #51) e **APROVADO** em 2026-09-30, com G1, G2 e G3 `PASS` ([phase-3-transition.md](phase-3-transition.md), seção V). A **Fase 3 está liberada para execução** e ainda não foi iniciada; o seu acompanhamento está em [#54](https://github.com/BrunoMNoronha/techlab-troq/issues/54). Nada neste roadmap afirma produção ou deploy atual. O parágrafo seguinte é o registro de 2026-09-29.
@@ -179,6 +180,29 @@ Fontes: [../product/mvp-scope.md](../product/mvp-scope.md), [../product/requirem
 - Checklist de release concluído.
 - Produção comercial em plano Vercel pago.
 - Riscos R-01 a R-10 revisados com estado atualizado.
+
+## Frente proposta de troca — fora das fases
+
+**Registrada em 2026-10-05:** doze issues executoras [#186–#197](trade-proposal-plan.md), vinculadas ao épico [#185](https://github.com/BrunoMNoronha/techlab-troq/issues/185). As decisões do Bruno estão registradas como DEC-053, DEC-054 e DEC-055. A frente **não** é fase do MVP, não altera os gates das Fases 3 a 5, e o lançamento comercial não a espera (DEC-055).
+
+**Objetivo:** cadastrar a proposta de troca como segunda regra de troca, selecionável por ambiente, sem mudar o comportamento da solicitação paga.
+
+**Principais entregáveis:**
+
+- Registro das decisões, ADR e contratos: [../adr/0009-trade-rules-environment-selector.md](../adr/0009-trade-rules-environment-selector.md), [../product/trade-proposal.md](../product/trade-proposal.md) e [../architecture/trade-proposal-design.md](../architecture/trade-proposal-design.md).
+- Seletor de regra por variável de ambiente, com falha fechada (RNF-019).
+- Proposta, aceite, pagamento depois do aceite, contato nos dois sentidos e desfecho por declaração (RF-024 a RF-029).
+- Textos públicos, Termos, Privacidade e e-mails por regra (RF-030).
+- Efeitos de moderação e de exclusão de conta sobre propostas e negociações.
+
+**Dependências:** gate da Fase 3 ([#105](https://github.com/BrunoMNoronha/techlab-troq/issues/105)) para todo o código; #163 e #164 para negociação e avaliação; #166, #167 e #171 para moderação e exclusão de conta. OD-17 e OD-18 estão abertas.
+
+**Gate de saída** (PT-11, [#197](https://github.com/BrunoMNoronha/techlab-troq/issues/197)):
+
+- Os contratos TT-1 a TT-28 e o contrato da Fase 3 passam no mesmo SHA.
+- O mesmo build serve as duas regras e não deixa nascer fluxo com o seletor inválido.
+- Nenhum contato chega a alguém antes do pagamento aprovado, em nenhum dos dois sentidos.
+- A regra está homologada em Preview, com ensaio de troca de regra com fluxos em andamento.
 
 ## Pós-MVP — candidatos
 
