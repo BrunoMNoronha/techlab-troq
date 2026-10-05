@@ -28,10 +28,10 @@ const DESKTOP_NAV: readonly NavItem[] = [
 ];
 
 const MOBILE_NAV: readonly NavItem[] = [
-  { href: '/', label: 'Início', icon: 'home' },
   { href: '/explorar', label: 'Explorar', icon: 'search' },
   { href: '/anuncios', label: 'Meus anúncios', shortLabel: 'Anúncios', icon: 'tag' },
   { href: '/solicitacoes', label: 'Solicitações', shortLabel: 'Pedidos', icon: 'inbox' },
+  { href: '/contatos', label: 'Contatos', icon: 'phone' },
   { href: '/conta', label: 'Minha conta', shortLabel: 'Conta', icon: 'user' },
 ];
 
@@ -42,6 +42,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <ToastProvider>
           <AppShell
             brand="TROQ"
+            homeHref="/explorar"
             desktopNav={DESKTOP_NAV}
             mobileNav={MOBILE_NAV}
             primaryAction={{ href: '/anuncios/novo', label: 'Anunciar' }}

@@ -2,7 +2,6 @@ import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import { Field, Filters, Input, Select } from '@/components/forms';
 import { PageContainer, PageHeader, Section, Stack } from '@/components/layout';
-import { BackLink } from '@/components/navigation';
 import { Button, TextLink } from '@/components/ui';
 import { BRAZILIAN_UFS, isBrazilianUf, ufOptionLabel } from '@/modules/listing/uf';
 import { ExplorarLoading, ExplorarResults } from './explorar-results';
@@ -30,7 +29,7 @@ export default async function ExplorarPage({
 
   return (
     <PageContainer width="wide">
-      <PageHeader navigation={<BackLink href="/">Início</BackLink>} title="Anúncios no TROQ" />
+      <PageHeader title="Anúncios no TROQ" />
 
       <Stack gap={6}>
         {/* Filtro por GET: a URL e a fonte de verdade, e a pagina volta a 1. */}

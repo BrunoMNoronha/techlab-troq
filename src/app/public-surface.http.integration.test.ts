@@ -441,9 +441,17 @@ describe.skipIf(!enabled)('superficies publicas por HTTP real (#49, D-13)', () =
       ['dono', ownerCookie],
     ] as const;
 
-  it('HTML e RSC de home, /explorar e detalhe nao carregam dado privado', async () => {
+  // A entrada do site nao tem conteudo proprio: so encaminha a vitrine publica.
+  it('/ encaminha para /explorar, com ou sem sessao', async () => {
+    for (const [who, cookie] of viewers()) {
+      const page = await fetchPage('/', { cookie });
+      expect(page.status, who).toBe(307);
+      expect(page.headerText, who).toMatch(/^location: \/explorar$/m);
+    }
+  });
+
+  it('HTML e RSC de /explorar e detalhe nao carregam dado privado', async () => {
     const paths = [
-      '/',
       '/explorar',
       `/explorar?city=${encodeURIComponent(CITY)}`,
       `/explorar?city=${encodeURIComponent(CITY)}&page=2`,
@@ -511,15 +519,15 @@ describe.skipIf(!enabled)('superficies publicas por HTTP real (#49, D-13)', () =
     expect([...positions].sort((a, b) => a - b)).toEqual(positions);
     // A marcacao gravada como texto volta escapada, nunca como elemento.
     expect(page.body).not.toContain('<b>e um radio</b>');
-    // Listagem e home nao carregam o campo (allowlist, listing-contract.md 6.1).
-    for (const path of ['/', `/explorar?city=${encodeURIComponent(CITY)}`]) {
-      expect((await fetchPage(path)).body).not.toContain(TRADE_OPTIONS[0]);
-    }
+    // A listagem nao carrega o campo (allowlist, listing-contract.md 6.1).
+    expect((await fetchPage(`/explorar?city=${encodeURIComponent(CITY)}`)).body).not.toContain(
+      TRADE_OPTIONS[0],
+    );
   });
 
   // Anuncio publicado antes de DEC-049 (#86; listing-contract.md, 10.2), com
   // contato e endereco gravados no texto livre: continua publico, mas nenhum
-  // canal -- HTML, RSC, metadata, alt das imagens, listagem e home -- carrega o
+  // canal -- HTML, RSC, metadata, alt das imagens e listagem -- carrega o
   // texto. Cidade propria para nao mudar a paginacao de CITY.
   it('legado com contato no texto livre: nenhuma superficie publica divulga o texto (#86)', async () => {
     const prisma = getPrismaClient();
@@ -545,7 +553,7 @@ describe.skipIf(!enabled)('superficies publicas por HTTP real (#49, D-13)', () =
     await addImage(id, 1, 'ready');
     const leaked = ['98765', '987654321', 'Augusta', 'fulano', 'exemplo.test', 'wa.me'];
 
-    const paths = ['/', `/explorar?city=${encodeURIComponent(legacyCity)}`, `/explorar/${id}`];
+    const paths = [`/explorar?city=${encodeURIComponent(legacyCity)}`, `/explorar/${id}`];
     for (const [who, cookie] of viewers()) {
       for (const path of paths) {
         for (const rsc of [false, true]) {

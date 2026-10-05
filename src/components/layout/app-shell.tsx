@@ -9,6 +9,8 @@ import styles from './app-shell.module.css';
 export interface AppShellProps {
   /** Nome do produto no cabeçalho. */
   brand: string;
+  /** Destino da marca: a tela de entrada do produto. */
+  homeHref?: string;
   /** Destinos do cabeçalho em telas largas. */
   desktopNav: readonly NavItem[];
   /** Destinos da barra inferior no celular: no máximo cinco. */
@@ -29,6 +31,7 @@ export interface AppShellProps {
  */
 export function AppShell({
   brand,
+  homeHref = '/',
   desktopNav,
   mobileNav,
   primaryAction,
@@ -44,7 +47,7 @@ export function AppShell({
 
       <header className={styles.header}>
         <div className={styles.headerInner}>
-          <Link href="/" className={styles.brand} aria-label={`${brand} — página inicial`}>
+          <Link href={homeHref} className={styles.brand} aria-label={`${brand} — página inicial`}>
             <span className={styles.brandMark}>
               <Icon name="swap" size={20} />
             </span>
