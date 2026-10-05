@@ -1,6 +1,6 @@
 # Sprint de encerramento e reputação — #163 e #164
 
-Entrega em preparação em 2026-10-05, a partir de `main@9447b8af344201ac60d25721dbce78c7982ae01e`, na branch `codex/sprint-negociacoes-reputacao` e em checkout isolado. A [PR #182](https://github.com/BrunoMNoronha/techlab-troq/pull/182) permanece em rascunho; a revisão `07645aec76bea604f123e0040d70768c8df4c052` tem os dois jobs da CI aprovados. As alterações locais do checkout principal foram preservadas. **O aceite no Preview permanece pendente**, assim como a prova remota de #104 e o gate #105; a preparação isolada não libera a integração da Fase 4.
+Entrega em preparação em 2026-10-05, a partir de `main@9447b8af344201ac60d25721dbce78c7982ae01e`, na branch `codex/sprint-negociacoes-reputacao` e em checkout isolado. A [PR #182](https://github.com/BrunoMNoronha/techlab-troq/pull/182) permanece em rascunho; a revisão `f1380a7d9931549b59855b493952d49c129b844c` tem os dois jobs da CI aprovados. As alterações locais do checkout principal foram preservadas. **O aceite no Preview permanece pendente**, assim como a prova remota de #104 e o gate #105; a preparação isolada não libera a integração da Fase 4.
 
 ## Comportamento implementado
 
@@ -35,7 +35,7 @@ No navegador local, a largura efetiva e o `scrollWidth` foram conferidos como 37
 
 ## Evidência de CI
 
-O [run 37348549731](https://github.com/BrunoMNoronha/techlab-troq/actions/runs/37348549731), evento `pull_request`, concluiu com sucesso para `07645aec76bea604f123e0040d70768c8df4c052`. Os logs dos dois jobs registram:
+O [run 37354127622](https://github.com/BrunoMNoronha/techlab-troq/actions/runs/37354127622), evento `pull_request`, concluiu com sucesso para `f1380a7d9931549b59855b493952d49c129b844c`. Os logs dos dois jobs registram:
 
 | Job | Resultado observado |
 | --- | --- |
@@ -51,7 +51,7 @@ O Preview disponível foi republicado no [run 37348109256](https://github.com/Br
 
 Após o provisionamento, a leitura dos metadados da Vercel confirmou o trio `MERCADO_PAGO_ACCESS_TOKEN`, `MERCADO_PAGO_APPLICATION_ID` e `MERCADO_PAGO_WEBHOOK_SECRET` no ambiente Preview, marcado como Sensitive, sem recuperar ou registrar valores. O Preview da base foi republicado. O preflight atual exige esse trio apenas em Production; presença da configuração e smoke aprovado não comprovam Pix funcional. A aplicação falha fechada sem configuração, e não há fallback para credenciais de outro ambiente. A prova funcional remota C-8, a varredura Vercel/Sentry com controles não vazios e o gate #105 continuam pendentes, conforme #104.
 
-Google, na mesma origem estável: o Bruno relatou a recusa de vinculação implícita para um e-mail já cadastrado. A prova funcional parcial confirmou vinculação explícita, logout e nova entrada com Google na mesma conta verificada/ativa. Não foram expostos e-mail, credenciais ou cookies neste relatório. Cadastro novo com 18+/termos, cancelamento e links de e-mail continuam pendentes em #133; esses resultados não fecham a issue.
+Google foi aceito e [#133 encerrada](https://github.com/BrunoMNoronha/techlab-troq/issues/133) após a integração da [PR #180](https://github.com/BrunoMNoronha/techlab-troq/pull/180). A main atual `a8acf2e4654c23db0a9b75db3ae0d91395d4d5ab` contém o aceite em `google-sign-in-proof.md`. Na origem estável de Preview, o agente observou PKCE/callback, recusa de vinculação implícita, vinculação explícita, logout e nova entrada na conta verificada/ativa. No [registro final de aceite](https://github.com/BrunoMNoronha/techlab-troq/issues/133#issuecomment-5999419537), Bruno confirmou as duas provas restantes: novo cadastro Google com nome, 18+/termos e cancelamento/repetição, além de cadastro e entrada por email/senha com verificação por link. Essas etapas finais são homologação humana, sem reprodução independente pelo agente ou nova contagem de banco nesta rodada. Não foram expostos email, credenciais ou cookies; o aceite não comprova verificação de marca nem abertura comercial Google e não aprova #104/#105.
 
 ## Roteiro de homologação
 
@@ -61,4 +61,4 @@ Google, na mesma origem estável: o Bruno relatou a recusa de vinculação impl�
 4. Enviar e editar a primeira nota; conferir que a contraparte, HTML/RSC e agregado público não recebem a nota ainda cega. Enviar a segunda, verificar publicação e média/contagem; confirmar recusa de edição posterior.
 5. Registrar a prova mobile de 375 px, teclado, falha de rede e recuperação. Registrar SHA, CI, run/tentativa, deployment e resultado de cada passo, sem dados pessoais ou segredos.
 
-Até esse aceite, usar `Refs #104`, `Refs #105`, `Refs #163`, `Refs #164` e `Refs #133`. Não declarar concluída a sprint, a Fase 4 ou a abertura comercial. Denúncia/moderação, sanções, notificações e os gates seguintes permanecem nas entregas previstas.
+Até esse aceite, usar `Refs #104`, `Refs #105`, `Refs #163` e `Refs #164`. #133 já está encerrada pelo aceite específico acima. Não declarar concluída a sprint, a Fase 4 ou a abertura comercial. Denúncia/moderação, sanções, notificações e os gates seguintes permanecem nas entregas previstas.
