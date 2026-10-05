@@ -31,7 +31,11 @@ import { registerOwnContact } from '@/modules/contact';
 import { registerUser } from '@/modules/identity/actions';
 import { getAuth } from '@/modules/identity/auth';
 import { createDraftListing } from '@/modules/listing/actions';
-import { createMercadoPagoClient, type MercadoPagoClient } from '@/modules/payments';
+import {
+  createMercadoPagoClient,
+  type ClaimHooks,
+  type MercadoPagoClient,
+} from '@/modules/payments';
 import { getPrismaClient } from '@/persistence/prisma';
 import { requestContactUnlockFlow } from './charge-flow';
 import { confirmPaymentFlow } from './payment-confirmation';
@@ -382,9 +386,9 @@ const reconcile = (deps: { gateway: MercadoPagoClient } = { gateway }) =>
   runJob('payments-reconcile', () =>
     runPaymentReconciliation({ stopClaimingAt: Date.now() + 30_000, deps }),
   );
-const sweep = () =>
+const sweep = (hooks?: ClaimHooks) =>
   runJob('payments-reversals', () =>
-    runPaymentReversalSweep({ stopClaimingAt: Date.now() + 30_000, deps: { gateway } }),
+    runPaymentReversalSweep({ stopClaimingAt: Date.now() + 30_000, deps: { gateway }, hooks }),
   );
 
 /**
@@ -627,9 +631,21 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
 
       lateDuplicate(r.orderId, searchId(r, 2), r.secondAt);
       await onlyDue(r.attemptId);
-      const { waiting, result } = await underListingLock(r.listingId, 2, () =>
-        Promise.all([sweep(), deliver(notification(r.orderId))]),
-      );
+      const { waiting, result } = await underListingLock(r.listingId, 2, async () => {
+        // A varredura precisa reclamar antes de o webhook espelhar pagamentos:
+        // a FK pode travar a tentativa, e SKIP LOCKED a pula legitimamente.
+        // O hook so fixa a reclamacao; os dois fluxos ainda disputam a trava
+        // real do anuncio, e a prova continua exigindo duas sessoes esperando.
+        const claimed = Promise.withResolvers<string[]>();
+        const sweeping = sweep({
+          onClaimed: async (ids) => {
+            claimed.resolve(ids);
+          },
+        });
+        const ids = await Promise.race([claimed.promise, sweeping.then(() => [])]);
+        expect(ids).toEqual([r.attemptId]);
+        return Promise.all([sweeping, deliver(notification(r.orderId))]);
+      });
       expect(waiting).toBe(2);
       expect(result[0]).toMatchObject({ claimed: 1, inconsistent: 1, errors: 0 });
       expect(result[1].status).toBe(200);
