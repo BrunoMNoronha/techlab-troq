@@ -1,11 +1,11 @@
 import type { Prisma } from '@/generated/prisma/client';
 import { recordAuditEvent } from '@/modules/audit';
+import { hasContactReleaseInTx } from '@/modules/contact';
 import { notifyUser } from '@/modules/identity';
 import { lockListingForRequest } from '@/modules/listing';
 import {
   classifyPaymentExceptionInTx,
   confirmPaymentInTx,
-  forwardCaseInTx,
   markInconsistentInTx,
   observeAttempt,
   processRefundsForAttempt,
@@ -13,6 +13,8 @@ import {
   recordNotAccreditedInTx,
   resolveDuplicateInTx,
   returnToAwaitingPaymentInTx,
+  reverseConfirmedPaymentInTx,
+  reverseUnconfirmedPaymentInTx,
   type AccreditedPayment,
   type ConfirmationDeps,
   type PaymentFact,
@@ -48,6 +50,22 @@ import { getPrismaClient } from '@/persistence/prisma';
 // `paid`, os avisos TE-1 (a quem pagou) e TE-2 (ao anunciante) (F3-013, #103;
 // DEC-048). Reprocessar o mesmo fato devolve `already_confirmed` e nao avisa
 // de novo.
+//
+// Reversoes (F3-011, #101; PD-9; CR-4). A mesma rotina serve a varredura
+// diaria de pagamentos confirmados (reversal-sweep.ts), ao webhook e a
+// reconciliacao:
+// - tentativa `pagamento_confirmado` cujo estado autoritativo deixou de
+//   representar pagamento acreditado -- reversao (`refunded`,
+//   `partially_refunded`, `charged_back`) ou terminal sem acreditacao (PD-9.1:
+//   "qualquer estado autoritativo que deixe de representar pagamento
+//   efetivamente acreditado") -> `reembolsada_ou_revertida` e evento novo. A
+//   solicitacao continua `paid` e a vaga consumida (DM-6.7); a solicitacao sai
+//   da elegibilidade; a liberacao ja concedida NAO e tocada (CR-4.3); nenhuma
+//   cobranca nova (PE-8.8);
+// - tentativa confirmada com estado pendente ou desconhecido -> caso
+//   `inconsistente`, sem transicao (PD-10.5): nada e tratado por analogia;
+// - reversao antes da confirmacao -> `reembolsada_ou_revertida` e a reserva
+//   viva, que nao pode mais ser paga, sai da vaga (PD-9.4).
 
 export type PaymentConfirmationOutcome =
   | 'confirmed'
@@ -58,7 +76,10 @@ export type PaymentConfirmationOutcome =
   | 'pending'
   | 'unavailable'
   | 'no_order'
+  /** Reversao observada ANTES da confirmacao e aplicada (PD-9.4). */
   | 'reversed'
+  /** Reversao de pagamento JA CONFIRMADO aplicada por esta chamada (PD-9.2). */
+  | 'reversed_after_confirmation'
   | 'inconsistent'
   | 'not_found'
   | 'no_effect';
@@ -160,9 +181,25 @@ async function applyFact(
     case 'no_order':
       return 'no_order';
     case 'pending':
+      if ((await readAttemptStatusInTx(tx, attemptId)) === 'pagamento_confirmado') {
+        // Pagamento confirmado que volta a "pendente" nao e transicao
+        // documentada: contradicao, sem analogia e sem transicao (PD-10.5).
+        await markInconsistentInTx(tx, { attemptId, reason: 'confirmed_payment_pending', at });
+        return 'inconsistent';
+      }
       await returnToAwaitingPaymentInTx(tx, { attemptId, at });
       return 'pending';
     case 'not_accredited_terminal': {
+      if ((await readAttemptStatusInTx(tx, attemptId)) === 'pagamento_confirmado') {
+        return applyConfirmedReversal(
+          tx,
+          attemptId,
+          request,
+          `terminal_${fact.outcome}`,
+          origin,
+          at,
+        );
+      }
       const recorded = await recordNotAccreditedInTx(tx, { attemptId, outcome: fact.outcome, at });
       if (recorded) {
         await releaseReservation(
@@ -176,12 +213,27 @@ async function applyFact(
       return 'not_accredited';
     }
     case 'reversed': {
-      // Reversao de pagamento ja confirmado e da varredura de F3-011; antes da
-      // confirmacao, so fica registrada para a mesma entrega.
       const status = await readAttemptStatusInTx(tx, attemptId);
-      if (status === 'aguardando_pagamento' || status === 'em_confirmacao') {
-        await forwardCaseInTx(tx, { attemptId, reason: 'reversed_before_confirmation', at });
+      if (status === 'pagamento_confirmado') {
+        return applyConfirmedReversal(tx, attemptId, request, fact.reason, origin, at);
       }
+      if (status !== 'aguardando_pagamento' && status !== 'em_confirmacao') return 'no_effect';
+      // Antes da confirmacao (PD-9.4): nunca houve solicitacao paga nem vaga
+      // consumida. A tentativa sai do fluxo e a reserva viva, que nao pode mais
+      // ser paga (PD-4.3), sai da vaga como no terminal sem acreditacao.
+      const reversed = await reverseUnconfirmedPaymentInTx(tx, {
+        attemptId,
+        authoritativeState: fact.reason,
+        origin,
+        at,
+        effects: {
+          contactRequestId: request.id,
+          listingId: request.listingId,
+          requestStatus: request.status,
+          slotConsumed: false,
+        },
+      });
+      if (reversed) await releaseReservation(tx, request, 'failed', 'charge_reversed', at);
       return 'reversed';
     }
     case 'multiple_accredited': {
@@ -253,6 +305,58 @@ async function applyAccreditation(
   return hypothesis === 'rt_2' ? 'exception_rt_2' : 'exception_rt_3';
 }
 
+/**
+ * Reversao de pagamento JA CONFIRMADO (PD-9.2; PE-8.5 a PE-8.10; CR-4.2 e
+ * CR-4.3), sob a trava do anuncio. A solicitacao NAO e tocada: continua `paid`
+ * e a vaga continua consumida (DM-6.7, PE-8.9) -- a transicao de saida de
+ * `paid` e proibida pelo banco. A tentativa vai a `reembolsada_ou_revertida`,
+ * e por isso a solicitacao deixa de ser elegivel (`readConfirmedPaymentEvidence`
+ * so aceita `pagamento_confirmado`). A liberacao ja concedida fica intacta e
+ * as releituras continuam permitidas, porque a entrega olha a solicitacao, nao
+ * a tentativa (CR-4.3): aqui ela so e LIDA, para a auditoria registrar que a
+ * divulgacao ocorreu (PE-8.7).
+ */
+async function applyConfirmedReversal(
+  tx: Prisma.TransactionClient,
+  attemptId: string,
+  request: RequestRow,
+  authoritativeState: string,
+  origin: RecognitionOrigin,
+  at: Date,
+): Promise<PaymentConfirmationOutcome> {
+  if (request.status !== 'paid') {
+    // PD-3.3: tentativa confirmada com solicitacao fora de `paid` e divergencia
+    // que nenhuma fonte cobre. Nada e tratado por analogia (PD-10.5).
+    await markInconsistentInTx(tx, { attemptId, reason: 'reversal_request_not_paid', at });
+    return 'inconsistent';
+  }
+  const contactReleased = await hasContactReleaseInTx(tx, request.id);
+  const outcome = await reverseConfirmedPaymentInTx(tx, {
+    attemptId,
+    authoritativeState,
+    origin,
+    at,
+    effects: {
+      contactRequestId: request.id,
+      listingId: request.listingId,
+      slotIndex: request.slotIndex,
+      requestStatus: request.status,
+      slotKept: true,
+      eligibleForSelection: false,
+      contactReleased,
+      contactReleaseRevoked: false,
+    },
+  });
+  switch (outcome) {
+    case 'reversed':
+      return 'reversed_after_confirmation';
+    case 'ambiguous':
+      return 'inconsistent';
+    case 'not_confirmed':
+      return 'no_effect';
+  }
+}
+
 /** TE-1 e TE-2, depois do commit. `notifyUser` nunca lanca. */
 interface PaidNotice {
   request: RequestRow;
@@ -279,8 +383,9 @@ async function notifyPaidRequest({ request, ownerId }: PaidNotice): Promise<void
 
 /**
  * Confirma (ou nao) o pagamento da tentativa contra o estado autoritativo.
- * Chamado pelo receptor de webhook e, em F3-008, pela reconciliacao. Seguro
- * para reexecucao e para execucoes concorrentes.
+ * Chamado pelo receptor de webhook, pela reconciliacao (F3-008) e pela
+ * varredura de reversoes (F3-011). Seguro para reexecucao e para execucoes
+ * concorrentes.
  */
 export async function confirmPaymentFlow(
   attemptId: string,

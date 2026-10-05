@@ -550,6 +550,11 @@ model PaymentAttempt {
   /// segredo nem resposta crua do provedor: so um codigo fechado.
   lastReconciledAt     DateTime?            @map("last_reconciled_at") @db.Timestamptz(6)
   lastReconcileResult  String?              @map("last_reconcile_result")
+  /// F3-011 — varredura DIARIA de reversoes das tentativas confirmadas (PD-3.4,
+  /// PD-9.1, PD-10.2): a reclamacao por `FOR UPDATE SKIP LOCKED` avanca este
+  /// instante 24 h e commita. Agenda propria, separada da reconciliacao. NULL:
+  /// elegivel ja.
+  nextReversalCheckAt  DateTime?            @map("next_reversal_check_at") @db.Timestamptz(6)
   createdAt            DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt            DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
 
@@ -560,6 +565,7 @@ model PaymentAttempt {
 
   @@index([status])
   @@index([status, nextReconcileAt])
+  @@index([status, nextReversalCheckAt])
   @@map("payment_attempts")
 }
 

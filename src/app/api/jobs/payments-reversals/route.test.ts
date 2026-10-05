@@ -1,53 +1,44 @@
 // @vitest-environment node
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-// Rota de reconciliacao de pagamentos (F3-008, #98): so o segredo do agendador
-// a aciona (CI-11, PD-8.9); falha fechada sem segredo configurado; sessao de
+// Rota da varredura de reversoes (F3-011, #101): so o segredo do agendador a
+// aciona (CI-11, PD-8.9); falha fechada sem segredo configurado; sessao de
 // usuario nao substitui o segredo; a resposta e so um resumo de contagens.
-const runPaymentReconciliation = vi.fn();
+const runPaymentReversalSweep = vi.fn();
 vi.mock('@/modules/request', () => ({
-  runPaymentReconciliation: (...args: unknown[]) => runPaymentReconciliation(...args),
+  runPaymentReversalSweep: (...args: unknown[]) => runPaymentReversalSweep(...args),
 }));
 
-// F3-013 (#103): os sinais de AR-14.3 sao lidos depois de cada execucao autorizada.
-const reportPaymentSignals = vi.fn();
-vi.mock('@/modules/payments', () => ({
-  reportPaymentSignals: (...args: unknown[]) => reportPaymentSignals(...args),
+// F3-013 (#103): toda execucao concluida emite `jobs.run`.
+const reportSignal = vi.fn();
+vi.mock('@/modules/platform', () => ({
+  reportSignal: (...args: unknown[]) => reportSignal(...args),
 }));
 
 import { dynamic, GET, maxDuration, runtime } from './route';
 
-const SECRET = 'segredo-sintetico-reconciliacao-123';
+const SECRET = 'segredo-sintetico-reversoes-1234';
 
 function call(headers: Record<string, string> = {}) {
-  return GET(new Request('http://localhost/api/jobs/payments-reconcile', { headers }));
+  return GET(new Request('http://localhost/api/jobs/payments-reversals', { headers }));
 }
 
 const SUMMARY = {
-  claimed: 4,
-  confirmed: 1,
-  exceptions: 1,
-  notAccredited: 0,
-  pending: 1,
-  canceled: 1,
-  adopted: 0,
-  requesterOwned: 0,
-  orphansNotFound: 0,
-  observed: 0,
-  reversed: 0,
-  unavailable: 0,
+  claimed: 3,
+  stillAccredited: 1,
+  reversed: 1,
   inconsistent: 0,
+  unavailable: 1,
   unchanged: 0,
   deferred: 0,
   errors: 0,
 };
 
-describe('GET /api/jobs/payments-reconcile', () => {
+describe('GET /api/jobs/payments-reversals', () => {
   beforeEach(() => {
-    runPaymentReconciliation.mockReset();
-    runPaymentReconciliation.mockResolvedValue(SUMMARY);
-    reportPaymentSignals.mockReset();
-    reportPaymentSignals.mockResolvedValue(null);
+    runPaymentReversalSweep.mockReset();
+    runPaymentReversalSweep.mockResolvedValue(SUMMARY);
+    reportSignal.mockReset();
     vi.spyOn(console, 'info').mockImplementation(() => undefined);
   });
   afterEach(() => {
@@ -66,7 +57,7 @@ describe('GET /api/jobs/payments-reconcile', () => {
     const res = await call({ authorization: 'Bearer qualquer' });
     expect(res.status).toBe(401);
     expect(await res.text()).toBe('');
-    expect(runPaymentReconciliation).not.toHaveBeenCalled();
+    expect(runPaymentReversalSweep).not.toHaveBeenCalled();
   });
 
   it.each<[string, Record<string, string>]>([
@@ -83,18 +74,8 @@ describe('GET /api/jobs/payments-reconcile', () => {
     expect(res.status).toBe(401);
     expect(res.headers.get('cache-control')).toBe('no-store');
     expect(await res.text()).toBe('');
-    expect(runPaymentReconciliation).not.toHaveBeenCalled();
-    expect(reportPaymentSignals).not.toHaveBeenCalled();
-  });
-
-  it('a recusa e identica com e sem segredo configurado', async () => {
-    vi.stubEnv('CRON_SECRET', '');
-    const without = await call({ authorization: 'Bearer x' });
-    vi.stubEnv('CRON_SECRET', SECRET);
-    const withSecret = await call({ authorization: 'Bearer x' });
-    expect(without.status).toBe(withSecret.status);
-    expect([...without.headers.entries()]).toEqual([...withSecret.headers.entries()]);
-    expect(await without.text()).toBe(await withSecret.text());
+    expect(runPaymentReversalSweep).not.toHaveBeenCalled();
+    expect(reportSignal).not.toHaveBeenCalled();
   });
 
   it('com o segredo: executa dentro do orcamento, sem cache, e devolve so contagens', async () => {
@@ -107,18 +88,25 @@ describe('GET /api/jobs/payments-reconcile', () => {
     const body = await res.json();
     expect(body).toEqual(SUMMARY);
     expect(Object.values(body).every((v) => typeof v === 'number')).toBe(true);
-    const [{ stopClaimingAt }] = runPaymentReconciliation.mock.calls[0] as [
+    const [{ stopClaimingAt }] = runPaymentReversalSweep.mock.calls[0] as [
       { stopClaimingAt: number },
     ];
     expect(stopClaimingAt - before).toBeGreaterThanOrEqual(179_000);
     expect(stopClaimingAt - before).toBeLessThanOrEqual(181_000);
-    expect(reportPaymentSignals).toHaveBeenCalledTimes(1);
+    expect(reportSignal).toHaveBeenCalledWith(
+      'jobs.run',
+      expect.objectContaining({ job: 'payments-reversals', reversed: 1, still_accredited: 1 }),
+    );
   });
 
-  it('falha da reconciliacao: a rota lanca e os sinais nao sao lidos', async () => {
+  it('falha da varredura: a rota lanca e o sinal de falha sai com alerta', async () => {
     vi.stubEnv('CRON_SECRET', SECRET);
-    runPaymentReconciliation.mockRejectedValueOnce(new Error('falha sintetica'));
+    runPaymentReversalSweep.mockRejectedValueOnce(new Error('falha sintetica'));
     await expect(call({ authorization: `Bearer ${SECRET}` })).rejects.toThrow('falha sintetica');
-    expect(reportPaymentSignals).not.toHaveBeenCalled();
+    expect(reportSignal).toHaveBeenCalledWith(
+      'jobs.failure',
+      expect.objectContaining({ job: 'payments-reversals', kind: 'run_failed' }),
+      expect.objectContaining({ alert: true }),
+    );
   });
 });

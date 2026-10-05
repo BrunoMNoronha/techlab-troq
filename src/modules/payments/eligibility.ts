@@ -10,9 +10,9 @@ import type { Prisma } from '@/generated/prisma/client';
 // `em_confirmacao`, `reembolso_pendente`, `inconsistente` e
 // `reembolsada_ou_revertida` -- nao e evidencia: estado incerto nunca concede
 // direito (PE-1.6, PE-6.11). A reversao de pagamento ja confirmado (F3-011,
-// #101) precisa tirar a tentativa de `pagamento_confirmado`, ou acrescentar o
-// seu marcador a esta consulta, para que a solicitacao deixe de ser elegivel
-// (CR-4.2). Uma tentativa com excedente devolvido (RT-1) continua confirmada:
+// #101) tira a tentativa de `pagamento_confirmado` (reversal.ts), e por isso
+// a solicitacao deixa de ser elegivel sem mudar esta consulta (CR-4.2; PD-9.5).
+// Uma tentativa com excedente devolvido (RT-1) continua confirmada:
 // o canonico segue valido (PD-8, nota de PD-7.3).
 
 /** Cliente do Prisma ou transacao em curso: so `$queryRaw` e usado. */

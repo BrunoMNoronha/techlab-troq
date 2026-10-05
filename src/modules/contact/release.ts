@@ -26,6 +26,20 @@ export interface ContactReleaseInput {
   at: Date;
 }
 
+/**
+ * Ja existe autorizacao de liberacao para esta solicitacao? So o booleano:
+ * nenhum numero, nenhum destinatario (CR-2.5). Usado por `request` para que a
+ * auditoria da reversao registre que a divulgacao ocorreu (PE-8.7, CR-4.2;
+ * F3-011, #101). Nada aqui revoga: o modulo nao expoe UPDATE nem DELETE.
+ */
+export async function hasContactReleaseInTx(
+  tx: Pick<Prisma.TransactionClient, 'contactRelease'>,
+  contactRequestId: string,
+): Promise<boolean> {
+  const count = await tx.contactRelease.count({ where: { contactRequestId } });
+  return count > 0;
+}
+
 /** Cria a autorizacao e a audita na transacao recebida (CR-3.2 a CR-3.4). */
 export async function authorizeContactReleaseInTx(
   tx: Prisma.TransactionClient,

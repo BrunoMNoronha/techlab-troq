@@ -29,6 +29,7 @@ export {
   type OrderSnapshot,
   type PixInstructions,
   type ProviderPaymentFact,
+  type ReversalReason,
 } from './classify';
 export { MERCADO_PAGO_ENV, MercadoPagoConfigError, readWebhookConfig } from './config';
 export {

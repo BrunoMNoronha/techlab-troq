@@ -32,6 +32,8 @@ export type { ContactReader } from './contact';
 // F3-009 (#99): a autorizacao de liberacao (CR-3), criada na transacao da
 // escolha. Nao toca `UserContact` e nao devolve o numero.
 export { authorizeContactReleaseInTx } from './release';
+// F3-011 (#101): so o booleano "ja foi liberado", para a auditoria da reversao.
+export { hasContactReleaseInTx } from './release';
 export type { ContactReleaseInput } from './release';
 // F3-010 (#100): a segunda operacao de CR-2.2, a entrega ao escolhido sob A1 a
 // A6, com a porta da cadeia (A4, A5) composta em `src/app/contatos`.

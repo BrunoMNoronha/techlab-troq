@@ -122,6 +122,8 @@ Fundamento: PE-8.7 determina que a liberação já concedida não é revogada e 
 
 O que a reversão **de fato** produz é o que CR-4.2 já diz: perda de elegibilidade para escolhas **futuras**, e um evento novo na auditoria (PE-8.5).
 
+_Atualização de 2026-10-05 (F3-011, [#101](https://github.com/BrunoMNoronha/techlab-troq/issues/101)): como CR-4.2 e CR-4.3 foram implementadas, sem alterar nenhuma regra._ Das duas opções deixadas pela nota de F3-009, a escolhida foi **tirar a tentativa de `pagamento_confirmado`**: a reversão a leva a `reembolsada_ou_revertida`, e a consulta de elegibilidade não mudou ([payments-design.md](payments-design.md), PD-9.5). A reversão corre sob a mesma trava de linha do anúncio que a escolha, então as duas se serializam. A autorização e a negociação não são tocadas. `contact` só responde, em booleano, se já existe autorização para a solicitação (`hasContactReleaseInTx`), para o evento `payment.reversed` registrar que a divulgação ocorreu (PE-8.7). C-10 e T-17 foram provados contra PostgreSQL real com o provedor simulado: autorização idêntica depois da reversão, releitura bem-sucedida e registrada, e a não escolhida fora das opções e recusada na escolha.
+
 ## 5. Retornar
 
 ### 5.1 A verificação de acesso
