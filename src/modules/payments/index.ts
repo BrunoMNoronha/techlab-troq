@@ -83,6 +83,18 @@ export type { OrphanOutcome } from './reconciliation';
 export { runClaimLoop } from './jobs';
 export type { ClaimHooks, JobLoopCounts, JobLoopOptions } from './jobs';
 
+// F3-013 (#103): sinais de AR-14.3 derivados do estado persistido.
+export {
+  emitPaymentSignals,
+  readPaymentSignals,
+  REFUND_PENDING_ALERT_HOURS,
+  REJECTED_NOTIFICATION_ALERT,
+  REJECTED_NOTIFICATION_WINDOW_HOURS,
+  reportPaymentSignals,
+  STALE_ATTEMPT_HOURS,
+} from './signals';
+export type { PaymentSignalSnapshot } from './signals';
+
 // F3-009 (#99): evidencia de pagamento confirmado, para a escolha (CR-3.2, P3).
 export { readConfirmedPaymentEvidence } from './eligibility';
 export type { PaymentEvidenceReader } from './eligibility';

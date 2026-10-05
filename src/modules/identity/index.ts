@@ -5,6 +5,10 @@ import type { UserStatus } from '@/generated/prisma/client';
 
 export { getAuth } from './auth';
 export { sanitizeReturnPath } from './return-path';
+// F3-013 (#103): avisos transacionais por tipo (RF-021, DEC-048). O endereco
+// do destinatario nunca sai deste modulo.
+export { notifyUser, noticeIdempotencyKey, renderNotice } from './notifications';
+export type { NoticeDeliveryResult, NoticeKind, RenderedNotice, UserNotice } from './notifications';
 export {
   registerUser,
   confirmEmailToken,

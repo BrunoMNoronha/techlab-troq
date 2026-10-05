@@ -43,6 +43,26 @@ vi.mock('@/modules/identity/email', () => ({
   sendVerificationEmail: vi.fn().mockResolvedValue({ ok: true }),
 }));
 
+// F3-013 (#103): o transporte dos avisos transacionais e SIMULADO; dele se le
+// quantos emails sairam, para quem, com que chave e com que conteudo.
+const sentEmails = vi.hoisted(() => ({
+  send: vi
+    .fn<
+      (email: {
+        to: string;
+        subject: string;
+        text: string;
+        html: string;
+        idempotencyKey: string;
+      }) => Promise<{ ok: true }>
+    >()
+    .mockResolvedValue({ ok: true }),
+}));
+vi.mock('@/modules/identity/email-transport', () => ({
+  sendTransactionalEmail: sentEmails.send,
+}));
+const sent = () => sentEmails.send.mock.calls.map(([e]) => e);
+
 vi.setConfig({ testTimeout: 90_000, hookTimeout: 90_000 });
 
 const RUN_ID = `${Date.now()}-${randomBytes(3).toString('hex')}`;
@@ -402,6 +422,7 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
     });
 
     beforeEach(() => {
+      sentEmails.send.mockClear();
       sim.getMode = 'ok';
       sim.searchMode = 'ok';
       vi.stubEnv('MERCADO_PAGO_WEBHOOK_SECRET', SECRET);
@@ -645,6 +666,22 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
           where: { paymentAttemptId: r.attemptId },
         });
         expect(notified.processingResult).toBe('confirmed');
+
+        // TE-1 e TE-2 (F3-013): depois do commit, um aviso a quem pagou e um
+        // ao anunciante; nenhum texto de pessoa e nenhum contato.
+        const mails = sent();
+        expect(mails.map((m) => [m.to, m.idempotencyKey]).sort()).toEqual(
+          [
+            [email('owner'), `troq-notice/request_paid_owner/${r.contactRequestId}`],
+            [email('r0'), `troq-notice/request_paid_requester/${r.contactRequestId}`],
+          ].sort(),
+        );
+        for (const m of mails) {
+          const body = `${m.subject}${m.text}${m.html}`;
+          for (const piece of ['91234-5678', '912345678', '11912345678']) {
+            expect(body).not.toContain(piece);
+          }
+        }
       });
 
       it(`T-3: a mesma notificacao entregue 5 vezes ao mesmo tempo produz um unico efeito`, async () => {
@@ -668,6 +705,15 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
         const s = await state(r);
         expect(s.request.status).toBe('paid');
         expect(s.payments.filter((p) => p.isCanonical)).toHaveLength(1);
+        // F3-013: cinco entregas simultaneas, uma transicao, um aviso de cada tipo.
+        expect(
+          sent()
+            .map((m) => m.idempotencyKey)
+            .sort(),
+        ).toEqual([
+          `troq-notice/request_paid_owner/${r.contactRequestId}`,
+          `troq-notice/request_paid_requester/${r.contactRequestId}`,
+        ]);
       });
 
       it('T-4: fora de ordem, o estado final e o autoritativo', async () => {
@@ -698,6 +744,12 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
           })
         ).map((n) => n.processingResult);
         expect(results).toEqual(['pending', 'confirmed', 'already_confirmed']);
+        // F3-013: a reentrega reprocessa a mesma transicao e nao reenvia.
+        expect(sent()).toHaveLength(2);
+        expect(
+          await confirmPaymentFlow(r.attemptId, { origin: 'reconciliacao', deps: { gateway } }),
+        ).toBe('already_confirmed');
+        expect(sent()).toHaveLength(2);
       });
 
       it('T-6: acreditada dentro da janela e reconhecida muito depois vale, com os dois instantes', async () => {
@@ -940,6 +992,8 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
           ['reembolso_pendente', 'rt_2', 'refunded'],
         ]);
         expect(await audits('request.paid', [r.contactRequestId])).toHaveLength(0);
+        // F3-013: excecao nao e pagamento confirmado; nenhum aviso de TE-1/TE-2.
+        expect(sent()).toHaveLength(0);
       });
 
       it('dois pagamentos aprovados na busca: canonico eleito e excedente RT-1 (F3-007)', async () => {

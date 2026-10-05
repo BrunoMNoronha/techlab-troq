@@ -1,5 +1,6 @@
 import { runRefundRetry } from '@/modules/payments';
 import { cronUnauthorized, isCronAuthorized } from '../_lib/cron-auth';
+import { runJob } from '../_lib/run-job';
 
 // Retentativa de reembolso tecnico (F3-008, #98; payments-design.md, PD-3.4,
 // PD-3.5, PD-8.5). Protegida por `Authorization: Bearer <CRON_SECRET>`
@@ -21,7 +22,9 @@ const CLAIM_BUDGET_MS = (maxDuration - 120) * 1000;
 export async function GET(request: Request): Promise<Response> {
   if (!isCronAuthorized(request)) return cronUnauthorized();
   const started = Date.now();
-  const summary = await runRefundRetry({ stopClaimingAt: started + CLAIM_BUDGET_MS });
+  const summary = await runJob('payments-refund-retry', () =>
+    runRefundRetry({ stopClaimingAt: started + CLAIM_BUDGET_MS }),
+  );
   console.info('[payments] retentativa de reembolso executada', {
     ...summary,
     durationMs: Date.now() - started,

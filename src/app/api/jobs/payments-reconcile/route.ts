@@ -1,5 +1,7 @@
+import { reportPaymentSignals } from '@/modules/payments';
 import { runPaymentReconciliation } from '@/modules/request';
 import { cronUnauthorized, isCronAuthorized } from '../_lib/cron-auth';
+import { runJob } from '../_lib/run-job';
 
 // Reconciliacao periodica de tentativas de pagamento (F3-008, #98;
 // payments-design.md, PD-3.4 e PD-10). Protegida por
@@ -21,7 +23,12 @@ const CLAIM_BUDGET_MS = (maxDuration - 120) * 1000;
 export async function GET(request: Request): Promise<Response> {
   if (!isCronAuthorized(request)) return cronUnauthorized();
   const started = Date.now();
-  const summary = await runPaymentReconciliation({ stopClaimingAt: started + CLAIM_BUDGET_MS });
+  const summary = await runJob('payments-reconcile', () =>
+    runPaymentReconciliation({ stopClaimingAt: started + CLAIM_BUDGET_MS }),
+  );
+  // Sinais de AR-14.3 derivados do estado persistido (F3-013): reembolso
+  // pendente por idade, `inconsistente` aberto, tentativa parada e rejeicoes.
+  await reportPaymentSignals();
   console.info('[payments] reconciliacao executada', {
     ...summary,
     durationMs: Date.now() - started,

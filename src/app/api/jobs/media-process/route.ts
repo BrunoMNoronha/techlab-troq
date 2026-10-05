@@ -1,5 +1,6 @@
 import { processPendingImages } from '@/modules/media/processor';
 import { cronUnauthorized, isCronAuthorized } from '../_lib/cron-auth';
+import { runJob } from '../_lib/run-job';
 
 // Recuperacao do processamento de imagens (media-pipeline-contract.md, secao
 // 8.1; ADR-0006, decisao 9). Chamada pelo agendador com
@@ -18,6 +19,8 @@ const CLAIM_BUDGET_MS = (maxDuration - 120) * 1000;
 
 export async function GET(request: Request): Promise<Response> {
   if (!isCronAuthorized(request)) return cronUnauthorized();
-  const summary = await processPendingImages({ stopClaimingAt: Date.now() + CLAIM_BUDGET_MS });
+  const summary = await runJob('media-process', () =>
+    processPendingImages({ stopClaimingAt: Date.now() + CLAIM_BUDGET_MS }),
+  );
   return Response.json(summary, { headers: { 'Cache-Control': 'no-store' } });
 }

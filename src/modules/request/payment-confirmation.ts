@@ -1,5 +1,6 @@
 import type { Prisma } from '@/generated/prisma/client';
 import { recordAuditEvent } from '@/modules/audit';
+import { notifyUser } from '@/modules/identity';
 import { lockListingForRequest } from '@/modules/listing';
 import {
   classifyPaymentExceptionInTx,
@@ -42,6 +43,11 @@ import { getPrismaClient } from '@/persistence/prisma';
 //
 // Depois do COMMIT, e fora da trava, a primeira tentativa de reembolso de toda
 // excecao (F3-007; PD-8). A retentativa periodica e de F3-008.
+//
+// Tambem depois do COMMIT, e so quando ESTA chamada efetuou `reserved` ->
+// `paid`, os avisos TE-1 (a quem pagou) e TE-2 (ao anunciante) (F3-013, #103;
+// DEC-048). Reprocessar o mesmo fato devolve `already_confirmed` e nao avisa
+// de novo.
 
 export type PaymentConfirmationOutcome =
   | 'confirmed'
@@ -66,6 +72,7 @@ export interface PaymentConfirmationOptions {
 interface RequestRow {
   id: string;
   listingId: string;
+  requesterId: string;
   status: string;
   slotIndex: number;
   reservedUntil: Date;
@@ -76,7 +83,8 @@ async function readRequest(
   contactRequestId: string,
 ): Promise<RequestRow | null> {
   const [row] = await tx.$queryRaw<RequestRow[]>`
-    SELECT "id"::text AS "id", "listing_id"::text AS "listingId", "status"::text AS "status",
+    SELECT "id"::text AS "id", "listing_id"::text AS "listingId",
+           "requester_id"::text AS "requesterId", "status"::text AS "status",
            "slot_index" AS "slotIndex", "reserved_until" AS "reservedUntil"
     FROM "contact_requests" WHERE "id" = ${contactRequestId}::uuid`;
   return row ?? null;
@@ -245,6 +253,30 @@ async function applyAccreditation(
   return hypothesis === 'rt_2' ? 'exception_rt_2' : 'exception_rt_3';
 }
 
+/** TE-1 e TE-2, depois do commit. `notifyUser` nunca lanca. */
+interface PaidNotice {
+  request: RequestRow;
+  ownerId: string | null;
+}
+
+async function notifyPaidRequest({ request, ownerId }: PaidNotice): Promise<void> {
+  await Promise.all([
+    notifyUser({
+      kind: 'request_paid_requester',
+      recipientId: request.requesterId,
+      contactRequestId: request.id,
+      listingId: request.listingId,
+    }),
+    ownerId
+      ? notifyUser({
+          kind: 'request_paid_owner',
+          recipientId: ownerId,
+          contactRequestId: request.id,
+        })
+      : Promise.resolve(),
+  ]);
+}
+
 /**
  * Confirma (ou nao) o pagamento da tentativa contra o estado autoritativo.
  * Chamado pelo receptor de webhook e, em F3-008, pela reconciliacao. Seguro
@@ -259,18 +291,27 @@ export async function confirmPaymentFlow(
   if (observed.fact.kind === 'unavailable') return 'unavailable';
   if (observed.fact.kind === 'no_order') return 'no_order';
 
-  const outcome = await getPrismaClient().$transaction(async (tx) => {
-    const before = await readRequest(tx, observed.contactRequestId);
-    if (!before) return 'not_found';
-    // Trava de linha do anuncio: serializa com reservas, encerramentos e outras
-    // confirmacoes do mesmo anuncio (DM-6.12). O estado do anuncio NAO e
-    // verificado (PD-6.11).
-    await lockListingForRequest(tx, before.listingId);
-    const request = await readRequest(tx, observed.contactRequestId);
-    if (!request) return 'not_found';
-    const [{ at }] = await tx.$queryRaw<{ at: Date }[]>`SELECT now() AS "at"`;
-    return applyFact(tx, attemptId, request, observed.fact, options.origin, at);
-  });
+  const { outcome, paid } = await getPrismaClient().$transaction(
+    async (tx): Promise<{ outcome: PaymentConfirmationOutcome; paid: PaidNotice | null }> => {
+      const before = await readRequest(tx, observed.contactRequestId);
+      if (!before) return { outcome: 'not_found', paid: null };
+      // Trava de linha do anuncio: serializa com reservas, encerramentos e outras
+      // confirmacoes do mesmo anuncio (DM-6.12). O estado do anuncio NAO e
+      // verificado (PD-6.11).
+      const listing = await lockListingForRequest(tx, before.listingId);
+      const request = await readRequest(tx, observed.contactRequestId);
+      if (!request) return { outcome: 'not_found', paid: null };
+      const [{ at }] = await tx.$queryRaw<{ at: Date }[]>`SELECT now() AS "at"`;
+      const applied = await applyFact(tx, attemptId, request, observed.fact, options.origin, at);
+      return {
+        outcome: applied,
+        paid: applied === 'confirmed' ? { request, ownerId: listing?.ownerId ?? null } : null,
+      };
+    },
+  );
+
+  // Depois do COMMIT, so quem efetuou a transicao avisa (TE-1, TE-2).
+  if (paid) await notifyPaidRequest(paid);
 
   const owesRefund =
     observed.fact.kind === 'multiple_accredited' ||

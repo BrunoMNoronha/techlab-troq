@@ -262,7 +262,7 @@ Nenhum requisito permanece `bloqueado` e **não há mais decisão aberta**. OD-0
 - **Regra de negócio relacionada:** —
 - **Decisão aberta relacionada:** —
 - **Critério de aceite (alto nível):** email de verificação entregue; a lista completa de notificações por email (por exemplo, escolha, liberação, encerramento) será definida durante o design de cada fluxo e não deve conter telefone/WhatsApp fora da liberação autorizada.
-- **Status:** parcialmente definido.
+- **Status:** parcialmente definido. _Atualização de 2026-10-04 (F3-013, DEC-048):_ o catálogo da Fase 3 — pagamento confirmado, nova solicitação paga e escolha com contato liberado — está em [transactional-emails.md](transactional-emails.md), sem texto de pessoa usuária e sem o contato em nenhum email. Falta o catálogo da Fase 4 (encerramento, avaliação e moderação), e três avisos candidatos aguardam decisão de produto (seção 5 daquele documento).
 
 #### RF-022 — Auditoria das operações críticas
 

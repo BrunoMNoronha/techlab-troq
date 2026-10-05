@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { Prisma } from '@/generated/prisma/client';
 import { recordAuditEvent } from '@/modules/audit';
+import { reportSignal } from '@/modules/platform';
 import { getPrismaClient } from '@/persistence/prisma';
 import { REQUEST_PRICE_CENTS } from './charge';
 import {
@@ -49,6 +50,9 @@ export async function recordRejectedNotification(input: {
   providerRequestId: string | null;
   providerDataId: string | null;
 }): Promise<void> {
+  // Log por ocorrencia, so com o motivo codificado; o alerta por janela sai de
+  // ./signals.ts (AR-14.3, F3-013).
+  reportSignal('payments.notification_rejected', { reason: input.reason, count: 1 });
   try {
     await getPrismaClient().$transaction((tx) =>
       recordAuditEvent(tx, {

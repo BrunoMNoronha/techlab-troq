@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import type { ListingStatus } from '@/generated/prisma/client';
 import { recordAuditEvent } from '@/modules/audit';
 import { authorizeContactReleaseInTx } from '@/modules/contact';
-import { validateSession, type SessionValidationResult } from '@/modules/identity';
+import { notifyUser, validateSession, type SessionValidationResult } from '@/modules/identity';
 import { getListingGate, lockListingForRequest } from '@/modules/listing';
 import { listEligibleRequests, lockRequestForSelection } from '@/modules/request';
 import { getPrismaClient } from '@/persistence/prisma';
@@ -31,6 +31,10 @@ import { getPrismaClient } from '@/persistence/prisma';
 // Repetir a escolha de quem ja e o escolhido da negociacao viva e idempotente
 // (reselection-policy.md, secao 8): sucesso sem gravar nada. Escolher de novo
 // quem ja foi escolhido numa negociacao encerrada e RS-5: recusado.
+//
+// Depois do COMMIT, e so quando ESTE ato gravou a escolha (`changed: true`), o
+// aviso TE-3 ao escolhido (F3-013, #103; DEC-048). A repeticao idempotente nao
+// grava nada e nao avisa. O aviso nao contem o contato: manda a `/contatos`.
 //
 // Fora daqui: entrega do contato (F3-010, #100), encerramento da negociacao
 // (Fase 4, #55) e a tela (F3-012, #102).
@@ -138,8 +142,11 @@ export async function selectForOwner(
     return failure('not_found');
   }
 
+  let released: { recipientId: string; contactReleaseId: string } | undefined;
+  let result: SelectionResult;
   try {
-    return await getPrismaClient().$transaction(async (tx) => {
+    result = await getPrismaClient().$transaction(async (tx) => {
+      released = undefined;
       const listing = await lockListingForRequest(tx, listingId);
       // P1: anuncio alheio responde como inexistente.
       if (!listing || listing.ownerId !== actorId) throw new SelectionAbort('not_found');
@@ -248,6 +255,7 @@ export async function selectForOwner(
         },
       });
 
+      released = { recipientId: request.requesterId, contactReleaseId };
       return { success: true, negotiationId, kind, changed: true } satisfies SelectionResult;
     });
   } catch (err) {
@@ -258,6 +266,13 @@ export async function selectForOwner(
     });
     return failure('error');
   }
+
+  // TE-3, depois do COMMIT. `notifyUser` nunca lanca nem desfaz a escolha.
+  const notice = released as { recipientId: string; contactReleaseId: string } | undefined;
+  if (result.success && result.changed && notice) {
+    await notifyUser({ kind: 'contact_released', ...notice });
+  }
+  return result;
 }
 
 // ---------------------------------------------------------------------------

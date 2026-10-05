@@ -46,6 +46,29 @@ vi.mock('@/modules/identity/email', () => ({
   sendVerificationEmail: vi.fn().mockResolvedValue({ ok: true }),
 }));
 
+// F3-013 (#103): o transporte dos avisos transacionais e SIMULADO.
+const sentEmails = vi.hoisted(() => ({
+  send: vi
+    .fn<
+      (email: {
+        to: string;
+        subject: string;
+        text: string;
+        html: string;
+        idempotencyKey: string;
+      }) => Promise<{ ok: true }>
+    >()
+    .mockResolvedValue({ ok: true }),
+}));
+vi.mock('@/modules/identity/email-transport', () => ({
+  sendTransactionalEmail: sentEmails.send,
+}));
+/** Avisos TE-3 enviados desde o ultimo `mockClear`. */
+const released = () =>
+  sentEmails.send.mock.calls
+    .map(([e]) => e)
+    .filter((e) => e.idempotencyKey.startsWith('troq-notice/contact_released/'));
+
 vi.setConfig({ testTimeout: 60_000, hookTimeout: 60_000 });
 
 const RUN_ID = `${Date.now()}-${randomBytes(3).toString('hex')}`;
@@ -307,10 +330,18 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
         expect(chain.negotiations.filter((n) => n.status === 'active')).toHaveLength(1);
         expect(chain.releases).toHaveLength(1);
         expect(chain.releases[0].negotiationId).toBe(winner.negotiationId);
+        // F3-013: N disparos, uma transicao, um unico aviso TE-3, so ao escolhido.
+        const chosenTag = Object.entries(ids).find(
+          ([, id]) => id === chain.releases[0].recipientId,
+        )![0];
+        expect(released().map((m) => [m.to, m.idempotencyKey])).toEqual([
+          [email(chosenTag), `troq-notice/contact_released/${chain.releases[0].id}`],
+        ]);
       }
 
       it(`com a trava segurada: ${N} backends distintos esperam; uma autorizacao, uma negociacao active`, async () => {
         const { listingId, targets } = await contestedListing();
+        sentEmails.send.mockClear();
         let pending!: Promise<SelectionResult[]>;
         const waiting: number[] = [];
 
@@ -338,6 +369,7 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
 
       it(`sem trava segurada: ${N} disparos livres terminam com uma unica autorizacao`, async () => {
         const { listingId, targets } = await contestedListing();
+        sentEmails.send.mockClear();
         const results = await Promise.all(targets.map((requestId) => select(requestId, listingId)));
         expectSingleAuthorization(results, await chainOf(listingId));
       });
@@ -377,6 +409,7 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
           where: { paymentAttempt: { contactRequestId: requestId }, isCanonical: true },
         });
 
+        sentEmails.send.mockClear();
         const res = await select(requestId, listingId);
         expect(res).toMatchObject({ success: true, kind: 'selection', changed: true });
         const { negotiationId } = res as Extract<SelectionResult, { success: true }>;
@@ -418,13 +451,30 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
         ]);
         expect(audits.every((a) => a.actorId === ids.owner && a.result === 'success')).toBe(true);
         expect(JSON.stringify(audits)).not.toContain(PHONE_DIGITS);
+
+        // TE-3 (F3-013): um aviso ao escolhido, que manda a /contatos e nao leva o numero.
+        const [notice, ...rest] = released();
+        expect(rest).toEqual([]);
+        expect(notice).toMatchObject({
+          to: email('r0'),
+          idempotencyKey: `troq-notice/contact_released/${releases[0].id}`,
+        });
+        expect(notice.text).toContain('/contatos');
+        for (const body of [notice.subject, notice.text, notice.html]) {
+          expect(body).not.toContain(PHONE_DIGITS);
+          expect(body).not.toContain('91234-5678');
+        }
       });
 
       it('repetir a escolha do escolhido vivo e idempotente: sucesso sem gravar nada', async () => {
         const listingId = await publishedListing();
         const requestId = await paidRequest(listingId, 'r0');
+        sentEmails.send.mockClear();
         const first = await select(requestId, listingId);
+        expect(released()).toHaveLength(1);
         const again = await select(requestId, listingId);
+        // F3-013: a repeticao idempotente nao grava nada e nao reenvia o aviso.
+        expect(released()).toHaveLength(1);
         expect(again).toEqual({
           success: true,
           negotiationId: (first as Extract<SelectionResult, { success: true }>).negotiationId,
@@ -584,6 +634,7 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
         const first = (await select(a, listingId)) as Extract<SelectionResult, { success: true }>;
         await closeNegotiation(first.negotiationId, 'r0');
         const before = await chainOf(listingId);
+        sentEmails.send.mockClear();
 
         const second = await select(b, listingId);
         expect(second).toMatchObject({ success: true, kind: 'reselection', changed: true });
@@ -599,6 +650,8 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
         expect(after.negotiations[0]).toEqual(before.negotiations[0]);
         expect(after.negotiations[0].status).toBe('closed');
         expect(after.releases[1]).toMatchObject({ negotiationId, recipientId: ids.r1 });
+        // F3-013: a reselecao avisa so o novo escolhido.
+        expect(released().map((m) => m.to)).toEqual([email('r1')]);
         expect(after.negotiations.filter((n) => n.status === 'active')).toEqual([
           expect.objectContaining({ id: negotiationId, chosenId: ids.r1 }),
         ]);
