@@ -12,7 +12,7 @@ import { revealContact } from './actions';
 // da Server Action, depois do gesto, e vive no estado deste navegador.
 //
 // O atalho para o WhatsApp e a ligacao sao montados AQUI, a partir do valor ja
-// entregue (CR-6.4): nenhuma rota do TROQ recebe o numero nem redireciona.
+// entregue (CR-6.4): nenhuma rota do TROQS recebe o numero nem redireciona.
 
 /** `+55DD9XXXXXXXX` -> `(DD) 9XXXX-XXXX`; fixo -> `(DD) XXXX-XXXX`. */
 export function formatBrazilianPhone(e164: string): string {

@@ -15,8 +15,8 @@ import {
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'Ofertas — TROQ',
-  description: 'Ofertas publicadas no TROQ, abertas sem login.',
+  title: 'Ofertas — TROQS',
+  description: 'Ofertas publicadas no TROQS, abertas sem login.',
 };
 
 export default async function ExplorarPage({
@@ -29,7 +29,7 @@ export default async function ExplorarPage({
 
   return (
     <PageContainer width="wide">
-      <PageHeader title="Anúncios no TROQ" />
+      <PageHeader title="Anúncios no TROQS" />
 
       <Stack gap={6}>
         {/* Filtro por GET: a URL e a fonte de verdade, e a pagina volta a 1. */}

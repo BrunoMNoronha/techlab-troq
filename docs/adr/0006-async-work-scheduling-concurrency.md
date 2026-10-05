@@ -88,7 +88,7 @@ Redis gerenciado apenas como autoridade de exclusão mútua, mantido o restante 
 | D-7 Não acionável por cliente | Endpoint protegido por segredo (V-5) | Igual | Igual | Igual |
 | Custo de decisão | Baixo | Alto: escolher provedor, homologar, versionar contrato | Alto: contraria ADR-0001 | Médio, sem benefício sobre A |
 
-**B** e **D** são rejeitadas por D-4: nenhuma necessidade comprovada as justifica. Uma fila gerenciada resolve entrega e retentativa — problemas que o TROQ já resolve por reconciliação, porque **precisa** resolvê-los por reconciliação de qualquer forma (CI-3). Redis para travas é dependência nova para um problema que o PostgreSQL resolve com P-1 e P-2, ambos já disponíveis. **C** é rejeitada por contrariar ADR-0001 e D-5.
+**B** e **D** são rejeitadas por D-4: nenhuma necessidade comprovada as justifica. Uma fila gerenciada resolve entrega e retentativa — problemas que o TROQS já resolve por reconciliação, porque **precisa** resolvê-los por reconciliação de qualquer forma (CI-3). Redis para travas é dependência nova para um problema que o PostgreSQL resolve com P-1 e P-2, ambos já disponíveis. **C** é rejeitada por contrariar ADR-0001 e D-5.
 
 ## Decisão
 

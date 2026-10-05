@@ -38,7 +38,7 @@ export function GoogleSignupForm({ email, returnTo }: { email: string; returnTo?
   return (
     <Stack gap={6}>
       <Text tone="muted" size="small">
-        O Google confirmou o e-mail <strong>{email}</strong>. Para criar sua conta no TROQ, escolha
+        O Google confirmou o e-mail <strong>{email}</strong>. Para criar sua conta no TROQS, escolha
         como quer ser chamado(a) e confirme as declarações abaixo. Nenhuma conta é criada antes
         disso. Ao concluir, você passa pelo Google mais uma vez para entrar.
       </Text>

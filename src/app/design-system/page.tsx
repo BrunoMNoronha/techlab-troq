@@ -135,7 +135,7 @@ export default function DesignSystemPage() {
     <PageContainer width="wide">
       <PageHeader
         title="Design System"
-        description="Tokens, componentes e páginas-modelo do TROQ. Toda tela nova se monta com o que está aqui."
+        description="Tokens, componentes e páginas-modelo do TROQS. Toda tela nova se monta com o que está aqui."
       />
 
       <Stack gap={12}>

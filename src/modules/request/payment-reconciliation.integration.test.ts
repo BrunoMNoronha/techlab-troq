@@ -650,7 +650,7 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
           (o) => o.external_reference === r.externalReference,
         )!;
         const window = await moveWindowToPast(r.contactRequestId);
-        // Pago dentro da janela; o TROQ nunca soube da order (PE-4.2).
+        // Pago dentro da janela; o TROQS nunca soube da order (PE-4.2).
         accredit(order.id, new Date(window.reservedFrom.getTime() + 60_000));
         await park([r.attemptId]);
 

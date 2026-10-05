@@ -6,7 +6,7 @@ import { Cluster } from '@/components/layout';
 import { Button, Text } from '@/components/ui';
 
 // Acompanhamento do estado da solicitacao (F3-012, #102). A confirmacao do Pix
-// chega ao TROQ pelo webhook ou pela reconciliacao (F3-006, F3-008), nunca por
+// chega ao TROQS pelo webhook ou pela reconciliacao (F3-006, F3-008), nunca por
 // este navegador: aqui so se rele a pagina, que relê o estado no servidor.
 //
 // O `router.refresh()` vai na `startTransition` (correcao de V7, PR #88). Com

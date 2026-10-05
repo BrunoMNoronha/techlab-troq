@@ -91,17 +91,17 @@ function layout(title: string, paragraphs: string[], cta: { label: string; url: 
             <p style="margin: 24px 0;">
               <a href="${escapeHtml(cta.url)}" style="background-color: #2563eb; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; display: inline-block;">${escapeHtml(cta.label)}</a>
             </p>
-            <p style="color: #6b7280; font-size: 14px;">Este é um aviso automático do TROQ. Não responda a este e-mail.</p>
+            <p style="color: #6b7280; font-size: 14px;">Este é um aviso automático do TROQS. Não responda a este e-mail.</p>
           </div>
         `;
 }
 
 function textOf(paragraphs: string[], url: string): string {
-  return `${paragraphs.join('\n\n')}\n\n${url}\n\nEste é um aviso automático do TROQ. Não responda a este e-mail.`;
+  return `${paragraphs.join('\n\n')}\n\n${url}\n\nEste é um aviso automático do TROQS. Não responda a este e-mail.`;
 }
 
 /**
- * Monta o email do aviso. Funcao pura: so texto fixo, a origem publica do TROQ
+ * Monta o email do aviso. Funcao pura: so texto fixo, a origem publica do TROQS
  * e ids internos validados. Nenhum dado de pessoa entra.
  */
 export function renderNotice(notice: UserNotice, baseURL: string): RenderedNotice {
@@ -110,11 +110,11 @@ export function renderNotice(notice: UserNotice, baseURL: string): RenderedNotic
       const url = `${baseURL}/explorar/${encodeURIComponent(notice.listingId)}`;
       const title = 'Pagamento confirmado';
       const paragraphs = [
-        'Recebemos o pagamento da sua solicitação de contato no TROQ.',
+        'Recebemos o pagamento da sua solicitação de contato no TROQS.',
         'Agora o anunciante pode escolher você. Se você for a pessoa escolhida, avisaremos por e-mail e o contato ficará disponível na sua conta.',
       ];
       return {
-        subject: 'TROQ: pagamento da sua solicitação confirmado',
+        subject: 'TROQS: pagamento da sua solicitação confirmado',
         text: textOf(paragraphs, url),
         html: layout(title, paragraphs, { label: 'Ver o anúncio', url }),
       };
@@ -123,11 +123,11 @@ export function renderNotice(notice: UserNotice, baseURL: string): RenderedNotic
       const url = `${baseURL}/anuncios`;
       const title = 'Nova solicitação paga';
       const paragraphs = [
-        'Uma pessoa pagou para solicitar o seu contato em um dos seus anúncios no TROQ.',
+        'Uma pessoa pagou para solicitar o seu contato em um dos seus anúncios no TROQS.',
         'Acesse os seus anúncios para ver as solicitações e escolher com quem negociar.',
       ];
       return {
-        subject: 'TROQ: nova solicitação paga em um anúncio seu',
+        subject: 'TROQS: nova solicitação paga em um anúncio seu',
         text: textOf(paragraphs, url),
         html: layout(title, paragraphs, { label: 'Ver meus anúncios', url }),
       };
@@ -136,11 +136,11 @@ export function renderNotice(notice: UserNotice, baseURL: string): RenderedNotic
       const url = `${baseURL}/contatos`;
       const title = 'Contato liberado para você';
       const paragraphs = [
-        'O anunciante escolheu você para negociar no TROQ.',
+        'O anunciante escolheu você para negociar no TROQS.',
         'Por segurança, o contato não vai por e-mail: ele está disponível apenas na sua conta.',
       ];
       return {
-        subject: 'TROQ: o anunciante escolheu você e liberou o contato',
+        subject: 'TROQS: o anunciante escolheu você e liberou o contato',
         text: textOf(paragraphs, url),
         html: layout(title, paragraphs, { label: 'Ver o contato', url }),
       };
@@ -151,11 +151,11 @@ export function renderNotice(notice: UserNotice, baseURL: string): RenderedNotic
       const url = `${baseURL}/explorar/${encodeURIComponent(notice.listingId)}`;
       const title = 'Pagamento devolvido';
       const paragraphs = [
-        'Um pagamento Pix que você fez no TROQ não pôde ser usado e foi devolvido integralmente à conta de origem.',
+        'Um pagamento Pix que você fez no TROQS não pôde ser usado e foi devolvido integralmente à conta de origem.',
         'A devolução pode levar alguns instantes para aparecer no seu extrato. Ela não altera nenhuma solicitação que já esteja confirmada na sua conta.',
       ];
       return {
-        subject: 'TROQ: devolvemos um pagamento seu',
+        subject: 'TROQS: devolvemos um pagamento seu',
         text: textOf(paragraphs, url),
         html: layout(title, paragraphs, { label: 'Ver o anúncio', url }),
       };

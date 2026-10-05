@@ -1,4 +1,4 @@
-# Política de desistência e reseleção — TROQ
+# Política de desistência e reseleção — TROQS
 
 Documento normativo que fecha [OD-06](../decisions/open-decisions.md) e registra DEC-032. Define o que acontece quando o solicitante escolhido desiste, e se e sob quais condições o anunciante pode escolher outro solicitante.
 

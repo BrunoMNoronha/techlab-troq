@@ -17,9 +17,9 @@ import {
 // PRIVACY_POLICY_VERSION.
 
 export const metadata: Metadata = {
-  title: 'Política de Privacidade — TROQ',
+  title: 'Política de Privacidade — TROQS',
   description:
-    'Quais dados o TROQ coleta, para que usa, com quem compartilha, por quanto tempo guarda e como exercer seus direitos pela LGPD.',
+    'Quais dados o TROQS coleta, para que usa, com quem compartilha, por quanto tempo guarda e como exercer seus direitos pela LGPD.',
 };
 
 const mail = <a href={`mailto:${LEGAL_CONTACT_EMAIL}`}>{LEGAL_CONTACT_EMAIL}</a>;
@@ -31,15 +31,15 @@ const sections: LegalSection[] = [
     body: (
       <>
         <p>
-          O TROQ (troqs.app) é uma plataforma de anúncios de troca entre pessoas em que o contato do
-          anunciante só é liberado à pessoa que ele escolher. O controlador dos dados pessoais
-          tratados no TROQ é <strong>{LEGAL_CONTROLLER}</strong>, que pode ser contatado pelo e-mail{' '}
-          {mail}, também canal do encarregado pelo tratamento de dados pessoais.
+          O TROQS (troqs.app) é uma plataforma de anúncios de troca entre pessoas em que o contato
+          do anunciante só é liberado à pessoa que ele escolher. O controlador dos dados pessoais
+          tratados no TROQS é <strong>{LEGAL_CONTROLLER}</strong>, que pode ser contatado pelo
+          e-mail {mail}, também canal do encarregado pelo tratamento de dados pessoais.
         </p>
         <p>
           Esta política explica, nos termos da Lei Geral de Proteção de Dados (Lei nº 13.709/2018 —
           LGPD), quais dados tratamos, por quê, com quem compartilhamos, por quanto tempo guardamos
-          e como você exerce os seus direitos. Ela se aplica ao site e a todos os serviços do TROQ.
+          e como você exerce os seus direitos. Ela se aplica ao site e a todos os serviços do TROQS.
         </p>
       </>
     ),
@@ -173,13 +173,14 @@ const sections: LegalSection[] = [
           qualquer outro dado da sua conta.
         </p>
         <p>
-          Usamos esses dados só para criar a sua conta no TROQ e permitir que você entre nela. Eles
+          Usamos esses dados só para criar a sua conta no TROQS e permitir que você entre nela. Eles
           não são usados para publicidade, não são vendidos e não são compartilhados com terceiros,
-          exceto com os fornecedores que operam o TROQ (seção 5) e quando a lei exigir.
+          exceto com os fornecedores que operam o TROQS (seção 5) e quando a lei exigir.
         </p>
         <div className={s.callout}>
           <p>
-            O uso e a transferência, pelo TROQ, de informações recebidas das APIs do Google seguem a{' '}
+            O uso e a transferência, pelo TROQS, de informações recebidas das APIs do Google seguem
+            a{' '}
             <a href="https://developers.google.com/terms/api-services-user-data-policy">
               Política de Dados do Usuário dos Serviços de API do Google
             </a>
@@ -187,9 +188,9 @@ const sections: LegalSection[] = [
           </p>
         </div>
         <p>
-          Você pode remover o acesso do TROQ à sua conta Google a qualquer momento em{' '}
+          Você pode remover o acesso do TROQS à sua conta Google a qualquer momento em{' '}
           <a href="https://myaccount.google.com/connections">myaccount.google.com/connections</a>.
-          Isso não apaga sua conta no TROQ; para isso, veja a seção 9.
+          Isso não apaga sua conta no TROQS; para isso, veja a seção 9.
         </p>
       </>
     ),
@@ -358,7 +359,7 @@ const sections: LegalSection[] = [
     title: 'Maiores de 18 anos',
     body: (
       <p>
-        O TROQ é destinado apenas a maiores de 18 anos, que declaram essa condição no cadastro. Não
+        O TROQS é destinado apenas a maiores de 18 anos, que declaram essa condição no cadastro. Não
         coletamos intencionalmente dados de crianças ou adolescentes. Se identificarmos uma conta de
         menor de 18 anos, ela será encerrada.
       </p>

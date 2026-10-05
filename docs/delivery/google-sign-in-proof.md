@@ -1,6 +1,6 @@
 # Prova real da entrada com Conta Google (#81)
 
-Registro da evidência com o **Google real** exigida por [#81](https://github.com/BrunoMNoronha/techlab-troq/issues/81), mantido à parte dos testes automatizados ([../architecture/identity-contract.md](../architecture/identity-contract.md), IC-15.10). Os testes provam o comportamento do TROQ diante de cada resposta do Google, com o endpoint de token simulado; só esta prova mostra que o cliente OAuth, a tela de consentimento e as URIs de cada ambiente estão corretos.
+Registro da evidência com o **Google real** exigida por [#81](https://github.com/BrunoMNoronha/techlab-troq/issues/81), mantido à parte dos testes automatizados ([../architecture/identity-contract.md](../architecture/identity-contract.md), IC-15.10). Os testes provam o comportamento do TROQS diante de cada resposta do Google, com o endpoint de token simulado; só esta prova mostra que o cliente OAuth, a tela de consentimento e as URIs de cada ambiente estão corretos.
 
 A entrada com Google foi aprovada por DEC-047 (2026-10-04) e é oferecida **só em `preview` e `production`**; `development` não é provisionado.
 
@@ -14,25 +14,25 @@ No console do projeto `troq-510700`, o público foi publicado e confirmado como 
 | Cliente Production "TROQs" | Callback `https://troqs.app/api/auth/callback/google` conferido |
 | Par Production na Vercel | Ambas as chaves presentes como Sensitive; valores não recuperados |
 | Login Google em Production | Relatado pelo Bruno em comentário de #133 após [Deploy Production 37273766162](https://github.com/BrunoMNoronha/techlab-troq/actions/runs/37273766162), SHA `dc511320ac4048c1b875ec7db283456defcbb7e3`; não repetido nesta etapa |
-| Cliente Preview "TROQ preview" | Cliente distinto de Production; callback `https://techlab-troq-git-preview-bruno-m-noronha.vercel.app/api/auth/callback/google` salvo e conferido em nova leitura do console |
+| Cliente Preview "TROQS preview" | Cliente distinto de Production; callback `https://techlab-troq-git-preview-bruno-m-noronha.vercel.app/api/auth/callback/google` salvo e conferido em nova leitura do console |
 | Par efetivo e jornada de Preview estável | Cadastro direto pelo Bruno e homologação pendentes; no deployment `dpl_FugUTy2nyggXKwT6zpUMVM4oHM8s`, SHA `f6d3ae51fb480d0b77f713dbfbd63f0c6fe92214`, [run 37290829843, tentativa 2](https://github.com/BrunoMNoronha/techlab-troq/actions/runs/37290829843), o navegador confirmou `/login` sem botão Google. A prova histórica de #81 não atende esse ambiente |
 
-A publicação do consentimento remove a limitação de usuários de teste para o login básico. Ela não comprova verificação de marca pelo Google nem aprovação da operação comercial do TROQ. #133 permanece aberta até o aceite de Preview estável e o registro completo da configuração por ambiente.
+A publicação do consentimento remove a limitação de usuários de teste para o login básico. Ela não comprova verificação de marca pelo Google nem aprovação da operação comercial do TROQS. #133 permanece aberta até o aceite de Preview estável e o registro completo da configuração por ambiente.
 
 ## Estado histórico da prova inicial de #81 em 2026-10-05
 
 | Item | Situação |
 | --- | --- |
-| Projeto Google Cloud do TROQ | criado: `troq-510700` ("TROQ"), conduzido pelo agente no Chrome com a sessão do Bruno |
+| Projeto Google Cloud do TROQS | criado: `troq-510700` ("TROQ"), conduzido pelo agente no Chrome com a sessão do Bruno |
 | Tela de consentimento OAuth | público **Externo**, em **modo de teste**; escopos declarados só `openid` e `userinfo.email`; um usuário de teste (a conta do Bruno) |
-| Cliente OAuth "Aplicativo da Web" de `preview` | "TROQ preview", sem origem JavaScript; URI de redirecionamento só a do alias da branch de prova |
+| Cliente OAuth "Aplicativo da Web" de `preview` | "TROQS preview", sem origem JavaScript; URI de redirecionamento só a do alias da branch de prova |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` e `BETTER_AUTH_URL` em `preview` | restritas à branch `proof/81-google-preview`; o segredo foi gravado pelo Bruno como Sensitive |
 | Cliente OAuth de `production` | não criado; depende da origem `https` de [#77](https://github.com/BrunoMNoronha/techlab-troq/issues/77) e da configuração de autenticação de `production`, que ainda não tem variáveis |
 
 ## Prova histórica em `preview` de branch descartável (2026-10-05)
 
 - **Ambiente:** deployment de `preview` da branch `proof/81-google-preview` (alias `techlab-troq-git-proof-81-google-preview-bruno-m-noronha.vercel.app`), revisão `39307fe`, código de `main` em `0a95e0c` (inclui a PR [#123](https://github.com/BrunoMNoronha/techlab-troq/pull/123), `d70bc8f`), Neon `preview` com a migration `20261004120000_account_provider_identity_unique` aplicada pelo workflow.
-- **Método:** o agente conduziu o TROQ e o console no Chrome. As telas do Google (escolha da conta e consentimento) e o ato afirmativo de 18+ e termos ficaram com o Bruno. As evidências de banco vêm de consultas só com agregados; as de log, dos registros de requisição da Vercel.
+- **Método:** o agente conduziu o TROQS e o console no Chrome. As telas do Google (escolha da conta e consentimento) e o ato afirmativo de 18+ e termos ficaram com o Bruno. As evidências de banco vêm de consultas só com agregados; as de log, dos registros de requisição da Vercel.
 
 | # | Passo | Resultado |
 | --- | --- | --- |
@@ -48,7 +48,7 @@ A publicação do consentimento remove a limitação de usuários de teste para 
 | 10 | Acesso posterior com Google → mesma conta (5 usuários, 1 identidade), nova sessão, tokens ainda nulos | PASS |
 | 11 | Logs de requisição do alias (29 registros, 4 callbacks): nenhum segredo do cliente, token do Google, JWT, cookie de sessão ou handle de pendência | PASS |
 
-**Limpeza (2026-10-05).** Removidos: as três variáveis restritas à branch, a branch `proof/81-google-preview` e a URI do alias no cliente "TROQ preview". A conta de teste foi apagada do Neon de `preview` (usuário, identidade, aceite e sessões), e o banco voltou à linha de base: 4 usuários, 0 identidades Google, 0 pendências. Ficam o projeto `troq-510700`, a tela de consentimento em modo de teste e o cliente sem URI.
+**Limpeza (2026-10-05).** Removidos: as três variáveis restritas à branch, a branch `proof/81-google-preview` e a URI do alias no cliente "TROQS preview". A conta de teste foi apagada do Neon de `preview` (usuário, identidade, aceite e sessões), e o banco voltou à linha de base: 4 usuários, 0 identidades Google, 0 pendências. Ficam o projeto `troq-510700`, a tela de consentimento em modo de teste e o cliente sem URI.
 
 **Não provados com o Google real** (cobertos só pelos testes automatizados de `google-signin.integration.test.ts`):
 

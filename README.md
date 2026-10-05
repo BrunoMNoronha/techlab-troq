@@ -1,6 +1,6 @@
-# TechLab+ TROQ
+# TechLab+ TROQS
 
-TROQ é uma plataforma de anúncios entre pessoas em que o contato (WhatsApp/telefone) do anunciante só é liberado a um interessado escolhido, mediante uma solicitação paga de R$ 0,99.
+TROQS é uma plataforma de anúncios entre pessoas em que o contato (WhatsApp/telefone) do anunciante só é liberado a um interessado escolhido, mediante uma solicitação paga de R$ 0,99.
 
 **Status (reconciliado em 2026-09-29, `main` em `e8ad1ae`):**
 

@@ -1,4 +1,4 @@
-# Contrato do formulário e da consulta de anúncios — TROQ
+# Contrato do formulário e da consulta de anúncios — TROQS
 
 Contrato técnico canônico do anúncio no MVP: campos, validação do formulário, rascunho e publicação, estados, contratos de saída (DTOs), visibilidade, consulta pública, conteúdo livre e requisitos de interface. Entregável de F2-005 ([#43](https://github.com/BrunoMNoronha/techlab-troq/issues/43)).
 
@@ -66,7 +66,7 @@ O histórico de transições (`ListingTransition`: ator, origem, destino, instan
 
 A declaração de conformidade com [prohibited-items.md](../product/prohibited-items.md) **não** é campo do anúncio: é um registro `TermsAcceptance` do tipo `listing_compliance`, criado na publicação (seção 4.4), com `userId`, `listingId`, `termsVersion` e `acceptedAt`. É dado de auditoria, nunca público e nunca editável pelo usuário.
 
-**`termsVersion` (F2-010).** Identifica o texto efetivamente aceito, no formato `DEC-031/<data da revisão de prohibited-items.md>/declaracao-<n>`; valor atual `DEC-031/2026-09-14/declaracao-1`. O texto exibido e a versão gravada vêm da mesma constante (`src/modules/listing/compliance.ts`), e um teste fixa o hash do texto: mudar a declaração ou a política exige nova versão. É decisão técnica de rastreabilidade, sem regra nova.
+**`termsVersion` (F2-010).** Identifica o texto efetivamente aceito, no formato `DEC-031/<data da revisão de prohibited-items.md>/declaracao-<n>`; valor atual `DEC-031/2026-09-14/declaracao-2` (a redação 1 trazia o nome do produto como "TROQ"; a redação 2 corrige para TROQS, sem mudança de teor). O texto exibido e a versão gravada vêm da mesma constante (`src/modules/listing/compliance.ts`), e um teste fixa o hash do texto: mudar a declaração ou a política exige nova versão. É decisão técnica de rastreabilidade, sem regra nova.
 
 ### 2.4 Imagens: entidade separada
 
@@ -331,7 +331,7 @@ Uma única ordenação no MVP: **mais recentes primeiro**, por `createdAt` decre
 
 ### 9.5 Home (`/`)
 
-Pública. Apresenta o TROQ, mostra as ofertas recentes pela primeira página de `getPublicFeed` (mesma regra de visibilidade e ordenação, `limit = 12`) e navega para `/explorar`, `/login` e `/cadastro`. Carregamento, catálogo vazio e erro têm estados próprios; nenhuma oferta fictícia é exibida.
+Pública. Apresenta o TROQS, mostra as ofertas recentes pela primeira página de `getPublicFeed` (mesma regra de visibilidade e ordenação, `limit = 12`) e navega para `/explorar`, `/login` e `/cadastro`. Carregamento, catálogo vazio e erro têm estados próprios; nenhuma oferta fictícia é exibida.
 
 ## 10. Conteúdo livre e dados pessoais
 
@@ -487,7 +487,7 @@ Mudanças em relação à versão anterior (criada em [#52](https://github.com/B
 
 ### 15.3 Prova em Preview
 
-Deployment `dpl_EtNnj2TESSMUToYP5enpYqghX5oB` (alias da branch `feat/f2-010-listing-lifecycle`, commit `c6e4c37`), com `BETTER_AUTH_URL` restrito à branch só para a prova. Conta sintética `@resend.dev`, cuja senha foi digitada pelo responsável. As superfícies públicas foram conferidas por HTTP **sem sessão do TROQ**, com acesso temporário de compartilhamento da Vercel.
+Deployment `dpl_EtNnj2TESSMUToYP5enpYqghX5oB` (alias da branch `feat/f2-010-listing-lifecycle`, commit `c6e4c37`), com `BETTER_AUTH_URL` restrito à branch só para a prova. Conta sintética `@resend.dev`, cuja senha foi digitada pelo responsável. As superfícies públicas foram conferidas por HTTP **sem sessão do TROQS**, com acesso temporário de compartilhamento da Vercel.
 
 | Passo | Resultado |
 | --- | --- |
@@ -539,7 +539,7 @@ A home não mudou: continua na primeira página com `limit = 12` (seção 9.5), 
 
 ### 16.5 Prova em Preview
 
-Deployment `dpl_EDzuWuXqsJdCHKvmEg1Fnr2GYyMG` (branch `feat/f2-011-public-listing`, commit `2f77128`), sobre o Neon de `preview`. As requisições foram feitas **sem sessão do TROQ**, com acesso temporário de compartilhamento da Vercel e somente leitura. Nenhum dado foi gravado no banco compartilhado. O banco tinha dois anúncios, ambos `closed` (um com imagem pronta), e nenhum publicado.
+Deployment `dpl_EDzuWuXqsJdCHKvmEg1Fnr2GYyMG` (branch `feat/f2-011-public-listing`, commit `2f77128`), sobre o Neon de `preview`. As requisições foram feitas **sem sessão do TROQS**, com acesso temporário de compartilhamento da Vercel e somente leitura. Nenhum dado foi gravado no banco compartilhado. O banco tinha dois anúncios, ambos `closed` (um com imagem pronta), e nenhum publicado.
 
 | Verificação | Resultado |
 | --- | --- |

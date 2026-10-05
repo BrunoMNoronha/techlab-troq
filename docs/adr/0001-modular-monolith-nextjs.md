@@ -6,7 +6,7 @@ Aceito — Fase 0 (2026-09-07).
 
 ## Contexto
 
-O TROQ está iniciando do zero, com equipe pequena e um MVP cujo fluxo central é bem delimitado (anúncios, solicitações pagas, liberação de contato, encerramento, avaliação e moderação). Não há código, infraestrutura ou base de usuários. A prioridade é validar o produto com baixo custo operacional e baixa complexidade de deploy.
+O TROQS está iniciando do zero, com equipe pequena e um MVP cujo fluxo central é bem delimitado (anúncios, solicitações pagas, liberação de contato, encerramento, avaliação e moderação). Não há código, infraestrutura ou base de usuários. A prioridade é validar o produto com baixo custo operacional e baixa complexidade de deploy.
 
 O direcionamento é mobile-first, com PWA como parte da estratégia, e o deploy será na Vercel.
 

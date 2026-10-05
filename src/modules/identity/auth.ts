@@ -11,7 +11,7 @@ import {
   withoutProviderTokens,
 } from './google';
 
-// Better Auth e a UNICA autoridade de sessao do TROQ: autentica email/senha e
+// Better Auth e a UNICA autoridade de sessao do TROQS: autentica email/senha e
 // Conta Google, cria a sessao, grava e le o cookie assinado e encerra a sessao
 // (docs/architecture/identity-contract.md, IC-5 e IC-15). O dominio so aplica
 // autorizacao depois, em `validateSession` (IC-8).
@@ -47,7 +47,7 @@ function isAppEnvironment(value: string | undefined): value is AppEnvironment {
 }
 
 /**
- * Resolve e valida o ambiente e a origem publica do TROQ (`APP_ENV` +
+ * Resolve e valida o ambiente e a origem publica do TROQS (`APP_ENV` +
  * `BETTER_AUTH_URL`), fail-closed (IC-12). E a unica regra de URL base: vale
  * para o Better Auth e para os links enviados por email (IC-12.3). Nao ha URL
  * de fallback; em `preview` e `production` so `https` fora de localhost.
@@ -144,7 +144,7 @@ function createAuth() {
       disableSignUp: true,
     },
     // `emailVerification` fica deliberadamente sem configuracao: a verificacao
-    // usa token do TROQ (IC-7.1), e o login de conta nao verificada responde
+    // usa token do TROQS (IC-7.1), e o login de conta nao verificada responde
     // EMAIL_NOT_VERIFIED sem enviar email nem criar sessao.
     socialProviders,
     // Erros de OAuth sem URL propria do fluxo (state ausente ou adulterado)
@@ -189,7 +189,7 @@ function createAuth() {
     },
     databaseHooks: {
       // O provedor nunca cria nem altera `users`: cadastro, e-mail e
-      // verificacao pertencem as Server Actions do TROQ (IC-6.1, IC-3.2).
+      // verificacao pertencem as Server Actions do TROQS (IC-6.1, IC-3.2).
       user: {
         create: {
           before: async () => {

@@ -78,7 +78,7 @@ Nenhum fato encontrado invalida a adoção de Prisma na linha 7.
 
 ## Decisão
 
-1. **ORM: Prisma ORM.** O TROQ adota Prisma como camada de acesso a dados. A alternativa C (sem ORM completo) é rejeitada porque não fecharia OD-09: transferiria a decisão para a escolha de um runner de migrations. A alternativa B é rejeitada nesta fase por D-7: a linha estável de Drizzle ainda é v0 e a v1 está em beta/RC com quebras acumuladas.
+1. **ORM: Prisma ORM.** O TROQS adota Prisma como camada de acesso a dados. A alternativa C (sem ORM completo) é rejeitada porque não fecharia OD-09: transferiria a decisão para a escolha de um runner de migrations. A alternativa B é rejeitada nesta fase por D-7: a linha estável de Drizzle ainda é v0 e a v1 está em beta/RC com quebras acumuladas.
 2. **Versionamento: linha 7.x estável.** A implementação deve usar uma versão estável da linha 7 (`7.10.0` ou a última estável 7.x disponível no momento em que a Fase 1 começar). **A linha 8 não é adotada agora**, por estar em release candidate e por trazer um novo workflow de migrations sem benefício concreto para o MVP.
 3. **Pinning obrigatório e reprodutível.** `prisma` e `@prisma/client` devem ser instalados com versão exata (sem `^`/`~`) e com lockfile versionado. **É proibido instalar por `@latest`**, porque na data desta decisão esse dist-tag resolve para um release candidate da linha 8.
 4. **Ferramenta de migrations: Prisma Migrate.** Nenhuma outra ferramenta de migrations será usada em paralelo.
@@ -110,7 +110,7 @@ Nenhum fato encontrado invalida a adoção de Prisma na linha 7.
 
 O passo de migration é um **job de deploy separado do build da aplicação**, executado antes de a nova versão receber tráfego, e serializado (uma execução por vez).
 
-A documentação oficial do Prisma para Vercel apresenta o atalho de embutir `prisma migrate deploy` no build command (`prisma generate && prisma migrate deploy && next build`). **O TROQ não adota esse atalho para produção.** Justificativa: o build da Vercel é acionado por deployment, inclusive em previews, pode ocorrer de forma concorrente e não oferece garantia de execução única e serializada por mudança de schema; acoplar a migration ao build torna difícil aprovar, auditar e reexecutar a migration independentemente. `prisma generate`, por não tocar o banco, permanece adequado ao build/`postinstall`.
+A documentação oficial do Prisma para Vercel apresenta o atalho de embutir `prisma migrate deploy` no build command (`prisma generate && prisma migrate deploy && next build`). **O TROQS não adota esse atalho para produção.** Justificativa: o build da Vercel é acionado por deployment, inclusive em previews, pode ocorrer de forma concorrente e não oferece garantia de execução única e serializada por mudança de schema; acoplar a migration ao build torna difícil aprovar, auditar e reexecutar a migration independentemente. `prisma generate`, por não tocar o banco, permanece adequado ao build/`postinstall`.
 
 Nenhum pipeline, workflow ou configuração de CI/CD é criado por esta ADR. A materialização do job de migration é trabalho da Fase 1.
 

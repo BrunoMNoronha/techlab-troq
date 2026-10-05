@@ -1,4 +1,4 @@
-# Elegibilidade etária — TROQ
+# Elegibilidade etária — TROQS
 
 Documento normativo que fecha [OD-11](../decisions/open-decisions.md) e registra DEC-034. Define a idade mínima do MVP e a forma de declaração.
 
@@ -6,11 +6,11 @@ Fontes: [mvp-scope.md](mvp-scope.md) (DEC-024, público-alvo), [requirements.md]
 
 ## 1. Decisão
 
-**O MVP do TROQ é destinado exclusivamente a pessoas com 18 anos completos ou mais.**
+**O MVP do TROQS é destinado exclusivamente a pessoas com 18 anos completos ou mais.**
 
 ## 2. Natureza desta decisão
 
-Esta é uma **decisão conservadora de escopo do TROQ para o MVP**. Ela existe para:
+Esta é uma **decisão conservadora de escopo do TROQS para o MVP**. Ela existe para:
 
 - reduzir complexidade regulatória;
 - evitar tratamento desnecessário de dados de crianças e adolescentes;

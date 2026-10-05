@@ -1,5 +1,5 @@
 // Adaptador do Mercado Pago (F3-004, #94). Interno ao modulo `payments`: so o
-// `index.ts` do modulo reexporta o que o dominio usa, em termos do TROQ
+// `index.ts` do modulo reexporta o que o dominio usa, em termos do TROQS
 // (ADR-0004, decisao 10; payments-design.md, PD-11.5).
 export {
   createMercadoPagoClient,

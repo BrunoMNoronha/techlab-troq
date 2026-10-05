@@ -49,7 +49,7 @@ describe('renderNotice', () => {
       contact_released: '/contatos',
       refund_concluded: `/explorar/${LISTING}`,
     }[notice.kind];
-    expect(r.subject).toMatch(/^TROQ: /);
+    expect(r.subject).toMatch(/^TROQS: /);
     expect(r.text).toContain(`${BASE}${expectedPath}`);
     expect(r.html).toContain(`href="${BASE}${expectedPath}"`);
     for (const body of [r.subject, r.text, r.html]) {

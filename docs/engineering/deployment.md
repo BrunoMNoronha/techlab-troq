@@ -1,4 +1,4 @@
-# Ambientes e publicação do TROQ
+# Ambientes e publicação do TROQS
 
 Configuração executada em 2026-10-04 por autorização do responsável. A infraestrutura não encerra os gates funcionais ou comerciais do MVP. O registro de execuções deve distinguir configuração, CI, publicação técnica e homologação.
 
@@ -107,7 +107,7 @@ Estado de configuração nesta entrega: Neon dos dois ambientes verificado; GitH
   - Domínio `troqs.app` na região `sa-east-1`, com DKIM (`resend._domainkey`), SPF (CNAMEs `send` e `rsend`) e DMARC `p=none` publicados na Cloudflare. O envio está verificado.
   - O recebimento ativado por padrão pelo provedor não é usado e ficou pendente, sem MX no apex.
   - API key `troq-production-sending`, com *Sending access* restrito a `troqs.app`.
-  - `EMAIL_FROM=TROQ <nao-responda@troqs.app>` na Vercel Production.
+  - `EMAIL_FROM=TROQS <nao-responda@troqs.app>` na Vercel Production.
 - **Mudança em development:** para liberar a vaga no plano do Resend, o domínio `dev.troqs.app` foi removido. O envio em development não funciona até haver novo remetente.
 - **Valores secretos:** `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` e `RESEND_API_KEY` são exibidos uma única vez pelo provedor. O responsável os cadastra diretamente na Vercel Production como *sensitive*.
 - **Pendências desta etapa histórica:** Mercado Pago e o par `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`. A configuração posterior e a release operacional estão em #135; o aceite específico de Google está em #133.

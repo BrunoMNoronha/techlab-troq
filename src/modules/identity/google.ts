@@ -6,7 +6,7 @@ import { getPrismaClient } from '@/persistence/prisma';
 // Entrada com Conta Google (#81; docs/architecture/identity-contract.md, IC-15).
 //
 // O Better Auth conduz o OAuth: state assinado e de uso unico, PKCE, troca do
-// codigo e leitura do id_token devolvido pelo Google. O TROQ decide o que essa
+// codigo e leitura do id_token devolvido pelo Google. O TROQS decide o que essa
 // identidade pode fazer:
 //
 // - identidade ja vinculada (`accounts.provider_id = 'google'` + `sub`) entra
@@ -15,7 +15,7 @@ import { getPrismaClient } from '@/persistence/prisma';
 //   guarda uma pendencia de cadastro de 15 minutos em `verifications` e manda o
 //   navegador para `/cadastro/google`, onde a pessoa declara 18+ e aceita os
 //   termos; so entao `completeGoogleSignup` cria a conta, numa transacao;
-// - e-mail que ja pertence a uma conta TROQ nao e vinculado por igualdade de
+// - e-mail que ja pertence a uma conta TROQS nao e vinculado por igualdade de
 //   e-mail: a vinculacao so acontece a partir de sessao autenticada (IC-15.4).
 
 export const GOOGLE_PROVIDER_ID = 'google';
@@ -210,7 +210,7 @@ type ValidateUserInfo = NonNullable<NonNullable<BetterAuthOptions['user']>['vali
  *   `google_signup_required`; o provedor redireciona para a URL de erro do
  *   fluxo, que leva a `/cadastro/google`.
  * - `create-user` por qualquer outro caminho: recusado. Usuarios so nascem
- *   pelas Server Actions do TROQ (IC-6.1).
+ *   pelas Server Actions do TROQS (IC-6.1).
  * - `sign-in` e `link-account`: permitidos; status da conta e decidido pelo
  *   hook de sessao e pelo guard, e a vinculacao pelas regras de IC-15.4.
  */
@@ -240,7 +240,7 @@ export const validateProviderIdentity: ValidateUserInfo = async ({ user, source 
 };
 
 /**
- * Tokens do provedor nunca sao guardados (IC-15.7): o TROQ nao chama APIs do
+ * Tokens do provedor nunca sao guardados (IC-15.7): o TROQS nao chama APIs do
  * Google depois da entrada. Aplicado na criacao e na atualizacao de `accounts`.
  */
 export function withoutProviderTokens<T extends { providerId?: string }>(account: T): T {

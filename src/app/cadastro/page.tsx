@@ -82,7 +82,7 @@ export default function CadastroPage() {
   return (
     <PageContainer width="narrow">
       <PageHeader
-        title="Criar conta no TROQ"
+        title="Criar conta no TROQS"
         description="Plataforma direta de anúncios entre pessoas."
       />
 

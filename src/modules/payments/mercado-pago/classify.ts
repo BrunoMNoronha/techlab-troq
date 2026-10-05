@@ -18,7 +18,7 @@ export type AuthoritativeState =
   | { kind: 'not_accredited_terminal'; outcome: 'expired' | 'canceled' | 'failed' }
   /**
    * Devolucao ou contestacao: a acreditacao deixou de valer (PD-9). `reason` e
-   * um codigo fechado do TROQ que diz qual estado a caracterizou (PE-11, tabela
+   * um codigo fechado do TROQS que diz qual estado a caracterizou (PE-11, tabela
    * de auditoria; F3-011): `order_refunded`, `order_charged_back`,
    * `processed_refunded` ou `processed_partially_refunded`.
    */
@@ -26,7 +26,7 @@ export type AuthoritativeState =
   /** Fora da lista, ausente ou contraditorio: nunca aprovado (PD-3.6). */
   | { kind: 'unknown'; reason: string };
 
-/** Fato de pagamento reportado pelo provedor, em termos do TROQ (PD-2.2). */
+/** Fato de pagamento reportado pelo provedor, em termos do TROQS (PD-2.2). */
 export interface ProviderPaymentFact {
   providerPaymentId: string;
   isPix: boolean;
@@ -80,7 +80,7 @@ const TERMINAL = new Map<string, 'expired' | 'canceled' | 'failed'>([
   ['canceled', 'canceled'],
   ['failed', 'failed'],
 ]);
-/** Codigo fechado do estado que caracterizou a reversao (vocabulario do TROQ). */
+/** Codigo fechado do estado que caracterizou a reversao (vocabulario do TROQS). */
 export type ReversalReason =
   'order_refunded' | 'order_charged_back' | 'processed_refunded' | 'processed_partially_refunded';
 
@@ -135,7 +135,7 @@ function paymentFact(payment: Raw): ProviderPaymentFact | null {
   };
 }
 
-/** Snapshot da order em termos do TROQ, ou `null` se nem o identificador existe. */
+/** Snapshot da order em termos do TROQS, ou `null` se nem o identificador existe. */
 export function toOrderSnapshot(order: unknown): OrderSnapshot | null {
   if (!isRaw(order)) return null;
   const id = str(order.id);

@@ -1,5 +1,5 @@
 /*
- * Design tokens do TROQ — fonte única de cor, tipografia, espaçamento, raio,
+ * Design tokens do TROQS — fonte única de cor, tipografia, espaçamento, raio,
  * sombra, camada, container, transição e foco (docs/engineering/design-system.md).
  *
  * Componentes consomem apenas os tokens semânticos (`--color-*`, `--space-*`,

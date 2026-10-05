@@ -8,7 +8,7 @@ import '@/styles/globals.css';
 import { LEGAL_CONTACT_EMAIL } from './_legal/legal-info';
 
 export const metadata: Metadata = {
-  title: 'TROQ',
+  title: 'TROQS',
   description:
     'Anúncios entre pessoas. O contato do anunciante só é liberado à pessoa escolhida, após solicitação paga de R$ 0,99.',
 };
@@ -43,7 +43,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body>
         <ToastProvider>
           <AppShell
-            brand="TROQ"
+            brand="TROQS"
             homeHref="/"
             desktopNav={DESKTOP_NAV}
             mobileNav={MOBILE_NAV}
@@ -51,7 +51,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             accountLink={{ href: '/conta', label: 'Conta' }}
             footer={
               <>
-                <span>TROQ — anúncios entre pessoas, com contato protegido.</span>
+                <span>TROQS — anúncios entre pessoas, com contato protegido.</span>
                 <TextLink href="/privacidade">Política de Privacidade</TextLink>
                 <TextLink href="/termos">Termos de Uso</TextLink>
                 <TextLink href="/politica/itens-proibidos">Itens proibidos</TextLink>

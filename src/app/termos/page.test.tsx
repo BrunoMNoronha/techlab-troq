@@ -24,10 +24,10 @@ describe('TermosPage', () => {
     );
   });
 
-  it('declara que o TROQ não é parte da troca e liga às políticas', () => {
+  it('declara que o TROQS não é parte da troca e liga às políticas', () => {
     render(<TermosPage />);
 
-    expect(screen.getByRole('region', { name: /O que é o TROQ/ })).toHaveTextContent(
+    expect(screen.getByRole('region', { name: /O que é o TROQS/ })).toHaveTextContent(
       /não é parte da troca/,
     );
     const article = screen.getByRole('article');
