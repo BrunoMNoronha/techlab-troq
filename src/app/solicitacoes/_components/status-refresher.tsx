@@ -2,6 +2,8 @@
 
 import { startTransition, useEffect, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import { Cluster } from '@/components/layout';
+import { Button, Text } from '@/components/ui';
 
 // Acompanhamento do estado da solicitacao (F3-012, #102). A confirmacao do Pix
 // chega ao TROQ pelo webhook ou pela reconciliacao (F3-006, F3-008), nunca por
@@ -39,30 +41,20 @@ export function StatusRefresher({
   }, [auto, router]);
 
   return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '12px' }}>
-      <button
-        type="button"
+    <Cluster gap={3}>
+      <Button
+        variant="outline"
+        iconStart="refresh"
         onClick={() => startManualTransition(() => router.refresh())}
-        disabled={pending}
-        aria-busy={pending}
-        style={{
-          padding: '8px 14px',
-          backgroundColor: 'white',
-          color: '#1d4ed8',
-          border: '1px solid #bfdbfe',
-          borderRadius: '6px',
-          fontWeight: 600,
-          fontSize: '14px',
-          cursor: pending ? 'progress' : 'pointer',
-        }}
+        loading={pending}
       >
         {pending ? 'Atualizando…' : label}
-      </button>
+      </Button>
       {auto && (
-        <span style={{ fontSize: '13px', color: '#4b5563' }}>
+        <Text as="span" size="small" tone="muted">
           Esta página se atualiza sozinha a cada 10 segundos.
-        </span>
+        </Text>
       )}
-    </div>
+    </Cluster>
   );
 }

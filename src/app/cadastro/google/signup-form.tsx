@@ -3,27 +3,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { useGoogleRedirect } from '@/app/_components/google-sign-in';
 import { cancelGoogleSignup, completeGoogleSignup } from '@/modules/identity/google-actions';
+import { Alert } from '@/components/feedback';
+import { Checkbox, Field, Form, FormActions, Input } from '@/components/forms';
+import { Stack } from '@/components/layout';
+import { Button, Text } from '@/components/ui';
 
 // Formulario da conclusao do cadastro com Google (IC-15.3). As caixas de 18+ e
 // de aceite dos termos comecam desmarcadas: o ato afirmativo e da pessoa, e o
 // servidor valida os dois de novo. A idade nunca e inferida pelo perfil Google.
-
-const inputStyle = {
-  width: '100%',
-  boxSizing: 'border-box' as const,
-  padding: '10px 12px',
-  border: '1px solid #d1d5db',
-  borderRadius: '6px',
-  fontSize: '16px',
-};
-
-const checkboxLabelStyle = {
-  display: 'flex',
-  alignItems: 'flex-start',
-  gap: '8px',
-  fontSize: '14px',
-  cursor: 'pointer',
-};
 
 export function GoogleSignupForm({ email, returnTo }: { email: string; returnTo?: string }) {
   const [displayName, setDisplayName] = useState('');
@@ -48,46 +35,22 @@ export function GoogleSignupForm({ email, returnTo }: { email: string; returnTo?
   }
 
   return (
-    <>
-      <p style={{ color: '#4b5563', fontSize: '14px', marginBottom: '16px' }}>
+    <Stack gap={6}>
+      <Text tone="muted" size="small">
         O Google confirmou o e-mail <strong>{email}</strong>. Para criar sua conta no TROQ, escolha
         como quer ser chamado(a) e confirme as declarações abaixo. Nenhuma conta é criada antes
         disso. Ao concluir, você passa pelo Google mais uma vez para entrar.
-      </p>
+      </Text>
 
       {error && (
-        <div
-          id="google-signup-error"
-          ref={errorRef}
-          tabIndex={-1}
-          role="alert"
-          style={{
-            padding: '12px 16px',
-            backgroundColor: '#fef2f2',
-            border: '1px solid #fecaca',
-            borderRadius: '6px',
-            color: '#991b1b',
-            marginBottom: '16px',
-            fontSize: '14px',
-          }}
-        >
+        <Alert id="google-signup-error" ref={errorRef} tabIndex={-1} role="alert" tone="error">
           {error}
-        </div>
+        </Alert>
       )}
 
-      <form
-        onSubmit={handleSubmit}
-        aria-describedby={error ? 'google-signup-error' : undefined}
-        style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}
-      >
-        <div>
-          <label
-            htmlFor="displayName"
-            style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '4px' }}
-          >
-            Nome de exibição
-          </label>
-          <input
+      <Form onSubmit={handleSubmit} aria-describedby={error ? 'google-signup-error' : undefined}>
+        <Field label="Nome de exibição" htmlFor="displayName">
+          <Input
             id="displayName"
             type="text"
             autoComplete="nickname"
@@ -95,77 +58,49 @@ export function GoogleSignupForm({ email, returnTo }: { email: string; returnTo?
             minLength={2}
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
-            style={inputStyle}
             placeholder="Como quer ser chamado(a)"
           />
-        </div>
+        </Field>
 
-        <label style={checkboxLabelStyle}>
-          <input
-            type="checkbox"
-            required
-            checked={over18}
-            onChange={(e) => setOver18(e.target.checked)}
-            style={{ marginTop: '2px' }}
-          />
-          <span>
-            Declaro ter <strong>18 anos de idade ou mais</strong>.
-          </span>
-        </label>
+        <Checkbox
+          required
+          checked={over18}
+          onChange={(e) => setOver18(e.target.checked)}
+          label={
+            <>
+              Declaro ter <strong>18 anos de idade ou mais</strong>.
+            </>
+          }
+        />
 
-        <label style={checkboxLabelStyle}>
-          <input
-            type="checkbox"
-            required
-            checked={termsAccepted}
-            onChange={(e) => setTermsAccepted(e.target.checked)}
-            style={{ marginTop: '2px' }}
-          />
-          <span>
-            Li e aceito os <strong>Termos de Uso e Política da Plataforma</strong>.
-          </span>
-        </label>
+        <Checkbox
+          required
+          checked={termsAccepted}
+          onChange={(e) => setTermsAccepted(e.target.checked)}
+          label={
+            <>
+              Li e aceito os <strong>Termos de Uso e Política da Plataforma</strong>.
+            </>
+          }
+        />
 
-        <button
-          type="submit"
-          disabled={busy}
-          aria-busy={complete.pending}
-          style={{
-            marginTop: '8px',
-            width: '100%',
-            padding: '12px',
-            backgroundColor: busy ? '#9ca3af' : '#2563eb',
-            color: 'white',
-            border: 'none',
-            borderRadius: '6px',
-            fontSize: '16px',
-            fontWeight: '600',
-            cursor: busy ? 'not-allowed' : 'pointer',
-          }}
-        >
-          {complete.pending ? 'Concluindo...' : 'Concluir cadastro'}
-        </button>
+        <FormActions>
+          <Button type="submit" disabled={busy} loading={complete.pending} fullWidth>
+            {complete.pending ? 'Concluindo...' : 'Concluir cadastro'}
+          </Button>
 
-        <button
-          type="button"
-          onClick={() => void cancel.run()}
-          disabled={busy}
-          aria-busy={cancel.pending}
-          style={{
-            width: '100%',
-            padding: '12px',
-            backgroundColor: 'white',
-            color: '#374151',
-            border: '1px solid #d1d5db',
-            borderRadius: '6px',
-            fontSize: '16px',
-            fontWeight: '600',
-            cursor: busy ? 'not-allowed' : 'pointer',
-          }}
-        >
-          {cancel.pending ? 'Cancelando...' : 'Cancelar e não criar conta'}
-        </button>
-      </form>
-    </>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => void cancel.run()}
+            disabled={busy}
+            loading={cancel.pending}
+            fullWidth
+          >
+            {cancel.pending ? 'Cancelando...' : 'Cancelar e não criar conta'}
+          </Button>
+        </FormActions>
+      </Form>
+    </Stack>
   );
 }

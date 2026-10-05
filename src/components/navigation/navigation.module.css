@@ -1,0 +1,157 @@
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: var(--space-1);
+  min-height: var(--control-height);
+  margin-block: calc(var(--space-2) * -1);
+  color: var(--color-link);
+  font-size: var(--text-body-small);
+  font-weight: var(--font-weight-semibold);
+  text-decoration: none;
+}
+
+.backLink:hover {
+  color: var(--color-link-hover);
+  text-decoration: underline;
+}
+
+.breadcrumb > ol {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+  list-style: none;
+  color: var(--color-text-muted);
+  font-size: var(--text-body-small);
+}
+
+.breadcrumb li {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.breadcrumb a {
+  color: var(--color-text-muted);
+  text-decoration: none;
+}
+
+.breadcrumb a:hover {
+  color: var(--color-link-hover);
+  text-decoration: underline;
+}
+
+.breadcrumb [aria-current='page'] {
+  color: var(--color-text);
+  font-weight: var(--font-weight-semibold);
+  overflow-wrap: anywhere;
+}
+
+.stepper {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  list-style: none;
+  font-size: var(--text-body-small);
+}
+
+.step {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3) var(--space-1) var(--space-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  background-color: var(--color-surface);
+  color: var(--color-text-muted);
+}
+
+.stepMarker {
+  display: grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: var(--radius-full);
+  background-color: var(--color-surface-muted);
+  font-size: var(--text-caption);
+  font-weight: var(--font-weight-semibold);
+}
+
+.stepDone {
+  border-color: var(--color-success-border);
+  background-color: var(--color-success-soft);
+  color: var(--color-success-text);
+}
+
+.stepDone .stepMarker {
+  background-color: var(--color-success);
+  color: var(--color-on-primary);
+}
+
+.stepCurrent {
+  border-color: var(--color-primary);
+  background-color: var(--color-primary-soft);
+  color: var(--color-primary-active);
+  font-weight: var(--font-weight-semibold);
+}
+
+.stepCurrent .stepMarker {
+  background-color: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+}
+
+.paginationStatus {
+  color: var(--color-text-muted);
+  font-size: var(--text-body-small);
+}
+
+.tabList {
+  display: flex;
+  gap: var(--space-1);
+  overflow-x: auto;
+  border-bottom: 1px solid var(--color-border);
+  scrollbar-width: none;
+}
+
+.tab {
+  flex-shrink: 0;
+  min-height: var(--control-height);
+  margin-bottom: -1px;
+  padding: 0 var(--space-3);
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: var(--text-body-small);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: var(--transition-control);
+}
+
+.tab:hover {
+  color: var(--color-text);
+}
+
+.tab[aria-selected='true'] {
+  border-bottom-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.tab:focus-visible {
+  outline-offset: -2px;
+}
+
+.tabPanel {
+  padding-top: var(--space-4);
+}
