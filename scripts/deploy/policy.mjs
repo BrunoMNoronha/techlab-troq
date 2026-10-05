@@ -24,6 +24,8 @@ export const RUNTIME_KEYS = [
   'NEXT_PUBLIC_SENTRY_DSN',
 ];
 
+const GOOGLE_KEYS = ['GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET'];
+
 export function requireEnvironmentMetadata(envs, target) {
   const scoped = new Map();
   for (const env of envs.filter((item) => item.target?.includes(target) && !item.gitBranch)) {
@@ -38,6 +40,7 @@ export function requireEnvironmentMetadata(envs, target) {
   }
   const keys = [
     ...RUNTIME_KEYS,
+    ...(target === 'preview' || target === 'production' ? GOOGLE_KEYS : []),
     ...(target === 'production'
       ? ['MERCADO_PAGO_ACCESS_TOKEN', 'MERCADO_PAGO_WEBHOOK_SECRET', 'MERCADO_PAGO_APPLICATION_ID']
       : []),
@@ -73,8 +76,10 @@ export function requireEnvironmentMetadata(envs, target) {
     }
   }
   if (scoped.has('DIRECT_URL')) throw new Error('DIRECT_URL não deve estar na Vercel.');
-  if (scoped.has('GOOGLE_CLIENT_ID') !== scoped.has('GOOGLE_CLIENT_SECRET')) {
-    throw new Error('Cliente Google parcialmente configurado.');
+  if (target === 'preview' || target === 'production') {
+    if (!scoped.has('GOOGLE_CLIENT_ID') || !scoped.has('GOOGLE_CLIENT_SECRET')) {
+      throw new Error('Cliente Google ausente ou incompleto.');
+    }
   }
 }
 

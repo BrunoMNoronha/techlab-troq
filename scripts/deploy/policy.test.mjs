@@ -14,6 +14,50 @@ import {
 } from './policy.mjs';
 
 const sha = 'a'.repeat(40);
+const GOOGLE_CLIENT_ID = 'cliente.apps.googleusercontent.com';
+const GOOGLE_CLIENT_SECRET = 'segredo-sintetico-do-google';
+const SENSITIVE_KEYS = new Set([
+  'DATABASE_URL',
+  'BETTER_AUTH_SECRET',
+  'R2_ACCESS_KEY_ID',
+  'R2_SECRET_ACCESS_KEY',
+  'RESEND_API_KEY',
+  'CRON_SECRET',
+  'GOOGLE_CLIENT_SECRET',
+  'MERCADO_PAGO_ACCESS_TOKEN',
+  'MERCADO_PAGO_WEBHOOK_SECRET',
+]);
+
+const previewValues = {
+  APP_ENV: 'preview',
+  DATABASE_URL: 'postgresql://user:pass@ep-preview-pooler.aws.neon.tech/troq',
+  BETTER_AUTH_SECRET: 'segredo-sintetico-do-better-auth',
+  BETTER_AUTH_URL: PREVIEW_URL,
+  NEXT_PUBLIC_APP_URL: PREVIEW_URL,
+  R2_S3_ENDPOINT: 'https://example.r2.test',
+  R2_REGION: 'auto',
+  R2_BUCKET: 'troq-media-preview',
+  R2_ACCESS_KEY_ID: 'acesso-sintetico',
+  R2_SECRET_ACCESS_KEY: 'segredo-sintetico-r2',
+  RESEND_API_KEY: 'resend-sintetico',
+  EMAIL_FROM: 'TROQ <no-reply@troqs.test>',
+  CRON_SECRET: 'cron-sintetico',
+  NEXT_PUBLIC_SENTRY_DSN: 'https://public.example.com/1',
+  GOOGLE_CLIENT_ID,
+  GOOGLE_CLIENT_SECRET,
+};
+
+const productionValues = {
+  ...previewValues,
+  APP_ENV: 'production',
+  BETTER_AUTH_URL: 'https://troqs.app',
+  NEXT_PUBLIC_APP_URL: 'https://troqs.app',
+  R2_BUCKET: 'troq-media-production',
+  EMAIL_FROM: 'TROQ <no-reply@troqs.app>',
+  MERCADO_PAGO_ACCESS_TOKEN: 'mercado-pago-token',
+  MERCADO_PAGO_WEBHOOK_SECRET: 'mercado-pago-webhook',
+  MERCADO_PAGO_APPLICATION_ID: '1234567890',
+};
 function run(overrides = {}) {
   return {
     id: 123,
@@ -123,16 +167,11 @@ test('conexões direta e pooled devem identificar o mesmo banco', () => {
   assert.throws(() => requireDirectConnection(direct, pooled.replace('/troq?', '/another?')));
 });
 test('preflight não precisa recuperar secrets sensíveis e respeita overrides da branch', () => {
-  const publicValues = {
-    APP_ENV: 'preview',
-    BETTER_AUTH_URL: PREVIEW_URL,
-    NEXT_PUBLIC_APP_URL: PREVIEW_URL,
-  };
-  const envs = RUNTIME_KEYS.map((key) => ({
+  const envs = [...RUNTIME_KEYS, 'GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET'].map((key) => ({
     key,
     target: ['preview'],
-    type: key in publicValues ? 'plain' : 'sensitive',
-    value: publicValues[key],
+    type: SENSITIVE_KEYS.has(key) ? 'sensitive' : 'plain',
+    value: previewValues[key],
   }));
   assert.doesNotThrow(() => requireEnvironmentMetadata(envs, 'preview'));
   assert.throws(() =>
@@ -164,8 +203,47 @@ test('preflight não precisa recuperar secrets sensíveis e respeita overrides d
   );
   assert.throws(() =>
     requireEnvironmentMetadata(
-      [...envs, { key: 'GOOGLE_CLIENT_ID', target: ['preview'], type: 'plain', value: 'example' }],
+      envs.filter((entry) => entry.key !== 'GOOGLE_CLIENT_SECRET'),
       'preview',
+    ),
+  );
+  assert.throws(() =>
+    requireEnvironmentMetadata(
+      envs.filter((entry) => entry.key !== 'GOOGLE_CLIENT_ID'),
+      'preview',
+    ),
+  );
+  const productionEnvs = [...RUNTIME_KEYS, 'GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET'].map(
+    (key) => ({
+      key,
+      target: ['production'],
+      type: SENSITIVE_KEYS.has(key) ? 'sensitive' : 'plain',
+      value: productionValues[key],
+    }),
+  );
+  productionEnvs.push(
+    ...[
+      { key: 'MERCADO_PAGO_ACCESS_TOKEN', value: productionValues.MERCADO_PAGO_ACCESS_TOKEN },
+      { key: 'MERCADO_PAGO_WEBHOOK_SECRET', value: productionValues.MERCADO_PAGO_WEBHOOK_SECRET },
+      { key: 'MERCADO_PAGO_APPLICATION_ID', value: productionValues.MERCADO_PAGO_APPLICATION_ID },
+    ].map((entry) => ({
+      key: entry.key,
+      target: ['production'],
+      type: SENSITIVE_KEYS.has(entry.key) ? 'sensitive' : 'plain',
+      value: entry.value,
+    })),
+  );
+  assert.doesNotThrow(() => requireEnvironmentMetadata(productionEnvs, 'production'));
+  assert.throws(() =>
+    requireEnvironmentMetadata(
+      productionEnvs.filter((entry) => entry.key !== 'GOOGLE_CLIENT_ID'),
+      'production',
+    ),
+  );
+  assert.throws(() =>
+    requireEnvironmentMetadata(
+      productionEnvs.filter((entry) => entry.key !== 'GOOGLE_CLIENT_SECRET'),
+      'production',
     ),
   );
 });
