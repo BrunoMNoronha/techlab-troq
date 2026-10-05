@@ -5,7 +5,7 @@ Catálogo inicial de requisitos rastreáveis do MVP. Contém **apenas** requisit
 ## Convenções
 
 - `RF-xxx`: requisito funcional. `RNF-xxx`: requisito não funcional.
-- **Prioridade MVP:** `obrigatória` (faz parte do núcleo do MVP) ou `direcionamento` (orienta a implementação, sem gate próprio de aceite no MVP).
+- **Prioridade MVP:** `obrigatória` (faz parte do núcleo do MVP) ou `direcionamento` (orienta a implementação, sem gate próprio de aceite no MVP). Os requisitos da regra proposta de troca usam `frente proposta de troca`: são obrigatórios para um ambiente operar essa regra e ficam fora do núcleo exigido para o lançamento comercial (DEC-054).
 - **Status permitidos nesta fase:**
   - `definido`: descrição e critério de aceite suficientes para orientar design e implementação;
   - `parcialmente definido`: núcleo definido, mas há lacunas apontadas para uma decisão aberta;
@@ -23,10 +23,11 @@ Catálogo inicial de requisitos rastreáveis do MVP. Contém **apenas** requisit
 | Escolha e contato | RF-013 a RF-015 | 3 | 0 | 0 |
 | Encerramento e avaliações | RF-016, RF-017 | 2 | 0 | 0 |
 | Denúncia e moderação | RF-018 a RF-020 | 3 | 0 | 0 |
+| Proposta de troca (regra `trade_proposal`) | RF-024 a RF-030 | 5 | 2 | 0 |
 | Transversais | RF-021, RF-022 | 1 | 1 | 0 |
-| Não funcionais | RNF-001 a RNF-018 | 12 | 6 | 0 |
+| Não funcionais | RNF-001 a RNF-019 | 13 | 6 | 0 |
 
-Nenhum requisito permanece `bloqueado` e **não há mais decisão aberta**. OD-08 foi fechada por [../adr/0004-mercado-pago-pix.md](../adr/0004-mercado-pago-pix.md) (DEC-036), que homologou o gateway Pix, e OD-07 — a última — foi fechada por [payment-exceptions.md](payment-exceptions.md) (DEC-037), que definiu as exceções de pagamento e levou RF-009, RF-010, RF-011, RF-012 e RF-022 a `definido`. Os requisitos que permanecem `parcialmente definido` dependem apenas de trabalho de design ou de métrica a fixar no gate correspondente: RF-021 (catálogo de emails) e os não funcionais sem métrica homologada. **RF-004 deixou de estar entre eles em 2026-09-29:** F2-005 ([#43](https://github.com/BrunoMNoronha/techlab-troq/issues/43)) reconciliou [../architecture/listing-contract.md](../architecture/listing-contract.md), que adota explicitamente o conjunto mínimo já homologado de campos — título, descrição, imagens e cidade/UF —, sem campo adicional e sem regra ou decisão nova. **RNF-018 deixou de estar entre eles em 2026-09-15:** [../adr/0007-observability-sentry.md](../adr/0007-observability-sentry.md) (DEC-039) definiu a ferramenta de observabilidade e o seu escopo, e o requisito passou a `definido` — o que é definição, e **não** implementação.
+Nenhum requisito permanece `bloqueado`. Há duas decisões abertas desde 2026-10-05, OD-17 e OD-18, ambas da regra proposta de troca: elas mantêm RF-026 e RF-030 em `parcialmente definido` e **não** afetam nenhum requisito da solicitação paga. Antes delas não havia decisão aberta: OD-08 foi fechada por [../adr/0004-mercado-pago-pix.md](../adr/0004-mercado-pago-pix.md) (DEC-036), que homologou o gateway Pix, e OD-07 — a última — foi fechada por [payment-exceptions.md](payment-exceptions.md) (DEC-037), que definiu as exceções de pagamento e levou RF-009, RF-010, RF-011, RF-012 e RF-022 a `definido`. Os requisitos que permanecem `parcialmente definido` dependem apenas de trabalho de design ou de métrica a fixar no gate correspondente: RF-021 (catálogo de emails) e os não funcionais sem métrica homologada. **RF-004 deixou de estar entre eles em 2026-09-29:** F2-005 ([#43](https://github.com/BrunoMNoronha/techlab-troq/issues/43)) reconciliou [../architecture/listing-contract.md](../architecture/listing-contract.md), que adota explicitamente o conjunto mínimo já homologado de campos — título, descrição, imagens e cidade/UF —, sem campo adicional e sem regra ou decisão nova. **RNF-018 deixou de estar entre eles em 2026-09-15:** [../adr/0007-observability-sentry.md](../adr/0007-observability-sentry.md) (DEC-039) definiu a ferramenta de observabilidade e o seu escopo, e o requisito passou a `definido` — o que é definição, e **não** implementação.
 
 ## Requisitos funcionais
 
@@ -119,6 +120,8 @@ Nenhum requisito permanece `bloqueado` e **não há mais decisão aberta**. OD-0
 
 ### Solicitações e pagamentos
 
+_Escopo (DEC-052)._ RF-008 a RF-011 descrevem a regra de troca **solicitação paga**. RF-012 vale para as duas regras. Na proposta de troca, os equivalentes são RF-024 a RF-026.
+
 #### RF-008 — Demonstração de interesse
 
 - **Descrição:** o interessado indica interesse em um anúncio; a ação é gratuita, de interface, e inicia o fluxo da solicitação paga de desbloqueio, sem constituir entidade persistida independente ([interest-flow.md](interest-flow.md), DEC-035).
@@ -171,6 +174,8 @@ Nenhum requisito permanece `bloqueado` e **não há mais decisão aberta**. OD-0
 
 ### Escolha e contato
 
+_Escopo (DEC-052)._ RF-013 e RF-015 descrevem a regra de troca **solicitação paga**. RF-014 vale para as duas regras e, na proposta de troca, protege o contato das duas partes. Os equivalentes da proposta de troca são RF-025 e RF-027.
+
 #### RF-013 — Escolha do solicitante pelo anunciante
 
 - **Descrição:** o anunciante escolhe uma solicitação entre as solicitações pagas do seu anúncio.
@@ -202,6 +207,8 @@ Nenhum requisito permanece `bloqueado` e **não há mais decisão aberta**. OD-0
 - **Status:** definido. A forma de apresentação do contato ao escolhido é detalhe de implementação.
 
 ### Encerramento e avaliações
+
+_Escopo (DEC-052)._ RF-016 descreve o encerramento na regra de troca **solicitação paga**. RF-017 vale para as duas regras. Na proposta de troca, o encerramento é o de RF-029.
 
 #### RF-016 — Encerramento da negociação
 
@@ -254,6 +261,80 @@ Nenhum requisito permanece `bloqueado` e **não há mais decisão aberta**. OD-0
 - **Decisão aberta relacionada:** — (OD-07 foi fechada por [payment-exceptions.md](payment-exceptions.md), DEC-037, que confirma não haver reembolso pela remoção do anúncio). OD-10 foi fechada por [data-retention-policy.md](data-retention-policy.md) (DEC-033), que define a retenção e o expurgo dos dados e derivados de imagem do anúncio removido. OD-03 foi fechada por [prohibited-items.md](prohibited-items.md) (DEC-031), que define o catálogo e os critérios. Os efeitos do estado sobre as solicitações estão definidos em [listing-lifecycle.md](listing-lifecycle.md); os efeitos sobre as imagens estão definidos em [image-policy.md](image-policy.md) (DEC-028), que fechou OD-05.
 - **Critério de aceite (alto nível):** a remoção ocorre quando, e somente quando, uma denúncia é decidida como `procedente`, a moderação conclui de ofício que o anúncio viola [prohibited-items.md](prohibited-items.md), ou há dúvida material razoável em categoria de alto risco; nota baixa, discordância entre usuários, negociação malsucedida, denúncia improcedente, denúncia não analisada, suspeita fraca fora de alto risco e bloqueio preventivo na publicação não geram remoção; a classificação usa o catálogo por categorias PI-01 a PI-12, com distinção registrada entre item ilegal, item externamente regulado e item proibido por decisão de produto, e a ausência de um item na lista não o torna permitido; o anúncio vai para `removed`, estado terminal, e não volta a ser público, deixando imediatamente de ser servido em qualquer superfície pública, inclusive caches, junto com suas imagens conforme [image-policy.md](image-policy.md); os dados do anúncio, o motivo, o moderador e o instante são preservados para auditoria e para o direito de contestação; não há interesse persistido a preservar, por não ser entidade ([interest-flow.md](interest-flow.md), DEC-035), e solicitações não pagas são encerradas sem cobrança com liberação da vaga reservada; solicitações pagas existentes são preservadas e a cobrança permanece definitiva (RB-004), sem qualquer reembolso, estorno, crédito ou compensação criado por esta remoção, e o tratamento financeiro de exceção segue [payment-exceptions.md](payment-exceptions.md) (DEC-037), que não cria reembolso nesta hipótese; o limite de RB-003 não é reiniciado nem devolvido; a liberação de contato já autorizada não é revogada e nenhuma nova escolha ou liberação é autorizada; a negociação existente permanece inalterada e seu encerramento continua exclusivo das partes (DEC-029); republicar conteúdo substancialmente equivalente ao removido é nova violação, salvo autorização expressa decorrente de contestação `revista`; a remoção é auditada com ator, alvo, instante, ação, motivo/categoria e resultado (RF-022).
 - **Status:** definido. Os critérios e o catálogo estão em [prohibited-items.md](prohibited-items.md), a retenção/expurgo em [data-retention-policy.md](data-retention-policy.md) (DEC-033) e o tratamento financeiro de exceção em [payment-exceptions.md](payment-exceptions.md) (DEC-037), que confirma a ausência de reembolso pela remoção.
+
+### Proposta de troca (regra `trade_proposal`)
+
+Requisitos da segunda regra de troca cadastrada ([trade-proposal.md](trade-proposal.md), DEC-053). Nenhum deles altera os requisitos da solicitação paga. São contrato sem implementação: a entrega está em [../delivery/trade-proposal-plan.md](../delivery/trade-proposal-plan.md).
+
+#### RF-024 — Proposta de troca
+
+- **Descrição:** quem tem anúncio publicado propõe um anúncio seu por um anúncio de outra pessoa, de graça e sem texto livre; o anunciante recusa ou aceita, e o proponente pode retirar a proposta.
+- **Prioridade MVP:** frente proposta de troca.
+- **Origem:** [trade-proposal.md](trade-proposal.md), seções 3 a 5; decisões 5 a 7, 9 e 22 de [#185](https://github.com/BrunoMNoronha/techlab-troq/issues/185).
+- **Regra de negócio relacionada:** RB-007, RB-008.
+- **Decisão aberta relacionada:** —
+- **Critério de aceite (alto nível):** só propõe quem tem anúncio `published`, sessão com email verificado, conta ativa e contato cadastrado; há no máximo 3 propostas abertas por anúncio alvo, 3 por anúncio oferecido e uma por conta em cada alvo, garantidas no banco e sob concorrência; a proposta sem resposta vale 7 dias; antes do pagamento, o anunciante vê só o anúncio oferecido e a reputação de quem propõe; propor é recusado quando o ambiente não opera esta regra (RNF-019); cada efeito é auditado (RF-022).
+- **Status:** definido.
+
+#### RF-025 — Aceite, revogação e desistência
+
+- **Descrição:** o anunciante aceita uma proposta pendente; o aceite abre o prazo de pagamento e tira os dois anúncios do feed. Antes do pagamento, o anunciante pode revogar o aceite e o proponente pode desistir.
+- **Prioridade MVP:** frente proposta de troca.
+- **Origem:** [trade-proposal.md](trade-proposal.md), seções 6 e 8; decisões 8, 13, 14, 16, 23 e 24 de #185.
+- **Regra de negócio relacionada:** RB-008, RB-009.
+- **Decisão aberta relacionada:** —
+- **Critério de aceite (alto nível):** só o dono do anúncio alvo aceita; cada anúncio tem no máximo um compromisso por vez; as outras propostas dos mesmos anúncios ficam congeladas e só caem quando o pagamento confirma; revogar encerra a proposta como recusada, sem bloqueio; aceite não pago no prazo e desistência depois do aceite impedem nova proposta da mesma conta àquele anúncio; todo fim de aceite sem pagamento devolve a vaga e os dois anúncios ao feed; cada efeito é auditado (RF-022).
+- **Status:** definido.
+
+#### RF-026 — Pagamento da proposta aceita
+
+- **Descrição:** o proponente paga via Pix, em até 24 horas do aceite; a cobrança é definitiva.
+- **Prioridade MVP:** frente proposta de troca.
+- **Origem:** [trade-proposal.md](trade-proposal.md), seção 7; decisões 11, 12 e 15 de #185; [payment-exceptions.md](payment-exceptions.md) (DEC-037); [../adr/0009-trade-rules-environment-selector.md](../adr/0009-trade-rules-environment-selector.md), decisão 13.
+- **Regra de negócio relacionada:** RB-009.
+- **Decisão aberta relacionada:** OD-17 (preço final).
+- **Critério de aceite (alto nível):** só o proponente paga; o valor cobrado é o gravado na proposta e é mostrado antes de propor; a tempestividade usa o instante de acreditação; pagamento acreditado depois do prazo, sem aceite vigente ou em duplicidade vai a reembolso técnico integral; não há reembolso por "Não deu certo"; o estado autoritativo é o do provedor e estado incerto não concede direito; valem RF-012 e as exceções de DEC-037.
+- **Status:** parcialmente definido — falta o preço final (OD-17). R$ 2,99 é o candidato.
+
+#### RF-027 — Liberação de contato nos dois sentidos
+
+- **Descrição:** com o pagamento aprovado no prazo, cada parte da proposta recebe o contato da outra.
+- **Prioridade MVP:** frente proposta de troca.
+- **Origem:** [trade-proposal.md](trade-proposal.md), seção 9; DEC-023.
+- **Regra de negócio relacionada:** RB-010.
+- **Decisão aberta relacionada:** —
+- **Critério de aceite (alto nível):** as duas autorizações nascem no mesmo ato que confirma o pagamento e cria a negociação; cada entrega é autorizada no servidor e auditada; nenhuma parte recebe contato antes do pagamento aprovado e ninguém além das duas partes recebe; a liberação concedida nunca é revogada; RF-014 vale para os dois contatos.
+- **Status:** definido.
+
+#### RF-028 — Anúncio fora do feed durante a troca
+
+- **Descrição:** do aceite ao desfecho, os dois anúncios ficam fora do feed, sem mudar de estado; o link direto continua abrindo, com aviso.
+- **Prioridade MVP:** frente proposta de troca.
+- **Origem:** [trade-proposal.md](trade-proposal.md), seção 8; decisões 10 e 16 de #185; [listing-lifecycle.md](listing-lifecycle.md) (DEC-027).
+- **Regra de negócio relacionada:** —
+- **Decisão aberta relacionada:** —
+- **Critério de aceite (alto nível):** anúncio com compromisso não aparece em listagem, busca nem vitrine e não entra em fluxo novo de nenhuma regra de troca; ele continua `published`, sem estado novo; pausar não derruba propostas; a edição é recusada nos dois anúncios enquanto houver compromisso; o anúncio volta ao feed em todo fim sem troca.
+- **Status:** definido.
+
+#### RF-029 — Desfecho da negociação por declaração
+
+- **Descrição:** cada parte declara "Trocamos" ou "Não deu certo"; a primeira declaração encerra a negociação.
+- **Prioridade MVP:** frente proposta de troca.
+- **Origem:** [trade-proposal.md](trade-proposal.md), seções 10 e 11; decisões 17 e 18 de #185; [negotiation-lifecycle.md](negotiation-lifecycle.md) (DEC-029); [ratings.md](ratings.md) (DEC-030).
+- **Regra de negócio relacionada:** RB-002.
+- **Decisão aberta relacionada:** —
+- **Critério de aceite (alto nível):** só as duas partes declaram; o encerramento é unilateral, imediato e irreversível; "Não deu certo" devolve os dois anúncios ao feed; "Trocamos" encerra o anúncio de quem declarou e mantém o da outra parte fora do feed até ela responder; nenhum desfecho gera reembolso nem revoga contato; a avaliação (RF-017) é permitida nos dois desfechos, só depois do encerramento; cada declaração é auditada (RF-022).
+- **Status:** definido.
+
+#### RF-030 — Termos e consentimento por regra de troca
+
+- **Descrição:** cada regra de troca tem o seu texto de Termos e de Privacidade, e o consentimento da proposta de troca é gravado no próprio fluxo.
+- **Prioridade MVP:** frente proposta de troca.
+- **Origem:** [trade-proposal.md](trade-proposal.md), seção 13; decisão 19 de #185.
+- **Regra de negócio relacionada:** —
+- **Decisão aberta relacionada:** OD-18.
+- **Critério de aceite (alto nível):** os textos públicos correspondem à regra do ambiente; a versão aceita fica gravada ao propor e ao aceitar; não há reaceite geral dos Termos por causa da troca de regra.
+- **Status:** parcialmente definido — a forma final do consentimento e o aviso prévio de troca de regra dependem de OD-18 e da revisão jurídica de [#173](https://github.com/BrunoMNoronha/techlab-troq/issues/173).
 
 ### Transversais
 
@@ -426,16 +507,28 @@ Nenhum requisito permanece `bloqueado` e **não há mais decisão aberta**. OD-0
 - **Critério de aceite (alto nível):** ferramenta e escopo definidos — **Sentry SaaS**, com um projeto e um DSN por ambiente, cobrindo erro não tratado de browser e de servidor, logs estruturados, tracing de diagnóstico e os sinais mínimos de [../architecture/overview.md](../architecture/overview.md) (AR-14.3), com Session Replay fora do MVP; logs e telemetria não contêm telefone/WhatsApp, dado protegido nem segredos (AR-14.4); a observabilidade não substitui a auditoria (AR-14.2).
 - **Status:** definido — por [../adr/0007-observability-sentry.md](../adr/0007-observability-sentry.md) (DEC-039), que fechou a lacuna de ferramenta e escopo que AR-14.1 atribuía à Fase 1. **`definido` é definição do requisito, não implementação:** nenhum projeto Sentry foi provisionado, nenhum SDK está instalado, nenhuma telemetria é emitida e o entregável **E-7** da Fase 1 permanece `não iniciado` ([../delivery/backlog.md](../delivery/backlog.md)). O contrato de variáveis está em [../engineering/environments.md](../engineering/environments.md), seção 5.8.
 
+#### RNF-019 — Seletor da regra de troca por ambiente
+
+- **Descrição:** a regra dos fluxos novos de cada ambiente é a da variável server-side `TRADE_RULE`, e cada fluxo termina na regra em que nasceu.
+- **Prioridade MVP:** frente proposta de troca.
+- **Origem:** [../adr/0009-trade-rules-environment-selector.md](../adr/0009-trade-rules-environment-selector.md) (DEC-052); decisões 1 a 3 de [#185](https://github.com/BrunoMNoronha/techlab-troq/issues/185).
+- **Critério de aceite (alto nível):** conjunto fechado de valores; leitura em runtime num ponto único, de modo que o mesmo build serve as duas regras; falha fechada — com a variável ausente ou inválida, nenhum fluxo novo nasce em nenhuma regra; só o nascimento dos fluxos e a apresentação leem o seletor; trocar a variável não migra nem cancela fluxo em andamento; o preflight de deploy valida a variável.
+- **Status:** definido. **`definido` é definição do requisito, não implementação:** a variável não existe em ambiente nenhum e nenhum código a lê até PT-02 ([#188](https://github.com/BrunoMNoronha/techlab-troq/issues/188)).
+
 ## Rastreabilidade por regra de negócio
 
 | Regra | Requisitos |
 | --- | --- |
 | RB-001 | RF-005, RF-012, RF-013, RF-014, RF-015, RF-022, RF-023 |
-| RB-002 | RF-016, RF-017, RF-022 |
+| RB-002 | RF-016, RF-017, RF-022, RF-029 |
 | RB-003 | RF-008, RF-009, RF-010, RF-012, RF-013, RF-022 |
 | RB-004 | RF-009, RF-011, RF-022 |
 | RB-005 | RF-004, RF-005, RF-007, RNF-008 |
 | RB-006 | RF-004, RF-006, RF-018, RF-019, RF-020, RF-021, RF-022 |
+| RB-007 | RF-024, RF-022 |
+| RB-008 | RF-024, RF-025 |
+| RB-009 | RF-025, RF-026, RF-022 |
+| RB-010 | RF-014, RF-027, RF-022 |
 
 ## Rastreabilidade por decisão aberta
 
@@ -453,3 +546,5 @@ Nenhum requisito permanece `bloqueado` e **não há mais decisão aberta**. OD-0
 | OD-10 | fechada por [data-retention-policy.md](data-retention-policy.md) (DEC-033); define retenção por categoria, exclusão de conta com efeito imediato e prazo de 30 dias, expurgo de imagens, 6 meses de log de acesso, 24 meses de auditoria e de registros de moderação e abuso, 5 anos de metadados financeiros, backups limitados ao ciclo normal com máximo de 30 dias adicionais e legal hold registrado; deixa de bloquear RF-023 e RF-006, que passam a `definido`, leva RNF-009 e RNF-011 a `definido` e sai de RF-020 e de RF-022 |
 | OD-11 | fechada por [age-eligibility.md](age-eligibility.md) (DEC-034); define 18 anos completos ou mais como decisão de escopo do produto, declaração explícita registrada no cadastro, ausência de coleta documental ou biométrica para comprovação etária e bloqueio cautelar diante de evidência razoável de menoridade; deixa de bloquear RF-001, que passa a `definido`, e sai de RNF-009 |
 | OD-12 | fechada por [interest-flow.md](interest-flow.md) (DEC-035); define a demonstração de interesse como ação gratuita de interface, sem entidade persistida, sem cancelamento e sem visibilidade ao anunciante, admitindo apenas telemetria agregada de funil; deixa de bloquear RF-008, que passa a `definido` |
+| OD-17 | **aberta** desde 2026-10-05 ([../decisions/open-decisions.md](../decisions/open-decisions.md)); preço final da cobrança na proposta de troca; mantém RF-026 em `parcialmente definido` |
+| OD-18 | **aberta** desde 2026-10-05 ([../decisions/open-decisions.md](../decisions/open-decisions.md)); aviso prévio de troca de regra e forma final do consentimento; mantém RF-030 em `parcialmente definido` |
