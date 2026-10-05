@@ -1,5 +1,7 @@
 # Spike F0-010 — Mercado Pago, Pix e cobrança de exatamente R$ 0,99
 
+> **Nota posterior — 2026-10-05 (DEC-052).** As execuções e provas de 2026-09-14 abaixo são preservadas integralmente como registro histórico. A [atualização de ADR-0004](../../adr/0004-mercado-pago-pix.md) registra a divergência atual entre o SDK oficial Node 3.6.1, que preserva a caixa de `data.id` no manifesto, e a receita oficial “Sem SDKs”, que ainda exige minúsculas. Por decisão técnica explicitamente autorizada pelo orquestrador desta execução, a implementação atual usa um único perfil com a caixa original da query, sem fallback, fonte alternativa no corpo ou chave alternativa; parsing, omissão de componentes ausentes, guarda de aplicação antes do HMAC e correlação original permanecem. Essa escolha não reinterpreta as provas históricas, não demonstra uma causa isolada das recusas atuais nem que a chave configurada esteja errada. Homologação real em Preview e [#104](https://github.com/BrunoMNoronha/techlab-troq/issues/104)/[#105](https://github.com/BrunoMNoronha/techlab-troq/issues/105) continuam pendentes.
+
 ## Objetivo
 
 Provar ou refutar, com evidências técnicas, a viabilidade do Mercado Pago como primeiro candidato a gateway para cobrar exatamente R$ 0,99 via Pix no TROQS, cobrindo aceitação do valor, criação de cobrança, QR Code/Pix copia e cola, transição de status, idempotência, webhook e validação de assinatura, expiração e tarifas.

@@ -17,8 +17,9 @@ function hmac(manifest: string, secret = SECRET): string {
   return createHmac('sha256', secret).update(manifest).digest('hex');
 }
 
-/** Manifesto oficial escrito a mao, sem passar por `buildManifest`. */
-const OFFICIAL = `id:${DATA_ID.toLowerCase()};request-id:${REQUEST_ID};ts:${TS};`;
+// Vetor independente de buildManifest: perfil de caixa do SDK Node 3.6.1,
+// src/utils/webhook/webhook.spec.ts, case 2, commit 59a1f91e7c072cbda4e394267b24e7383ea3b1f3.
+const OFFICIAL = `id:${DATA_ID};request-id:${REQUEST_ID};ts:${TS};`;
 
 function input(overrides: {
   dataId?: string | null;
@@ -48,7 +49,7 @@ function input(overrides: {
 const config = { secret: SECRET, applicationId: APP };
 
 describe('buildManifest', () => {
-  it('reproduz o manifesto oficial, com data.id em minusculas', () => {
+  it('preserva o caixa da query no manifesto unico (perfil SDK, DEC-052)', () => {
     expect(buildManifest({ dataId: DATA_ID, requestId: REQUEST_ID, ts: TS })).toBe(OFFICIAL);
   });
 
@@ -57,18 +58,33 @@ describe('buildManifest', () => {
       `request-id:${REQUEST_ID};ts:${TS};`,
     );
     expect(buildManifest({ dataId: DATA_ID, requestId: null, ts: TS })).toBe(
-      `id:${DATA_ID.toLowerCase()};ts:${TS};`,
+      `id:${DATA_ID};ts:${TS};`,
     );
   });
 });
 
 describe('verifyNotification', () => {
-  it('aceita a assinatura do manifesto oficial e correlaciona pelo data.id como veio', () => {
+  it('aceita o vetor independente com data.id maiusculo e preserva a correlacao', () => {
     expect(verifyNotification(input({}), config)).toEqual({
       valid: true,
       providerOrderId: DATA_ID,
       providerRequestId: REQUEST_ID,
     });
+  });
+
+  it('aceita data.id recebido em minusculas quando assinado no mesmo caixa', () => {
+    const dataId = DATA_ID.toLowerCase();
+    const manifest = `id:${dataId};request-id:${REQUEST_ID};ts:${TS};`;
+    expect(
+      verifyNotification(input({ dataId, signature: `ts=${TS},v1=${hmac(manifest)}` }), config),
+    ).toEqual({ valid: true, providerOrderId: dataId, providerRequestId: REQUEST_ID });
+  });
+
+  it('recusa assinatura em minusculas para query maiuscula, sem fallback', () => {
+    const otherProfile = `id:${DATA_ID.toLowerCase()};request-id:${REQUEST_ID};ts:${TS};`;
+    expect(
+      verifyNotification(input({ signature: `ts=${TS},v1=${hmac(otherProfile)}` }), config),
+    ).toEqual({ valid: false, reason: 'signature_invalid' });
   });
 
   it('aplicacao numerica no corpo e equivalente a string', () => {
@@ -140,7 +156,7 @@ describe('verifyNotification', () => {
     // O emissor assina com o data.id do corpo; a query traz outro. O validador
     // so le a query, entao a assinatura nao confere e nao ha segunda tentativa.
     const bodyId = 'ORD01CORPODIFERENTE000000000';
-    const signedFromBody = `id:${bodyId.toLowerCase()};request-id:${REQUEST_ID};ts:${TS};`;
+    const signedFromBody = `id:${bodyId};request-id:${REQUEST_ID};ts:${TS};`;
     const body = { type: 'order', application_id: APP, data: { id: bodyId } };
     expect(
       verifyNotification(input({ body, signature: `ts=${TS},v1=${hmac(signedFromBody)}` }), config),
@@ -148,7 +164,7 @@ describe('verifyNotification', () => {
   });
 
   it('sem data.id na query nao usa o do corpo como substituto', () => {
-    const signedFromBody = `id:${DATA_ID.toLowerCase()};request-id:${REQUEST_ID};ts:${TS};`;
+    const signedFromBody = `id:${DATA_ID};request-id:${REQUEST_ID};ts:${TS};`;
     expect(
       verifyNotification(
         input({ dataId: null, signature: `ts=${TS},v1=${hmac(signedFromBody)}` }),
