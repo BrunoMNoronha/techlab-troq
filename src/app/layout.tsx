@@ -11,6 +11,16 @@ export const metadata: Metadata = {
   title: 'TROQS',
   description:
     'Anúncios entre pessoas. O contato do anunciante só é liberado à pessoa escolhida, após solicitação paga de R$ 0,99.',
+  // A origem configurada acompanha Preview/Production. O dominio publico e
+  // apenas o fallback dos metadados, sem efeito na autenticacao.
+  metadataBase: new URL(process.env.BETTER_AUTH_URL || 'https://troqs.app'),
+  applicationName: 'TROQS',
+  openGraph: {
+    type: 'website',
+    siteName: 'TROQS',
+    locale: 'pt_BR',
+  },
+  twitter: { card: 'summary_large_image' },
 };
 
 export const viewport: Viewport = {
