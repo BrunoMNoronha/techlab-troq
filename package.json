@@ -12,6 +12,7 @@
     "dev": "next dev",
     "build": "prisma generate && next build",
     "start": "next start",
+    "brand:generate": "node scripts/brand/generate.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint .",
