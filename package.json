@@ -18,7 +18,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest",
     "test:ci": "vitest run",
-    "test:integration": "vitest run --config vitest.integration.config.mts"
+    "test:integration": "vitest run --config vitest.integration.config.mts",
+    "test:deployment": "node --test scripts/deploy/*.test.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1141.0",

@@ -1,0 +1,107 @@
+name: Deploy Preview
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-preview
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Migrar e publicar Preview
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment:
+      name: preview
+      url: https://techlab-troq-git-preview-bruno-m-noronha.vercel.app
+    permissions:
+      contents: write
+      actions: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      SOURCE_RUN_ID: ${{ github.event.workflow_run.id }}
+      RELEASE_TARGET: preview
+      VERCEL_ORG_ID: team_ICY1aaLTQI5BmxlyrSjpRTJC
+      VERCEL_PROJECT_ID: prj_mpILJv4OGXwsW3boJdXBPx3PSJGT
+
+    steps:
+      - name: Checkout da automação confiável
+        uses: actions/checkout@v5
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Setup Node.js 24
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          package-manager-cache: false
+
+      - name: Conferir CI e fixar revisão
+        id: source
+        run: node scripts/deploy/resolve-run.mjs
+
+      - name: Sincronizar preview sem force-push
+        env:
+          RELEASE_SHA: ${{ steps.source.outputs.sha }}
+        run: |
+          git fetch origin main preview
+          git merge-base --is-ancestor origin/preview "$RELEASE_SHA"
+          git push origin "$RELEASE_SHA:refs/heads/preview"
+          git checkout --detach "$RELEASE_SHA"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Instalar dependências
+        run: pnpm install --frozen-lockfile
+
+      - name: Verificar configuração antes de migrar
+        env:
+          RELEASE_SHA: ${{ steps.source.outputs.sha }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: node scripts/deploy/vercel.mjs preflight
+
+      - name: Aplicar e verificar migrations de Preview
+        env:
+          DIRECT_URL: ${{ secrets.DIRECT_URL }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          pnpm exec prisma migrate deploy
+          pnpm exec prisma migrate status
+          node scripts/deploy/database.mjs
+
+      - name: Build remoto e deploy de Preview
+        env:
+          RELEASE_SHA: ${{ steps.source.outputs.sha }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: node scripts/deploy/vercel.mjs deploy
+
+      - name: Guardar evidência pública do Preview
+        uses: actions/upload-artifact@v4
+        with:
+          name: preview-release-${{ github.run_attempt }}
+          path: release-proof/release.json
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Resumo da publicação
+        run: |
+          echo 'Preview: https://techlab-troq-git-preview-bruno-m-noronha.vercel.app' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Production requer disparo manual do workflow Deploy Production.' >> "$GITHUB_STEP_SUMMARY"

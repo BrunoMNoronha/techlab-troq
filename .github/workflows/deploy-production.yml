@@ -1,0 +1,158 @@
+name: Deploy Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      preview_run_id:
+        description: Identificador da execução aprovada do workflow Deploy Preview
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: release-production
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Backup, migration e publicação manual de Production
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment:
+      name: production
+      url: https://troqs.app
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: restore_check
+          POSTGRES_PASSWORD: ephemeral-restore-only
+          POSTGRES_DB: restore_check
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U restore_check -d restore_check"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+      SOURCE_RUN_ID: ${{ inputs.preview_run_id }}
+      RELEASE_TARGET: production
+      PRODUCTION_READY: ${{ vars.PRODUCTION_READY }}
+      VERCEL_ORG_ID: team_ICY1aaLTQI5BmxlyrSjpRTJC
+      VERCEL_PROJECT_ID: prj_mpILJv4OGXwsW3boJdXBPx3PSJGT
+
+    steps:
+      - name: Checkout da automação confiável
+        uses: actions/checkout@v5
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Setup Node.js 24
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          package-manager-cache: false
+
+      - name: Conferir origem e revisão de Preview
+        id: source
+        run: node scripts/deploy/resolve-run.mjs
+
+      - name: Recuperar evidência da execução selecionada
+        uses: actions/download-artifact@v4
+        with:
+          name: preview-release-${{ steps.source.outputs.run_attempt }}
+          github-token: ${{ github.token }}
+          run-id: ${{ inputs.preview_run_id }}
+          path: release-proof
+
+      - name: Conferir evidência antes de liberar credenciais
+        env:
+          RELEASE_SHA: ${{ steps.source.outputs.sha }}
+        run: |
+          node scripts/deploy/verify-proof.mjs
+          git merge-base --is-ancestor '${{ steps.source.outputs.sha }}' origin/main
+          git checkout --detach '${{ steps.source.outputs.sha }}'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Instalar dependências
+        run: pnpm install --frozen-lockfile
+
+      - name: Verificar configuração de Production antes de migrar
+        id: preflight
+        env:
+          RELEASE_SHA: ${{ steps.source.outputs.sha }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+        run: node scripts/deploy/vercel.mjs preflight
+
+      - name: Backup criptografado e prova de restauração
+        env:
+          DIRECT_URL: ${{ secrets.DIRECT_URL }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+          RESTORE_CONTAINER: ${{ job.services.postgres.id }}
+        run: bash scripts/deploy/backup.sh
+
+      - name: Guardar somente o backup cifrado
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-backup-${{ github.run_id }}-${{ github.run_attempt }}
+          path: release-backup/production.dump.gpg
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Aplicar e verificar migrations de Production
+        id: migrations
+        env:
+          DIRECT_URL: ${{ secrets.DIRECT_URL }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          node scripts/deploy/database.mjs before
+          pnpm exec prisma migrate deploy
+          pnpm exec prisma migrate status
+          node scripts/deploy/database.mjs after
+
+      - name: Build remoto e candidato sem atribuir domínio
+        id: candidate
+        env:
+          RELEASE_SHA: ${{ steps.source.outputs.sha }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+        run: node scripts/deploy/vercel.mjs deploy
+
+      - name: Publicar candidato aprovado em troqs.app
+        id: promote
+        env:
+          RELEASE_SHA: ${{ steps.source.outputs.sha }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+        run: node scripts/deploy/vercel.mjs promote
+
+      - name: Restaurar deployment anterior quando o schema não mudou
+        if: >-
+          failure() && steps.promote.outcome == 'failure' &&
+          steps.preflight.outputs.previous_id != '' &&
+          steps.migrations.outputs.before_history != '' &&
+          steps.migrations.outputs.before_history == steps.migrations.outputs.after_history
+        env:
+          RELEASE_SHA: ${{ steps.source.outputs.sha }}
+          PREVIOUS_ID: ${{ steps.preflight.outputs.previous_id }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: node scripts/deploy/vercel.mjs rollback
+
+      - name: Registrar recuperação em caso de falha
+        if: failure()
+        env:
+          PREVIOUS_ID: ${{ steps.preflight.outputs.previous_id }}
+        run: |
+          echo 'Publicação interrompida. Nenhuma migration é revertida automaticamente.' >> "$GITHUB_STEP_SUMMARY"
+          echo "Deployment anterior: ${PREVIOUS_ID:-nenhum}. Conferir compatibilidade com o schema antes do rollback." >> "$GITHUB_STEP_SUMMARY"
+          echo 'Rollback seguro: pnpm dlx vercel@62.2.0 rollback <deployment-anterior> --scope bruno-m-noronha' >> "$GITHUB_STEP_SUMMARY"
