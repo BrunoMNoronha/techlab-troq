@@ -250,7 +250,7 @@ _Atualização de 2026-10-04 (F3-013, [#103](https://github.com/BrunoMNoronha/te
 | Notificações rejeitadas por autenticidade, por janela | `payments.notification_rejected` | Por ocorrência (só o motivo) e, na reconciliação, a contagem de 24 h | Mais de 10 em 24 h |
 | Última execução bem-sucedida de cada trabalho | `jobs.run` / `jobs.failure` | Ao fim de cada trabalho periódico | Execução que lança, ou caso com erro inesperado |
 
-Os sinais são **derivados** do PostgreSQL por leitura sem trava (ADR-0007, decisão 4) e os limiares são design, ajustáveis por medição. Como nenhum trabalho tem agendamento declarado (DEC-042), os sinais periódicos só saem quando a reconciliação é invocada. O sexto sinal, denúncias decididas no prazo, é da Fase 4. A falha de email transacional é o sinal `email.delivery_failed` ([../product/transactional-emails.md](../product/transactional-emails.md), TE-5.4).
+Os sinais são **derivados** do PostgreSQL por leitura sem trava (ADR-0007, decisão 4) e os limiares são design, ajustáveis por medição. Os sinais periódicos saem a cada execução da reconciliação: em `production`, pelo cron de cinco minutos de `vercel.json`; em `preview`, só por chamada autenticada ([../engineering/deployment.md](../engineering/deployment.md), "Operação e gates"). O sexto sinal, denúncias decididas no prazo, é da Fase 4. A falha de email transacional é o sinal `email.delivery_failed` ([../product/transactional-emails.md](../product/transactional-emails.md), TE-5.4).
 
 **AR-14.4 (normativa).** Nenhum desses sinais contém telefone/WhatsApp, credencial, token ou conteúdo integral de requisição capaz de contê-los (RNF-018, PE-11.3).
 
