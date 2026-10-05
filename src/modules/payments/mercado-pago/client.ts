@@ -5,7 +5,7 @@ import {
   type OrderSnapshot,
   type PixInstructions,
 } from './classify';
-import { readAccessToken } from './config';
+import { readAccessToken, readPixSandboxAutoApprove } from './config';
 import { centsToDecimal, toIsoDuration } from './values';
 
 // Cliente HTTP da Orders API (ADR-0004, decisoes 3, 5, 7 e 11; payments-design.md,
@@ -106,6 +106,21 @@ function errorCode(body: unknown): string {
   return 'unmapped';
 }
 
+/** Nao devolve dados da conta: so o fato de ser um collector de teste brasileiro. */
+function isTestCollector(body: unknown): boolean {
+  if (typeof body !== 'object' || body === null) return false;
+  const collector = body as Record<string, unknown>;
+  return (
+    typeof collector.id === 'number' &&
+    Number.isSafeInteger(collector.id) &&
+    collector.id > 0 &&
+    collector.site_id === 'MLB' &&
+    Array.isArray(collector.tags) &&
+    collector.tags.every((tag) => typeof tag === 'string') &&
+    collector.tags.includes('test_user')
+  );
+}
+
 export function createMercadoPagoClient(options: MercadoPagoClientOptions = {}) {
   const doFetch = options.fetch ?? fetch;
   const baseUrl = options.baseUrl ?? MERCADO_PAGO_API_BASE_URL;
@@ -116,9 +131,10 @@ export function createMercadoPagoClient(options: MercadoPagoClientOptions = {}) 
     path: string,
     idempotencyKey: string | null,
     body?: unknown,
+    accessToken = readAccessToken(),
   ): Promise<RawResponse | GatewayFailure> {
     const headers: Record<string, string> = {
-      Authorization: `Bearer ${readAccessToken()}`,
+      Authorization: `Bearer ${accessToken}`,
       Accept: 'application/json',
     };
     if (idempotencyKey) headers['X-Idempotency-Key'] = idempotencyKey;
@@ -168,23 +184,49 @@ export function createMercadoPagoClient(options: MercadoPagoClientOptions = {}) 
   return {
     /** `POST /v1/orders`: cobranca Pix de valor exato (PD-4.1, passo 2). */
     async createPixCharge(input: CreatePixChargeInput): Promise<GatewayResult<PixChargeCreated>> {
+      const sandboxAutoApprove = readPixSandboxAutoApprove();
+      // A consulta e a criacao usam a MESMA credencial, mesmo se houver rotacao
+      // durante a espera. Nenhuma confirmacao de collector e armazenada em cache.
+      const accessToken = readAccessToken();
       const amount = centsToDecimal(input.amountCents);
-      const raw = await call('POST', '/v1/orders', input.idempotencyKey, {
-        type: 'online',
-        processing_mode: 'automatic',
-        external_reference: input.externalReference,
-        total_amount: amount,
-        payer: { email: input.payerEmail },
-        transactions: {
-          payments: [
-            {
-              amount,
-              payment_method: { id: 'pix', type: 'bank_transfer' },
-              expiration_time: toIsoDuration(input.expiresInMs),
-            },
-          ],
+      if (sandboxAutoApprove) {
+        const collector = await call('GET', '/users/me', null, undefined, accessToken);
+        if (isFailure(collector)) return collector;
+        if (collector.status !== 200 || !isTestCollector(collector.body)) {
+          // Codigo fixo: corpo, tags, identificacao e mensagem do provedor nunca
+          // escapam do adaptador, inclusive nas respostas de erro desta guarda.
+          return {
+            ok: false,
+            kind: 'rejected',
+            httpStatus: collector.status,
+            code: 'sandbox_collector_unverified',
+          };
+        }
+      }
+      const raw = await call(
+        'POST',
+        '/v1/orders',
+        input.idempotencyKey,
+        {
+          type: 'online',
+          processing_mode: 'automatic',
+          external_reference: input.externalReference,
+          total_amount: amount,
+          payer: sandboxAutoApprove
+            ? { email: 'test_user_br@testuser.com', first_name: 'APRO' }
+            : { email: input.payerEmail },
+          transactions: {
+            payments: [
+              {
+                amount,
+                payment_method: { id: 'pix', type: 'bank_transfer' },
+                expiration_time: toIsoDuration(input.expiresInMs),
+              },
+            ],
+          },
         },
-      });
+        accessToken,
+      );
       if (isFailure(raw)) return raw;
       if (raw.status !== 200 && raw.status !== 201) return fail(raw);
       const snapshot = snapshotOf(raw);
