@@ -131,7 +131,8 @@ export async function listOwnContactRequests(): Promise<OwnContactRequestSummary
 /**
  * Solicitacao ABERTA do ator no anuncio — `reserved` dentro da janela ou
  * `paid` —, para a entrada da jornada levar ao Pix ja gerado em vez de oferecer
- * outra (DEC-041; reservation-limit.md). Sem trava: so orienta a tela.
+ * outra (DEC-041/051; reservation-limit.md). Paid inelegivel continua incluido.
+ * Sem trava: so orienta a tela.
  */
 export async function findOpenRequestOf(
   listingId: string,

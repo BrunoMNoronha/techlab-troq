@@ -201,6 +201,7 @@ describe('getPublicFeed (D-10, D-11)', () => {
         description: 'd',
         city: 'Recife',
         state: 'PE',
+        category: null,
         createdAt,
         images: [
           {
@@ -213,7 +214,7 @@ describe('getPublicFeed (D-10, D-11)', () => {
     ]);
     const select = findMany.mock.calls[0][0].select;
     expect(Object.keys(select).sort()).toEqual(
-      ['city', 'createdAt', 'description', 'id', 'images', 'title', 'uf'].sort(),
+      ['category', 'city', 'createdAt', 'description', 'id', 'images', 'title', 'uf'].sort(),
     );
   });
 });

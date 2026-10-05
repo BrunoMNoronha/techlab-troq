@@ -1,6 +1,9 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { CardList } from '@/components/data-display';
+import { EmptyState } from '@/components/feedback';
+import { Cluster, PageContainer, PageHeader, Stack } from '@/components/layout';
+import { Badge, ButtonLink, Card, Heading, Text, TextLink } from '@/components/ui';
 import { listOwnContactReleases } from '@/modules/contact';
 import { loginRedirectPath, validateSession } from '@/modules/identity';
 import { listOwnContactRequests } from '@/modules/request';
@@ -33,48 +36,29 @@ export default async function MinhasSolicitacoesPage() {
     : new Set<string>();
 
   return (
-    <main
-      style={{
-        maxWidth: '600px',
-        margin: '0 auto',
-        padding: '24px 16px',
-        fontFamily: 'sans-serif',
-      }}
-    >
-      <h1 style={{ fontSize: '24px', margin: '0 0 8px' }}>Minhas solicitações</h1>
-      <p style={{ color: '#4b5563', fontSize: '14px', margin: '0 0 24px' }}>
-        Solicitações pagas de contato que você fez. Só você vê esta página.{' '}
-        <Link href="/contatos" style={{ color: '#1d4ed8', fontWeight: 600 }}>
-          Contatos liberados para você
-        </Link>
-      </p>
+    <PageContainer width="content">
+      <PageHeader
+        title="Minhas solicitações"
+        description={
+          <>
+            Solicitações pagas de contato que você fez. Só você vê esta página.{' '}
+            <TextLink href="/contatos">Contatos liberados para você</TextLink>
+          </>
+        }
+      />
 
       {requests.length === 0 ? (
-        <div
-          style={{
-            padding: '24px',
-            backgroundColor: '#f9fafb',
-            border: '1px solid #e5e7eb',
-            borderRadius: '8px',
-            color: '#374151',
-          }}
-        >
-          <p style={{ margin: '0 0 12px' }}>Você ainda não fez nenhuma solicitação.</p>
-          <Link href="/explorar" style={{ color: '#1d4ed8', fontWeight: 600 }}>
-            Explorar ofertas
-          </Link>
-        </div>
+        <EmptyState
+          titleAs="p"
+          title="Você ainda não fez nenhuma solicitação."
+          action={
+            <ButtonLink href="/explorar" iconStart="search">
+              Explorar ofertas
+            </ButtonLink>
+          }
+        />
       ) : (
-        <ul
-          style={{
-            listStyle: 'none',
-            margin: 0,
-            padding: 0,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '12px',
-          }}
-        >
+        <CardList>
           {requests.map((item) => {
             const phase =
               item.phase === 'paid' && chosenListings.has(item.listingId)
@@ -82,57 +66,30 @@ export default async function MinhasSolicitacoesPage() {
                 : PHASE_LABELS[item.phase];
             const title = item.listingTitle ?? 'Anúncio indisponível';
             return (
-              <li
-                key={item.contactRequestId}
-                style={{
-                  padding: '16px',
-                  backgroundColor: 'white',
-                  border: '1px solid #e5e7eb',
-                  borderRadius: '8px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '8px',
-                  minWidth: 0,
-                }}
-              >
-                <h2 style={{ fontSize: '17px', margin: 0, overflowWrap: 'anywhere' }}>{title}</h2>
-                <p style={{ margin: 0, fontSize: '13px', color: '#4b5563' }}>
-                  Feita em {DATE_TIME.format(new Date(item.createdAt))}
-                </p>
-                <div
-                  style={{
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    gap: '8px',
-                  }}
-                >
-                  <span
-                    style={{
-                      padding: '4px 8px',
-                      borderRadius: '4px',
-                      fontSize: '12px',
-                      fontWeight: 600,
-                      backgroundColor: phase.bg,
-                      color: phase.color,
-                    }}
-                  >
-                    {phase.label}
-                  </span>
-                  <Link
-                    href={`/solicitacoes/${item.contactRequestId}`}
-                    aria-label={`Acompanhar a solicitação de ${title}`}
-                    style={{ color: '#1d4ed8', fontWeight: 600, textDecoration: 'none' }}
-                  >
-                    Acompanhar
-                  </Link>
-                </div>
-              </li>
+              <Card as="li" key={item.contactRequestId}>
+                <Stack gap={2}>
+                  <Heading level={2} size="h3" wrapAnywhere>
+                    {title}
+                  </Heading>
+                  <Text size="small" tone="muted">
+                    Feita em {DATE_TIME.format(new Date(item.createdAt))}
+                  </Text>
+                  <Cluster justify="between" gap={2}>
+                    <Badge tone={phase.tone}>{phase.label}</Badge>
+                    <TextLink
+                      href={`/solicitacoes/${item.contactRequestId}`}
+                      aria-label={`Acompanhar a solicitação de ${title}`}
+                      iconEnd="chevron-right"
+                    >
+                      Acompanhar
+                    </TextLink>
+                  </Cluster>
+                </Stack>
+              </Card>
             );
           })}
-        </ul>
+        </CardList>
       )}
-    </main>
+    </PageContainer>
   );
 }

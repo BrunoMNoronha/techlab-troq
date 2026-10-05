@@ -31,7 +31,13 @@ describe('validateListingContent', () => {
       }),
     ).toEqual({
       ok: true,
-      data: { title: 'Bicicleta aro 29', description: 'Em bom estado.', city: 'Recife', uf: 'PE' },
+      data: {
+        title: 'Bicicleta aro 29',
+        description: 'Em bom estado.',
+        city: 'Recife',
+        uf: 'PE',
+        category: null,
+      },
     });
   });
 
@@ -67,7 +73,13 @@ describe('validateListingContent', () => {
 
   it('ignora chaves fora do conteudo, como ownerId e status', () => {
     const res = validateListingContent({ ...valid, ownerId: 'x', status: 'published', id: 'y' });
-    expect(res.ok && Object.keys(res.data).sort()).toEqual(['city', 'description', 'title', 'uf']);
+    expect(res.ok && Object.keys(res.data).sort()).toEqual([
+      'category',
+      'city',
+      'description',
+      'title',
+      'uf',
+    ]);
   });
 });
 

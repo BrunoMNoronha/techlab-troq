@@ -3,6 +3,10 @@
 import { useEffect, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { chooseRequester } from '@/modules/negotiation/actions';
+import { CardList } from '@/components/data-display';
+import { Alert, EmptyState } from '@/components/feedback';
+import { Cluster, Grow, Stack } from '@/components/layout';
+import { Button, Card, Prose, Text } from '@/components/ui';
 
 // Escolha do solicitante pelo anunciante, com confirmacao explicita (F3-012,
 // #102; DEC-032, secao 2; RF-013). A lista veio do servidor so com o nome de
@@ -87,166 +91,98 @@ export function SelectionPanel({
   }
 
   return (
-    <div>
+    <Stack gap={4}>
       {(error || done) && (
-        <div
+        <Alert
           ref={feedbackRef}
           tabIndex={-1}
           role={error ? 'alert' : 'status'}
-          style={{
-            padding: '12px',
-            marginBottom: '16px',
-            borderRadius: '6px',
-            fontSize: '14px',
-            backgroundColor: error ? '#fef2f2' : '#f0fdf4',
-            border: `1px solid ${error ? '#fecaca' : '#bbf7d0'}`,
-            color: error ? '#991b1b' : '#14532d',
-          }}
+          tone={error ? 'error' : 'success'}
         >
           {error ?? done}
-        </div>
+        </Alert>
       )}
 
       {candidates.length === 0 ? (
-        <p style={{ margin: 0, color: '#374151' }}>
-          Nenhuma solicitação paga disponível para escolha no momento.
-        </p>
+        <EmptyState
+          titleAs="p"
+          title="Nenhuma solicitação paga disponível para escolha no momento."
+        />
       ) : (
-        <ul
-          style={{
-            listStyle: 'none',
-            margin: 0,
-            padding: 0,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '12px',
-          }}
-        >
+        <CardList>
           {candidates.map((candidate) => (
-            <li
-              key={candidate.contactRequestId}
-              style={{
-                padding: '16px',
-                backgroundColor: 'white',
-                border: '1px solid #e5e7eb',
-                borderRadius: '8px',
-                minWidth: 0,
-              }}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  flexWrap: 'wrap',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  gap: '12px',
-                }}
-              >
-                <div style={{ minWidth: 0 }}>
-                  <p style={{ margin: 0, fontWeight: 600, overflowWrap: 'anywhere' }}>
-                    {candidate.requesterDisplayName}
-                  </p>
-                  <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#4b5563' }}>
-                    Pagamento confirmado em {candidate.paidAtLabel}
-                  </p>
-                </div>
-                {!blocked && confirming?.contactRequestId !== candidate.contactRequestId && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setError(null);
-                      setDone(null);
-                      setConfirming(candidate);
-                    }}
-                    disabled={submitting}
-                    aria-label={`Escolher ${candidate.requesterDisplayName}`}
-                    style={primaryButton(submitting)}
-                  >
-                    Escolher
-                  </button>
-                )}
-              </div>
+            <Card as="li" key={candidate.contactRequestId}>
+              <Stack gap={3}>
+                <Cluster justify="between">
+                  <Grow>
+                    <Text weight="semibold" wrapAnywhere>
+                      {candidate.requesterDisplayName}
+                    </Text>
+                    <Text size="small" tone="muted">
+                      Pagamento confirmado em {candidate.paidAtLabel}
+                    </Text>
+                  </Grow>
+                  {!blocked && confirming?.contactRequestId !== candidate.contactRequestId && (
+                    <Button
+                      onClick={() => {
+                        setError(null);
+                        setDone(null);
+                        setConfirming(candidate);
+                      }}
+                      disabled={submitting}
+                      aria-label={`Escolher ${candidate.requesterDisplayName}`}
+                    >
+                      Escolher
+                    </Button>
+                  )}
+                </Cluster>
 
-              {confirming?.contactRequestId === candidate.contactRequestId && (
-                <div
-                  role="group"
-                  aria-labelledby={`confirmar-${candidate.contactRequestId}`}
-                  style={{
-                    marginTop: '12px',
-                    padding: '12px',
-                    backgroundColor: '#eff6ff',
-                    border: '1px solid #bfdbfe',
-                    borderRadius: '6px',
-                    color: '#1e3a8a',
-                  }}
-                >
-                  <h3
-                    id={`confirmar-${candidate.contactRequestId}`}
-                    ref={headingRef}
-                    tabIndex={-1}
-                    style={{ fontSize: '16px', margin: '0 0 8px', overflowWrap: 'anywhere' }}
+                {confirming?.contactRequestId === candidate.contactRequestId && (
+                  <Alert
+                    tone="info"
+                    role="group"
+                    aria-labelledby={`confirmar-${candidate.contactRequestId}`}
                   >
-                    Confirmar a escolha de {candidate.requesterDisplayName}?
-                  </h3>
-                  <ul style={{ margin: '0 0 12px', paddingLeft: '20px', lineHeight: 1.5 }}>
-                    <li>
-                      O seu WhatsApp/telefone será liberado somente para esta pessoa. As outras
-                      solicitações pagas não recebem o seu contato.
-                    </li>
-                    <li>A escolha fica registrada e não pode ser desfeita.</li>
-                    {reselection && (
-                      <li>Esta é uma nova escolha (reseleção) depois de uma escolha anterior.</li>
-                    )}
-                  </ul>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
-                    <button
-                      type="button"
-                      onClick={() => void confirm(candidate)}
-                      disabled={submitting}
-                      aria-busy={submitting}
-                      style={primaryButton(submitting)}
+                    <h3
+                      id={`confirmar-${candidate.contactRequestId}`}
+                      ref={headingRef}
+                      tabIndex={-1}
                     >
-                      {submitting ? 'Registrando…' : 'Confirmar escolha'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setConfirming(null)}
-                      disabled={submitting}
-                      style={secondaryButton}
-                    >
-                      Cancelar
-                    </button>
-                  </div>
-                </div>
-              )}
-            </li>
+                      Confirmar a escolha de {candidate.requesterDisplayName}?
+                    </h3>
+                    <Prose>
+                      <ul>
+                        <li>
+                          O seu WhatsApp/telefone será liberado somente para esta pessoa. As outras
+                          solicitações pagas não recebem o seu contato.
+                        </li>
+                        <li>A escolha fica registrada e não pode ser desfeita.</li>
+                        {reselection && (
+                          <li>
+                            Esta é uma nova escolha (reseleção) depois de uma escolha anterior.
+                          </li>
+                        )}
+                      </ul>
+                    </Prose>
+                    <Cluster gap={3}>
+                      <Button loading={submitting} onClick={() => void confirm(candidate)}>
+                        {submitting ? 'Registrando…' : 'Confirmar escolha'}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => setConfirming(null)}
+                        disabled={submitting}
+                      >
+                        Cancelar
+                      </Button>
+                    </Cluster>
+                  </Alert>
+                )}
+              </Stack>
+            </Card>
           ))}
-        </ul>
+        </CardList>
       )}
-    </div>
+    </Stack>
   );
 }
-
-function primaryButton(busy: boolean) {
-  return {
-    padding: '10px 16px',
-    backgroundColor: busy ? '#93c5fd' : '#1d4ed8',
-    color: 'white',
-    border: 'none',
-    borderRadius: '6px',
-    fontWeight: 600,
-    fontSize: '14px',
-    cursor: busy ? 'not-allowed' : 'pointer',
-  } as const;
-}
-
-const secondaryButton = {
-  padding: '10px 16px',
-  backgroundColor: 'white',
-  color: '#1d4ed8',
-  border: '1px solid #bfdbfe',
-  borderRadius: '6px',
-  fontWeight: 600,
-  fontSize: '14px',
-  cursor: 'pointer',
-} as const;

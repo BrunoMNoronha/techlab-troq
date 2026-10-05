@@ -145,7 +145,7 @@ describe('modulo identity — ponte das actions com o Better Auth (#40)', () => 
 
       const res = await loginUser('  Active@troq.app ', PASSWORD);
 
-      expect(res).toEqual({ success: true, redirectTo: '/conta' });
+      expect(res).toEqual({ success: true, redirectTo: '/explorar' });
       expect(api.signInEmail).toHaveBeenCalledWith({
         body: { email: 'active@troq.app', password: PASSWORD },
         headers: requestHeaders,
@@ -209,12 +209,12 @@ describe('modulo identity — ponte das actions com o Better Auth (#40)', () => 
     });
 
     it.each(['https://evil.example', '//evil.example', '/\\evil.example', 'javascript:alert(1)'])(
-      'ignora destino de retorno externo %s e usa /conta (#59)',
+      'ignora destino de retorno externo %s e usa /explorar (#59)',
       async (returnTo) => {
         api.signInEmail.mockResolvedValueOnce({});
 
         const res = await loginUser('active@troq.app', PASSWORD, returnTo);
-        expect(res).toEqual({ success: true, redirectTo: '/conta' });
+        expect(res).toEqual({ success: true, redirectTo: '/explorar' });
       },
     );
   });

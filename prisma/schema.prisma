@@ -234,24 +234,25 @@ model User {
   contact                 UserContact?
   termsAcceptances        TermsAcceptance[]
   accountDeletionRequest  AccountDeletionRequest?
-  listings                Listing[]               @relation("ListingOwner")
-  listingTransitions      ListingTransition[]     @relation("ListingTransitionActor")
-  contactRequests         ContactRequest[]        @relation("ContactRequestRequester")
-  selectionsMade          Selection[]             @relation("SelectionActor")
-  negotiationsAsOwner     Negotiation[]           @relation("NegotiationOwner")
-  negotiationsAsChosen    Negotiation[]           @relation("NegotiationChosen")
-  negotiationsClosed      Negotiation[]           @relation("NegotiationClosedBy")
-  contactReleasesGranted  ContactRelease[]        @relation("ContactReleaseOwner")
-  contactReleasesReceived ContactRelease[]        @relation("ContactReleaseRecipient")
-  contactAccessEvents     ContactAccessEvent[]    @relation("ContactAccessActor")
-  ratingsGiven            Rating[]                @relation("RatingEvaluator")
-  ratingsReceived         Rating[]                @relation("RatingEvaluated")
-  reports                 Report[]                @relation("ReportReporter")
-  moderationDecisions     ModerationDecision[]    @relation("ModerationDecisionModerator")
-  sanctions               Sanction[]              @relation("SanctionUser")
-  appeals                 Appeal[]                @relation("AppealAppellant")
-  appealsDecided          Appeal[]                @relation("AppealDecidedBy")
-  auditEvents             AuditEvent[]            @relation("AuditEventActor")
+  listings                Listing[]                 @relation("ListingOwner")
+  listingTransitions      ListingTransition[]       @relation("ListingTransitionActor")
+  contactRequests         ContactRequest[]          @relation("ContactRequestRequester")
+  paidRequestGuards       ContactRequestPaidGuard[]
+  selectionsMade          Selection[]               @relation("SelectionActor")
+  negotiationsAsOwner     Negotiation[]             @relation("NegotiationOwner")
+  negotiationsAsChosen    Negotiation[]             @relation("NegotiationChosen")
+  negotiationsClosed      Negotiation[]             @relation("NegotiationClosedBy")
+  contactReleasesGranted  ContactRelease[]          @relation("ContactReleaseOwner")
+  contactReleasesReceived ContactRelease[]          @relation("ContactReleaseRecipient")
+  contactAccessEvents     ContactAccessEvent[]      @relation("ContactAccessActor")
+  ratingsGiven            Rating[]                  @relation("RatingEvaluator")
+  ratingsReceived         Rating[]                  @relation("RatingEvaluated")
+  reports                 Report[]                  @relation("ReportReporter")
+  moderationDecisions     ModerationDecision[]      @relation("ModerationDecisionModerator")
+  sanctions               Sanction[]                @relation("SanctionUser")
+  appeals                 Appeal[]                  @relation("AppealAppellant")
+  appealsDecided          Appeal[]                  @relation("AppealDecidedBy")
+  auditEvents             AuditEvent[]              @relation("AuditEventActor")
 
   @@map("users")
 }
@@ -357,6 +358,8 @@ model AccountDeletionRequest {
 model Listing {
   id          String        @id @default(uuid()) @db.Uuid
   ownerId     String        @map("owner_id") @db.Uuid
+  /// Categoria comercial; nullable para rascunhos e legados (#89).
+  category    String?       @db.VarChar(40)
   title       String
   description String
   city        String
@@ -369,11 +372,12 @@ model Listing {
   createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt   DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  owner               User                 @relation("ListingOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  owner               User                      @relation("ListingOwner", fields: [ownerId], references: [id], onDelete: Restrict)
   transitions         ListingTransition[]
   images              ListingImage[]
   tradeOptions        ListingTradeOption[]
   contactRequests     ContactRequest[]
+  paidRequestGuards   ContactRequestPaidGuard[]
   reports             Report[]
   termsAcceptances    TermsAcceptance[]
   selections          Selection[]
@@ -496,6 +500,21 @@ model MediaObjectDeletion {
 // ---------------------------------------------------------------------------
 // Solicitacao e vaga (modulo `request`) — nucleo de concorrencia de RB-003
 // ---------------------------------------------------------------------------
+
+/// DEC-051: registro auxiliar dos pares que ja pagaram. Triggers materializam
+/// a admissao atomica de novas solicitacoes sem reescrever duplicidades legadas.
+model ContactRequestPaidGuard {
+  listingId   String  @map("listing_id") @db.Uuid
+  requesterId String  @map("requester_id") @db.Uuid
+  hasPaid     Boolean @default(false) @map("has_paid")
+
+  listing   Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  requester User    @relation(fields: [requesterId], references: [id], onDelete: Cascade)
+
+  @@id([listingId, requesterId])
+  @@index([requesterId])
+  @@map("contact_request_paid_guards")
+}
 
 /// DM-6.1 — a solicitacao E a reserva de vaga. I-1 (indice unico parcial sobre
 /// (listing_id, slot_index) em `reserved`/`paid`), faixa 1..3 e I-8 (trigger

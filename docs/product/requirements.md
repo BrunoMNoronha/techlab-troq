@@ -76,13 +76,16 @@ Nenhum requisito permanece `bloqueado` e **não há mais decisão aberta**. OD-0
 
 #### RF-004 — Publicação de anúncio
 
-- **Descrição:** o anunciante publica um anúncio com título, descrição, imagens, as três alternativas de troca que aceita (DEC-046) e localização pública limitada a cidade/UF.
+- **Descrição:** o anunciante publica um anúncio com título, descrição, categoria de produto, imagens, as três alternativas de troca que aceita (DEC-046) e localização pública limitada a cidade/UF.
 - **Prioridade MVP:** obrigatória.
 - **Origem:** fluxo central (passo 2); capacidade obrigatória em [mvp-scope.md](mvp-scope.md).
 - **Regra de negócio relacionada:** RB-005, RB-006.
 - **Decisão aberta relacionada:** — (OD-03 fechada por [prohibited-items.md](prohibited-items.md), DEC-031; OD-04 por [listing-lifecycle.md](listing-lifecycle.md), DEC-027; OD-05 por [image-policy.md](image-policy.md), DEC-028).
 - **Critério de aceite (alto nível):** anúncio criado por usuário autenticado e verificado; nenhum dado de localização mais preciso que cidade/UF é armazenado ou exibido publicamente; o anúncio nasce no estado `draft` e só se torna público por publicação explícita do anunciante, conforme [listing-lifecycle.md](listing-lifecycle.md); a publicação exige pelo menos uma imagem processada com sucesso, conforme [image-policy.md](image-policy.md); a publicação exige também a aceitação expressa da declaração de conformidade com [prohibited-items.md](prohibited-items.md) (DEC-031), registrada com instante, e admite validações preventivas apenas auxiliares, sem que um bloqueio preventivo constitua infração ou conte para reincidência; a publicação e a reativação exigem as **três alternativas de troca** preenchidas, e a edição de anúncio `published` ou `paused` não pode deixá-lo com menos de três (DEC-046).
-- **Status:** definido. Os campos do anúncio no MVP são exatamente título, descrição, imagens, cidade/UF e, desde DEC-046 ([#76](https://github.com/BrunoMNoronha/techlab-troq/issues/76), 2026-10-04), as três alternativas de troca aceitas pelo anunciante, sem outro campo adicional (categoria, preço, estoque, condição, endereço ou similar); o contrato técnico do formulário — campos, validação, rascunho, publicação e DTOs — está em [../architecture/listing-contract.md](../architecture/listing-contract.md) (F2-005, 2026-09-29). Isso fecha a lacuna de design anterior e **não** cria regra de negócio nem decisão de produto.
+- **Status:** definido. Os campos do anúncio no MVP são exatamente título, descrição, imagens, cidade/UF e, desde DEC-046 ([#76](https://github.com/BrunoMNoronha/techlab-troq/issues/76), 2026-10-04), as três alternativas de troca aceitas pelo anunciante e a categoria de produto (#89), sem outro campo adicional (preço, estoque, condição, endereço ou similar); o contrato técnico do formulário — campos, validação, rascunho, publicação e DTOs — está em [../architecture/listing-contract.md](../architecture/listing-contract.md) (F2-005, 2026-09-29). Isso fecha a lacuna de design anterior e **não** cria regra de negócio nem decisão de produto.
+
+
+- **Extensão #89 (2026-10-05):** categoria única de produto em catálogo controlado; opcional no rascunho e obrigatória para publicar, reativar e editar publicado/pausado. Legados permanecem visíveis sem classificação fictícia e são regularizados pelo dono. Categoria aparece no cadastro, edição, cards e detalhe público. Catálogo e regras em [product-categories.md](product-categories.md); classificação comercial distinta de denúncia/moderação.
 
 #### RF-005 — Consulta de anúncios
 
