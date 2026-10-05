@@ -14,6 +14,8 @@
 // exigida por docs/adr/0007-observability-sentry.md, decisoes 5 e 6.
 export type { TelemetryOptions } from './telemetry/sentry-options';
 export { createTelemetryOptions } from './telemetry/sentry-options';
+// Correlacao diagnostica recebida de fontes publicas usa a mesma redacao.
+export { redactText } from './telemetry/redaction';
 // F3-013 (#103): sinais operacionais de AR-14.3, derivados do estado
 // persistido, com nome e atributos fechados (ADR-0007, decisoes 4 a 6).
 export { reportSignal, sanitizeSignalAttributes } from './telemetry/signals';

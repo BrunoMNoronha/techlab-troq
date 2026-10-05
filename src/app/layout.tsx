@@ -5,6 +5,7 @@ import { ToastProvider } from '@/components/feedback';
 import { AppShell, type NavItem } from '@/components/layout';
 import { TextLink } from '@/components/ui';
 import '@/styles/globals.css';
+import { LEGAL_CONTACT_EMAIL } from './_legal/legal-info';
 
 export const metadata: Metadata = {
   title: 'TROQ',
@@ -43,7 +44,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <ToastProvider>
           <AppShell
             brand="TROQ"
-            homeHref="/explorar"
+            homeHref="/"
             desktopNav={DESKTOP_NAV}
             mobileNav={MOBILE_NAV}
             primaryAction={{ href: '/anuncios/novo', label: 'Anunciar' }}
@@ -51,7 +52,12 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             footer={
               <>
                 <span>TROQ — anúncios entre pessoas, com contato protegido.</span>
+                <TextLink href="/privacidade">Política de Privacidade</TextLink>
+                <TextLink href="/termos">Termos de Uso</TextLink>
                 <TextLink href="/politica/itens-proibidos">Itens proibidos</TextLink>
+                <TextLink href={`mailto:${LEGAL_CONTACT_EMAIL}`} reload>
+                  {LEGAL_CONTACT_EMAIL}
+                </TextLink>
               </>
             }
           >

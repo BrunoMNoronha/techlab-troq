@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useGoogleRedirect } from '@/app/_components/google-sign-in';
+import { TermsConsentText } from '@/app/_components/terms-consent';
 import { cancelGoogleSignup, completeGoogleSignup } from '@/modules/identity/google-actions';
 import { Alert } from '@/components/feedback';
 import { Checkbox, Field, Form, FormActions, Input } from '@/components/forms';
@@ -77,11 +78,7 @@ export function GoogleSignupForm({ email, returnTo }: { email: string; returnTo?
           required
           checked={termsAccepted}
           onChange={(e) => setTermsAccepted(e.target.checked)}
-          label={
-            <>
-              Li e aceito os <strong>Termos de Uso e Política da Plataforma</strong>.
-            </>
-          }
+          label={<TermsConsentText />}
         />
 
         <FormActions>

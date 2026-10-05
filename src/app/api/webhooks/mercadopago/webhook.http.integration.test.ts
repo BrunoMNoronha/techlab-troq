@@ -24,11 +24,12 @@ const enabled =
 
 vi.setConfig({ testTimeout: 60_000, hookTimeout: 60_000 });
 
-const PREFIX = `it96http-${Date.now()}-${randomBytes(3).toString('hex')}`;
+const PREFIX = `it96http-R${Date.now()}-R${randomBytes(3).toString('hex')}`;
 let counter = 0;
 const ORDER = `ORDHTTP${randomBytes(4).toString('hex').toUpperCase()}`;
 
 interface Send {
+  requestId?: string;
   dataId?: string | null;
   manifestId?: string;
   secret?: string;
@@ -39,7 +40,7 @@ interface Send {
 }
 
 async function send(opts: Send = {}) {
-  const requestId = `${PREFIX}-${++counter}`;
+  const requestId = opts.requestId ?? `${PREFIX}-${++counter}`;
   const ts = String(Date.now());
   const dataId = opts.dataId === undefined ? ORDER : opts.dataId;
   const query = dataId === null ? 'type=order' : `type=order&data.id=${encodeURIComponent(dataId)}`;
@@ -151,5 +152,85 @@ describe.skipIf(!enabled)('webhook do Mercado Pago pela rota real (#96, T-13/T-1
       redirect: 'manual',
     });
     expect(res.status).toBe(405);
+  });
+
+  it('F3-014 (#104): rajada de rejeicoes nao altera fatos financeiros nem vaza contato', async () => {
+    const snapshot = async () => {
+      const out: Record<string, unknown> = {};
+      for (const table of [
+        'contact_requests',
+        'contact_request_paid_guards',
+        'payment_attempts',
+        'payments',
+        'payment_notifications',
+        'reconciliation_cases',
+        'technical_refunds',
+        'selections',
+        'negotiations',
+        'contact_releases',
+        'contact_access_events',
+      ]) {
+        out[table] = await getPrismaClient().$queryRawUnsafe(
+          `SELECT md5(coalesce(string_agg(t::text, '|' ORDER BY t::text), '')) AS digest, count(*)::int AS n FROM "${table}" t`,
+        );
+      }
+      return out;
+    };
+    const phone = '+5511912345678';
+    const before = await snapshot();
+    const responses = await Promise.all(
+      Array.from({ length: 32 }, () =>
+        send({
+          signature: `ts=1,v1=${'0'.repeat(64)}`,
+          body: JSON.stringify({
+            type: 'order',
+            application_id: APP_ID,
+            data: { id: ORDER },
+            phone,
+          }),
+        }),
+      ),
+    );
+    expect(await snapshot()).toEqual(before);
+    for (const reply of responses) {
+      expect(reply.status).toBe(401);
+      expect(reply.body).toBe('');
+      const events = await rejection(reply.requestId);
+      expect(events).toHaveLength(1);
+      const text = JSON.stringify(events);
+      for (const marker of [phone, phone.slice(1), SECRET, reply.v1])
+        expect(text).not.toContain(marker);
+    }
+  });
+
+  it('F3-014 (#104): telefone nos dois ids hostis e descartado na rota HTTP', async () => {
+    const phone = '5511912345678';
+    const prior = await getPrismaClient().auditEvent.findMany({
+      where: { eventType: 'payment.notification_rejected' },
+      select: { id: true },
+    });
+    const res = await send({
+      requestId: phone,
+      dataId: phone,
+      signature: `ts=1,v1=${'0'.repeat(64)}`,
+    });
+    const fresh = await getPrismaClient().auditEvent.findMany({
+      where: { eventType: 'payment.notification_rejected', id: { notIn: prior.map((e) => e.id) } },
+    });
+    try {
+      expect(res.status).toBe(401);
+      expect(res.body).toBe('');
+      expect(fresh).toHaveLength(1);
+      expect(fresh[0].details).toEqual({
+        reason: 'signature_invalid',
+        providerRequestId: null,
+        providerDataId: null,
+      });
+      expect(JSON.stringify(fresh)).not.toContain(phone);
+    } finally {
+      await getPrismaClient().auditEvent.deleteMany({
+        where: { id: { in: fresh.map((e) => e.id) } },
+      });
+    }
   });
 });
