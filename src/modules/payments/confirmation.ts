@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { Prisma } from '@/generated/prisma/client';
 import { recordAuditEvent } from '@/modules/audit';
-import { reportSignal } from '@/modules/platform';
+import { redactText, reportSignal } from '@/modules/platform';
 import { getPrismaClient } from '@/persistence/prisma';
 import { REQUEST_PRICE_CENTS } from './charge';
 import {
@@ -37,6 +37,12 @@ function safeId(value: string | null): string | null {
   return value && SAFE_ID.test(value) ? value : null;
 }
 
+/** Antes da autenticidade, ate os ids sao entrada hostil. Sem PII na trilha. */
+function safeRejectedId(value: string | null): string | null {
+  const id = safeId(value);
+  return id && redactText(id) === id ? id : null;
+}
+
 // ---------------------------------------------------------------------------
 // Receptor
 // ---------------------------------------------------------------------------
@@ -64,8 +70,8 @@ export async function recordRejectedNotification(input: {
         result: 'rejected',
         details: {
           reason: input.reason,
-          providerRequestId: safeId(input.providerRequestId),
-          providerDataId: safeId(input.providerDataId),
+          providerRequestId: safeRejectedId(input.providerRequestId),
+          providerDataId: safeRejectedId(input.providerDataId),
         },
       }),
     );

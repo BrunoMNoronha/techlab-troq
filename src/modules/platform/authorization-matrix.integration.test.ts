@@ -45,6 +45,15 @@ import {
 } from '@/modules/media/actions';
 import { originalKey } from '@/modules/media/keys';
 import { getPrismaClient } from '@/persistence/prisma';
+import { registerOwnContact, listOwnContactReleases } from '@/modules/contact';
+import { revealContact } from '@/app/contatos/actions';
+import { chooseRequester, getSelectionOptions, selectForOwner } from '@/modules/negotiation';
+import {
+  requestContactUnlock,
+  getPixPayment,
+  getOwnContactRequest,
+  listOwnContactRequests,
+} from '@/modules/request';
 
 let browserCookie = '';
 vi.mock('next/headers', () => ({
@@ -70,11 +79,23 @@ const DOMAIN_TABLES = [
   'terms_acceptances',
   'account_deletion_requests',
   'listings',
+  'listing_trade_options',
   'listing_transitions',
   'listing_images',
   'image_derivatives',
   'media_object_deletions',
   'audit_events',
+  'contact_requests',
+  'contact_request_paid_guards',
+  'payment_attempts',
+  'payments',
+  'payment_notifications',
+  'reconciliation_cases',
+  'technical_refunds',
+  'selections',
+  'negotiations',
+  'contact_releases',
+  'contact_access_events',
 ] as const;
 
 async function snapshot(): Promise<Record<string, string>> {
@@ -278,6 +299,55 @@ const RESOURCE_OPERATIONS = OPERATIONS.filter(
 describe.skipIf(!enabled)('matriz de autorizacao por chamada direta (#50)', () => {
   const actors = new Map<ActorKind, Actor>();
   let forbiddenMarkers: string[];
+  const phase3 = new Map<string, Actor>();
+  let paidListing: string;
+  let reservedListing: string;
+  let reservedRequest: string;
+  let chosenRequest: string;
+  let oldRelease: string;
+  let currentRelease: string;
+
+  async function requestOf(
+    listingId: string,
+    requesterId: string,
+    slotIndex: number,
+    status: 'paid' | 'reserved',
+  ) {
+    const now = new Date();
+    const request = await getPrismaClient().contactRequest.create({
+      data: {
+        listingId,
+        requesterId,
+        slotIndex,
+        status,
+        reservedFrom: now,
+        reservedUntil: new Date(now.getTime() + 30 * 60_000),
+        paidAt: status === 'paid' ? now : null,
+      },
+    });
+    const attempt = await getPrismaClient().paymentAttempt.create({
+      data: {
+        contactRequestId: request.id,
+        idempotencyKey: randomUUID(),
+        externalReference: randomUUID(),
+        status: status === 'paid' ? 'pagamento_confirmado' : 'aguardando_pagamento',
+        accreditedAt: status === 'paid' ? now : null,
+        recognizedAt: status === 'paid' ? now : null,
+      },
+    });
+    if (status === 'paid')
+      await getPrismaClient().payment.create({
+        data: {
+          paymentAttemptId: attempt.id,
+          providerPaymentId: randomUUID(),
+          amountCents: 99,
+          providerStatus: 'processed',
+          accreditedAt: now,
+          isCanonical: true,
+        },
+      });
+    return request.id;
+  }
 
   async function actor(kind: ActorKind, withResources: boolean): Promise<Actor> {
     const email = `sintetico-${kind}-${RUN_ID}@example.test`;
@@ -339,11 +409,62 @@ describe.skipIf(!enabled)('matriz de autorizacao por chamada direta (#50)', () =
       'owner_id',
       'passwordHash',
     ];
+
+    for (const tag of ['reserva', 'pago', 'escolhido', 'anterior']) {
+      const email = `matriz-f3-${tag}-${RUN_ID}@example.test`;
+      const userId = await createVerifiedUser(email);
+      phase3.set(tag, { kind: 'terceiro', email, userId, cookie: await signIn(email), res: null });
+    }
+    const owner = actors.get('dono')!.userId!;
+    paidListing = await listingOf(owner, 'published');
+    reservedListing = await listingOf(owner, 'published');
+    reservedRequest = await requestOf(
+      reservedListing,
+      phase3.get('reserva')!.userId!,
+      1,
+      'reserved',
+    );
+    const previous = await requestOf(paidListing, phase3.get('anterior')!.userId!, 1, 'paid');
+    chosenRequest = await requestOf(paidListing, phase3.get('escolhido')!.userId!, 2, 'paid');
+    await requestOf(paidListing, phase3.get('pago')!.userId!, 3, 'paid');
+    const first = await selectForOwner(owner, paidListing, previous);
+    expect(first.success).toBe(true);
+    if (!first.success) throw new Error('Escolha inicial recusada');
+    oldRelease = (
+      await getPrismaClient().contactRelease.findUniqueOrThrow({
+        where: { negotiationId: first.negotiationId },
+      })
+    ).id;
+    await getPrismaClient().negotiation.update({
+      where: { id: first.negotiationId },
+      data: { status: 'closed', closedAt: new Date(), closedById: owner },
+    });
+    const second = await selectForOwner(owner, paidListing, chosenRequest);
+    expect(second.success).toBe(true);
+    if (!second.success) throw new Error('Reselecao recusada');
+    currentRelease = (
+      await getPrismaClient().contactRelease.findUniqueOrThrow({
+        where: { negotiationId: second.negotiationId },
+      })
+    ).id;
   });
 
   afterAll(async () => {
     browserCookie = '';
     const prisma = getPrismaClient();
+    const phase3Listings = { listingId: { in: [paidListing, reservedListing].filter(Boolean) } };
+    await prisma.contactAccessEvent.deleteMany({ where: { contactRelease: phase3Listings } });
+    await prisma.contactRelease.deleteMany({ where: phase3Listings });
+    await prisma.negotiation.deleteMany({ where: phase3Listings });
+    await prisma.selection.deleteMany({ where: phase3Listings });
+    await prisma.payment.deleteMany({
+      where: { paymentAttempt: { contactRequest: phase3Listings } },
+    });
+    await prisma.paymentAttempt.deleteMany({ where: { contactRequest: phase3Listings } });
+    await prisma.contactRequest.deleteMany({ where: phase3Listings });
+    await prisma.auditEvent.deleteMany({
+      where: { actorId: null, targetId: { in: [oldRelease, currentRelease].filter(Boolean) } },
+    });
     const listings = { listing: { ownerId: { in: userIds } } };
     await prisma.imageDerivative.deleteMany({ where: { image: listings } });
     await prisma.mediaObjectDeletion.deleteMany({
@@ -508,5 +629,131 @@ describe.skipIf(!enabled)('matriz de autorizacao por chamada direta (#50)', () =
       reason: 'unauthenticated',
     });
     expect(await snapshot()).toEqual(before);
+  });
+
+  it.each(invalidKinds)(
+    'F3-014: %s nao escreve contato, reserva, cobra, escolhe ou le recursos privados',
+    async (kind) => {
+      browserCookie = actors.get(kind)!.cookie;
+      const reason =
+        kind === 'nao_verificado'
+          ? 'email_unverified'
+          : ['blocked_age', 'blocked_admin', 'deletion_requested'].includes(kind)
+            ? 'account_restricted'
+            : 'login_required';
+      const before = await snapshot();
+      const replies = [
+        await registerOwnContact({ phone: '(11) 91234-5678' }),
+        await requestContactUnlock(reservedListing),
+        await getPixPayment(reservedRequest),
+        await chooseRequester({
+          listingId: paidListing,
+          contactRequestId: chosenRequest,
+          confirmed: true,
+        }),
+        await getSelectionOptions(paidListing),
+      ];
+      for (const reply of replies) {
+        expect(reply).toMatchObject({ success: false, reason });
+        expectNoLeak(kind, reply, [...actors.values(), ...phase3.values()]);
+      }
+      expect(await getOwnContactRequest(chosenRequest)).toBeNull();
+      expect(await listOwnContactRequests()).toBeNull();
+      expect(await listOwnContactReleases()).toBeNull();
+      expect(await snapshot()).toEqual(before);
+      // A negativa de contato e auditada; nenhum fato de negocio pode mudar.
+      const deliveredBefore = await getPrismaClient().contactAccessEvent.count();
+      const reply = await revealContact(currentRelease);
+      expect(reply.success).toBe(false);
+      expectNoLeak(kind, reply, [...actors.values(), ...phase3.values()]);
+      expect(await getPrismaClient().contactAccessEvent.count()).toBe(deliveredBefore);
+      const after = await snapshot();
+      delete after.audit_events;
+      const withoutAudit = { ...before };
+      delete withoutAudit.audit_events;
+      expect(after).toEqual(withoutAudit);
+    },
+  );
+
+  it.each(['terceiro', 'reserva', 'pago', 'escolhido', 'anterior'])(
+    'F3-014: %s nao escolhe nem cobra reserva alheia e nao le autorizacao nova alheia',
+    async (tag) => {
+      const actor = actors.get(tag as ActorKind) ?? phase3.get(tag)!;
+      browserCookie = actor.cookie;
+      const before = await snapshot();
+      expect(
+        await chooseRequester({
+          listingId: paidListing,
+          contactRequestId: chosenRequest,
+          confirmed: true,
+        }),
+      ).toMatchObject({ success: false, reason: 'not_found' });
+      expect(await getSelectionOptions(paidListing)).toMatchObject({
+        success: false,
+        reason: 'not_found',
+      });
+      if (tag !== 'reserva') {
+        const own = await getPixPayment(reservedRequest);
+        const ghost = await getPixPayment(randomUUID());
+        expect(own).toEqual(ghost);
+        expect(own).toMatchObject({ success: false, reason: 'unavailable' });
+      }
+      if (tag !== 'escolhido') expect(await getOwnContactRequest(chosenRequest)).toBeNull();
+      expect(await snapshot()).toEqual(before);
+      if (tag !== 'escolhido') {
+        const actual = await revealContact(currentRelease);
+        expect(actual).toEqual(await revealContact(randomUUID()));
+        expect(actual).toMatchObject({ success: false, reason: 'unavailable' });
+        expectNoLeak(tag, actual, [...actors.values()]);
+      }
+    },
+  );
+
+  it('F3-014: controles positivos, dono sem contato do solicitante e autorizacoes independentes', async () => {
+    browserCookie = actors.get('dono')!.cookie;
+    expect(
+      await chooseRequester({
+        listingId: paidListing,
+        contactRequestId: chosenRequest,
+        confirmed: true,
+      }),
+    ).toMatchObject({ success: true, changed: false });
+    expect(await getPixPayment(reservedRequest)).toMatchObject({
+      success: false,
+      reason: 'unavailable',
+    });
+    expect(await requestContactUnlock(reservedListing)).toMatchObject({
+      success: false,
+      reason: 'own_listing',
+    });
+    expect(await revealContact(currentRelease)).toMatchObject({
+      success: false,
+      reason: 'unavailable',
+    });
+    browserCookie = phase3.get('reserva')!.cookie;
+    expect(await getOwnContactRequest(reservedRequest)).toMatchObject({
+      phase: 'awaiting_payment',
+    });
+    browserCookie = phase3.get('escolhido')!.cookie;
+    expect(await revealContact(currentRelease)).toEqual({ success: true, phone: PHONE });
+    expect(await revealContact(oldRelease)).toMatchObject({
+      success: false,
+      reason: 'unavailable',
+    });
+    browserCookie = phase3.get('anterior')!.cookie;
+    expect(await revealContact(oldRelease)).toEqual({ success: true, phone: PHONE });
+    expect(await revealContact(currentRelease)).toMatchObject({
+      success: false,
+      reason: 'unavailable',
+    });
+    const access = await getPrismaClient().contactAccessEvent.findMany({
+      where: { contactReleaseId: { in: [oldRelease, currentRelease] } },
+    });
+    expect(access).toHaveLength(2);
+    expect(
+      await getPrismaClient().auditEvent.count({
+        where: { eventType: 'contact.delivered', targetId: { in: [oldRelease, currentRelease] } },
+      }),
+    ).toBe(2);
   });
 });

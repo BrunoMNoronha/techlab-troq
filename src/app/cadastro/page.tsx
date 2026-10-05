@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { registerUser } from '@/modules/identity/actions';
 import { ResendVerificationForm } from '../verificar-email/resend-form';
 import { GoogleDivider, GoogleSignInButton } from '@/app/_components/google-sign-in';
+import { TermsConsentText } from '@/app/_components/terms-consent';
 import { Alert } from '@/components/feedback';
 import { Checkbox, Field, Form, FormActions, Input } from '@/components/forms';
 import { PageContainer, PageHeader, Stack } from '@/components/layout';
@@ -143,11 +144,7 @@ export default function CadastroPage() {
               required
               checked={termsAccepted}
               onChange={(e) => setTermsAccepted(e.target.checked)}
-              label={
-                <>
-                  Li e aceito os <strong>Termos de Uso e Política da Plataforma</strong>.
-                </>
-              }
+              label={<TermsConsentText />}
             />
           </Stack>
 
