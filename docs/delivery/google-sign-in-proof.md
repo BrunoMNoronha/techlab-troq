@@ -4,18 +4,44 @@ Registro da evidência com o **Google real** exigida por [#81](https://github.co
 
 A entrada com Google foi aprovada por DEC-047 (2026-10-04) e é oferecida **só em `preview` e `production`**; `development` não é provisionado.
 
-## Estado em 2026-10-04: **bloqueada — homologação não concluída**
+## Estado em 2026-10-05: **`preview` homologado; `production` pendente**
 
 | Item | Situação |
 | --- | --- |
-| Projeto Google Cloud do TROQ | a criar (o agente conduz no Chrome, com a sessão do Bruno) |
-| Tela de consentimento OAuth (escopos `openid` e `email`) | não configurada |
-| Cliente OAuth "Aplicativo da Web" de `preview` | não criado |
-| Cliente OAuth "Aplicativo da Web" de `production` | não criado; depende da origem `https` de [#77](https://github.com/BrunoMNoronha/techlab-troq/issues/77) e da configuração de autenticação de `production`, que ainda não tem variáveis |
-| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` na Vercel | ausentes nos dois escopos |
-| Prova no navegador com Google real | **não executada** |
+| Projeto Google Cloud do TROQ | criado: `troq-510700` ("TROQ"), conduzido pelo agente no Chrome com a sessão do Bruno |
+| Tela de consentimento OAuth | público **Externo**, em **modo de teste**; escopos declarados só `openid` e `userinfo.email`; um usuário de teste (a conta do Bruno) |
+| Cliente OAuth "Aplicativo da Web" de `preview` | "TROQ preview", sem origem JavaScript; URI de redirecionamento só a do alias da branch de prova |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` e `BETTER_AUTH_URL` em `preview` | restritas à branch `proof/81-google-preview`; o segredo foi gravado pelo Bruno como Sensitive |
+| Cliente OAuth de `production` | não criado; depende da origem `https` de [#77](https://github.com/BrunoMNoronha/techlab-troq/issues/77) e da configuração de autenticação de `production`, que ainda não tem variáveis |
 
-Sem essas credenciais, a entrada com Google fica indisponível, como desenhado (IC-15.8), e o login por senha segue igual.
+## Prova em `preview` (2026-10-05)
+
+- **Ambiente:** deployment de `preview` da branch `proof/81-google-preview` (alias `techlab-troq-git-proof-81-google-preview-bruno-m-noronha.vercel.app`), revisão `39307fe`, código de `main` em `0a95e0c` (inclui a PR [#123](https://github.com/BrunoMNoronha/techlab-troq/pull/123), `d70bc8f`), Neon `preview` com a migration `20261004120000_account_provider_identity_unique` aplicada pelo workflow.
+- **Método:** o agente conduziu o TROQ e o console no Chrome. As telas do Google (escolha da conta e consentimento) e o ato afirmativo de 18+ e termos ficaram com o Bruno. As evidências de banco vêm de consultas só com agregados; as de log, dos registros de requisição da Vercel.
+
+| # | Passo | Resultado |
+| --- | --- | --- |
+| 1 | `/cadastro` mostra "Continuar com Google" | PASS |
+| 2 | Pedido ao Google: `scope=openid email`, PKCE `S256`, `redirect_uri` exata do alias | PASS |
+| 3 | Consentimento real pede só o **endereço de e-mail** | PASS |
+| 4 | Callback de identidade nova: só a pendência; nenhuma linha nova em `users` nem em `accounts`, nenhuma sessão (4 → 4 usuários, 0 → 1 pendência) | PASS |
+| 5 | `/cadastro/google` mostra o e-mail confirmado pelo Google, caixas desmarcadas | PASS |
+| 6 | Conclusão (18+ e termos marcados pelo Bruno) → Google → `/conta` | PASS |
+| 7 | Banco: +1 usuário `active` com `email_verified` e `email_verified_at`, sem foto e sem senha; 1 identidade Google com tokens nulos; 1 `age_eligibility` versão `1.0`; pendência consumida; sessões sem IP e sem user-agent | PASS |
+| 8 | `/conta` informa "Conta Google vinculada" | PASS |
+| 9 | Logout → `/conta` redireciona para `/login?motivo=sessao`; a sessão do navegador foi apagada | PASS |
+| 10 | Acesso posterior com Google → mesma conta (5 usuários, 1 identidade), nova sessão, tokens ainda nulos | PASS |
+| 11 | Logs de requisição do alias (29 registros, 4 callbacks): nenhum segredo do cliente, token do Google, JWT, cookie de sessão ou handle de pendência | PASS |
+
+**Não provados com o Google real** (cobertos só pelos testes automatizados de `google-signin.integration.test.ts`):
+
+- colisão com conta por senha e vinculação explícita, porque não havia uma segunda conta de teste autorizada com e-mail de conta por senha;
+- conta bloqueada;
+- cancelamento na tela do Google.
+
+**Observação.** A conta de teste ficou com duas sessões depois da conclusão: a do navegador e uma de um segundo retorno pelo Google durante a conclusão. A segunda expira normalmente e não afeta o resultado.
+
+Sem as credenciais, a entrada com Google fica indisponível, como desenhado (IC-15.8), e o login por senha segue igual.
 
 ## Roteiro da prova em `preview`
 
