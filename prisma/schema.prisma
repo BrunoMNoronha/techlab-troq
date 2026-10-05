@@ -288,6 +288,8 @@ model Account {
   createdAt             DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt             DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
 
+  /// IC-15.4 — uma identidade de provedor (ex.: `sub` do Google) pertence a uma unica conta.
+  @@unique([providerId, accountId])
   @@map("accounts")
 }
 

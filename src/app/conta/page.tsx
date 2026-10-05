@@ -1,7 +1,27 @@
 import { redirect } from 'next/navigation';
 import { getOwnContactStatus } from '@/modules/contact';
 import { validateSession, logoutUser, loginRedirectPath } from '@/modules/identity';
+import { hasLinkedGoogleAccount, isGoogleSignInAvailable } from '@/modules/identity/google';
 import { ContactForm } from './contact-form';
+import { GoogleLinkButton } from './google-link';
+
+// Resultado da vinculacao da Conta Google, repassado por /login/google (IC-15.4).
+const GOOGLE_LINK_MESSAGES: Record<string, { text: string; ok: boolean }> = {
+  vinculada: { text: 'Conta Google vinculada. Voce ja pode entrar com ela.', ok: true },
+  cancelado: { text: 'A vinculacao com o Google foi cancelada.', ok: false },
+  email_diferente: {
+    text: 'A Conta Google escolhida tem outro e-mail. So e possivel vincular uma Conta Google com o mesmo e-mail desta conta, verificado pelo Google.',
+    ok: false,
+  },
+  ja_vinculada: {
+    text: 'Esta Conta Google ja esta vinculada a outra conta TROQ e nao pode ser transferida.',
+    ok: false,
+  },
+  falha: {
+    text: 'Nao foi possivel vincular a Conta Google. Confira se o e-mail esta verificado no Google e tente novamente.',
+    ok: false,
+  },
+};
 
 export const dynamic = 'force-dynamic';
 
@@ -16,8 +36,9 @@ export default async function ContaPage({
     redirect(loginRedirectPath(sessionResult.reason));
   }
 
-  const { erro } = await searchParams;
+  const { erro, google } = await searchParams;
   const logoutFailed = erro === 'logout';
+  const googleMessage = typeof google === 'string' ? GOOGLE_LINK_MESSAGES[google] : undefined;
 
   const user = sessionResult.user;
   // So o booleano do proprio dono; o numero nunca chega a esta pagina (CR-2.5).
@@ -25,6 +46,8 @@ export default async function ContaPage({
   if (!contactStatus) {
     redirect(loginRedirectPath('no_session'));
   }
+  const googleLinked = await hasLinkedGoogleAccount(user.id);
+  const googleAvailable = isGoogleSignInAvailable();
 
   async function handleLogout() {
     'use server';
@@ -112,6 +135,43 @@ export default async function ContaPage({
       </dl>
 
       <ContactForm hasContact={contactStatus.hasContact} />
+
+      <section aria-labelledby="conta-google" style={{ marginBottom: '24px' }}>
+        <h2 id="conta-google" style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '8px' }}>
+          Conta Google
+        </h2>
+        {googleMessage && (
+          <p
+            role={googleMessage.ok ? 'status' : 'alert'}
+            style={{
+              padding: '12px 16px',
+              backgroundColor: googleMessage.ok ? '#f0fdf4' : '#fef2f2',
+              border: `1px solid ${googleMessage.ok ? '#bbf7d0' : '#fecaca'}`,
+              borderRadius: '6px',
+              color: googleMessage.ok ? '#166534' : '#991b1b',
+              fontSize: '14px',
+            }}
+          >
+            {googleMessage.text}
+          </p>
+        )}
+        {googleLinked ? (
+          <p style={{ color: '#374151', fontSize: '14px' }}>
+            Sua Conta Google está vinculada e pode ser usada para entrar no TROQ.
+          </p>
+        ) : googleAvailable ? (
+          <>
+            <p style={{ color: '#4b5563', fontSize: '14px' }}>
+              Vincule a Conta Google que usa o mesmo e-mail desta conta para entrar com ela.
+            </p>
+            <GoogleLinkButton />
+          </>
+        ) : (
+          <p style={{ color: '#6b7280', fontSize: '14px' }}>
+            A entrada com Google não está disponível no momento.
+          </p>
+        )}
+      </section>
 
       {logoutFailed && (
         <div

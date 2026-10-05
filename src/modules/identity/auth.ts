@@ -1,12 +1,19 @@
-import { betterAuth } from 'better-auth';
+import { betterAuth, type BetterAuthOptions } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { APIError, isAPIError } from 'better-auth/api';
 import { nextCookies } from 'better-auth/next-js';
 import { getPrismaClient } from '@/persistence/prisma';
+import {
+  GOOGLE_PROVIDER_ID,
+  SOCIAL_SIGNUP_DISABLED,
+  resolveGoogleConfig,
+  validateProviderIdentity,
+  withoutProviderTokens,
+} from './google';
 
-// Better Auth e a UNICA autoridade de sessao do TROQ: autentica email/senha,
-// cria a sessao, grava e le o cookie assinado e encerra a sessao
-// (docs/architecture/identity-contract.md, IC-5). O dominio so aplica
+// Better Auth e a UNICA autoridade de sessao do TROQ: autentica email/senha e
+// Conta Google, cria a sessao, grava e le o cookie assinado e encerra a sessao
+// (docs/architecture/identity-contract.md, IC-5 e IC-15). O dominio so aplica
 // autorizacao depois, em `validateSession` (IC-8).
 
 export const APP_ENVIRONMENTS = ['development', 'preview', 'production'] as const;
@@ -104,6 +111,24 @@ export function resolveAuthEnvironment(
 function createAuth() {
   const { secret, baseURL } = resolveAuthEnvironment();
   const prisma = getPrismaClient();
+  // Sem credenciais validas o provedor Google simplesmente nao existe; o login
+  // por senha nao depende dele (IC-15.8).
+  const google = resolveGoogleConfig();
+  // Entrada com Conta Google (IC-15). So os escopos de identidade: `openid` e
+  // `email`, sem `profile`, sem acesso offline e sem somar escopos ja
+  // concedidos em outros apps (IC-15.7). O callback e
+  // `<BETTER_AUTH_URL>/api/auth/callback/google`.
+  const socialProviders: BetterAuthOptions['socialProviders'] = google
+    ? {
+        [GOOGLE_PROVIDER_ID]: {
+          clientId: google.clientId,
+          clientSecret: google.clientSecret,
+          disableDefaultScope: true,
+          scope: ['openid', 'email'],
+          includeGrantedScopes: false,
+        },
+      }
+    : {};
 
   return betterAuth({
     secret,
@@ -121,11 +146,18 @@ function createAuth() {
     // `emailVerification` fica deliberadamente sem configuracao: a verificacao
     // usa token do TROQ (IC-7.1), e o login de conta nao verificada responde
     // EMAIL_NOT_VERIFIED sem enviar email nem criar sessao.
+    socialProviders,
+    // Erros de OAuth sem URL propria do fluxo (state ausente ou adulterado)
+    // caem na rota que traduz o codigo, nunca em `/api/auth/error` (IC-15.6).
+    onAPIError: { errorURL: `${baseURL}/login/google` },
     user: {
       modelName: 'user',
       fields: {
         name: 'displayName',
       },
+      // Usuario nunca nasce no callback: identidade Google nova vira pendencia
+      // de cadastro (IC-15.2).
+      validateUserInfo: validateProviderIdentity,
     },
     session: {
       modelName: 'session',
@@ -136,6 +168,17 @@ function createAuth() {
     },
     account: {
       modelName: 'account',
+      // Sem vinculacao implicita por igualdade de e-mail; so a vinculacao
+      // explicita, iniciada por sessao autenticada, com o mesmo e-mail e
+      // e-mail verificado pelo Google (IC-15.4).
+      accountLinking: {
+        enabled: true,
+        disableImplicitLinking: true,
+        allowDifferentEmails: false,
+        updateUserInfoOnLink: false,
+      },
+      // Tokens do provedor nao sao guardados (IC-15.7).
+      updateAccountOnSignIn: false,
     },
     verification: {
       modelName: 'verification',
@@ -145,6 +188,29 @@ function createAuth() {
       ipAddress: { disableIpTracking: true },
     },
     databaseHooks: {
+      // O provedor nunca cria nem altera `users`: cadastro, e-mail e
+      // verificacao pertencem as Server Actions do TROQ (IC-6.1, IC-3.2).
+      user: {
+        create: {
+          before: async () => {
+            throw new APIError('FORBIDDEN', {
+              message: 'Cadastro pelo provedor desabilitado.',
+              code: SOCIAL_SIGNUP_DISABLED,
+            });
+          },
+        },
+        update: {
+          before: async () => false,
+        },
+      },
+      account: {
+        create: {
+          before: async (account) => ({ data: withoutProviderTokens(account) }),
+        },
+        update: {
+          before: async (account) => ({ data: withoutProviderTokens(account) }),
+        },
+      },
       session: {
         create: {
           // Ponto unico que impede sessao de conta nao ativa, qualquer que seja

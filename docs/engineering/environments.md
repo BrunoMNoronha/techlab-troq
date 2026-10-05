@@ -136,7 +136,7 @@ Legenda das colunas:
 - **Ambientes** — onde a variável precisa existir.
 - **Classificação** — `pública` (prefixo `NEXT_PUBLIC_`, conteúdo público) ou `server-side` (exclusivamente servidor). Segredos são sempre `server-side` e estão marcados como tal.
 - **Obrigatoriedade** — `obrigatória` quando a funcionalidade correspondente não opera sem ela; `condicional` quando depende de um caminho específico.
-- **Estado** — `previsto` significa **ainda não consumido por código**; `consumido` significa que existe código versionado que a lê, indicado na própria célula. Hoje estão `consumido` **`DATABASE_URL`**, **`DIRECT_URL`** (seção 5.2), **`APP_ENV`** e **`NEXT_PUBLIC_SENTRY_DSN`** (seções 5.1 e 5.8, desde F1-010), as variáveis de Better Auth e Resend (seções 5.4 e 5.5, desde F2-002 e F2-003), as cinco `R2_*` (seção 5.3) e **`CRON_SECRET`** (seção 5.7), desde F2-008; as demais estão `previsto` (seção 1).
+- **Estado** — `previsto` significa **ainda não consumido por código**; `consumido` significa que existe código versionado que a lê, indicado na própria célula. Hoje estão `consumido` **`DATABASE_URL`**, **`DIRECT_URL`** (seção 5.2), **`APP_ENV`** e **`NEXT_PUBLIC_SENTRY_DSN`** (seções 5.1 e 5.8, desde F1-010), as variáveis de Better Auth e Resend (seções 5.4 e 5.5, desde F2-002 e F2-003), as do cliente OAuth do Google (seção 5.5, desde #81, opcionais), as cinco `R2_*` (seção 5.3) e **`CRON_SECRET`** (seção 5.7), desde F2-008; as demais estão `previsto` (seção 1).
 - **Origem** — a fonte normativa que exige a variável e a justificativa do nome.
 
 ### 5.1 Aplicação
@@ -193,14 +193,24 @@ Acesso pela **API S3-compatible**, como determina [../adr/0003-object-storage-r2
 
 ### 5.5 Autenticação — Better Auth
 
-Autenticação por email/senha com verificação de email, via Better Auth (DEC-012, DEC-013; [../architecture/overview.md](../architecture/overview.md), AR-7.1).
+Autenticação por email/senha com verificação de email, via Better Auth (DEC-012, DEC-013; [../architecture/overview.md](../architecture/overview.md), AR-7.1), e entrada opcional com Conta Google pelo mesmo provedor (#81).
 
 | Variável | Ambientes | Classificação | Obrigatoriedade | Estado | Origem |
 | --- | --- | --- | --- | --- | --- |
 | `BETTER_AUTH_SECRET` | os três | server-side — **segredo** | obrigatória | **consumido** por `src/modules/identity/auth.ts` (F2-002) | Segredo de assinatura do cookie de sessão e de dados do provedor. É a chave que sustenta o nível N1 de autorização de AR-7.2: quem a possui forja sessão. Nunca sai do servidor (RNF-007, RNF-015). Mínimo de 32 caracteres aleatórios (`openssl rand -base64 32`), distinto por ambiente |
 | `BETTER_AUTH_URL` | os três | server-side | obrigatória | **consumido** por `src/modules/identity/auth.ts` (F2-002) | URL base (origem) do Better Auth no ambiente: define a origem confiável e o atributo `Secure` do cookie. Em `development` pode ser `http://localhost:3000`; em `preview` e `production` deve ser `https` e nunca `localhost`. Não é segredo; permanece server-side porque só o servidor a consome |
+| `GOOGLE_CLIENT_ID` | os três, quando a entrada com Google for oferecida | server-side | condicional | **consumido** por `src/modules/identity/google.ts` (#81); **não provisionado** em nenhum ambiente | Client ID do cliente OAuth "Aplicativo da Web" do Google Cloud, um por ambiente ([../architecture/identity-contract.md](../architecture/identity-contract.md), IC-15.8). Não é segredo, mas fica server-side: o fluxo é iniciado pelo servidor e nenhum código de cliente o usa. Precisa terminar em `.apps.googleusercontent.com` |
+| `GOOGLE_CLIENT_SECRET` | os três, quando a entrada com Google for oferecida | server-side — **segredo** | condicional | **consumido** por `src/modules/identity/google.ts` (#81); **não provisionado** em nenhum ambiente | Segredo do mesmo cliente OAuth, usado só na troca do código pelo servidor. Nunca sai do servidor (RNF-015), distinto por ambiente; na Vercel, marcado sensível |
 
 **Nome e estado.** `BETTER_AUTH_SECRET` e `BETTER_AUTH_URL` seguem a convenção documentada da biblioteca (regra 4 da seção 4), conferida contra `better-auth` 1.7.6 por F2-002.
+
+**Entrada com Conta Google (#81; [../architecture/identity-contract.md](../architecture/identity-contract.md), IC-15).** As duas variáveis são **opcionais por desenho**, e por isso o código entrou na mesma PR que as documenta (exceção consciente ao passo 4 da seção 6.2): sem as duas, ou com placeholder `SUBSTITUIR_...`, o provedor Google não é registrado, o botão "Continuar com Google" não aparece e as Server Actions respondem "indisponível", sem tocar no login por senha. Configuração parcial ou `GOOGLE_CLIENT_ID` fora do formato também desligam o Google, com log que nomeia a variável e nunca o valor. Ao provisionar um ambiente, o cliente OAuth do Google Cloud recebe:
+
+- **URI de redirecionamento autorizada**, exata: `<BETTER_AUTH_URL>/api/auth/callback/google` — em `development`, `http://localhost:3000/api/auth/callback/google`; em `preview`, uma por alias de branch que tenha a sua `BETTER_AUTH_URL` (o Google não aceita curinga); em `production`, a origem `https` definitiva, que depende do domínio de [#77](https://github.com/BrunoMNoronha/techlab-troq/issues/77).
+- **Origens JavaScript autorizadas**: nenhuma é necessária, porque o fluxo é iniciado e concluído pelo servidor.
+- **Escopos da tela de consentimento**: apenas `openid` e `email`. O TROQ não pede `profile`, Gmail, Drive, contatos nem acesso offline (IC-15.7).
+
+Nenhum valor das duas variáveis existe hoje em `.env.local`, na Vercel ou no GitHub: provisionar o projeto Google Cloud, a tela de consentimento e as credenciais exige autorização específica do Bruno, e a prova real com o Google fica registrada em [../delivery/google-sign-in-proof.md](../delivery/google-sign-in-proof.md).
 
 **Resend (F2-003).** `src/modules/identity/email.ts` trata `RESEND_API_KEY` ausente ou `SUBSTITUIR_...` e `EMAIL_FROM` ausente ou no domínio reservado `example.invalid` como envio **não configurado**, e o envio falha — não há remetente padrão nem sucesso simulado, e nenhum log carrega destinatário, token ou link ([../architecture/identity-contract.md](../architecture/identity-contract.md), IC-9.1). Os links de verificação usam a mesma origem validada de `BETTER_AUTH_URL` (IC-12.3), e não `NEXT_PUBLIC_APP_URL`.
 
