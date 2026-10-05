@@ -58,6 +58,7 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: 24
+          package-manager-cache: false
 
       - name: Conferir origem e revisão de Preview
         id: source
