@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getOwnContactStatus } from '@/modules/contact';
 import { validateSession, logoutUser, loginRedirectPath } from '@/modules/identity';
@@ -112,6 +113,10 @@ export default async function ContaPage({
       </dl>
 
       <ContactForm hasContact={contactStatus.hasContact} />
+
+      <p style={{ margin: '0 0 24px', fontSize: '15px' }}>
+        <Link href="/contatos">Contatos liberados para você</Link>
+      </p>
 
       {logoutFailed && (
         <div

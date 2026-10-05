@@ -96,10 +96,10 @@ Nenhum item exige alterar RB-001 a RB-006, DEC-027 a DEC-038 ou as ADRs. As corr
 | F3-007 | [#97](https://github.com/BrunoMNoronha/techlab-troq/issues/97) | Duplicidade, fora da janela e reembolso técnico | #96 | T-7, T-8, T-9, T-16 | PostgreSQL efêmero + simulado | concluído (2026-10-01) |
 | F3-008 | [#98](https://github.com/BrunoMNoronha/techlab-troq/issues/98) | Reconciliação periódica e retentativa de reembolso | #97 | T-5, T-18 | PostgreSQL efêmero; `preview` por invocação | implementado (2026-10-01; PR #116); saldo/180 dias resolvidos por DEC-045 e busca de orders provada na sandbox; pendente só a invocação autorizada em `preview`, que espera `CRON_SECRET` no escopo Preview da Vercel |
 | F3-009 | [#99](https://github.com/BrunoMNoronha/techlab-troq/issues/99) | Escolha, negociação e autorização | #92, #96 | C-9 | PostgreSQL efêmero, concorrente | implementado (2026-10-04) |
-| F3-010 | [#100](https://github.com/BrunoMNoronha/techlab-troq/issues/100) | Entrega do contato ao escolhido | #99 | C-2 a C-7, C-11 | PostgreSQL efêmero + HTTP + componentes | próximo |
+| F3-010 | [#100](https://github.com/BrunoMNoronha/techlab-troq/issues/100) | Entrega do contato ao escolhido | #99 | C-2 a C-7, C-11 | PostgreSQL efêmero + HTTP + componentes | implementado (2026-10-04) |
 | F3-011 | [#101](https://github.com/BrunoMNoronha/techlab-troq/issues/101) | Reversões e seus efeitos | #98, #100 | T-17, C-10 | PostgreSQL efêmero; `preview` por invocação | bloqueado |
 | F3-012 | [#102](https://github.com/BrunoMNoronha/techlab-troq/issues/102) | Jornada de interface e homologação em `preview` | #98, #100; PX-2, PX-3, OD-15, DP-4 | — | `preview` + sandbox do Mercado Pago | bloqueado |
-| F3-013 | [#103](https://github.com/BrunoMNoronha/techlab-troq/issues/103) | E-mails transacionais e observabilidade | #96, #99 | — | Simulado + Sentry de `preview` | bloqueado |
+| F3-013 | [#103](https://github.com/BrunoMNoronha/techlab-troq/issues/103) | E-mails transacionais e observabilidade | #96, #99 | — | Simulado + Sentry de `preview` | próximo |
 | F3-014 | [#104](https://github.com/BrunoMNoronha/techlab-troq/issues/104) | Verificação de segurança e revisão reforçada | #101, #102, #103 | C-8 (e reexecução de todos) | PostgreSQL efêmero + `preview` | bloqueado |
 | F3-015 | [#105](https://github.com/BrunoMNoronha/techlab-troq/issues/105) | Gate de saída da Fase 3 | #104; OD-15; RECOMENDAÇÃO #86 | — | Auditoria por SHA | bloqueado |
 

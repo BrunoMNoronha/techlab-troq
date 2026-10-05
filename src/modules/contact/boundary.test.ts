@@ -25,6 +25,8 @@ const GENERATED_DIR = 'src/generated/';
  * produto pode entrar nesta lista.
  */
 const FIXTURE_EXCEPTIONS = new Set([
+  'src/app/contatos/contact-delivery.http.integration.test.ts',
+  'src/app/contatos/contact-delivery.integration.test.ts',
   'src/app/private-surface.http.integration.test.ts',
   'src/app/public-surface.http.integration.test.ts',
   'src/modules/listing/public-listing.integration.test.ts',
