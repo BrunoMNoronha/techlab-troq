@@ -1,4 +1,4 @@
-# Prova real da entrada com Conta Google (#81)
+# Prova real da entrada com Conta Google (#81 e #133)
 
 Registro da evidência com o **Google real** exigida por [#81](https://github.com/BrunoMNoronha/techlab-troq/issues/81), mantido à parte dos testes automatizados ([../architecture/identity-contract.md](../architecture/identity-contract.md), IC-15.10). Os testes provam o comportamento do TROQ diante de cada resposta do Google, com o endpoint de token simulado; só esta prova mostra que o cliente OAuth, a tela de consentimento e as URIs de cada ambiente estão corretos.
 
@@ -15,9 +15,33 @@ No console do projeto `troq-510700`, o público foi publicado e confirmado como 
 | Par Production na Vercel | Ambas as chaves presentes como Sensitive; valores não recuperados |
 | Login Google em Production | Relatado pelo Bruno em comentário de #133 após [Deploy Production 37273766162](https://github.com/BrunoMNoronha/techlab-troq/actions/runs/37273766162), SHA `dc511320ac4048c1b875ec7db283456defcbb7e3`; não repetido nesta etapa |
 | Cliente Preview "TROQ preview" | Cliente distinto de Production; callback `https://techlab-troq-git-preview-bruno-m-noronha.vercel.app/api/auth/callback/google` salvo e conferido em nova leitura do console |
-| Par efetivo e jornada de Preview estável | Cadastro direto pelo Bruno e homologação pendentes; no deployment `dpl_FugUTy2nyggXKwT6zpUMVM4oHM8s`, SHA `f6d3ae51fb480d0b77f713dbfbd63f0c6fe92214`, [run 37290829843, tentativa 2](https://github.com/BrunoMNoronha/techlab-troq/actions/runs/37290829843), o navegador confirmou `/login` sem botão Google. A prova histórica de #81 não atende esse ambiente |
+| Par efetivo de Preview estável | Ambas as chaves presentes como Sensitive, no escopo Preview sem restrição de branch; segredo cadastrado diretamente pelo Bruno, sem recuperação do valor |
+| Release Preview com Google | SHA `9447b8af344201ac60d25721dbce78c7982ae01e`, [run 37332427023, tentativa 1](https://github.com/BrunoMNoronha/techlab-troq/actions/runs/37332427023), deployment `dpl_H2coTZhL45V7t52PTzJtfNcGM4hj`; preflight, migrations, build e smoke aprovados |
+| Jornada de Preview estável | Botão, pedido OAuth, callback real, recusa de vinculação implícita e logout comprovados abaixo. Cadastro com aceite, acesso posterior e cancelamento ainda pendentes |
 
 A publicação do consentimento remove a limitação de usuários de teste para o login básico. Ela não comprova verificação de marca pelo Google nem aprovação da operação comercial do TROQ. #133 permanece aberta até o aceite de Preview estável e o registro completo da configuração por ambiente.
+
+## Prova atual do Preview estável em 2026-10-05 (#133)
+
+**Origem:** `https://techlab-troq-git-preview-bruno-m-noronha.vercel.app`. **Revisão:** `9447b8af344201ac60d25721dbce78c7982ae01e`, promovida pelo [run 37332400274](https://github.com/BrunoMNoronha/techlab-troq/actions/runs/37332400274) para a branch `production` e publicada em **Preview**, sem novo deployment de Production. A [CI de main 37296179216](https://github.com/BrunoMNoronha/techlab-troq/actions/runs/37296179216) aprovou os dois checks obrigatórios nesse SHA. O artefato público `release.json` do run Preview identifica revisão, ambiente e deployment.
+
+**Método:** navegador Edge, contas Google controladas pelo Bruno, metadados da Vercel sem descriptografia. URLs OAuth, e-mails, tokens, cookies e códigos foram omitidos dos registros compartilhados. Não foram consultadas contagens no banco nesta rodada.
+
+| Passo | Resultado observado |
+| --- | --- |
+| Botão em `/login` e `/cadastro` | PASS — "Continuar com Google" disponível no deployment identificado |
+| Pedido OAuth real | PASS — cliente Preview distinto de Production; callback estável exato, `scope=openid email` e PKCE `S256` |
+| Retorno de conta cujo e-mail já pertence a uma conta por senha | PASS — callback retorna `/login?motivo=google_conta_existente`; sem vinculação automática |
+| Recusa com sessão anônima | PASS — após logout, `/conta` retorna `/login?motivo=sessao`; repetir Google produz a mesma recusa e `/conta` permanece protegido |
+| Perfil previamente autenticado por senha | PASS limitado — estado ativo/verificado e Google ainda não vinculado; não equivale a uma nova tentativa de login por senha |
+| Logout da sessão preexistente | PASS — mensagem de saída e posterior bloqueio de `/conta`; logout de uma sessão criada pelo Google nesta revisão ainda pendente |
+| Cadastro Google com nome, 18+ e termos | PENDENTE — ato afirmativo do Bruno e prova de sessão após a conclusão |
+| Acesso posterior com Google e cancelamento/recusa do cadastro | PENDENTE — exigem concluir a jornada com identidade de teste nova |
+| Links de verificação de e-mail no Preview estável | PENDENTE — não revalidados nesta rodada |
+
+Uma tentativa com a segunda conta selecionada terminou em **401 na tela do próprio Google**, antes do retorno ao TROQ. O callback bem-sucedido da primeira conta demonstra que o par funciona; o erro da segunda não foi tratado como sucesso de cadastro nem como falha comprovada do TROQ. O cadastro foi deixado aberto para autenticação e aceite pelo Bruno. A primeira tentativa ocorreu com uma sessão TROQ preexistente; por isso a recusa e o guard foram repetidos depois de logout, em vez de inferir ausência de sessão a partir dela.
+
+**Baseline superada:** no deployment `dpl_FugUTy2nyggXKwT6zpUMVM4oHM8s`, SHA `f6d3ae51fb480d0b77f713dbfbd63f0c6fe92214`, [run 37290829843, tentativa 2](https://github.com/BrunoMNoronha/techlab-troq/actions/runs/37290829843), `/login` não tinha botão Google. Essa ausência foi resolvida pela configuração efetiva e pela release atual; a prova histórica de #81 abaixo continua separada.
 
 ## Estado histórico da prova inicial de #81 em 2026-10-05
 
