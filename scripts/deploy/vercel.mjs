@@ -7,6 +7,7 @@ import {
   PRODUCTION_URL,
   REPOSITORY,
   SHA_PATTERN,
+  redactCliOutput,
   requireEnvironmentMetadata,
 } from './policy.mjs';
 
@@ -33,20 +34,28 @@ async function cli(args) {
       { stdio: ['ignore', 'pipe', 'pipe'] },
     );
     let output = '';
+    let errors = '';
     child.stdout.on('data', (chunk) => {
       output += chunk.toString();
     });
-    child.stderr.on('data', () => {});
+    child.stderr.on('data', (chunk) => {
+      errors += chunk.toString();
+    });
     child.on('error', reject);
-    child.on('close', (code) =>
-      code === 0
-        ? resolve(output)
-        : reject(
-            new Error(
-              `CLI Vercel falhou (código ${code}); consultar logs do deployment no provedor.`,
-            ),
-          ),
-    );
+    child.on('close', (code) => {
+      if (code === 0) return resolve(output);
+      // Sem o stderr a falha é muda: a CLI explica ali o motivo (token, escopo,
+      // argumento, upload). Sai só o fim, com os segredos do job redigidos.
+      const secrets = [
+        process.env.VERCEL_TOKEN,
+        process.env.VERCEL_AUTOMATION_BYPASS_SECRET,
+        process.env.CRON_SECRET,
+      ];
+      console.error(`::group::Saída de erro da CLI Vercel (${args[0]})`);
+      console.error(redactCliOutput(errors, secrets) || '(vazia)');
+      console.error('::endgroup::');
+      reject(new Error(`CLI Vercel falhou (código ${code}); ver a saída de erro redigida acima.`));
+    });
   });
   return result.trim();
 }
