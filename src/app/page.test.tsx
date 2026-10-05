@@ -22,17 +22,15 @@ function offer(id: string, title: string) {
 }
 
 describe('HomePage', () => {
-  it('apresenta o TROQ e navega para explorar, entrar e criar conta sem exigir login', () => {
+  it('apresenta o TROQ e leva a explorar e criar conta sem exigir login', () => {
     render(<HomePage />);
 
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/contato protegido/i);
-    const nav = screen.getByRole('navigation', { name: 'Principal' });
-    expect(within(nav).getByRole('link', { name: 'Explorar ofertas' })).toHaveAttribute(
+    expect(screen.getAllByRole('link', { name: /Explorar ofertas/ })[0]).toHaveAttribute(
       'href',
       '/explorar',
     );
-    expect(within(nav).getByRole('link', { name: 'Entrar' })).toHaveAttribute('href', '/login');
-    expect(within(nav).getByRole('link', { name: 'Criar conta' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'Criar conta grátis' })).toHaveAttribute(
       'href',
       '/cadastro',
     );
@@ -52,12 +50,12 @@ describe('HomePage', () => {
   it('leva à Política de Privacidade e aos Termos de Uso públicos', () => {
     render(<HomePage />);
 
-    const legal = screen.getByRole('navigation', { name: 'Legal' });
-    expect(within(legal).getByRole('link', { name: 'Política de Privacidade' })).toHaveAttribute(
+    const privacy = screen.getByRole('region', { name: 'Seu contato fica com você' });
+    expect(within(privacy).getByRole('link', { name: 'Política de Privacidade' })).toHaveAttribute(
       'href',
       '/privacidade',
     );
-    expect(within(legal).getByRole('link', { name: 'Termos de Uso' })).toHaveAttribute(
+    expect(within(privacy).getByRole('link', { name: 'Termos de Uso' })).toHaveAttribute(
       'href',
       '/termos',
     );

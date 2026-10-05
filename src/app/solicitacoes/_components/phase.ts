@@ -1,20 +1,26 @@
+import type { Tone } from '@/components/ui';
 import type { OwnRequestPhase } from '@/modules/request';
 
 // Rotulos das fases da solicitacao vistas pelo proprio solicitante (F3-012, #102).
+// O texto carrega o significado; o tom do `Badge` so reforca.
 
-export const PHASE_LABELS: Record<OwnRequestPhase, { label: string; bg: string; color: string }> = {
-  awaiting_payment: { label: 'Aguardando pagamento', bg: '#fef3c7', color: '#92400e' },
-  window_closed: { label: 'Prazo de pagamento encerrado', bg: '#f3f4f6', color: '#374151' },
-  paid: { label: 'Paga — aguardando escolha', bg: '#dcfce7', color: '#166534' },
-  expired: { label: 'Expirada', bg: '#f3f4f6', color: '#374151' },
-  failed: { label: 'Encerrada sem pagamento', bg: '#f3f4f6', color: '#374151' },
+export interface PhaseLabel {
+  label: string;
+  tone: Tone;
+}
+
+export const PHASE_LABELS: Record<OwnRequestPhase, PhaseLabel> = {
+  awaiting_payment: { label: 'Aguardando pagamento', tone: 'warning' },
+  window_closed: { label: 'Prazo de pagamento encerrado', tone: 'neutral' },
+  paid: { label: 'Paga — aguardando escolha', tone: 'success' },
+  expired: { label: 'Expirada', tone: 'neutral' },
+  failed: { label: 'Encerrada sem pagamento', tone: 'neutral' },
 };
 
 /** Paga e escolhida: a liberacao existe para o proprio ator (CR-5.3). */
-export const CHOSEN_LABEL = {
+export const CHOSEN_LABEL: PhaseLabel = {
   label: 'Escolhida — contato liberado',
-  bg: '#dbeafe',
-  color: '#1e3a8a',
+  tone: 'primary',
 };
 
 export const DATE_TIME = new Intl.DateTimeFormat('pt-BR', {

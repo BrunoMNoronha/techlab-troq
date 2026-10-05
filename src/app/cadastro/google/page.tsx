@@ -8,6 +8,9 @@ import {
   type PendingGoogleSignup,
 } from '@/modules/identity/google';
 import { sanitizeReturnPath } from '@/modules/identity/return-path';
+import { Alert } from '@/components/feedback';
+import { PageContainer, PageHeader, Stack } from '@/components/layout';
+import { Text, TextLink } from '@/components/ui';
 import { GoogleSignupForm } from './signup-form';
 
 export const metadata: Metadata = { title: 'Concluir cadastro com Google — TROQ' };
@@ -39,33 +42,29 @@ export default async function GoogleSignupPage({
   const pending = isGoogleSignInAvailable() ? await readPending() : null;
 
   return (
-    <main
-      style={{ maxWidth: '480px', margin: '40px auto', padding: '24px', fontFamily: 'sans-serif' }}
-    >
-      <h1 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '8px' }}>
-        Concluir cadastro com Google
-      </h1>
+    <PageContainer width="narrow">
+      <PageHeader title="Concluir cadastro com Google" />
 
       {pending ? (
         <GoogleSignupForm email={pending.email} returnTo={returnTo} />
       ) : (
-        <>
-          <p role="status" style={{ color: '#4b5563', marginBottom: '16px' }}>
+        <Stack gap={6}>
+          <Alert tone="info" role="status">
             Este cadastro com Google expirou, foi cancelado ou já foi concluído. Nenhuma conta foi
             criada sem a sua confirmação.
-          </p>
-          <p style={{ fontSize: '14px' }}>
-            <a href="/cadastro" style={{ color: '#2563eb', fontWeight: '600' }}>
+          </Alert>
+          <Text size="small">
+            <TextLink href="/cadastro" reload>
               Recomeçar o cadastro
-            </a>{' '}
+            </TextLink>{' '}
             ou{' '}
-            <a href="/login" style={{ color: '#2563eb', fontWeight: '600' }}>
+            <TextLink href="/login" reload>
               entrar na sua conta
-            </a>
+            </TextLink>
             .
-          </p>
-        </>
+          </Text>
+        </Stack>
       )}
-    </main>
+    </PageContainer>
   );
 }

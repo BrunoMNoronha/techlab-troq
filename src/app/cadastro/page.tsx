@@ -5,6 +5,10 @@ import { registerUser } from '@/modules/identity/actions';
 import { ResendVerificationForm } from '../verificar-email/resend-form';
 import { GoogleDivider, GoogleSignInButton } from '@/app/_components/google-sign-in';
 import { TermsConsentText } from '@/app/_components/terms-consent';
+import { Alert } from '@/components/feedback';
+import { Checkbox, Field, Form, FormActions, Input } from '@/components/forms';
+import { PageContainer, PageHeader, Stack } from '@/components/layout';
+import { Button, Text } from '@/components/ui';
 
 export default function CadastroPage() {
   const [displayName, setDisplayName] = useState('');
@@ -43,235 +47,117 @@ export default function CadastroPage() {
 
   if (emailPending && deliveryFailed) {
     return (
-      <main
-        style={{
-          maxWidth: '480px',
-          margin: '40px auto',
-          padding: '24px',
-          fontFamily: 'sans-serif',
-        }}
-      >
-        <h1 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '16px' }}>
-          Conta criada — falta confirmar o e-mail
-        </h1>
-        <p role="alert" style={{ color: '#4b5563', marginBottom: '16px' }}>
-          Sua conta foi criada, mas não conseguimos enviar agora o e-mail de confirmação para{' '}
-          <strong>{emailPending}</strong>. Não é preciso se cadastrar de novo: peça um novo link
-          abaixo. A conta só pode ser usada depois que o e-mail for confirmado.
-        </p>
-        <ResendVerificationForm initialEmail={emailPending} />
-      </main>
+      <PageContainer width="narrow">
+        <PageHeader title="Conta criada — falta confirmar o e-mail" />
+        <Stack gap={6}>
+          <Alert tone="warning" role="alert">
+            Sua conta foi criada, mas não conseguimos enviar agora o e-mail de confirmação para{' '}
+            <strong>{emailPending}</strong>. Não é preciso se cadastrar de novo: peça um novo link
+            abaixo. A conta só pode ser usada depois que o e-mail for confirmado.
+          </Alert>
+          <ResendVerificationForm initialEmail={emailPending} />
+        </Stack>
+      </PageContainer>
     );
   }
 
   if (emailPending) {
     return (
-      <main
-        style={{
-          maxWidth: '480px',
-          margin: '40px auto',
-          padding: '24px',
-          fontFamily: 'sans-serif',
-        }}
-      >
-        <h1 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '16px' }}>
-          Confirme seu e-mail
-        </h1>
-        <p role="status" style={{ color: '#4b5563', marginBottom: '16px' }}>
-          Enviamos um link de confirmação para <strong>{emailPending}</strong>. Por favor, acesse
-          sua caixa de entrada e clique no link para ativar sua conta. O link vale por 24 horas.
-        </p>
-        <div
-          style={{
-            padding: '12px 16px',
-            backgroundColor: '#eff6ff',
-            borderRadius: '6px',
-            fontSize: '14px',
-            color: '#1e40af',
-            marginBottom: '16px',
-          }}
-        >
-          💡 Não encontrou? Verifique sua caixa de spam ou lixo eletrônico.
-        </div>
-        <ResendVerificationForm initialEmail={emailPending} />
-      </main>
+      <PageContainer width="narrow">
+        <PageHeader title="Confirme seu e-mail" />
+        <Stack gap={6}>
+          <Alert tone="success" role="status">
+            Enviamos um link de confirmação para <strong>{emailPending}</strong>. Por favor, acesse
+            sua caixa de entrada e clique no link para ativar sua conta. O link vale por 24 horas.
+          </Alert>
+          <Text tone="muted" size="small" icon="info">
+            Não encontrou? Verifique sua caixa de spam ou lixo eletrônico.
+          </Text>
+          <ResendVerificationForm initialEmail={emailPending} />
+        </Stack>
+      </PageContainer>
     );
   }
 
   return (
-    <main
-      style={{ maxWidth: '480px', margin: '40px auto', padding: '24px', fontFamily: 'sans-serif' }}
-    >
-      <h1 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '8px' }}>
-        Criar conta no TROQ
-      </h1>
-      <p style={{ color: '#6b7280', fontSize: '14px', marginBottom: '24px' }}>
-        Plataforma direta de anúncios entre pessoas.
-      </p>
+    <PageContainer width="narrow">
+      <PageHeader
+        title="Criar conta no TROQ"
+        description="Plataforma direta de anúncios entre pessoas."
+      />
 
-      {errorMessage && (
-        <div
-          style={{
-            padding: '12px 16px',
-            backgroundColor: '#fef2f2',
-            border: '1px solid #fecaca',
-            borderRadius: '6px',
-            color: '#991b1b',
-            marginBottom: '16px',
-            fontSize: '14px',
-          }}
-        >
-          {errorMessage}
-        </div>
-      )}
+      <Stack gap={6}>
+        {errorMessage && (
+          <Alert tone="error" role="alert">
+            {errorMessage}
+          </Alert>
+        )}
 
-      <form
-        onSubmit={handleSubmit}
-        style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}
-      >
-        <div>
-          <label
-            htmlFor="displayName"
-            style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '4px' }}
-          >
-            Nome de exibição
-          </label>
-          <input
-            id="displayName"
-            type="text"
-            required
-            value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
-            style={{
-              width: '100%',
-              boxSizing: 'border-box',
-              padding: '10px 12px',
-              border: '1px solid #d1d5db',
-              borderRadius: '6px',
-              fontSize: '16px',
-            }}
-            placeholder="Como quer ser chamado(a)"
-          />
-        </div>
+        <Form onSubmit={handleSubmit}>
+          <Field label="Nome de exibição" htmlFor="displayName">
+            <Input
+              id="displayName"
+              type="text"
+              required
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              placeholder="Como quer ser chamado(a)"
+            />
+          </Field>
 
-        <div>
-          <label
-            htmlFor="email"
-            style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '4px' }}
-          >
-            E-mail
-          </label>
-          <input
-            id="email"
-            type="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            style={{
-              width: '100%',
-              boxSizing: 'border-box',
-              padding: '10px 12px',
-              border: '1px solid #d1d5db',
-              borderRadius: '6px',
-              fontSize: '16px',
-            }}
-            placeholder="seu@email.com"
-          />
-        </div>
+          <Field label="E-mail" htmlFor="email">
+            <Input
+              id="email"
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="seu@email.com"
+            />
+          </Field>
 
-        <div>
-          <label
-            htmlFor="password"
-            style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '4px' }}
-          >
-            Senha
-          </label>
-          <input
-            id="password"
-            type="password"
-            required
-            minLength={8}
-            maxLength={128}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            style={{
-              width: '100%',
-              boxSizing: 'border-box',
-              padding: '10px 12px',
-              border: '1px solid #d1d5db',
-              borderRadius: '6px',
-              fontSize: '16px',
-            }}
-            placeholder="De 8 a 128 caracteres"
-          />
-        </div>
+          <Field label="Senha" htmlFor="password">
+            <Input
+              id="password"
+              type="password"
+              required
+              minLength={8}
+              maxLength={128}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="De 8 a 128 caracteres"
+            />
+          </Field>
 
-        <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <label
-            style={{
-              display: 'flex',
-              alignItems: 'flex-start',
-              gap: '8px',
-              fontSize: '14px',
-              cursor: 'pointer',
-            }}
-          >
-            <input
-              type="checkbox"
+          <Stack gap={3}>
+            <Checkbox
               required
               checked={over18}
               onChange={(e) => setOver18(e.target.checked)}
-              style={{ marginTop: '2px' }}
+              label={
+                <>
+                  Declaro ter <strong>18 anos de idade ou mais</strong>.
+                </>
+              }
             />
-            <span>
-              Declaro ter <strong>18 anos de idade ou mais</strong>.
-            </span>
-          </label>
-
-          <label
-            style={{
-              display: 'flex',
-              alignItems: 'flex-start',
-              gap: '8px',
-              fontSize: '14px',
-              cursor: 'pointer',
-            }}
-          >
-            <input
-              type="checkbox"
+            <Checkbox
               required
               checked={termsAccepted}
               onChange={(e) => setTermsAccepted(e.target.checked)}
-              style={{ marginTop: '2px' }}
+              label={<TermsConsentText />}
             />
-            <span>
-              <TermsConsentText />
-            </span>
-          </label>
-        </div>
+          </Stack>
 
-        <button
-          type="submit"
-          disabled={loading}
-          style={{
-            marginTop: '16px',
-            width: '100%',
-            padding: '12px',
-            backgroundColor: loading ? '#9ca3af' : '#2563eb',
-            color: 'white',
-            border: 'none',
-            borderRadius: '6px',
-            fontSize: '16px',
-            fontWeight: '600',
-            cursor: loading ? 'not-allowed' : 'pointer',
-          }}
-        >
-          {loading ? 'Cadastrando...' : 'Criar minha conta'}
-        </button>
-      </form>
+          <FormActions>
+            <Button type="submit" loading={loading} fullWidth>
+              {loading ? 'Cadastrando...' : 'Criar minha conta'}
+            </Button>
+          </FormActions>
+        </Form>
 
-      <GoogleDivider />
-      <GoogleSignInButton hint="Com o Google, você ainda declara ter 18 anos ou mais e aceita os Termos de Uso antes de a conta ser criada." />
-    </main>
+        <GoogleDivider />
+        <GoogleSignInButton hint="Com o Google, você ainda declara ter 18 anos ou mais e aceita os Termos de Uso antes de a conta ser criada." />
+      </Stack>
+    </PageContainer>
   );
 }

@@ -1,6 +1,9 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
+import { Alert, type AlertTone } from '@/components/feedback';
+import { PageContainer, PageHeader, Stack } from '@/components/layout';
+import { BackLink, Stepper } from '@/components/navigation';
+import { Badge, ButtonLink, Text, TextLink } from '@/components/ui';
 import { listOwnContactReleases } from '@/modules/contact';
 import { loginRedirectPath, validateSession } from '@/modules/identity';
 import { getOwnContactRequest, type OwnContactRequestView } from '@/modules/request';
@@ -54,56 +57,31 @@ export default async function SolicitacaoPage({ params }: { params: Promise<{ id
   const title = request.listingTitle ?? 'Anúncio indisponível';
 
   return (
-    <main
-      style={{
-        maxWidth: '600px',
-        margin: '0 auto',
-        padding: '24px 16px',
-        fontFamily: 'sans-serif',
-      }}
-    >
-      <Link
-        href="/solicitacoes"
-        style={{ color: '#1d4ed8', textDecoration: 'none', fontSize: '14px', fontWeight: 600 }}
-      >
-        ← Minhas solicitações
-      </Link>
+    <PageContainer width="content">
+      <PageHeader
+        navigation={<BackLink href="/solicitacoes">Minhas solicitações</BackLink>}
+        title="Solicitação de contato"
+        description={
+          <Text as="span" size="small" tone="muted" wrapAnywhere>
+            Anúncio:{' '}
+            {request.listingStatus === 'published' && request.listingTitle ? (
+              <TextLink href={`/explorar/${request.listingId}`}>{title}</TextLink>
+            ) : (
+              title
+            )}
+          </Text>
+        }
+        meta={<Badge tone={phase.tone}>{phase.label}</Badge>}
+      />
 
-      <h1 style={{ fontSize: '24px', margin: '16px 0 4px', overflowWrap: 'anywhere' }}>
-        Solicitação de contato
-      </h1>
-      <p style={{ margin: '0 0 12px', color: '#374151', overflowWrap: 'anywhere' }}>
-        Anúncio:{' '}
-        {request.listingStatus === 'published' && request.listingTitle ? (
-          <Link href={`/explorar/${request.listingId}`} style={{ color: '#1d4ed8' }}>
-            {title}
-          </Link>
-        ) : (
-          title
-        )}
-      </p>
-      <p style={{ margin: '0 0 20px' }}>
-        <span
-          style={{
-            display: 'inline-block',
-            padding: '4px 8px',
-            borderRadius: '4px',
-            fontSize: '13px',
-            fontWeight: 600,
-            backgroundColor: phase.bg,
-            color: phase.color,
-          }}
-        >
-          {phase.label}
-        </span>
-      </p>
+      <Stack gap={6}>
+        <Steps phase={request.phase} chosen={chosen} />
 
-      <Steps phase={request.phase} chosen={chosen} />
-
-      <div style={{ marginTop: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-        <PhaseBody request={request} chosen={chosen} />
-      </div>
-    </main>
+        <Stack gap={4}>
+          <PhaseBody request={request} chosen={chosen} />
+        </Stack>
+      </Stack>
+    </PageContainer>
   );
 }
 
@@ -128,14 +106,12 @@ function PhaseBody({ request, chosen }: { request: OwnContactRequestView; chosen
         return (
           <>
             <Notice tone="warning" title="Anúncio pausado pelo anunciante">
-              <p style={{ margin: '0 0 8px' }}>
+              <p>
                 Enquanto o anúncio estiver pausado, o Pix não é exibido nem gerado de novo. Sua vaga
                 continua reservada até {TIME.format(new Date(request.reservedUntil))} (horário de
                 Brasília).
               </p>
-              <p style={{ margin: 0 }}>
-                Se você já pagou dentro do prazo, o pagamento será reconhecido normalmente.
-              </p>
+              <p>Se você já pagou dentro do prazo, o pagamento será reconhecido normalmente.</p>
             </Notice>
             <StatusRefresher />
           </>
@@ -144,7 +120,7 @@ function PhaseBody({ request, chosen }: { request: OwnContactRequestView; chosen
       return (
         <>
           <Notice tone="neutral" title="Anúncio indisponível">
-            <p style={{ margin: 0 }}>
+            <p>
               Este anúncio não aceita mais pagamentos. Se você já pagou dentro do prazo, o pagamento
               será reconhecido ou devolvido automaticamente.
             </p>
@@ -157,11 +133,11 @@ function PhaseBody({ request, chosen }: { request: OwnContactRequestView; chosen
       return (
         <>
           <Notice tone="neutral" title="O prazo para pagar terminou">
-            <p style={{ margin: '0 0 8px' }}>
+            <p>
               O prazo terminou às {TIME.format(new Date(request.reservedUntil))} (horário de
               Brasília). Se você pagou dentro do prazo, a confirmação ainda pode aparecer aqui.
             </p>
-            <p style={{ margin: 0 }}>
+            <p>
               Pagamento feito depois do prazo não vale como solicitação e é devolvido
               automaticamente; você recebe um aviso por e-mail quando a devolução for concluída.
             </p>
@@ -176,7 +152,7 @@ function PhaseBody({ request, chosen }: { request: OwnContactRequestView; chosen
       return (
         <>
           <Notice tone="neutral" title="Solicitação encerrada sem pagamento confirmado">
-            <p style={{ margin: 0 }}>
+            <p>
               A vaga foi liberada. Se algum pagamento chegou depois do prazo, ele é devolvido
               automaticamente e você recebe um aviso por e-mail quando a devolução for concluída.
             </p>
@@ -189,25 +165,25 @@ function PhaseBody({ request, chosen }: { request: OwnContactRequestView; chosen
       if (chosen) {
         return (
           <Notice tone="success" title="Você foi escolhido pelo anunciante">
-            <p style={{ margin: '0 0 12px' }}>
-              O contato do anunciante foi liberado para você. Cada consulta é registrada.
-            </p>
-            <Link href="/contatos" style={linkButton}>
-              Ver contato liberado
-            </Link>
+            <p>O contato do anunciante foi liberado para você. Cada consulta é registrada.</p>
+            <div>
+              <ButtonLink href="/contatos" iconStart="phone">
+                Ver contato liberado
+              </ButtonLink>
+            </div>
           </Notice>
         );
       }
       return (
         <>
           <Notice tone="success" title="Pagamento confirmado">
-            <p style={{ margin: '0 0 8px' }}>
+            <p>
               {request.paidAt
                 ? `Pagamento confirmado em ${DATE_TIME.format(new Date(request.paidAt))}. `
                 : null}
               Agora o anunciante escolhe uma das solicitações pagas deste anúncio.
             </p>
-            <p style={{ margin: 0 }}>
+            <p>
               Pagar não garante ser escolhido, e não há reembolso por não ser escolhido. Se você for
               escolhido, avisamos por e-mail e o contato aparece em “Contatos liberados”.
             </p>
@@ -221,11 +197,11 @@ function PhaseBody({ request, chosen }: { request: OwnContactRequestView; chosen
 function AgainLink({ request }: { request: OwnContactRequestView }) {
   if (request.listingStatus !== 'published') return null;
   return (
-    <p style={{ margin: 0 }}>
-      <Link href={`/explorar/${request.listingId}`} style={{ color: '#1d4ed8', fontWeight: 600 }}>
+    <div>
+      <TextLink href={`/explorar/${request.listingId}`} iconStart="arrow-left">
         Voltar ao anúncio
-      </Link>
-    </p>
+      </TextLink>
+    </div>
   );
 }
 
@@ -235,86 +211,22 @@ function Steps({ phase, chosen }: { phase: OwnContactRequestView['phase']; chose
   if (phase !== 'awaiting_payment' && phase !== 'paid') return null;
   const current = phase === 'awaiting_payment' ? 1 : chosen ? 3 : 2;
   return (
-    <ol
-      aria-label="Etapas da solicitação"
-      style={{
-        listStyle: 'none',
-        margin: 0,
-        padding: 0,
-        display: 'flex',
-        flexWrap: 'wrap',
-        gap: '8px',
-        fontSize: '13px',
-      }}
-    >
-      {STEPS.map((step, index) => {
-        const n = index + 1;
-        const done = n < current || (n === 3 && chosen);
-        const active = n === current;
-        return (
-          <li
-            key={step}
-            aria-current={active ? 'step' : undefined}
-            style={{
-              padding: '6px 10px',
-              borderRadius: '999px',
-              border: `1px solid ${active ? '#1d4ed8' : '#d1d5db'}`,
-              backgroundColor: done ? '#eff6ff' : 'white',
-              color: active ? '#1e3a8a' : '#374151',
-              fontWeight: active ? 600 : 400,
-            }}
-          >
-            {n}. {step}
-            {done && n !== current ? ' ✓' : ''}
-          </li>
-        );
-      })}
-    </ol>
+    <Stepper label="Etapas da solicitação" steps={STEPS} current={current} completed={chosen} />
   );
 }
-
-const TONES = {
-  success: { bg: '#f0fdf4', border: '#bbf7d0', color: '#14532d' },
-  warning: { bg: '#fffbeb', border: '#fde68a', color: '#78350f' },
-  neutral: { bg: '#f9fafb', border: '#e5e7eb', color: '#1f2937' },
-} as const;
 
 function Notice({
   tone,
   title,
   children,
 }: {
-  tone: keyof typeof TONES;
+  tone: Extract<AlertTone, 'success' | 'warning' | 'neutral'>;
   title: string;
   children: React.ReactNode;
 }) {
-  const colors = TONES[tone];
   return (
-    <section
-      role="status"
-      aria-label={title}
-      style={{
-        padding: '16px',
-        backgroundColor: colors.bg,
-        border: `1px solid ${colors.border}`,
-        borderRadius: '8px',
-        color: colors.color,
-        fontSize: '15px',
-        lineHeight: 1.5,
-      }}
-    >
-      <h2 style={{ fontSize: '17px', margin: '0 0 8px' }}>{title}</h2>
+    <Alert as="section" role="status" aria-label={title} title={title} titleAs="h2" tone={tone}>
       {children}
-    </section>
+    </Alert>
   );
 }
-
-const linkButton = {
-  display: 'inline-block',
-  padding: '10px 16px',
-  backgroundColor: '#1d4ed8',
-  color: 'white',
-  borderRadius: '6px',
-  fontWeight: 600,
-  textDecoration: 'none',
-} as const;

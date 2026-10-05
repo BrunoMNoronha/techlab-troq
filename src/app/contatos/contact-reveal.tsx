@@ -2,6 +2,8 @@
 
 import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Cluster, Stack } from '@/components/layout';
+import { Button, ButtonLink, Text } from '@/components/ui';
 import { revealContact } from './actions';
 
 // Botao "Ver contato" de UMA autorizacao (contact-release.md, CR-6.2 item 2;
@@ -53,44 +55,40 @@ export function ContactReveal({ contactReleaseId }: { contactReleaseId: string }
   if (phone) {
     const digits = phone.replace(/\D/g, '');
     return (
-      <div role="status" style={{ marginTop: '12px' }}>
-        <p style={{ margin: '0 0 8px', fontSize: '20px', fontWeight: 700, color: '#111827' }}>
+      <Stack role="status" gap={3}>
+        <Text size="lead" weight="semibold" icon="phone">
           {formatBrazilianPhone(phone)}
-        </p>
-        <p style={{ margin: 0, display: 'flex', gap: '16px', fontSize: '14px' }}>
-          <a href={`https://wa.me/${digits}`} target="_blank" rel="noopener noreferrer">
+        </Text>
+        <Cluster gap={3}>
+          <ButtonLink
+            reload
+            href={`https://wa.me/${digits}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            variant="outline"
+          >
             Abrir no WhatsApp
-          </a>
-          <a href={`tel:${phone}`}>Ligar</a>
-        </p>
-      </div>
+          </ButtonLink>
+          <ButtonLink reload href={`tel:${phone}`} variant="outline" iconStart="phone">
+            Ligar
+          </ButtonLink>
+        </Cluster>
+      </Stack>
     );
   }
 
   return (
-    <div style={{ marginTop: '12px' }}>
-      <button
-        type="button"
-        onClick={handleReveal}
-        disabled={loading}
-        style={{
-          padding: '10px 16px',
-          backgroundColor: loading ? '#93c5fd' : '#2563eb',
-          color: 'white',
-          border: 'none',
-          borderRadius: '6px',
-          fontWeight: 600,
-          fontSize: '14px',
-          cursor: loading ? 'not-allowed' : 'pointer',
-        }}
-      >
-        {loading ? 'Carregando...' : 'Ver contato'}
-      </button>
+    <Stack gap={2}>
+      <div>
+        <Button iconStart="eye" onClick={handleReveal} loading={loading}>
+          {loading ? 'Carregando...' : 'Ver contato'}
+        </Button>
+      </div>
       {error && (
-        <p role="alert" style={{ color: '#b91c1c', fontSize: '14px', margin: '8px 0 0' }}>
+        <Text role="alert" size="small" tone="error" icon="alert-circle">
           {error}
-        </p>
+        </Text>
       )}
-    </div>
+    </Stack>
   );
 }

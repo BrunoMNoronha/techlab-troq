@@ -1,56 +1,6 @@
 .page {
-  font-family:
-    ui-sans-serif,
-    system-ui,
-    -apple-system,
-    'Segoe UI',
-    Roboto,
-    'Helvetica Neue',
-    Arial,
-    sans-serif;
   color: #0f172a;
   background: #f8fafc;
-  -webkit-font-smoothing: antialiased;
-}
-
-.header {
-  border-bottom: 1px solid #e2e8f0;
-  background: #ffffff;
-}
-
-.headerInner {
-  max-width: 72rem;
-  margin: 0 auto;
-  padding: 12px 16px;
-  min-height: 64px;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.brand {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  color: #0f172a;
-  font-size: 1.25rem;
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  text-decoration: none;
-}
-
-.headerLink {
-  color: #1d4ed8;
-  font-weight: 700;
-  font-size: 0.9375rem;
-  text-decoration: none;
-}
-
-.headerLink:hover {
-  text-decoration: underline;
-  text-underline-offset: 4px;
 }
 
 .hero {
@@ -168,7 +118,7 @@
 }
 
 .section {
-  scroll-margin-top: 24px;
+  scroll-margin-top: 88px;
 }
 
 .section + .section {
@@ -257,8 +207,6 @@
   border-bottom: 0;
 }
 
-.brand:focus-visible,
-.headerLink:focus-visible,
 .tocLink:focus-visible,
 .article a:focus-visible {
   outline: 2px solid #1d4ed8;
@@ -267,7 +215,6 @@
 }
 
 @media (min-width: 768px) {
-  .headerInner,
   .heroInner,
   .layout {
     padding-left: 24px;
@@ -293,6 +240,6 @@
 
   .toc {
     position: sticky;
-    top: 24px;
+    top: 88px;
   }
 }

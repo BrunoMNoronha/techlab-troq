@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { confirmEmailToken } from '@/modules/identity/actions';
+import { PageContainer, PageHeader, Stack } from '@/components/layout';
+import { Button, ButtonLink, Icon, Text } from '@/components/ui';
 import { ResendVerificationForm } from './resend-form';
 
 type Status = 'verifying' | 'success' | 'invalid' | 'expired' | 'error';
@@ -61,76 +63,45 @@ export default function VerificarEmailPage() {
   }, []);
 
   return (
-    <main
-      style={{ maxWidth: '480px', margin: '40px auto', padding: '24px', fontFamily: 'sans-serif' }}
-    >
+    <PageContainer width="narrow">
       {status === 'verifying' && (
         <div role="status">
-          <h1 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '16px' }}>
-            Verificando e-mail...
-          </h1>
-          <p style={{ color: '#6b7280' }}>Aguarde enquanto confirmamos seu link de verificação.</p>
+          <PageHeader
+            title="Verificando e-mail..."
+            description="Aguarde enquanto confirmamos seu link de verificação."
+          />
         </div>
       )}
 
       {status === 'success' && (
-        <div role="status">
-          <div style={{ fontSize: '48px', marginBottom: '16px' }} aria-hidden="true">
-            ✅
-          </div>
-          <h1 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '12px' }}>
-            E-mail verificado com sucesso!
-          </h1>
-          <p style={{ color: '#4b5563', marginBottom: '24px' }}>
-            Sua conta está confirmada. Entre com seu e-mail e senha para continuar.
-          </p>
-          <a
-            href="/login"
-            style={{
-              display: 'inline-block',
-              padding: '12px 24px',
-              backgroundColor: '#2563eb',
-              color: 'white',
-              borderRadius: '6px',
-              textDecoration: 'none',
-              fontWeight: '600',
-            }}
-          >
+        <Stack gap={6} role="status">
+          <Text as="span" tone="success">
+            <Icon name="check-circle" size={40} />
+          </Text>
+          <PageHeader
+            title="E-mail verificado com sucesso!"
+            description="Sua conta está confirmada. Entre com seu e-mail e senha para continuar."
+          />
+          <ButtonLink href="/login" reload fullWidth>
             Ir para o Login
-          </a>
-        </div>
+          </ButtonLink>
+        </Stack>
       )}
 
       {status !== 'verifying' && status !== 'success' && (
-        <div>
-          <h1
-            role="alert"
-            style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '12px', color: '#dc2626' }}
-          >
-            {FAILURE_TITLE[status]}
-          </h1>
-          <p style={{ color: '#4b5563', marginBottom: '24px' }}>{message}</p>
+        <Stack gap={6}>
+          <PageHeader
+            title={<span role="alert">{FAILURE_TITLE[status]}</span>}
+            description={message}
+          />
           {status === 'error' ? (
-            <button
-              type="button"
-              onClick={confirm}
-              style={{
-                marginBottom: '24px',
-                padding: '10px 16px',
-                backgroundColor: '#2563eb',
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                fontWeight: '600',
-                cursor: 'pointer',
-              }}
-            >
+            <Button type="button" onClick={confirm} iconStart="refresh" fullWidth>
               Tentar novamente
-            </button>
+            </Button>
           ) : null}
           <ResendVerificationForm />
-        </div>
+        </Stack>
       )}
-    </main>
+    </PageContainer>
   );
 }

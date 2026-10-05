@@ -3,8 +3,6 @@ import Link from 'next/link';
 import { Suspense, type ReactNode } from 'react';
 import { HowItWorks } from './_components/how-it-works';
 import { LatestOffers, OffersLoading } from './_components/latest-offers';
-import { SiteFooter } from './_components/site-footer';
-import { TroqMark } from './_components/troq-mark';
 import styles from './home.module.css';
 
 export const dynamic = 'force-dynamic';
@@ -158,34 +156,6 @@ const STEPS = [
 export default function HomePage() {
   return (
     <div className={styles.page}>
-      <header className={styles.header}>
-        <div className={`${styles.container} ${styles.headerInner}`}>
-          <Link href="/" className={styles.brand}>
-            <TroqMark />
-            TROQ
-          </Link>
-          <nav aria-label="Principal">
-            <ul className={styles.navList}>
-              <li>
-                <Link href="/explorar" className={styles.navLink}>
-                  Explorar ofertas
-                </Link>
-              </li>
-              <li>
-                <Link href="/login" className={styles.navLink}>
-                  Entrar
-                </Link>
-              </li>
-              <li>
-                <Link href="/cadastro" className={`${styles.navLink} ${styles.navCta}`}>
-                  Criar conta
-                </Link>
-              </li>
-            </ul>
-          </nav>
-        </div>
-      </header>
-
       <main>
         <section className={styles.hero}>
           <div className={`${styles.container} ${styles.heroGrid}`}>
@@ -379,8 +349,6 @@ export default function HomePage() {
           </div>
         </section>
       </main>
-
-      <SiteFooter />
     </div>
   );
 }

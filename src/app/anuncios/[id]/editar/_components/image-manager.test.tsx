@@ -100,7 +100,7 @@ describe('ImageManager', () => {
     expect(within(item).getByText('Estado: Enviando: 50%')).toBeInTheDocument();
     expect(
       within(item).getByRole('progressbar', { name: 'Envio da Imagem 1 (capa)' }),
-    ).toHaveAttribute('value', '50');
+    ).toHaveAttribute('aria-valuenow', '50');
 
     await act(async () => finishPut({ status: 200 }));
     await waitFor(() => expect(actions.confirmImageUpload).toHaveBeenCalledWith('img-1'));
