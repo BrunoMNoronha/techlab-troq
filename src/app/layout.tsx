@@ -1,3 +1,4 @@
+import { SpeedInsights } from '@vercel/speed-insights/next';
 import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
 
@@ -21,6 +22,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         style={{ margin: 0, backgroundColor: '#ffffff', color: '#111827', colorScheme: 'light' }}
       >
         {children}
+        <SpeedInsights />
       </body>
     </html>
   );
