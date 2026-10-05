@@ -372,6 +372,7 @@ model Listing {
   owner               User                 @relation("ListingOwner", fields: [ownerId], references: [id], onDelete: Restrict)
   transitions         ListingTransition[]
   images              ListingImage[]
+  tradeOptions        ListingTradeOption[]
   contactRequests     ContactRequest[]
   reports             Report[]
   termsAcceptances    TermsAcceptance[]
@@ -383,6 +384,25 @@ model Listing {
   @@index([ownerId])
   @@index([status])
   @@map("listings")
+}
+
+/// DM-5.10 (DEC-046, #76) — alternativas de troca aceitas pelo anunciante, uma
+/// linha por campo preenchido, na posicao 1..3 informada. Faixa e texto aparado
+/// por CHECK na migration; a completude (exatamente 3) e regra da aplicacao,
+/// verificada sob a trava do anuncio (listing-contract.md, secao 3.1).
+model ListingTradeOption {
+  id        String   @id @default(uuid()) @db.Uuid
+  listingId String   @map("listing_id") @db.Uuid
+  position  Int      @db.SmallInt
+  label     String
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  // Conteudo do anuncio, sem objeto externo nem fato historico: sai junto com
+  // ele, se um dia o anuncio for apagado fisicamente.
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@unique([listingId, position])
+  @@map("listing_trade_options")
 }
 
 /// DM-5.6 — cada mudanca de estado do anuncio. Fato historico. Par

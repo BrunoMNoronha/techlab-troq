@@ -29,6 +29,14 @@ export type {
   PaymentConfirmationOptions,
   PaymentConfirmationOutcome,
 } from './payment-confirmation';
+// F3-009 (#99): elegibilidade para a escolha, lida sob a trava (CR-3.2, P2 e P3).
+export { listEligibleRequests, lockRequestForSelection, readRequestLinkInTx } from './selection';
+export type {
+  EligibleRequest,
+  LockedRequestForSelection,
+  RequestLink,
+  SelectionReader,
+} from './selection';
 // F3-008 (#98): reconciliacao periodica, pela mesma rotina do webhook.
 export { reconcileAttempt, runPaymentReconciliation } from './reconciliation';
 export type {

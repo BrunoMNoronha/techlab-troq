@@ -7,7 +7,20 @@
 // importado de fora (docs/engineering/conventions.md, secao 2.2). Consumidores
 // externos importam `@/modules/negotiation`; nunca um caminho interno do modulo.
 //
-// F1-005 materializa apenas a fronteira: nao ha implementacao, e nenhuma
-// entidade, servico, repositorio ou caso de uso e antecipado aqui. O `export {}`
-// mantem o arquivo como modulo TypeScript sob `isolatedModules`, sem comportamento.
-export {};
+// F3-009 (#99) entrega a escolha e a reselecao, que abrem a negociacao `active`
+// e criam a autorizacao de liberacao num unico ato (CR-3.3), e os dados da tela
+// do dono. Dependencia direcional: `negotiation` -> `listing`, `request`,
+// `contact`; nunca o inverso. O encerramento da negociacao e da Fase 4 (#55).
+export { chooseRequester } from './actions';
+export { getSelectionOptions, selectForOwner, selectRequester } from './selection';
+export type {
+  SelectionCandidate,
+  SelectionFailureReason,
+  SelectionKind,
+  SelectionOptions,
+  SelectionOptionsResult,
+  SelectionResult,
+  SelectRequesterInput,
+} from './selection';
+// F3-010 (#100): A4 e A5 da entrega do contato, porta de `contact`.
+export { verifyContactReleaseChain } from './delivery-chain';

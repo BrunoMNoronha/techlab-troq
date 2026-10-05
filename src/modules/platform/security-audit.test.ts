@@ -181,11 +181,14 @@ describe('Auditoria de segurança SIMULADA (unitária): RF-014, autorização e 
       });
 
       // O UPDATE exige ownerId = B; o anuncio de A nao casa e nada e gravado.
-      const mockUpdateMany = vi.fn().mockResolvedValueOnce({ count: 0 });
-      const mockFindFirst = vi.fn().mockResolvedValueOnce(null);
+      // A edicao trava o anuncio numa busca ja filtrada pelo dono da sessao (#76):
+      // para B, o anuncio de A nao existe.
+      const mockLock = vi.fn().mockResolvedValueOnce([]);
+      const mockUpdate = vi.fn();
 
       vi.spyOn(prismaModule, 'getPrismaClient').mockReturnValue({
-        listing: { updateMany: mockUpdateMany, findFirst: mockFindFirst },
+        $transaction: async (fn: (tx: unknown) => Promise<unknown>) =>
+          fn({ $queryRaw: mockLock, listing: { update: mockUpdate } }),
       } as unknown as prismaModule.PrismaClient);
 
       const res = await updateListing(privateListingId, { title: 'Tentativa de Hack por IDOR' });
@@ -194,11 +197,8 @@ describe('Auditoria de segurança SIMULADA (unitária): RF-014, autorização e 
       expect(res.reason).toBe('not_found');
       expect(res.error).toBe('Anúncio não encontrado.');
       expect(res.error).not.toContain('permissão');
-      expect(mockUpdateMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({ id: privateListingId, ownerId: userBId }),
-        }),
-      );
+      expect(mockLock.mock.calls[0].slice(1)).toEqual([privateListingId, userBId]);
+      expect(mockUpdate).not.toHaveBeenCalled();
     });
 
     it('proteção contra IDOR: Usuário B não pode encerrar ou descartar anúncio do Usuário A', async () => {
@@ -272,17 +272,20 @@ describe('Auditoria de segurança SIMULADA (unitária): RF-014, autorização e 
         isValid: true,
       });
 
-      // O UPDATE so casa draft/published/paused; o proprio anuncio closed nao e gravado.
+      // O estado e lido sob a trava; o proprio anuncio closed nao e gravado.
+      const mockUpdate = vi.fn();
       vi.spyOn(prismaModule, 'getPrismaClient').mockReturnValue({
-        listing: {
-          updateMany: vi.fn().mockResolvedValueOnce({ count: 0 }),
-          findFirst: vi.fn().mockResolvedValueOnce({ id: privateListingId }),
-        },
+        $transaction: async (fn: (tx: unknown) => Promise<unknown>) =>
+          fn({
+            $queryRaw: vi.fn().mockResolvedValueOnce([{ id: privateListingId, status: 'closed' }]),
+            listing: { update: mockUpdate },
+          }),
       } as unknown as prismaModule.PrismaClient);
 
       const res = await updateListing(privateListingId, { title: 'Tentativa de Editar Fechado' });
       expect(res.success).toBe(false);
       expect(res.error).toContain('encerrados ou removidos não podem ser editados');
+      expect(mockUpdate).not.toHaveBeenCalled();
     });
   });
 

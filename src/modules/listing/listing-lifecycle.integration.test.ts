@@ -31,6 +31,7 @@ import {
   pauseListing,
   publishListing,
   reactivateListing,
+  updateListing,
 } from './actions';
 import { LISTING_COMPLIANCE_TERMS_VERSION } from './compliance';
 import { closeOwnedListing, transitionListing } from './lifecycle';
@@ -97,13 +98,20 @@ async function signIn(email: string): Promise<string> {
   return cookie;
 }
 
-/** Rascunho criado pela action real, como o dono logado. */
-async function draft(title = 'Bicicleta sintetica'): Promise<string> {
+/**
+ * Rascunho criado pela action real, como o dono logado, com as tres
+ * alternativas de troca exigidas para publicar (#76).
+ */
+async function draft(
+  title = 'Bicicleta sintetica',
+  tradeOptions = ['Um notebook', 'Um videogame', 'Uma camera'],
+): Promise<string> {
   const res = await createDraftListing({
     title,
     description: 'Anuncio sintetico de integracao.',
     city: 'Recife',
     state: 'PE',
+    tradeOptions,
   });
   expect(res.success).toBe(true);
   return res.listingId!;
@@ -410,6 +418,127 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
         expect(await discardDraft(id)).toMatchObject({ success: true, changed: false });
         expect(await closeListing(id)).toMatchObject({ success: true, changed: false });
         expect((await counts(id)).transitions).toBe(1);
+      });
+    });
+
+    describe('alternativas de troca na publicacao e na reativacao (#76)', () => {
+      const tradeOptionFields = (res: Awaited<ReturnType<typeof publishListing>>) =>
+        res.success ? [] : Object.keys(res.fieldErrors ?? {}).sort();
+
+      it('rascunho incompleto nao publica; completado pela edicao, publica', async () => {
+        const id = await draft('Rascunho incompleto', ['Um notebook', '', '']);
+        await image(id);
+
+        const refused = await publishListing(id, true);
+        expect(refused).toMatchObject({ success: false, reason: 'validation' });
+        expect(tradeOptionFields(refused)).toEqual(['tradeOption2', 'tradeOption3']);
+        expect((await row(id)).status).toBe('draft');
+        expect(await counts(id)).toEqual({ transitions: 0, acceptances: 0, audits: 0 });
+
+        expect(
+          await updateListing(id, { tradeOptions: ['Um notebook', 'Um videogame', 'Uma camera'] }),
+        ).toEqual({ success: true, listingId: id });
+        expect(await publishListing(id, true)).toEqual({
+          success: true,
+          status: 'published',
+          changed: true,
+        });
+      });
+
+      it('o banco recusa posicao, texto e duplicidade invalidos; faltando uma, a publicacao recusa', async () => {
+        // Os CHECK recusam texto nao aparado, vazio ou longo e posicao fora de
+        // 1..3: a posicao vazia so pode faltar, e nunca ha uma quarta.
+        const id = await draft();
+        await image(id);
+        for (const [position, label] of [
+          [2, '   '],
+          [2, ' Um notebook'],
+          [2, 'x'.repeat(61)],
+        ] as const) {
+          await expect(
+            prisma()
+              .$executeRaw`UPDATE "listing_trade_options" SET "label" = ${label} WHERE "listing_id" = ${id}::uuid AND "position" = ${position}`,
+          ).rejects.toThrow(/listing_trade_options_label_check/);
+        }
+        for (const position of [0, 4]) {
+          await expect(
+            prisma().listingTradeOption.create({
+              data: { listingId: id, position, label: 'Um tablet' },
+            }),
+          ).rejects.toThrow(/listing_trade_options_position_range_check/);
+        }
+        await expect(
+          prisma().listingTradeOption.create({
+            data: { listingId: id, position: 1, label: 'Um tablet' },
+          }),
+        ).rejects.toThrow();
+        expect(await prisma().listingTradeOption.count({ where: { listingId: id } })).toBe(3);
+        await prisma().listingTradeOption.deleteMany({ where: { listingId: id, position: 2 } });
+
+        const res = await publishListing(id, true);
+        expect(tradeOptionFields(res)).toEqual(['tradeOption2']);
+        expect((await row(id)).status).toBe('draft');
+      });
+
+      it('corrida: edicao que esvazia uma alternativa segura a trava; a publicacao espera e recusa', async () => {
+        const id = await draft();
+        await image(id);
+        const { result, blocked } = await raceAgainstLock(
+          id,
+          async (tx) => {
+            await tx.listingTradeOption.deleteMany({ where: { listingId: id, position: 3 } });
+          },
+          () => publishListing(id, true),
+        );
+        expect(blocked).toBe(true);
+        expect(result).toMatchObject({ success: false, reason: 'validation' });
+        expect(tradeOptionFields(result)).toEqual(['tradeOption3']);
+        expect((await row(id)).status).toBe('draft');
+        expect(await counts(id)).toEqual({ transitions: 0, acceptances: 0, audits: 0 });
+      });
+
+      it('corrida pelas actions reais: publicar e esvaziar uma alternativa nunca deixam publico incompleto', async () => {
+        for (let round = 0; round < 6; round += 1) {
+          const id = await draft(`Corrida alternativas ${round}`);
+          await image(id);
+          const [pub, edit] = await Promise.all([
+            publishListing(id, true),
+            updateListing(id, { tradeOptions: ['Um notebook', '', 'Uma camera'] }),
+          ]);
+          const status = (await row(id)).status;
+          const stored = await prisma().listingTradeOption.count({ where: { listingId: id } });
+          if (status === 'published') {
+            // A publicacao venceu: a edicao viu `published` sob a trava e recusou.
+            expect(pub).toMatchObject({ success: true, changed: true });
+            expect(edit).toMatchObject({ success: false, reason: 'validation' });
+            expect(stored).toBe(3);
+          } else {
+            expect(edit).toMatchObject({ success: true });
+            expect(pub).toMatchObject({ success: false, reason: 'validation' });
+            expect(stored).toBe(2);
+          }
+        }
+      });
+
+      it('pausado sem as tres (anuncio anterior a #76) nao reativa e continua pausado', async () => {
+        const id = await draft();
+        await image(id);
+        await publishListing(id, true);
+        await pauseListing(id);
+        // Simula o legado: as alternativas nao existiam antes da migration.
+        await prisma().listingTradeOption.deleteMany({ where: { listingId: id } });
+
+        const res = await reactivateListing(id);
+        expect(res).toMatchObject({ success: false, reason: 'validation' });
+        expect(tradeOptionFields(res)).toEqual(['tradeOption1', 'tradeOption2', 'tradeOption3']);
+        expect((await row(id)).status).toBe('paused');
+        expect((await transitions(id)).map((t) => t.toStatus)).toEqual(['published', 'paused']);
+
+        // Completar pela edicao (exige as tres em `paused`) libera a reativacao.
+        expect(
+          await updateListing(id, { tradeOptions: ['Um notebook', 'Um videogame', 'Uma camera'] }),
+        ).toEqual({ success: true, listingId: id });
+        expect(await reactivateListing(id)).toMatchObject({ success: true, status: 'published' });
       });
     });
 

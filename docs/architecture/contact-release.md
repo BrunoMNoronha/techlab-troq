@@ -92,6 +92,16 @@ Falhando qualquer uma, a escolha é **rejeitada no servidor** e nenhuma autoriza
 
 **CR-3.6 (decisão arquitetural — o que "não revogar" significa tecnicamente).** Não revogar **não** significa que a autorização seja um cheque em branco. Significa que o **registro** do fato é imutável. A pergunta que a entrega faz (CR-5) é sempre sobre o estado **atual**; a autorização é uma das condições dessa pergunta, e as demais continuam sendo verificadas a cada acesso. A distinção importa: a plataforma não pode desfazer uma divulgação que já ocorreu — isso é tecnicamente impossível —, mas continua controlando cada nova entrega.
 
+_Atualização de 2026-10-04 (F3-009, [#99](https://github.com/BrunoMNoronha/techlab-troq/issues/99)): como CR-3.2 a CR-3.4 foram implementadas, sem alterar nenhuma regra._
+1. **Onde vive.** O ato fica em `negotiation` (`selectRequester`). Cada módulo cuida da sua parte, sempre dentro da transação do ato:
+   - `request` trava a linha da solicitação e responde por P2 e P3;
+   - `payments` fornece a evidência do pagamento confirmado;
+   - `contact` cria `ContactRelease` (`authorizeContactReleaseInTx`).
+2. **Ordem das travas.** Primeiro a trava de linha do anúncio (DM-6.12), depois a da solicitação e, por fim, as linhas de negociação do anúncio.
+3. **Evidência de P3.** A tentativa precisa estar em `pagamento_confirmado`, com instante de acreditação e com um pagamento canônico, que vira `paymentId` da autorização. Nenhum outro estado é elegível. Por isso a reversão de F3-011 precisa tirar a tentativa de `pagamento_confirmado`, ou acrescentar o seu marcador à consulta, para cumprir CR-4.2.
+4. **Auditoria.** Grava dois eventos: `negotiation.selected` ou `negotiation.reselected`, sobre a escolha, e `contact.release_authorized`, sobre a autorização. Nenhum dos dois contém o número.
+5. **Repetição e recusas.** Repetir a escolha de quem é o escolhido da negociação viva é idempotente (DEC-032, seção 8). Uma colisão nos índices de DM-8.3 ou DM-8.5 que escape da trava vira a recusa `conflict`, e nunca uma segunda autorização. As recusas não são auditadas, porque nada foi criado.
+
 ## 4. Elegibilidade e o efeito da reversão
 
 **CR-4.1 (invariante).** **Elegibilidade** e **autorização concedida** são coisas distintas:
@@ -136,6 +146,15 @@ O que a reversão **de fato** produz é o que CR-4.2 já diz: perda de elegibili
 **CR-5.5 (invariante).** Cada entrega bem-sucedida grava um `ContactAccessEvent` — ator, negociação, instante, resultado — e um registro na trilha única (DM-11.3), na mesma transação da leitura. Tentativas **negadas** também são registradas, como evento de segurança, sem revelar o dado e sem identificar o titular além do necessário.
 
 _Atualização de 2026-10-01 (F3-001, DV-4)._ A "entrega bem-sucedida" grava `ContactAccessEvent` com ator, autorização (de que a negociação deriva, CR-3.1) e instante; o resultado é implícito, porque a entidade só registra entregas. A **negativa** — que, em A2 ou A3, nem tem autorização a referenciar — vai **apenas** para a trilha única `AuditEvent`, como evento de segurança, com o ator autenticado quando houver, o motivo codificado e nenhum dado do titular ([data-model.md](data-model.md), DM-4.4 e nota de DM-11.3). Nenhuma migration é necessária para isso.
+
+_Atualização de 2026-10-04 (F3-010, [#100](https://github.com/BrunoMNoronha/techlab-troq/issues/100)): como CR-5 a CR-7 foram implementadas, sem alterar nenhuma regra._
+1. **Onde vive.** A operação é `deliverAuthorizedContact`, no módulo `contact`:
+   - a autorização é buscada por `id` **e** por `recipientId` igual ao ator (A2 + A3, CR-5.3);
+   - A1 e A6 vêm de `validateSession`, que só aceita conta `active` com email verificado;
+   - A4 e A5 vêm da porta `ContactChainCheck`, que `negotiation` implementa (`verifyContactReleaseChain`) e `src/app/contatos/actions.ts` monta. A porta existe porque `request` já depende de `contact` (DEC-040), e `contact` → `request` seria ciclo. A chamada sem a porta é negada.
+2. **Releitura.** A5 olha a solicitação, e não a tentativa de pagamento. Por isso a reversão não bloqueia a releitura (CR-4.3). O estado da negociação e o do anúncio também não são conferidos (DEC-029, seção 9.2; DEC-027, seção 5).
+3. **Registro.** A entrega grava `ContactAccessEvent` e `contact.delivered` (com o id do evento de acesso) na mesma transação. A negativa grava `contact.access_denied` numa transação própria, com o ator quando há, o id pedido quando tem forma de UUID e um motivo codificado: `no_session`, `unverified`, `account_restricted`, `not_recipient`, `chain_mismatch`, `no_contact` ou `error`. A resposta é sempre a mesma: `login_required` sem sessão e `unavailable` para todo o resto.
+4. **Cache (CR-7.4).** A página `/contatos` sai com `private, no-store`. A resposta da Server Action sai com `no-store, must-revalidate, no-cache, max-age=0`, sem `private`, porque o framework não deixa a action definir cabeçalho de resposta. `no-store` proíbe guardar a resposta em qualquer cache, compartilhado ou não, e o teste C-7 exige `no-store` e a ausência de `public`, `s-maxage` e `stale-while-revalidate`.
 
 **CR-5.6 (decisão arquitetural).** Registrar **cada** acesso, e não apenas o primeiro, é o que permite responder à pergunta que importa em um incidente: quantas vezes, quando e a partir de qual sessão o dado saiu. Uma autorização criada uma vez, sem registro das entregas, não responde a isso.
 

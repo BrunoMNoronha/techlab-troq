@@ -5,11 +5,16 @@ import { useRouter } from 'next/navigation';
 import { createDraftListing, updateListing } from '@/modules/listing/actions';
 import {
   DESCRIPTION_MAX_LENGTH,
-  LISTING_FIELDS,
+  EMPTY_TRADE_OPTIONS,
   TITLE_MAX_LENGTH,
+  TRADE_OPTION_FIELDS,
+  TRADE_OPTION_MAX_LENGTH,
   validateListingContent,
+  validateTradeOptions,
   type ListingField,
   type ListingFieldErrors,
+  type TradeOptionField,
+  type TradeOptionSlots,
 } from '@/modules/listing/validation';
 
 export interface ListingFormValues {
@@ -17,9 +22,33 @@ export interface ListingFormValues {
   description: string;
   city: string;
   state: string;
+  tradeOptions: TradeOptionSlots;
 }
 
-const EMPTY_VALUES: ListingFormValues = { title: '', description: '', city: '', state: '' };
+const EMPTY_VALUES: ListingFormValues = {
+  title: '',
+  description: '',
+  city: '',
+  state: '',
+  tradeOptions: EMPTY_TRADE_OPTIONS,
+};
+
+type FocusableField = ListingField | TradeOptionField;
+
+/** Ordem visual do formulario, usada para focar o primeiro campo invalido. */
+const FIELD_ORDER: readonly FocusableField[] = [
+  'title',
+  'description',
+  ...TRADE_OPTION_FIELDS,
+  'city',
+  'state',
+];
+
+const TRADE_OPTION_EXAMPLES: TradeOptionSlots = [
+  'Ex.: um notebook',
+  'Ex.: um videogame',
+  'Ex.: uma câmera',
+];
 
 const LABELS: Record<ListingField, string> = {
   title: 'Título do anúncio',
@@ -56,16 +85,32 @@ const fieldErrorStyle: React.CSSProperties = {
 };
 
 type ListingFormProps =
-  | { mode: 'create'; initialValues?: undefined; listingId?: undefined }
-  | { mode: 'edit'; initialValues: ListingFormValues; listingId: string };
+  | {
+      mode: 'create';
+      initialValues?: undefined;
+      listingId?: undefined;
+      requireTradeOptions?: undefined;
+    }
+  | {
+      mode: 'edit';
+      initialValues: ListingFormValues;
+      listingId: string;
+      /** Anuncio `published`/`paused`: as tres alternativas sao obrigatorias. */
+      requireTradeOptions: boolean;
+    };
 
 /**
- * Formulario de criacao e edicao (listing-contract.md, secoes 3 e 11).
+ * Formulario de criacao e edicao (listing-contract.md, secoes 3, 3.1 e 11).
  * A validacao local so antecipa a mensagem; o servidor e a autoridade e suas
  * mensagens por campo sao exibidas da mesma forma. Os valores digitados nunca
  * sao descartados em erro.
  */
-export function ListingForm({ mode, initialValues, listingId }: ListingFormProps) {
+export function ListingForm({
+  mode,
+  initialValues,
+  listingId,
+  requireTradeOptions = false,
+}: ListingFormProps) {
   const router = useRouter();
   const [values, setValues] = useState<ListingFormValues>(initialValues ?? EMPTY_VALUES);
   const [fieldErrors, setFieldErrors] = useState<ListingFieldErrors>({});
@@ -75,15 +120,18 @@ export function ListingForm({ mode, initialValues, listingId }: ListingFormProps
   const [attempt, setAttempt] = useState(0);
   const inFlight = useRef(false);
   const formErrorRef = useRef<HTMLDivElement>(null);
-  const fieldRefs = useRef<Partial<Record<ListingField, HTMLInputElement | HTMLTextAreaElement>>>(
+  const fieldRefs = useRef<Partial<Record<FocusableField, HTMLInputElement | HTMLTextAreaElement>>>(
     {},
   );
 
   // Foco previsivel: primeiro campo invalido, na ordem do formulario; sem erro
-  // de campo, a mensagem geral.
+  // de campo, a mensagem geral. Erro da lista inteira de alternativas leva a
+  // primeira delas.
   useEffect(() => {
     if (attempt === 0) return;
-    const firstInvalid = LISTING_FIELDS.find((field) => fieldErrors[field]);
+    const firstInvalid = fieldErrors.tradeOptions
+      ? FIELD_ORDER.find((field) => field === 'tradeOption1' || fieldErrors[field])
+      : FIELD_ORDER.find((field) => fieldErrors[field]);
     if (firstInvalid) {
       fieldRefs.current[firstInvalid]?.focus();
     } else if (formError) {
@@ -95,13 +143,25 @@ export function ListingForm({ mode, initialValues, listingId }: ListingFormProps
     setValues((current) => ({ ...current, [field]: value }));
   }
 
+  function updateTradeOption(index: number, value: string) {
+    setValues((current) => {
+      const tradeOptions: TradeOptionSlots = [...current.tradeOptions];
+      tradeOptions[index] = value;
+      return { ...current, tradeOptions };
+    });
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (inFlight.current) return;
 
     const local = validateListingContent(values);
-    if (!local.ok) {
-      setFieldErrors(local.fieldErrors);
+    const localOptions = validateTradeOptions(values.tradeOptions, requireTradeOptions);
+    if (!local.ok || !localOptions.ok) {
+      setFieldErrors({
+        ...(local.ok ? {} : local.fieldErrors),
+        ...(localOptions.ok ? {} : localOptions.fieldErrors),
+      });
       setFormError(null);
       setAttempt((n) => n + 1);
       return;
@@ -201,6 +261,70 @@ export function ListingForm({ mode, initialValues, listingId }: ListingFormProps
     );
   }
 
+  // Alternativas de troca (listing-contract.md, secao 3.1): grupo com legenda,
+  // uma instrucao comum a todos os campos e erro por campo.
+  function renderTradeOptions() {
+    const listError = fieldErrors.tradeOptions;
+    const hintId = 'tradeOptions-hint';
+    const listErrorId = 'tradeOptions-error';
+
+    return (
+      <fieldset
+        aria-describedby={listError ? `${hintId} ${listErrorId}` : hintId}
+        style={{ border: 'none', margin: 0, padding: 0, minWidth: 0 }}
+      >
+        <legend style={{ ...labelStyle, padding: 0 }}>O que você aceita em troca</legend>
+        <p id={hintId} style={{ color: '#6b7280', fontSize: '13px', margin: '0 0 8px' }}>
+          Informe três alternativas que você aceita receber por este item. Quem se interessar não
+          precisa oferecer as três juntas. Não inclua telefone, WhatsApp, e-mail ou endereço.{' '}
+          {requireTradeOptions
+            ? 'As três são obrigatórias enquanto o anúncio estiver publicado ou pausado.'
+            : 'As três são obrigatórias para publicar; no rascunho, você pode completar depois.'}
+        </p>
+        {listError && (
+          <p id={listErrorId} style={{ ...fieldErrorStyle, margin: '0 0 8px' }}>
+            {listError}
+          </p>
+        )}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {TRADE_OPTION_FIELDS.map((field, index) => {
+            const error = fieldErrors[field];
+            const errorId = `${field}-error`;
+            return (
+              <div key={field} style={{ minWidth: 0 }}>
+                <label htmlFor={field} style={labelStyle}>
+                  Alternativa {index + 1}
+                </label>
+                <input
+                  ref={(el) => {
+                    fieldRefs.current[field] = el ?? undefined;
+                  }}
+                  id={field}
+                  name={field}
+                  type="text"
+                  autoComplete="off"
+                  value={values.tradeOptions[index]}
+                  placeholder={TRADE_OPTION_EXAMPLES[index]}
+                  maxLength={TRADE_OPTION_MAX_LENGTH}
+                  required={requireTradeOptions}
+                  aria-invalid={error ? true : undefined}
+                  aria-describedby={error ? errorId : undefined}
+                  onChange={(e) => updateTradeOption(index, e.target.value)}
+                  style={inputStyle(Boolean(error))}
+                />
+                {error && (
+                  <p id={errorId} style={fieldErrorStyle}>
+                    {error}
+                  </p>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </fieldset>
+    );
+  }
+
   const hasFieldErrors = Object.keys(fieldErrors).length > 0;
 
   return (
@@ -229,6 +353,7 @@ export function ListingForm({ mode, initialValues, listingId }: ListingFormProps
 
       {renderField('title')}
       {renderField('description')}
+      {renderTradeOptions()}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 88px', gap: '12px' }}>
         {renderField('city')}

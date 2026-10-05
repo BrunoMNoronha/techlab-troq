@@ -31,6 +31,7 @@ const listing = {
   description: 'Bicicleta em ótimo estado.',
   city: 'Campinas',
   state: 'SP',
+  tradeOptions: ['Um notebook', 'Um videogame', 'Uma câmera'],
   createdAt: new Date('2026-09-29T12:00:00.000Z'),
   images: [
     { id: 'img-1', position: 1, derivatives: derivatives('img-1') },
@@ -84,6 +85,29 @@ describe('detalhe publico /explorar/[id]', () => {
     await expect(DetalheAnuncioPublicoPage(params(ID))).rejects.toThrow('NEXT_NOT_FOUND');
     expect(getContactRequestEntry).not.toHaveBeenCalled();
     expect(await generateMetadata(params(ID))).toEqual({ title: 'Anúncio indisponível — TROQ' });
+  });
+
+  it('mostra as tres alternativas de troca como texto, na ordem, sem login (#76)', async () => {
+    const injected = '<img src=x onerror="alert(1)"> um rádio';
+    getPublicListingDetail.mockResolvedValue({
+      ...listing,
+      tradeOptions: ['Um notebook', injected, 'Uma câmera'],
+    });
+    render(await DetalheAnuncioPublicoPage(params(ID)));
+
+    const section = screen.getByRole('region', { name: 'Aceita em troca' });
+    expect(section).toHaveTextContent('não é preciso oferecer todas');
+    const items = within(section).getAllByRole('listitem');
+    expect(items.map((item) => item.textContent)).toEqual(['Um notebook', injected, 'Uma câmera']);
+    // Texto livre e sempre texto (listing-contract.md, secao 10): nada vira HTML.
+    expect(within(section).queryByRole('img')).toBeNull();
+  });
+
+  it('anuncio anterior a #76, ainda sem alternativas, nao mostra a secao', async () => {
+    getPublicListingDetail.mockResolvedValue({ ...listing, tradeOptions: [] });
+    render(await DetalheAnuncioPublicoPage(params(ID)));
+    expect(screen.queryByRole('region', { name: 'Aceita em troca' })).toBeNull();
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Bicicleta aro 29');
   });
 
   it('metadata usa so titulo, cidade e UF', async () => {

@@ -28,6 +28,7 @@ const listing = {
   description: 'Aro 29',
   city: 'Recife',
   state: 'PE',
+  tradeOptions: [],
   createdAt: new Date(),
   images: [],
 };

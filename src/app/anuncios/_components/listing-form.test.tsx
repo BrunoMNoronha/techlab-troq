@@ -42,9 +42,97 @@ const valid = {
   state: 'pe',
 };
 
+const options: [string, string, string] = ['Um notebook', 'Um videogame', 'Uma câmera'];
+
 describe('ListingForm', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  describe('alternativas de troca (#76)', () => {
+    function fillOptions(values: string[]) {
+      values.forEach((value, i) => {
+        fireEvent.change(screen.getByLabelText(`Alternativa ${i + 1}`), { target: { value } });
+      });
+    }
+
+    it('tres campos rotulados, agrupados e com a instrucao de que sao alternativas', () => {
+      render(<ListingForm mode="create" />);
+      const group = screen.getByRole('group', { name: 'O que você aceita em troca' });
+      expect(group).toHaveAccessibleDescription(/três alternativas.*não precisa oferecer as três/);
+      expect(group).toHaveAccessibleDescription(
+        /Não inclua telefone, WhatsApp, e-mail ou endereço/,
+      );
+      for (const n of [1, 2, 3]) {
+        const input = screen.getByLabelText(`Alternativa ${n}`);
+        expect(input).toHaveAttribute('maxLength', '60');
+        expect(input).not.toBeRequired();
+      }
+      expect(screen.queryByLabelText('Alternativa 4')).toBeNull();
+    });
+
+    it('rascunho salva com alternativas incompletas, na ordem dos campos', async () => {
+      createDraftListing.mockResolvedValueOnce({ success: true, listingId: 'x' });
+      render(<ListingForm mode="create" />);
+      fill(valid);
+      fillOptions(['', 'Um videogame', '']);
+
+      await submit();
+
+      expect(createDraftListing).toHaveBeenCalledWith({
+        ...valid,
+        state: 'PE',
+        tradeOptions: ['', 'Um videogame', ''],
+      });
+    });
+
+    it('anuncio publicado ou pausado exige as tres: foca a primeira vazia e nao envia', async () => {
+      render(
+        <ListingForm
+          mode="edit"
+          listingId="22222222-2222-4222-8222-222222222222"
+          requireTradeOptions
+          initialValues={{ ...valid, state: 'PE', tradeOptions: options }}
+        />,
+      );
+      fillOptions(['Um notebook', '   ', '']);
+
+      await submit();
+
+      const second = screen.getByLabelText('Alternativa 2');
+      expect(second).toHaveAttribute('aria-invalid', 'true');
+      expect(second).toHaveAttribute('aria-describedby', 'tradeOption2-error');
+      expect(screen.getByLabelText('Alternativa 3')).toHaveAttribute('aria-invalid', 'true');
+      expect(screen.getByLabelText('Alternativa 1')).not.toHaveAttribute('aria-invalid');
+      expect(document.activeElement).toBe(second);
+      expect(updateListing).not.toHaveBeenCalled();
+      expect(screen.getByRole('group')).toHaveAccessibleDescription(/obrigatórias enquanto/);
+    });
+
+    it('erro do servidor numa alternativa aparece no campo, com valores preservados', async () => {
+      updateListing.mockResolvedValueOnce({
+        success: false,
+        reason: 'validation',
+        error: 'Revise os campos destacados.',
+        fieldErrors: { tradeOption3: 'Informe esta alternativa de troca, com até 60 caracteres.' },
+      });
+      render(
+        <ListingForm
+          mode="edit"
+          listingId="22222222-2222-4222-8222-222222222222"
+          requireTradeOptions={false}
+          initialValues={{ ...valid, state: 'PE', tradeOptions: options }}
+        />,
+      );
+
+      await submit();
+
+      const third = screen.getByLabelText('Alternativa 3');
+      expect(third).toHaveAttribute('aria-invalid', 'true');
+      expect(document.getElementById('tradeOption3-error')).toHaveTextContent('60 caracteres');
+      expect(document.activeElement).toBe(third);
+      expect(third).toHaveValue('Uma câmera');
+    });
   });
 
   it('todos os campos tem rotulo associado', () => {
@@ -105,7 +193,8 @@ describe('ListingForm', () => {
       <ListingForm
         mode="edit"
         listingId="22222222-2222-4222-8222-222222222222"
-        initialValues={{ ...valid, state: 'PE' }}
+        requireTradeOptions
+        initialValues={{ ...valid, state: 'PE', tradeOptions: options }}
       />,
     );
     fill({ title: 'Bicicleta aro 29 revisada' });
@@ -146,14 +235,25 @@ describe('ListingForm', () => {
     expect(push).toHaveBeenCalledWith('/anuncios');
   });
 
-  it('edicao envia os quatro campos para o anuncio indicado', async () => {
+  it('edicao envia os quatro campos e as tres alternativas para o anuncio indicado', async () => {
     updateListing.mockResolvedValueOnce({ success: true });
     const id = '22222222-2222-4222-8222-222222222222';
-    render(<ListingForm mode="edit" listingId={id} initialValues={{ ...valid, state: 'PE' }} />);
+    render(
+      <ListingForm
+        mode="edit"
+        listingId={id}
+        requireTradeOptions
+        initialValues={{ ...valid, state: 'PE', tradeOptions: options }}
+      />,
+    );
 
     await submit();
 
-    expect(updateListing).toHaveBeenCalledWith(id, { ...valid, state: 'PE' });
+    expect(updateListing).toHaveBeenCalledWith(id, {
+      ...valid,
+      state: 'PE',
+      tradeOptions: options,
+    });
     expect(push).toHaveBeenCalledWith('/anuncios');
   });
 });

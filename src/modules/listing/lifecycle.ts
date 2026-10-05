@@ -4,7 +4,12 @@ import { validateSession } from '@/modules/identity';
 import { getPrismaClient } from '@/persistence/prisma';
 import { LISTING_COMPLIANCE_TERMS_VERSION } from './compliance';
 import { isUuid } from './ids';
-import { validateListingContent, type ListingFieldErrors } from './validation';
+import {
+  toTradeOptionSlots,
+  validateListingContent,
+  validateTradeOptions,
+  type ListingFieldErrors,
+} from './validation';
 
 // Transicoes do anuncio pelo dono, T1 a T6 (listing-lifecycle.md, secao 4;
 // listing-contract.md, secoes 4.3, 4.4 e 5). Tudo acontece numa UNICA transacao,
@@ -57,7 +62,10 @@ const MESSAGES: Record<LifecycleFailureReason, string> = {
 interface TransitionRule {
   from: readonly ListingStatus[];
   to: ListingStatus;
-  /** Exige conteudo valido e ao menos uma imagem `ready` (listing-contract.md, 4.3 e 4.4). */
+  /**
+   * Exige conteudo valido, as tres alternativas de troca e ao menos uma imagem
+   * `ready` (listing-contract.md, 3.1, 4.3 e 4.4).
+   */
   goesPublic: boolean;
 }
 
@@ -112,7 +120,12 @@ interface LockedListing {
   uf: string;
 }
 
-async function lockOwnedListing(
+/**
+ * Trava de linha do anuncio, ja filtrada pelo dono: anuncio alheio e
+ * inexistente dao o mesmo `null`. Usada pelas transicoes e pela edicao do
+ * conteudo (actions.ts), para que as duas se serializem.
+ */
+export async function lockOwnedListing(
   tx: Prisma.TransactionClient,
   listingId: string,
   ownerId: string,
@@ -237,7 +250,23 @@ export async function transitionListing(
           city: listing.city,
           state: listing.uf,
         });
-        if (!content.ok) throw new LifecycleAbort('validation', from, content.fieldErrors);
+        // As alternativas sao lidas depois da trava: uma edicao concorrente que
+        // as esvaziasse espera esta transacao, e vice-versa.
+        const tradeOptions = validateTradeOptions(
+          toTradeOptionSlots(
+            await tx.listingTradeOption.findMany({
+              where: { listingId: listing.id },
+              select: { position: true, label: true },
+            }),
+          ),
+          true,
+        );
+        if (!content.ok || !tradeOptions.ok) {
+          throw new LifecycleAbort('validation', from, {
+            ...(content.ok ? {} : content.fieldErrors),
+            ...(tradeOptions.ok ? {} : tradeOptions.fieldErrors),
+          });
+        }
         if ((await countReadyImages(tx, listing.id)) < 1) {
           throw new LifecycleAbort('no_ready_image', from);
         }

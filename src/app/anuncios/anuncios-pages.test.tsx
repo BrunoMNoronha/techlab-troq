@@ -71,6 +71,7 @@ function listing(status: listingModule.ListingDTO['status'], title = `Anúncio $
     description: 'Descrição sintética',
     city: 'Recife',
     state: 'PE',
+    tradeOptions: ['Um notebook', 'Um videogame', 'Uma câmera'] as [string, string, string],
     status,
     createdAt: new Date('2026-09-29T12:00:00Z'),
     updatedAt: new Date('2026-09-29T12:00:00Z'),

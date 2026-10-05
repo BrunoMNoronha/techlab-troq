@@ -11,7 +11,7 @@ export {
   getPublicListingDetail,
 } from './actions';
 
-export { getListingOwnerId } from './ownership';
+export { getListingGate, getListingOwnerId, getListingTitles } from './ownership';
 
 export type {
   LifecycleAction,
@@ -34,6 +34,7 @@ export type {
   ListingFailureReason,
   ListingMutationResult,
   PublicFeedPage,
+  PublicListingDetail,
   PublicListingFeedItem,
 } from './actions';
 
@@ -44,5 +45,18 @@ export {
   normalizePublicFeedQuery,
 } from './public-query';
 
-export { LISTING_FIELDS, validateListingContent, validateListingPatch } from './validation';
-export type { ListingField, ListingFieldErrors } from './validation';
+export {
+  LISTING_FIELDS,
+  TRADE_OPTION_COUNT,
+  TRADE_OPTION_FIELDS,
+  TRADE_OPTION_MAX_LENGTH,
+  validateListingContent,
+  validateListingPatch,
+  validateTradeOptions,
+} from './validation';
+export type {
+  ListingField,
+  ListingFieldErrors,
+  TradeOptionField,
+  TradeOptionSlots,
+} from './validation';

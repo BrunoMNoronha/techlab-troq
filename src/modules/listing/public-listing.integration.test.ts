@@ -138,6 +138,16 @@ describe.skipIf(!enabled)('consulta publica contra banco real (#49)', () => {
       createdAt: new Date(TIE.getTime() + 60_000),
       title: 'Bicicleta aro 29',
     });
+    // Gravadas fora de ordem: o detalhe devolve pela posicao do anunciante.
+    for (const [position, label] of [
+      [3, 'Uma camera'],
+      [1, 'Um notebook'],
+      [2, 'Um videogame'],
+    ] as const) {
+      await getPrismaClient().listingTradeOption.create({
+        data: { listingId: visibleWithImages, position, label },
+      });
+    }
     const second = await addImage(visibleWithImages, 2, 'ready');
     pendingImage = await addImage(visibleWithImages, 3, 'uploaded');
     const first = await addImage(visibleWithImages, 1, 'ready');
@@ -248,6 +258,18 @@ describe.skipIf(!enabled)('consulta publica contra banco real (#49)', () => {
     }
   });
 
+  it('detalhe traz as alternativas de troca na ordem do anunciante; legado segue visivel, sem elas', async () => {
+    expect((await getPublicListingDetail(visibleWithImages))?.tradeOptions).toEqual([
+      'Um notebook',
+      'Um videogame',
+      'Uma camera',
+    ]);
+    // Anuncio publicado antes de #76: continua publico, sem alternativa inventada.
+    const legacy = await getPublicListingDetail(tied[0]);
+    expect(legacy).not.toBeNull();
+    expect(legacy?.tradeOptions).toEqual([]);
+  });
+
   it('detalhe indisponivel para todo estado nao publico, dono nao elegivel, inexistente e malformado', async () => {
     for (const [label, id] of Object.entries(hidden)) {
       expect(await getPublicListingDetail(id), label).toBeNull();
@@ -259,11 +281,12 @@ describe.skipIf(!enabled)('consulta publica contra banco real (#49)', () => {
   it('DTO so tem a allowlist, sem contato, email, dono ou estado', async () => {
     const feed = await getPublicFeed({ city: CITY, limit: 50 });
     const detail = await getPublicListingDetail(visibleWithImages);
-    for (const item of [...feed.listings, detail!]) {
-      expect(Object.keys(item).sort()).toEqual(
-        ['city', 'createdAt', 'description', 'id', 'images', 'state', 'title'].sort(),
-      );
+    const allowlist = ['city', 'createdAt', 'description', 'id', 'images', 'state', 'title'];
+    for (const item of feed.listings) {
+      expect(Object.keys(item).sort()).toEqual(allowlist.sort());
     }
+    // So o detalhe acrescenta as alternativas de troca, como textos (#76).
+    expect(Object.keys(detail!).sort()).toEqual([...allowlist, 'tradeOptions'].sort());
     const json = JSON.stringify({ feed, detail });
     for (const forbidden of [
       PHONE_MARKER,

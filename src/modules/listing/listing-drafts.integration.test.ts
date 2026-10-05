@@ -95,11 +95,34 @@ const PATH_TO: Record<ListingStatus, ListingStatus[]> = {
   removed: ['removed'],
 };
 
-/** Fixture: anuncio do dono ja no estado pedido, sem passar pelas actions de #48. */
-async function fixture(ownerId: string, status: ListingStatus, title = `Fixture ${status}`) {
+const OPTIONS = ['Um notebook', 'Um videogame', 'Uma camera'];
+
+/**
+ * Fixture: anuncio do dono ja no estado pedido, sem passar pelas actions de #48.
+ * Com `legacy`, nasce sem alternativas de troca, como os anteriores a #76.
+ */
+async function fixture(
+  ownerId: string,
+  status: ListingStatus,
+  title = `Fixture ${status}`,
+  legacy = false,
+) {
   const prisma = getPrismaClient();
   const { id } = await prisma.listing.create({
-    data: { ownerId, title, description: 'Fixture sintetica.', city: 'Recife', uf: 'PE' },
+    data: {
+      ownerId,
+      title,
+      description: 'Fixture sintetica.',
+      city: 'Recife',
+      uf: 'PE',
+      ...(legacy
+        ? {}
+        : {
+            tradeOptions: {
+              create: OPTIONS.map((label, i) => ({ position: i + 1, label })),
+            },
+          }),
+    },
     select: { id: true },
   });
   for (const step of PATH_TO[status]) {
@@ -324,12 +347,12 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
       expect((await readRow(raceId)).status).toBe('published');
       const edit = updateListing(raceId, { title: 'Gravado durante a corrida' });
 
-      // Espera a edicao ficar de fato bloqueada no lock da linha.
+      // Espera a edicao ficar de fato bloqueada na trava da linha (`FOR UPDATE`).
       const deadline = Date.now() + 10_000;
       for (;;) {
         const waiting = await prisma.$queryRaw<{ n: bigint }[]>`
           SELECT count(*)::bigint AS n FROM pg_stat_activity
-          WHERE wait_event_type = 'Lock' AND query ILIKE '%UPDATE%listings%'`;
+          WHERE wait_event_type = 'Lock' AND query ILIKE '%listings%FOR UPDATE%'`;
         if (Number(waiting[0].n) > 0) break;
         if (Date.now() > deadline) throw new Error('a edicao nao chegou a esperar o lock');
         await new Promise((r) => setTimeout(r, 50));
@@ -343,6 +366,152 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
       const row = await readRow(raceId);
       expect(row.status).toBe('closed');
       expect(row.title).toBe(titleBefore);
+    });
+
+    describe('alternativas de troca (#76)', () => {
+      const options = (listingId: string) =>
+        getPrismaClient().listingTradeOption.findMany({
+          where: { listingId },
+          orderBy: { position: 'asc' },
+          select: { position: true, label: true },
+        });
+
+      it('cria com tres, reabre e edita preservando conteudo e ordem', async () => {
+        const res = await createDraftListing({
+          ...draftInput,
+          tradeOptions: [' Um notebook ', 'Um videogame', 'Uma camera'],
+        });
+        expect(res.success).toBe(true);
+        const id = res.listingId!;
+
+        expect((await getListingForEdit(id)).listing?.tradeOptions).toEqual([
+          'Um notebook',
+          'Um videogame',
+          'Uma camera',
+        ]);
+
+        expect(
+          await updateListing(id, { tradeOptions: ['Uma camera', 'Um notebook', 'Um tablet'] }),
+        ).toEqual({ success: true, listingId: id });
+        expect((await getListingForEdit(id)).listing?.tradeOptions).toEqual([
+          'Uma camera',
+          'Um notebook',
+          'Um tablet',
+        ]);
+        expect(await options(id)).toEqual([
+          { position: 1, label: 'Uma camera' },
+          { position: 2, label: 'Um notebook' },
+          { position: 3, label: 'Um tablet' },
+        ]);
+      });
+
+      it('rascunho incompleto e salvo e retomado na posicao de cada campo', async () => {
+        const res = await createDraftListing({
+          ...draftInput,
+          tradeOptions: ['', 'Um videogame', '  '],
+        });
+        const id = res.listingId!;
+        expect((await getListingForEdit(id)).listing?.tradeOptions).toEqual([
+          '',
+          'Um videogame',
+          '',
+        ]);
+
+        expect(
+          await updateListing(id, { tradeOptions: ['Um notebook', 'Um videogame', ''] }),
+        ).toEqual({ success: true, listingId: id });
+        expect((await getListingForEdit(id)).listing?.tradeOptions).toEqual([
+          'Um notebook',
+          'Um videogame',
+          '',
+        ]);
+      });
+
+      it('publicado: forma, vazio e limite recusados sem nenhuma alteracao parcial', async () => {
+        const id = await fixture(userAId, 'published', 'Publicado com alternativas');
+        const rowBefore = await readRow(id);
+        const optionsBefore = await options(id);
+
+        for (const tradeOptions of [
+          ['Um notebook', 'Um videogame'],
+          ['Um notebook', 'Um videogame', 'Uma camera', 'Um tablet'],
+          ['Um notebook', '   ', 'Uma camera'],
+          ['Um notebook', 'Um videogame', ''],
+          ['Um notebook', 'x'.repeat(61), 'Uma camera'],
+        ]) {
+          // Junto com um titulo valido: nem o titulo pode ser gravado.
+          const res = await updateListing(id, { title: 'Titulo que nao pode ficar', tradeOptions });
+          expect(res).toMatchObject({ success: false, reason: 'validation' });
+        }
+        expect(await readRow(id)).toEqual(rowBefore);
+        expect(await options(id)).toEqual(optionsBefore);
+        expect((await getPublicListingDetail(id))?.tradeOptions).toEqual(OPTIONS);
+      });
+
+      it('B nao altera as alternativas de A, nem pelo ID nem por chamada direta', async () => {
+        const id = await fixture(userAId, 'published', 'Alternativas de A');
+        const before = await options(id);
+
+        browserCookie = cookieB;
+        const foreign = await updateListing(id, { tradeOptions: ['x', 'y', 'z'] });
+        expect(foreign).toEqual({
+          success: false,
+          reason: 'not_found',
+          error: 'Anúncio não encontrado.',
+        });
+        expect(foreign).toEqual(
+          await updateListing(randomUUID(), { tradeOptions: ['x', 'y', 'z'] }),
+        );
+        expect(await options(id)).toEqual(before);
+      });
+
+      it('legado publicado: segue publico sem alternativas; editar exige completar as tres', async () => {
+        const id = await fixture(userAId, 'published', 'Publicado antes de #76', true);
+        const rowBefore = await readRow(id);
+
+        // Nao foi retirado nem recebeu alternativa ficticia.
+        const publicBefore = await getPublicListingDetail(id);
+        expect(publicBefore?.title).toBe('Publicado antes de #76');
+        expect(publicBefore?.tradeOptions).toEqual([]);
+        expect((await getListingForEdit(id)).listing?.tradeOptions).toEqual(['', '', '']);
+
+        const titleOnly = await updateListing(id, { title: 'Titulo novo do legado' });
+        expect(titleOnly).toMatchObject({ success: false, reason: 'validation' });
+        expect(Object.keys(titleOnly.fieldErrors ?? {})).toEqual([
+          'tradeOption1',
+          'tradeOption2',
+          'tradeOption3',
+        ]);
+        expect(await readRow(id)).toEqual(rowBefore);
+
+        expect(
+          await updateListing(id, { title: 'Titulo novo do legado', tradeOptions: OPTIONS }),
+        ).toEqual({ success: true, listingId: id });
+        const after = await getPublicListingDetail(id);
+        expect(after?.title).toBe('Titulo novo do legado');
+        expect(after?.tradeOptions).toEqual(OPTIONS);
+        expect((await readRow(id)).status).toBe('published');
+      });
+
+      it('corrida: transicao concorrente para closed nao deixa trocar as alternativas', async () => {
+        const prisma = getPrismaClient();
+        const id = await fixture(userAId, 'published', 'Corrida das alternativas');
+        const before = await options(id);
+        let edit!: Promise<Awaited<ReturnType<typeof updateListing>>>;
+        await prisma.$transaction(
+          async (tx) => {
+            await tx.listing.update({
+              where: { id },
+              data: { status: 'closed', closedAt: new Date() },
+            });
+            edit = updateListing(id, { tradeOptions: ['x', 'y', 'z'] });
+            await new Promise((r) => setTimeout(r, 600));
+          },
+          { timeout: 15_000 },
+        );
+        expect(await edit).toMatchObject({ success: false, reason: 'not_editable' });
+        expect(await options(id)).toEqual(before);
+      });
     });
 
     it('12. rascunho nao aparece na consulta publica', async () => {
