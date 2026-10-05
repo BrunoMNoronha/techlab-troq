@@ -8,7 +8,7 @@ Contrato técnico canônico do anúncio no MVP: campos, validação do formulár
 
 **Atualização de F2-011 ([#49](https://github.com/BrunoMNoronha/techlab-troq/issues/49), 2026-09-30).** A vitrine pública (`/explorar`, `/explorar/[id]` e home) passou a cumprir as seções 9 e 11: parâmetros normalizados no servidor, ordem total, paginação e filtro pela URL, galeria completa no detalhe e prova por HTTP real de que nenhuma superfície pública carrega contato ou dado privado. D-10 a D-12 foram resolvidas, e a parte pública de D-13 também (seção 12). Estado, decisões e provas estão na seção 16.
 
-**Atualização de [#76](https://github.com/BrunoMNoronha/techlab-troq/issues/76) (2026-10-04, DEC-046).** O anúncio passou a ter as **três alternativas de troca** aceitas pelo anunciante: campo novo de conteúdo (seções 2.1 e 3.1), pré-condição de T1 e T4 (seções 4.4 e 5), restrição da edição de anúncio `published` ou `paused` (seção 4.2), DTO do dono e do detalhe público (seções 6.1 e 6.3) e regra para os anúncios anteriores (seção 17.3). Estado, decisões e provas estão na seção 17.
+**Atualização de [#76](https://github.com/BrunoMNoronha/techlab-troq/issues/76) (2026-10-04, DEC-046).** O anúncio passou a ter as **três alternativas de troca** aceitas pelo anunciante: campo novo de conteúdo (seções 2.1 e 3.1), pré-condição de T1 e T4 (seções 4.4 e 5), restrição da edição de anúncio `published` ou `paused` (seção 4.2), DTO do dono e do detalhe público (seções 6.1 e 6.3) e regra para os anúncios anteriores (seção 17.3). Estado, decisões e provas estão na seção 17; a homologação em `preview`, na seção 17.5.
 
 ## 1. Escopo e hierarquia
 
@@ -528,3 +528,29 @@ Nenhum anúncio é retirado do ar por esta regra. Retirar ou pausar automaticame
 | Integração (PostgreSQL descartável, Better Auth real) | Criar, reabrir e editar preservando conteúdo e ordem; rascunho incompleto retomado; publicado recusando 2, 4, vazio, só espaços e 61 caracteres sem alteração parcial (nem do título enviado junto); terceiro recebendo o mesmo `not_found` de um UUID inexistente sem alterar nada; legado publicado visível e completado pela edição; corrida com transição para `closed` | `listing-drafts.integration.test.ts` |
 | Integração | T1 incompleto recusado e liberado depois de completar; `CHECK` do banco recusando texto só com espaços; corrida determinística (edição segura a trava e esvazia uma alternativa, a publicação espera e recusa); corrida pelas actions reais em 6 rodadas sem anúncio público incompleto; T4 de pausado sem alternativas recusado e liberado depois de completar | `listing-lifecycle.integration.test.ts` |
 | Integração | Allowlist: o feed mantém os sete campos e só o detalhe acrescenta `tradeOptions`; ordem por posição mesmo gravadas fora de ordem; legado publicado continua no detalhe com lista vazia | `public-listing.integration.test.ts` |
+| HTTP real (build de produção) | Detalhe anônimo com as três alternativas em ordem e marcação escapada; listagem e home sem o campo; nenhuma regressão de RF-014 nas superfícies públicas e privadas | `public-surface.http.integration.test.ts`, `private-surface.http.integration.test.ts` |
+
+### 17.5 Homologação em `preview` (2026-10-05)
+
+| Item | Valor |
+| --- | --- |
+| Código | `main` em `af43ac2` (squash da [#121](https://github.com/BrunoMNoronha/techlab-troq/pull/121)), na branch `proof-76-preview`, com um commit vazio só para disparar o deploy |
+| Deployment | `dpl_HUbBFVkZsNjTJdbEqpzhXaiD48aF`, alias da branch, Neon `preview`, R2 `troq-media-preview` |
+| Migration | `migrate-preview` run `37247431974` (`success`) aplicou `20261004232041_listing_trade_options`. Conferência só de leitura: registrada sem rollback, tabela vazia com os dois `CHECK` e a FK `ON DELETE CASCADE`; os 4 anúncios existentes eram `closed` e não mudaram |
+| Configuração temporária | `BETTER_AUTH_URL` restrita à branch, criada antes do deploy e **removida** depois da prova; no Preview volta a restar só `BETTER_AUTH_SECRET` |
+| Método | Navegador embutido a 375 × 812, pelo método assistido: Bruno digitou a senha de uma conta de teste já verificada; o agente fez o resto. Consulta anônima por script com cookie jar e link de acesso da Vercel (só `_vercel_jwt`, sem sessão do app) |
+
+| Passo | Resultado |
+| --- | --- |
+| Rascunho com só a alternativa 2 | salvo; reaberto com `['', 'Um videogame', '']`, campos não obrigatórios e a instrução de rascunho |
+| Publicar incompleto, com aceite | recusado: "Campos a corrigir: alternativa de troca 1, alternativa de troca 3"; estado `draft` |
+| Imagem enviada pelo navegador | `ready` pelo `after()` em cerca de 10 s |
+| Completar e publicar | as três salvas na ordem, inclusive `Uma câmera <b>digital</b>`; publicado |
+| Esvaziar a alternativa 2 do publicado | recusado no campo, com foco e `aria-invalid`; instrução "obrigatórias enquanto o anúncio estiver publicado ou pausado" |
+| Pausar e reativar | `published → paused → published`; o painel pausado cita as alternativas como pré-condição |
+| Detalhe anônimo | HTTP 200, `Cache-Control: private, no-cache, no-store`; seção "Aceita em troca" com a orientação, as três em ordem e a marcação escapada (nunca como elemento); `get-session` nulo; listagem com o anúncio e sem as alternativas; home sem elas |
+| Banco (agregados do anúncio) | 3 alternativas nas posições 1 a 3, 1 imagem `ready`, transições `draft>published,published>paused,paused>published`, 1 aceite, 1 auditoria |
+| Logs do deployment | nenhum 4xx ou 5xx; os únicos registros de nível erro são o aviso preexistente de `sslmode` do `pg` |
+| Encerramento | o anúncio de teste foi encerrado (T5) com confirmação; o histórico somente leitura mostra "Aceita em troca"; o detalhe anônimo passou a 404 e o anúncio saiu da listagem |
+
+Não exercitado em `preview`: anúncio publicado anterior a DEC-046, porque não existe nenhum no Neon de `preview`. O comportamento está provado em banco descartável (seção 17.4).
