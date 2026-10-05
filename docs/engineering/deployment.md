@@ -38,7 +38,7 @@ O catálogo da aplicação está em [environments.md](environments.md) e [.env.e
 
 `DATABASE_URL` é pooled. `DIRECT_URL` só chega aos passos de migration, verificação e backup, nunca à Vercel. O token Vercel deve acessar esta equipe e projeto. Operações Git usam `GITHUB_TOKEN`, com escrita somente no job de sincronização. Segredos de servidor na Vercel devem ter tipo sensível; nenhum valor secreto é versionado, registrado em log ou guardado no artefato de evidência.
 
-O build de cada ambiente ocorre remotamente na Vercel, com as variáveis sensíveis do próprio escopo, sem exportá-las ao runner. Production não reaproveita o build de Preview. A CLI é pinada em `62.2.0`; o candidato Production usa `--prod --skip-domain`, conforme [deploy sem atribuição de domínio](https://vercel.com/docs/cli/deploy).
+O build de cada ambiente ocorre remotamente na Vercel, com as variáveis sensíveis do próprio escopo, sem exportá-las ao runner. Production não reaproveita o build de Preview. A publicação usa a API REST da Vercel, não a CLI: `POST /v13/deployments` com `gitSource` no SHA exato (o build é remoto e nada sobe do runner), alias por `POST /v2/deployments/{id}/aliases`, promoção por `POST /v10/projects/{id}/promote/{deploymentId}` e rollback por `POST /v1/projects/{id}/rollback/{deploymentId}`. O candidato Production é criado com `target: production` e `autoAssignCustomDomains: false`, o equivalente ao `--skip-domain`. A CLI foi abandonada em 2026-10-05: ela recusava o token ao carregar o usuário ("User not found"), embora o mesmo token funcionasse na API do projeto.
 
 Google exige clientes OAuth distintos, com origens das URLs acima e callbacks exatos:
 
