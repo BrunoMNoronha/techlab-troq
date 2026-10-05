@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useGoogleRedirect } from '@/app/_components/google-sign-in';
+import { TermsConsentText } from '@/app/_components/terms-consent';
 import { cancelGoogleSignup, completeGoogleSignup } from '@/modules/identity/google-actions';
 
 // Formulario da conclusao do cadastro com Google (IC-15.3). As caixas de 18+ e
@@ -122,7 +123,7 @@ export function GoogleSignupForm({ email, returnTo }: { email: string; returnTo?
             style={{ marginTop: '2px' }}
           />
           <span>
-            Li e aceito os <strong>Termos de Uso e Política da Plataforma</strong>.
+            <TermsConsentText />
           </span>
         </label>
 

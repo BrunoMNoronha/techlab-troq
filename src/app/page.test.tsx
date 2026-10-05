@@ -48,6 +48,20 @@ describe('HomePage', () => {
     expect(section).toHaveTextContent(/não há reembolso por não ser escolhido/i);
   });
 
+  it('leva à Política de Privacidade e aos Termos de Uso públicos', () => {
+    render(<HomePage />);
+
+    const legal = screen.getByRole('navigation', { name: 'Legal' });
+    expect(within(legal).getByRole('link', { name: 'Política de Privacidade' })).toHaveAttribute(
+      'href',
+      '/privacidade',
+    );
+    expect(within(legal).getByRole('link', { name: 'Termos de Uso' })).toHaveAttribute(
+      'href',
+      '/termos',
+    );
+  });
+
   it('não contém mais a linguagem de scaffold', () => {
     const { container } = render(<HomePage />);
 
