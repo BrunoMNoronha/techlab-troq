@@ -231,6 +231,43 @@ describe('modulo listing — transicoes de ciclo de vida (#48)', () => {
       expect(db.updates).toHaveLength(0);
     });
 
+    // Conteudo gravado antes de DEC-049 (#86): a publicacao relê sob a trava e
+    // recusa por campo, sem ecoar o dado nem gravar nada.
+    it('contato gravado no titulo e na descricao recusa a publicacao nos dois campos', async () => {
+      signedIn();
+      const db = fakeDb({
+        status: 'draft',
+        title: 'Bike 11 98765-4321',
+        description: 'Escreva para fulano@exemplo.com',
+      });
+      const res = await publishListing(listingId, true);
+      expect(res).toMatchObject({ success: false, reason: 'validation', status: 'draft' });
+      expect(res.success === false && res.fieldErrors).toEqual({
+        title: 'Não inclua telefone, WhatsApp, e-mail ou endereço neste campo.',
+        description: 'Não inclua telefone, WhatsApp, e-mail ou endereço neste campo.',
+      });
+      expect(JSON.stringify(res)).not.toMatch(/98765|fulano/);
+      expect(db.updates).toHaveLength(0);
+      expect(db.transitions).toHaveLength(0);
+      expect(db.acceptances).toHaveLength(0);
+      expect(db.audits).toHaveLength(0);
+    });
+
+    it('contato gravado numa alternativa de troca recusa a publicacao no campo', async () => {
+      signedIn();
+      const db = fakeDb({
+        status: 'draft',
+        tradeOptions: [
+          { position: 1, label: 'Um notebook' },
+          { position: 2, label: 'Um videogame' },
+          { position: 3, label: 'CEP 01310-100' },
+        ],
+      });
+      const res = await publishListing(listingId, true);
+      expect(res.success === false && Object.keys(res.fieldErrors ?? {})).toEqual(['tradeOption3']);
+      expect(db.updates).toHaveLength(0);
+    });
+
     it.each([
       ['nenhuma alternativa (rascunho ou anuncio anterior a #76)', [], 3],
       [
@@ -362,6 +399,16 @@ describe('modulo listing — transicoes de ciclo de vida (#48)', () => {
       expect(db.acceptances).toHaveLength(0);
     });
 
+    it('reativar com endereco gravado na descricao e recusado, e o anuncio segue pausado', async () => {
+      signedIn();
+      const db = fakeDb({ status: 'paused', description: 'Retirar na Rua Augusta, 500' });
+      const res = await reactivateListing(listingId);
+      expect(res).toMatchObject({ success: false, reason: 'validation', status: 'paused' });
+      expect(res.success === false && Object.keys(res.fieldErrors ?? {})).toEqual(['description']);
+      expect(db.updates).toHaveLength(0);
+      expect(db.transitions).toHaveLength(0);
+    });
+
     it('reativar sem imagem pronta e recusado (D-3)', async () => {
       signedIn();
       const db = fakeDb({ status: 'paused' }, 0);
@@ -478,6 +525,73 @@ describe('getPublicFeed & getPublicListingDetail (RF-014)', () => {
     expect(feed.listings[0]).not.toHaveProperty('whatsapp');
     expect(feed.listings[0]).not.toHaveProperty('email');
     expect(feed.listings[0]).not.toHaveProperty('ownerId');
+  });
+
+  // Anuncio publicado antes de DEC-049 (#86; listing-contract.md, 10.2): o campo
+  // com contato sai mascarado, os demais seguem intactos.
+  it('feed mascara titulo e descricao legados com contato, campo a campo', async () => {
+    const rows = [
+      {
+        id: 'pub-1',
+        title: 'Bike 11 98765-4321',
+        description: 'Descrição sem contato.',
+        city: 'Recife',
+        uf: 'PE',
+        createdAt: new Date(),
+        images: [],
+      },
+      {
+        id: 'pub-2',
+        title: 'Mesa de jantar',
+        description: 'Chama no wa.me/5511987654321',
+        city: 'Recife',
+        uf: 'PE',
+        createdAt: new Date(),
+        images: [],
+      },
+    ];
+    vi.spyOn(prismaModule, 'getPrismaClient').mockReturnValue({
+      listing: { findMany: vi.fn(), count: vi.fn() },
+      $transaction: vi.fn().mockResolvedValueOnce([rows, 2]),
+    } as unknown as prismaModule.PrismaClient);
+
+    const feed = await getPublicFeed();
+    expect(feed.listings.map((l) => [l.title, l.description])).toEqual([
+      ['Anúncio em revisão', 'Descrição sem contato.'],
+      ['Mesa de jantar', 'A descrição deste anúncio está em revisão pelo anunciante.'],
+    ]);
+    expect(JSON.stringify(feed)).not.toMatch(/98765|wa\.me/);
+  });
+
+  it('detalhe mascara titulo, descricao e alternativa legados com contato', async () => {
+    vi.spyOn(prismaModule, 'getPrismaClient').mockReturnValue({
+      listing: {
+        findFirst: vi.fn().mockResolvedValueOnce({
+          id: '0b6f2d9e-3c4a-4e8b-9f1a-2d3c4b5a6e7f',
+          title: 'fulano@exemplo.com',
+          description: 'Rua Augusta, 500',
+          city: 'Recife',
+          uf: 'PE',
+          createdAt: new Date(),
+          tradeOptions: [
+            { position: 1, label: 'Um notebook' },
+            { position: 2, label: 'tel:+5511' },
+            { position: 3, label: 'Uma câmera' },
+          ],
+          images: [],
+        }),
+      },
+    } as unknown as prismaModule.PrismaClient);
+
+    const item = await getPublicListingDetail('0b6f2d9e-3c4a-4e8b-9f1a-2d3c4b5a6e7f');
+    expect(item).toMatchObject({
+      title: 'Anúncio em revisão',
+      description: 'A descrição deste anúncio está em revisão pelo anunciante.',
+      tradeOptions: ['Um notebook', 'Alternativa em revisão', 'Uma câmera'],
+      city: 'Recife',
+      state: 'PE',
+    });
+    expect(JSON.stringify(item)).not.toMatch(/fulano|Augusta|tel:/);
   });
 
   it('detalhe publico retorna null se o anuncio nao estiver publicado', async () => {

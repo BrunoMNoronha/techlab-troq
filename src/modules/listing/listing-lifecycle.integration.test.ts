@@ -728,5 +728,56 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
         expect((await row(id)).status).toBe('draft');
       });
     });
+
+    // Conteudo gravado antes de DEC-049 (#86; listing-contract.md, 10.1 e 10.2):
+    // a transicao relê o conteudo sob a trava e recusa, sem efeito parcial.
+    describe('contato e endereco gravados antes da regra (#86)', () => {
+      const CONTACT = 'Não inclua telefone, WhatsApp, e-mail ou endereço neste campo.';
+
+      it('T1 recusa titulo e descricao com contato, sem transicao, aceite ou auditoria', async () => {
+        const id = await draft();
+        await image(id);
+        await prisma().listing.update({
+          where: { id },
+          data: { title: 'Bike 11 98765-4321', description: 'CEP 01310-100' },
+        });
+
+        const res = await publishListing(id, true);
+
+        expect(res).toMatchObject({ success: false, reason: 'validation', status: 'draft' });
+        expect(res.success === false && res.fieldErrors).toEqual({
+          title: CONTACT,
+          description: CONTACT,
+        });
+        expect(JSON.stringify(res)).not.toMatch(/98765|01310/);
+        expect((await row(id)).status).toBe('draft');
+        expect(await counts(id)).toEqual({ transitions: 0, acceptances: 0, audits: 0 });
+
+        // Corrigido pela edicao, publica.
+        expect(
+          await updateListing(id, { title: 'Bicicleta corrigida', description: 'Sem contato.' }),
+        ).toEqual({ success: true, listingId: id });
+        expect(await publishListing(id, true)).toMatchObject({ success: true, changed: true });
+      });
+
+      it('T4 recusa reativar com e-mail gravado e o anuncio segue pausado', async () => {
+        const id = await draft();
+        await image(id);
+        expect(await publishListing(id, true)).toMatchObject({ success: true });
+        expect(await pauseListing(id)).toMatchObject({ success: true });
+        await prisma().listing.update({
+          where: { id },
+          data: { description: 'Escreva para fulano arroba exemplo ponto com' },
+        });
+        const before = await counts(id);
+
+        const res = await reactivateListing(id);
+
+        expect(res).toMatchObject({ success: false, reason: 'validation', status: 'paused' });
+        expect(res.success === false && res.fieldErrors).toEqual({ description: CONTACT });
+        expect((await row(id)).status).toBe('paused');
+        expect(await counts(id)).toEqual(before);
+      });
+    });
   },
 );

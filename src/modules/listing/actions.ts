@@ -6,6 +6,7 @@ import { getPrismaClient } from '@/persistence/prisma';
 import type { ListingStatus } from '@/generated/prisma/client';
 import { isUuid } from './ids';
 import { lockOwnedListing, transitionListing, type LifecycleResult } from './lifecycle';
+import { publicDescription, publicTitle, publicTradeOption } from './public-content';
 import { normalizePublicFeedQuery } from './public-query';
 import {
   EMPTY_TRADE_OPTIONS,
@@ -257,7 +258,10 @@ export async function updateListing(
       if (!EDITABLE_STATUSES.includes(listing.status)) throw new EditAbort('not_editable');
 
       // Anuncio publico ou pausado nunca fica sem as tres alternativas,
-      // inclusive o anterior a #76, que as completa na primeira edicao.
+      // inclusive o anterior a #76, que as completa na primeira edicao. O
+      // conteudo RESULTANTE inteiro e revalidado: o legado com contato gravado
+      // antes de DEC-049 (#86) corrige o campo na primeira edicao, mesmo que
+      // ela so mude outro campo (secao 10.2).
       if (listing.status !== 'draft') {
         const resulting =
           newOptions ??
@@ -268,7 +272,18 @@ export async function updateListing(
             }),
           );
         const complete = validateTradeOptions(resulting, true);
-        if (!complete.ok) throw new EditAbort('validation', complete.fieldErrors);
+        const content = validateListingContent({
+          title: validation.data.title ?? listing.title,
+          description: validation.data.description ?? listing.description,
+          city: validation.data.city ?? listing.city,
+          state: validation.data.uf ?? listing.uf,
+        });
+        if (!complete.ok || !content.ok) {
+          throw new EditAbort('validation', {
+            ...(content.ok ? {} : content.fieldErrors),
+            ...(complete.ok ? {} : complete.fieldErrors),
+          });
+        }
       }
 
       await tx.listing.update({
@@ -523,10 +538,11 @@ export async function getPublicFeed(options?: {
     prisma.listing.count({ where: whereClause }),
   ]);
 
+  // Conteudo legado com contato sai mascarado, campo a campo (secao 10.2).
   const listings: PublicListingFeedItem[] = dbListings.map((item) => ({
     id: item.id,
-    title: item.title,
-    description: item.description,
+    title: publicTitle(item.title),
+    description: publicDescription(item.description),
     city: item.city,
     state: item.uf,
     createdAt: item.createdAt,
@@ -598,11 +614,11 @@ export async function getPublicListingDetail(
 
   return {
     id: item.id,
-    title: item.title,
-    description: item.description,
+    title: publicTitle(item.title),
+    description: publicDescription(item.description),
     city: item.city,
     state: item.uf,
-    tradeOptions: item.tradeOptions.map((option) => option.label),
+    tradeOptions: item.tradeOptions.map((option) => publicTradeOption(option.label)),
     createdAt: item.createdAt,
     images: item.images.map((img) => ({
       id: img.id,

@@ -514,6 +514,108 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
       });
     });
 
+    // Contato e endereco no texto livre (#86, DEC-049; listing-contract.md, 10.1
+    // e 10.2). O conteudo "legado" e gravado direto no banco, como fixture: a
+    // aplicacao nao o aceita mais.
+    describe('contato e endereco no titulo e na descricao (#86)', () => {
+      const CONTACT = 'Não inclua telefone, WhatsApp, e-mail ou endereço neste campo.';
+
+      async function withContent(
+        status: ListingStatus,
+        content: { title?: string; description?: string },
+      ) {
+        const id = await fixture(userAId, status, content.title ?? 'Legado sintetico #86');
+        if (content.description) {
+          await getPrismaClient().listing.update({
+            where: { id },
+            data: { description: content.description },
+          });
+        }
+        return id;
+      }
+
+      it('criacao com contato e recusada nos dois campos e nada e gravado', async () => {
+        const prisma = getPrismaClient();
+        const before = await prisma.listing.count({ where: { ownerId: userAId } });
+
+        const res = await createDraftListing({
+          ...draftInput,
+          title: 'Bike 11 98765-4321',
+          description: 'Escreva para fulano@exemplo.test',
+          tradeOptions: ['Um notebook', 'wa.me/5511987654321', ''],
+        });
+
+        expect(res).toMatchObject({ success: false, reason: 'validation' });
+        expect(res.fieldErrors).toEqual({
+          title: CONTACT,
+          description: CONTACT,
+          tradeOption2: CONTACT,
+        });
+        expect(JSON.stringify(res)).not.toMatch(/98765|fulano|wa\.me/);
+        expect(await prisma.listing.count({ where: { ownerId: userAId } })).toBe(before);
+      });
+
+      it.each(['draft', 'published', 'paused'] as const)(
+        'edicao de anuncio %s com endereco nao grava nada, nem o campo valido enviado junto',
+        async (status) => {
+          const id = await fixture(userAId, status, `Edicao com endereco ${status}`);
+          const before = await readRow(id);
+
+          const res = await updateListing(id, {
+            title: 'Titulo valido e novo',
+            description: 'Retirar na Rua Augusta, 500, apto 12',
+          });
+
+          expect(res).toMatchObject({ success: false, reason: 'validation' });
+          expect(res.fieldErrors).toEqual({ description: CONTACT });
+          expect(await readRow(id)).toEqual(before);
+        },
+      );
+
+      it('chamada direta com payload arbitrario nao contorna a regra', async () => {
+        const id = await fixture(userAId, 'published', 'Chamada direta #86');
+        const before = await readRow(id);
+
+        const res = await updateListing(id, {
+          title: 'tel:+5511987654321',
+          status: 'draft',
+        } as unknown as Parameters<typeof updateListing>[1]);
+
+        expect(res.fieldErrors).toEqual({ title: CONTACT });
+        expect(await readRow(id)).toEqual(before);
+      });
+
+      it('publicado com contato gravado antes da regra: editar outro campo exige corrigir', async () => {
+        const id = await withContent('published', {
+          description: 'Chama no (11) 98765-4321',
+        });
+        const before = await readRow(id);
+
+        const blocked = await updateListing(id, { title: 'Titulo novo sem contato' });
+        expect(blocked).toMatchObject({ success: false, reason: 'validation' });
+        expect(blocked.fieldErrors).toEqual({ description: CONTACT });
+        expect(JSON.stringify(blocked)).not.toContain('98765');
+        expect(await readRow(id)).toEqual(before);
+
+        const fixed = await updateListing(id, {
+          title: 'Titulo novo sem contato',
+          description: 'Descricao corrigida, sem contato.',
+        });
+        expect(fixed).toEqual({ success: true, listingId: id });
+        const after = await readRow(id);
+        expect(after).toMatchObject({
+          status: 'published',
+          title: 'Titulo novo sem contato',
+          description: 'Descricao corrigida, sem contato.',
+        });
+
+        browserCookie = '';
+        expect((await getPublicListingDetail(id))?.description).toBe(
+          'Descricao corrigida, sem contato.',
+        );
+      });
+    });
+
     it('12. rascunho nao aparece na consulta publica', async () => {
       browserCookie = cookieB;
       const res = await createDraftListing({ ...draftInput, title: 'Rascunho nunca publico' });

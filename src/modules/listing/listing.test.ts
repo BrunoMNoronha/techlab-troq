@@ -173,11 +173,19 @@ describe('modulo listing — rascunhos, edicao e meus anuncios (#44 / F2-006)', 
     function mockTx(
       lockedStatus: string | null,
       storedOptions: { position: number; label: string }[] = [],
+      storedContent: Partial<{ title: string; description: string; city: string; uf: string }> = {},
     ) {
+      const row = {
+        id: listingId,
+        status: lockedStatus,
+        title: 'Bicicleta aro 29',
+        description: 'Em bom estado.',
+        city: 'Recife',
+        uf: 'PE',
+        ...storedContent,
+      };
       const tx = {
-        $queryRaw: vi
-          .fn()
-          .mockResolvedValue(lockedStatus ? [{ id: listingId, status: lockedStatus }] : []),
+        $queryRaw: vi.fn().mockResolvedValue(lockedStatus ? [row] : []),
         listing: { update: vi.fn().mockResolvedValue({}) },
         listingTradeOption: {
           findMany: vi.fn().mockResolvedValue(storedOptions),
@@ -377,6 +385,80 @@ describe('modulo listing — rascunhos, edicao e meus anuncios (#44 / F2-006)', 
       expect(tx.listingTradeOption.createMany).toHaveBeenCalledWith({
         data: stored.map((row) => ({ ...row, listingId })),
       });
+    });
+
+    // Contato e endereco no texto livre (#86, DEC-049; listing-contract.md, 10.1).
+    it('recusa contato no titulo e na descricao, cada um no seu campo, antes do banco', async () => {
+      asUser();
+      const { $transaction } = mockTx('published', stored);
+
+      const res = await updateListing(listingId, {
+        title: 'Bike (11) 98765-4321',
+        description: 'Retirar na Rua Augusta, 500',
+      });
+
+      expect(res).toMatchObject({ success: false, reason: 'validation' });
+      expect(res.fieldErrors).toEqual({
+        title: 'Não inclua telefone, WhatsApp, e-mail ou endereço neste campo.',
+        description: 'Não inclua telefone, WhatsApp, e-mail ou endereço neste campo.',
+      });
+      expect(JSON.stringify(res)).not.toMatch(/98765|Augusta/);
+      expect($transaction).not.toHaveBeenCalled();
+    });
+
+    it('recusa contato numa alternativa de troca, mesmo em rascunho', async () => {
+      asUser();
+      const { $transaction } = mockTx('draft');
+
+      const res = await updateListing(listingId, {
+        tradeOptions: ['Um notebook', 'fulano@exemplo.com', ''],
+      });
+
+      expect(res.fieldErrors).toEqual({
+        tradeOption2: 'Não inclua telefone, WhatsApp, e-mail ou endereço neste campo.',
+      });
+      expect($transaction).not.toHaveBeenCalled();
+    });
+
+    it.each(['published', 'paused'])(
+      'anuncio %s com contato gravado antes da regra corrige o campo para editar outro',
+      async (status) => {
+        asUser();
+        const { tx } = mockTx(status, stored, { description: 'Chama no wa.me/5511987654321' });
+
+        const res = await updateListing(listingId, { title: 'Título novo e válido' });
+
+        expect(res).toMatchObject({ success: false, reason: 'validation' });
+        expect(res.fieldErrors).toEqual({
+          description: 'Não inclua telefone, WhatsApp, e-mail ou endereço neste campo.',
+        });
+        expect(JSON.stringify(res)).not.toContain('wa.me');
+        expect(tx.listing.update).not.toHaveBeenCalled();
+        expect(tx.listingTradeOption.deleteMany).not.toHaveBeenCalled();
+      },
+    );
+
+    it('anuncio publicado com contato gravado aceita a correcao do proprio campo', async () => {
+      asUser();
+      const { tx } = mockTx('published', stored, { description: 'Chama no wa.me/5511987654321' });
+
+      const res = await updateListing(listingId, { description: 'Sem contato agora.' });
+
+      expect(res).toEqual({ success: true, listingId });
+      expect(tx.listing.update).toHaveBeenCalledWith({
+        where: { id: listingId },
+        data: { description: 'Sem contato agora.', updatedAt: expect.any(Date) },
+      });
+    });
+
+    it('rascunho com contato gravado aceita edicao parcial; a publicacao o barra depois', async () => {
+      asUser();
+      const { tx } = mockTx('draft', [], { description: 'Chama no wa.me/5511987654321' });
+
+      const res = await updateListing(listingId, { title: 'Título novo e válido' });
+
+      expect(res).toEqual({ success: true, listingId });
+      expect(tx.listing.update).toHaveBeenCalled();
     });
   });
 
