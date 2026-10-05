@@ -73,10 +73,15 @@ O job de integração aplica todas as migrations em PostgreSQL efêmero, faz o b
 - Matriz direta: **25/25 aprovados** na execução local, incluindo os 13 casos adicionados.
 - Confirmação/C-8/F3-S1: **33/33 aprovados** na reexecução local após a correção.
 - F3-S1: regressão inicialmente **reprovada** com os dois identificadores contendo telefone, antes da correção.
-- CI completa e HTTP: pendentes neste registro inicial.
+- Unitários locais focados em redação/opções de Sentry e componente de contato: **58/58 aprovados**. Formatação, lint e typecheck locais aprovados.
+- **CI completa aprovada no SHA `cfe2c9b3c4180058f0d4d6e96f8962985eb60b57`**, [run 37281574190](https://github.com/BrunoMNoronha/techlab-troq/actions/runs/37281574190): ambos os required checks `success`; 63 arquivos e **1.085 testes unitários**; 32 arquivos e **471 testes de integração aprovados**; 3 arquivos/19 casos pulados pelos pré-requisitos externos de R2 real e sandbox Mercado Pago. A camada de provedor real não foi declarada aprovada por esses testes.
+- No mesmo SHA: matriz **25/25**, confirmação/C-8/F3-S1 **33/33**, contato por HTTP **30/30**, webhook por HTTP **11/11**. Todos os contratos T/C da tabela rodaram nesse checkout, incluindo as provas realmente concorrentes. **C-8 remoto permanece pendente** e C-5 permanece substituto conforme DV-13.
+- Build, aplicação de migrations, **8/8 testes do pipeline** e backup cifrado/restauração com dados sintéticos passaram no mesmo run. Isso não é deploy nem prova de recursos compartilhados.
 - Revisão de fonte: validação de sessão por ação; autorização por titularidade; cadeia da entrega conferida a cada acesso; trava de anúncio e guard de pagamento; ausência de número nos DTOs, auditoria legítima, sinais e e-mails; receptor público com corpo limitado e assinatura obrigatória; jobs por segredo, sem substituição por cookie.
 
 Nenhuma dependência nova ou migration criada. As mudanças de produção se limitam à redação dos identificadores de webhook rejeitado e à exportação da função compartilhada de redação. Nenhuma nova política de negócio, perfil de moderação ou exceção a RB-001.
+
+A revisão reforçada de **código e CI** está registrada acima. A entrega permanece parcial por causa da prova remota explicitamente exigida por #104. O contêiner PostgreSQL descartável `troq-issue104-ephemeral` e seu volume anônimo foram removidos após as provas locais, sem tocar os demais recursos. A atualização deste relatório após o run altera apenas documentação.
 
 ## Pendências de aceite
 
