@@ -235,7 +235,7 @@ function notification(orderId: string, requestId = `${REQUEST_PREFIX}-${++reques
   const url = new URL('http://localhost/api/webhooks/mercadopago');
   url.searchParams.set('type', 'order');
   url.searchParams.set('data.id', orderId);
-  const manifest = `id:${orderId.toLowerCase()};request-id:${requestId};ts:${ts};`;
+  const manifest = `id:${orderId};request-id:${requestId};ts:${ts};`;
   const v1 = createHmac('sha256', SECRET).update(manifest).digest('hex');
   return new Request(url, {
     method: 'POST',

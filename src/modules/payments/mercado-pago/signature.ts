@@ -9,7 +9,7 @@ import { createHmac, timingSafeEqual } from 'node:crypto';
 //    de webhook sao por aplicacao e nao sao intercambiaveis;
 // 2. extrair `ts` e `v1` de `x-signature`;
 // 3. montar o UNICO manifesto `id:<data.id>;request-id:<x-request-id>;ts:<ts>;`
-//    com `data.id` lido da QUERY e em minusculas, omitindo componente ausente;
+//    com `data.id` lido da QUERY no caixa original, omitindo componente ausente;
 // 4. HMAC-SHA256 com a chave secreta e comparacao em tempo constante.
 //
 // Nunca ha fallback entre variantes, e o manifesto NUNCA e montado a partir do
@@ -60,13 +60,13 @@ function parseSignature(header: string): { ts: string; v1: string } | null {
   return { ts, v1 };
 }
 
-/** O manifesto oficial, unico. Exposto para os testes de contrato. */
+/** Manifesto unico no perfil de caixa do SDK Node 3.6.1 (DEC-052). */
 export function buildManifest(parts: {
   dataId: string | null;
   requestId: string | null;
   ts: string;
 }): string {
-  const id = parts.dataId ? `id:${parts.dataId.toLowerCase()};` : '';
+  const id = parts.dataId ? `id:${parts.dataId};` : '';
   const requestId = parts.requestId ? `request-id:${parts.requestId};` : '';
   return `${id}${requestId}ts:${parts.ts};`;
 }
@@ -95,7 +95,6 @@ export function verifyNotification(
   if (received.length !== expected.length || !timingSafeEqual(received, expected)) {
     return { valid: false, reason: 'signature_invalid' };
   }
-  // A minuscula e so do manifesto: a correlacao usa o identificador como veio,
-  // no mesmo caixa que a criacao da order devolveu.
+  // A assinatura e a correlacao preservam o identificador recebido na query.
   return { valid: true, providerOrderId: dataId, providerRequestId: requestId };
 }

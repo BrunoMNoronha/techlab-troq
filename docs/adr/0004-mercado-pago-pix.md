@@ -10,6 +10,21 @@ Esta ADR **homologa um gateway**. Ela não implementa integração de pagamentos
 
 > **Atualização de 2026-09-14, posterior à aceitação desta ADR.** OD-07 foi fechada por [../product/payment-exceptions.md](../product/payment-exceptions.md) (DEC-037) e o design detalhado foi produzido por F0-022 em [../architecture/payments-design.md](../architecture/payments-design.md). As decisões desta ADR **não** foram alteradas: o desenho as aplica integralmente. O texto original abaixo é preservado como registro histórico e deve ser lido com esta atualização. Onde ele diz que OD-07 permanece aberta, isso descreve o estado da data em que a ADR foi escrita.
 
+## Atualização de 2026-10-05 — perfil de caixa do manifesto de Orders (DEC-052)
+
+Decisão técnica autorizada explicitamente pelo orquestrador desta execução, conforme [../engineering/ai-agent-workflow.md](../engineering/ai-agent-workflow.md), e registrada como [DEC-052](../decisions/decision-log.md). **Para a implementação atual, esta atualização substitui apenas a conversão de `data.id` para minúsculas da decisão 9.** Os resultados de 2026-09-14 e o texto original abaixo permanecem como evidência histórica; suas conclusões sobre caixa não são garantia para toda notificação atual de Orders.
+
+As fontes oficiais consultadas em 2026-10-05 divergem:
+
+- O SDK oficial Node 3.6.1, no commit `59a1f91e7c072cbda4e394267b24e7383ea3b1f3`, [compõe o manifesto com o `dataId` recebido](https://github.com/mercadopago/sdk-nodejs/blob/59a1f91e7c072cbda4e394267b24e7383ea3b1f3/src/utils/webhook/index.ts#L243-L248), sem convertê-lo para minúsculas, e [testa positivamente um identificador em maiúsculas](https://github.com/mercadopago/sdk-nodejs/blob/59a1f91e7c072cbda4e394267b24e7383ea3b1f3/src/utils/webhook/webhook.spec.ts#L42-L47).
+- A [receita “Sem SDKs” das notificações de Orders](https://www.mercadopago.com.br/developers/pt/docs/checkout-api-orders/notifications.md), linha 129 e exemplo JavaScript, ainda determina a conversão para minúsculas.
+
+A implementação escolhe **um único perfil**, compatível com a composição do manifesto do SDK quanto à caixa: `id:<data.id>;request-id:<x-request-id>;ts:<ts>;`, com `data.id` proveniente da query e **preservado na caixa original**, `x-request-id` do header e `ts` de `x-signature`. Mantém o HMAC-SHA256, a comparação em tempo constante e as regras existentes de parsing e omissão de componentes ausentes. Não importa o SDK, não adota seu parsing integralmente e não acrescenta `trim` ou outra normalização. Não tenta a forma em minúsculas após uma recusa, não reconstrói o manifesto pelo corpo e não testa chave alternativa.
+
+A identificação da aplicação continua **antes** do HMAC (decisão 8). O validador continua devolvendo o identificador original para correlação; a busca da tentativa, que já não distingue caixa, permanece separada do manifesto assinado ([payments-design.md](../architecture/payments-design.md), PD-6.1, PD-6.10 e PD-6.12). Nenhum efeito financeiro é autorizado por uma assinatura recusada.
+
+Esta escolha resolve qual perfil o código usa diante da divergência das fontes; não demonstra que o protocolo é inequívoco, que a chave configurada está errada nem que a caixa seja a causa isolada das recusas atuais em Preview. A homologação por notificação autêntica permanece pendente, assim como [#104](https://github.com/BrunoMNoronha/techlab-troq/issues/104) e [#105](https://github.com/BrunoMNoronha/techlab-troq/issues/105). Testes locais ou CI não substituem essa prova remota.
+
 ## Contexto
 
 RB-004 ([../product/business-rules.md](../product/business-rules.md)) exige cobrar **exatamente R$ 0,99** por solicitação de desbloqueio, de forma definitiva mesmo quando o solicitante não é escolhido. É um valor atipicamente baixo, e a dúvida de partida — registrada como risco R-01 em [../delivery/risks.md](../delivery/risks.md) — era se algum gateway aceitaria esse valor e se a tarifa o consumiria.

@@ -265,7 +265,7 @@ function notification(orderId: string, opts: NotifyOptions = {}): Request {
   if (queryDataId !== null) url.searchParams.set('data.id', queryDataId);
   const manifest =
     opts.manifest ??
-    `id:${(queryDataId ?? '').toLowerCase()};request-id:${requestId};ts:${opts.signatureTs ?? ts};`;
+    `id:${queryDataId ?? ''};request-id:${requestId};ts:${opts.signatureTs ?? ts};`;
   const signature =
     opts.signature === undefined
       ? `ts=${ts},v1=${hmac(opts.secret ?? SECRET, manifest)}`
@@ -675,10 +675,7 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
         const r = await reserve('r2', listingId);
         const requestId = nextRequestId();
         const ts = String(Date.now());
-        const signedFor = hmac(
-          SECRET,
-          `id:${r.orderId.toLowerCase()};request-id:${requestId};ts:${ts};`,
-        );
+        const signedFor = hmac(SECRET, `id:${r.orderId};request-id:${requestId};ts:${ts};`);
         const tampered = notification(r.orderId, {
           queryDataId: `${r.orderId}X`,
           requestId,
@@ -694,7 +691,7 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
         const ts = String(Date.now());
         const signedFor = hmac(
           SECRET,
-          `id:${r.orderId.toLowerCase()};request-id:${REQUEST_PREFIX}-orig;ts:${ts};`,
+          `id:${r.orderId};request-id:${REQUEST_PREFIX}-orig;ts:${ts};`,
         );
         await expectRejected(
           r,
@@ -709,7 +706,7 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
         const requestId = nextRequestId();
         const ts = String(Date.now());
         // Assinatura valida para o id do CORPO; a query traz outro id (e depois nenhum).
-        const bodyManifest = `id:${r.orderId.toLowerCase()};request-id:${requestId};ts:${ts};`;
+        const bodyManifest = `id:${r.orderId};request-id:${requestId};ts:${ts};`;
         await expectRejected(
           r,
           notification(r.orderId, {
