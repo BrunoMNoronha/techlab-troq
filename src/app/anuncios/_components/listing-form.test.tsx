@@ -49,6 +49,80 @@ describe('ListingForm', () => {
     vi.clearAllMocks();
   });
 
+  // Contato e endereco no texto livre (#86; listing-contract.md, 10.1 e 10.2).
+  describe('contato e endereco no titulo e na descricao (#86)', () => {
+    const CONTACT = 'Não inclua telefone, WhatsApp, e-mail ou endereço neste campo.';
+
+    it('titulo e descricao orientam a nao incluir contato, pela descricao acessivel', () => {
+      render(<ListingForm mode="create" />);
+      for (const label of ['Título do anúncio', 'Descrição do item']) {
+        expect(screen.getByLabelText(label)).toHaveAccessibleDescription(
+          /Não inclua telefone, WhatsApp, e-mail ou endereço/,
+        );
+      }
+    });
+
+    it('antecipa o erro nos dois campos, foca o titulo, preserva o texto e nao envia', async () => {
+      render(<ListingForm mode="create" />);
+      fill({ ...valid, title: 'Bike 11 98765-4321', description: 'Rua Augusta, 500' });
+
+      await submit();
+
+      const title = screen.getByLabelText('Título do anúncio');
+      const description = screen.getByLabelText('Descrição do item');
+      expect(title).toHaveAttribute('aria-invalid', 'true');
+      expect(description).toHaveAttribute('aria-invalid', 'true');
+      expect(title).toHaveAccessibleDescription(expect.stringContaining(CONTACT));
+      expect(description).toHaveAccessibleDescription(expect.stringContaining(CONTACT));
+      expect(document.activeElement).toBe(title);
+      expect(createDraftListing).not.toHaveBeenCalled();
+      expect(title).toHaveValue('Bike 11 98765-4321');
+      expect(description).toHaveValue('Rua Augusta, 500');
+    });
+
+    it('a recusa do servidor aparece no campo, com o texto preservado para correcao', async () => {
+      createDraftListing.mockResolvedValueOnce({
+        success: false,
+        reason: 'validation',
+        error: 'Revise os campos destacados.',
+        fieldErrors: { description: CONTACT },
+      });
+      render(<ListingForm mode="create" />);
+      fill(valid);
+
+      await submit();
+
+      const description = screen.getByLabelText('Descrição do item');
+      expect(description).toHaveAttribute('aria-invalid', 'true');
+      expect(description).toHaveAccessibleDescription(expect.stringContaining(CONTACT));
+      expect(document.activeElement).toBe(description);
+      expect(description).toHaveValue('Em bom estado.');
+    });
+
+    it('edicao de conteudo gravado antes da regra abre com o campo marcado e o texto intacto', () => {
+      render(
+        <ListingForm
+          mode="edit"
+          listingId="22222222-2222-4222-8222-222222222222"
+          requireTradeOptions
+          initialValues={{
+            title: 'Bicicleta aro 29',
+            description: 'Chama no wa.me/5511987654321',
+            city: 'Recife',
+            state: 'PE',
+            tradeOptions: options,
+          }}
+        />,
+      );
+
+      const description = screen.getByLabelText('Descrição do item');
+      expect(description).toHaveAttribute('aria-invalid', 'true');
+      expect(description).toHaveAccessibleDescription(expect.stringContaining(CONTACT));
+      expect(description).toHaveValue('Chama no wa.me/5511987654321');
+      expect(screen.getByLabelText('Título do anúncio')).not.toHaveAttribute('aria-invalid');
+    });
+  });
+
   describe('alternativas de troca (#76)', () => {
     function fillOptions(values: string[]) {
       values.forEach((value, i) => {
@@ -151,7 +225,7 @@ describe('ListingForm', () => {
     const title = screen.getByLabelText('Título do anúncio');
     const city = screen.getByLabelText('Cidade');
     expect(title).toHaveAttribute('aria-invalid', 'true');
-    expect(title).toHaveAttribute('aria-describedby', 'title-error');
+    expect(title).toHaveAttribute('aria-describedby', 'title-hint title-error');
     expect(document.getElementById('title-error')).toHaveTextContent('entre 5 e 60');
     expect(city).toHaveAttribute('aria-invalid', 'true');
     expect(screen.getByLabelText('Descrição do item')).not.toHaveAttribute('aria-invalid');

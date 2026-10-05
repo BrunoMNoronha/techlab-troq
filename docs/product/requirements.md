@@ -182,7 +182,7 @@ Nenhum requisito permanece `bloqueado` e **não há mais decisão aberta**. OD-0
 
 - **Descrição:** telefone/WhatsApp é dado protegido: nunca aparece em payload público, cache público, logs ou componentes renderizados no cliente sem autorização.
 - **Prioridade MVP:** obrigatória.
-- **Origem:** DEC-023; [../adr/0001-modular-monolith-nextjs.md](../adr/0001-modular-monolith-nextjs.md) (consequências); R-03.
+- **Origem:** DEC-023; [../adr/0001-modular-monolith-nextjs.md](../adr/0001-modular-monolith-nextjs.md) (consequências); R-03. Complementado por DEC-049: título, descrição e alternativas de troca recusam telefone, WhatsApp, e-mail e endereço detectáveis ([../architecture/listing-contract.md](../architecture/listing-contract.md), seções 10.1 e 10.2).
 - **Regra de negócio relacionada:** RB-001.
 - **Decisão aberta relacionada:** —
 - **Critério de aceite (alto nível):** nenhuma rota, cache ou log público contém o contato; o contato só transita em resposta autorizada server-side ao escolhido com pagamento aprovado.

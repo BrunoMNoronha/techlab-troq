@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  contactFieldErrors,
   toTradeOptionSlots,
   validateListingContent,
   validateListingPatch,
@@ -137,6 +138,72 @@ describe('validateTradeOptions', () => {
   it('item que nao e texto e erro do proprio campo', () => {
     const res = validateTradeOptions(['a', 2, { label: 'c' }], false);
     expect(res.ok ? [] : Object.keys(res.fieldErrors)).toEqual(['tradeOption2', 'tradeOption3']);
+  });
+});
+
+// Contato e endereco no texto livre (#86, DEC-049; listing-contract.md, 10.1).
+// O corpus completo do detector esta em contact-detection.test.ts.
+describe('contato e endereco no texto livre', () => {
+  const CONTACT = 'Não inclua telefone, WhatsApp, e-mail ou endereço neste campo.';
+
+  it.each([
+    ['telefone', 'Bike (11) 98765-4321', 'Ligue 11 98765-4321 para combinar'],
+    ['WhatsApp', 'Bike wa.me/5511987654321', 'Chama em api.whatsapp.com/send'],
+    ['e-mail', 'Bike fulano@exemplo.com', 'Escreva para fulano arroba exemplo ponto com'],
+    ['endereco', 'Bike Rua Augusta, 500', 'Retirar no CEP 01310-100'],
+  ])(
+    '%s: titulo e descricao recebem, cada um, o erro do proprio campo',
+    (_c, title, description) => {
+      const res = validateListingContent({ ...valid, title, description });
+      expect(res).toEqual({ ok: false, fieldErrors: { title: CONTACT, description: CONTACT } });
+    },
+  );
+
+  it('so o campo com contato recebe erro', () => {
+    expect(validateListingContent({ ...valid, description: 'tel:+5511' })).toEqual({
+      ok: false,
+      fieldErrors: { description: CONTACT },
+    });
+  });
+
+  it('edicao parcial aplica a mesma regra ao campo informado', () => {
+    expect(validateListingPatch({ description: 'fulano@exemplo.com' })).toEqual({
+      ok: false,
+      fieldErrors: { description: CONTACT },
+    });
+  });
+
+  it('cidade/UF e casos validos com medidas, capacidade, ano e modelo sao aceitos', () => {
+    for (const [title, description] of [
+      ['TV 55 polegadas', 'TV 55 polegadas 4K, ano 2022, modelo UN55TU8000.'],
+      ['iPhone 15 128 GB', 'iPhone 15 128 GB, bateria 92%, com caixa.'],
+      ['Mesa 120 x 80 cm', 'Mesa 120 x 80 cm, madeira maciça, 6 lugares.'],
+    ]) {
+      expect(validateListingContent({ ...valid, title, description }).ok).toBe(true);
+    }
+  });
+
+  it('o erro nunca reproduz o dado detectado', () => {
+    const res = validateListingContent({ ...valid, description: 'Chama 11 98765-4321' });
+    expect(JSON.stringify(res)).not.toContain('98765');
+  });
+
+  it('alternativa de troca com contato e erro do proprio campo, em qualquer estado', () => {
+    for (const requireComplete of [false, true]) {
+      expect(
+        validateTradeOptions(['Um notebook', 'Um videogame', 'wa.me/5511'], requireComplete),
+      ).toEqual({ ok: false, fieldErrors: { tradeOption3: CONTACT } });
+    }
+  });
+
+  it('contactFieldErrors so aponta contato no conteudo gravado', () => {
+    expect(
+      contactFieldErrors({
+        title: 'Bicicleta aro 29',
+        description: 'Rua Augusta, 500',
+        tradeOptions: ['', 'fulano@exemplo.com', 'Um videogame'],
+      }),
+    ).toEqual({ description: CONTACT, tradeOption2: CONTACT });
   });
 });
 

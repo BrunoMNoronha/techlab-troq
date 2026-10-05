@@ -517,6 +517,60 @@ describe.skipIf(!enabled)('superficies publicas por HTTP real (#49, D-13)', () =
     }
   });
 
+  // Anuncio publicado antes de DEC-049 (#86; listing-contract.md, 10.2), com
+  // contato e endereco gravados no texto livre: continua publico, mas nenhum
+  // canal -- HTML, RSC, metadata, alt das imagens, listagem e home -- carrega o
+  // texto. Cidade propria para nao mudar a paginacao de CITY.
+  it('legado com contato no texto livre: nenhuma superficie publica divulga o texto (#86)', async () => {
+    const prisma = getPrismaClient();
+    const legacyCity = `Legado Http ${RUN_ID}`;
+    const { id } = await prisma.listing.create({
+      data: {
+        ownerId: owner,
+        title: 'Bike 11 98765-4321',
+        description: 'Retirar na Rua Augusta, 500. Escreva para fulano@exemplo.test',
+        city: legacyCity,
+        uf: 'PE',
+        tradeOptions: {
+          create: [
+            { position: 1, label: 'Um notebook' },
+            { position: 2, label: 'wa.me/5511987654321' },
+            { position: 3, label: 'Uma camera' },
+          ],
+        },
+      },
+      select: { id: true },
+    });
+    await prisma.listing.update({ where: { id }, data: { status: 'published' } });
+    await addImage(id, 1, 'ready');
+    const leaked = ['98765', '987654321', 'Augusta', 'fulano', 'exemplo.test', 'wa.me'];
+
+    const paths = ['/', `/explorar?city=${encodeURIComponent(legacyCity)}`, `/explorar/${id}`];
+    for (const [who, cookie] of viewers()) {
+      for (const path of paths) {
+        for (const rsc of [false, true]) {
+          const label = `${who} ${rsc ? 'RSC' : 'HTML'} ${path}`;
+          const page = await fetchPage(path, { cookie, rsc });
+          expect(page.status, label).toBe(200);
+          for (const marker of leaked) {
+            expect(page.body.includes(marker), `${label} contem ${marker}`).toBe(false);
+            expect(page.headerText.includes(marker), `${label} cabecalho ${marker}`).toBe(false);
+          }
+          expectNotPublicCache(label, page);
+        }
+      }
+    }
+
+    const detail = await fetchPage(`/explorar/${id}`);
+    const body = text(detail.body);
+    expect(detail.body).toContain('<title>Anúncio em revisão — TROQ</title>');
+    expect(body).toContain('A descrição deste anúncio está em revisão pelo anunciante.');
+    expect(body).toContain('Alternativa em revisão');
+    expect(body).toContain('Imagem 1 de 1: Anúncio em revisão');
+    const list = text((await fetchPage(`/explorar?city=${encodeURIComponent(legacyCity)}`)).body);
+    expect(list).toContain('Anúncio em revisão');
+  });
+
   it('C-1: /media do anuncio do dono com contato nao carrega o numero', async () => {
     for (const [who, cookie] of viewers()) {
       for (const kind of MEDIA_KINDS) {
