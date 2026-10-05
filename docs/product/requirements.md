@@ -59,7 +59,7 @@ Nenhum requisito permanece `bloqueado` e **não há mais decisão aberta**. OD-0
 - **Origem:** DEC-012 e DEC-013.
 - **Regra de negócio relacionada:** —
 - **Decisão aberta relacionada:** —
-- **Critério de aceite (alto nível):** usuário verificado autentica com email/senha; toda ação restrita exige sessão válida verificada no servidor; login social fica fora do núcleo inicial.
+- **Critério de aceite (alto nível):** usuário verificado autentica com email/senha; toda ação restrita exige sessão válida verificada no servidor; a entrada com Conta Google é alternativa aprovada por DEC-047, com as mesmas regras de 18+, termos e sessão; outros provedores sociais ficam fora.
 - **Status:** definido.
 
 #### RF-023 — Exclusão de conta e dados pessoais

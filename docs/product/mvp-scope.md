@@ -70,7 +70,7 @@ As regras de negócio que governam este fluxo estão em [business-rules.md](busi
 
 Fora do núcleo inicial do MVP:
 
-- Login social (fora do núcleo inicial de autenticação).
+- Login social com outros provedores além do Google (a entrada com Conta Google foi aprovada por DEC-047 e é oferecida em `preview` e `production`).
 - Web Push (PWA faz parte do direcionamento mobile, mas Web Push não bloqueia o MVP).
 - Coleta ou exposição de localização precisa (não deve ocorrer no MVP sem necessidade posteriormente documentada).
 - Microserviços ou API Node separada (não criar sem necessidade futura comprovada).
