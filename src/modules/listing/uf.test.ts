@@ -35,7 +35,7 @@ describe('validacao de UF no servidor', () => {
     const res = validateListingContent({ ...valid, state });
     expect(res).toEqual({
       ok: true,
-      data: { ...valid, uf: state.trim().toUpperCase() },
+      data: { ...valid, uf: state.trim().toUpperCase(), category: null },
     });
   });
 

@@ -1,3 +1,4 @@
+import { productCategoryLabel } from '@/modules/listing/categories';
 import Link from 'next/link';
 import type { PublicListingFeedItem } from '@/modules/listing';
 import { derivativeSrcSet, listingImageAlt, pickDerivative } from './listing-image';
@@ -88,6 +89,9 @@ export function ListingCard({ item }: { item: PublicListingFeedItem }) {
         >
           {item.description}
         </p>
+        <span style={{ color: '#4b5563', fontSize: '13px' }}>
+          {productCategoryLabel(item.category)}
+        </span>
         <div style={{ marginTop: 'auto', paddingTop: '8px', fontSize: '13px', color: '#4b5563' }}>
           <span aria-hidden="true">📍 </span>
           {item.city} - {item.state}

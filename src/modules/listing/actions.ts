@@ -19,6 +19,7 @@ import {
 } from './validation';
 
 export interface CreateListingInput {
+  category?: string | null;
   title: string;
   description: string;
   city: string;
@@ -28,6 +29,8 @@ export interface CreateListingInput {
 }
 
 export interface UpdateListingInput {
+  /** Ausente preserva; null/vazio limpa apenas rascunhos. */
+  category?: string | null;
   title?: string;
   description?: string;
   city?: string;
@@ -37,6 +40,7 @@ export interface UpdateListingInput {
 }
 
 export interface ListingDTO {
+  category: string | null;
   id: string;
   title: string;
   description: string;
@@ -96,6 +100,7 @@ const OWNER_LISTING_SELECT = {
   description: true,
   city: true,
   uf: true,
+  category: true,
   status: true,
   createdAt: true,
   updatedAt: true,
@@ -108,6 +113,7 @@ function toListingDTO(item: {
   description: string;
   city: string;
   uf: string;
+  category: string | null;
   status: ListingStatus;
   createdAt: Date;
   updatedAt: Date;
@@ -119,6 +125,7 @@ function toListingDTO(item: {
     description: item.description,
     city: item.city,
     state: item.uf,
+    category: item.category ?? null,
     tradeOptions: toTradeOptionSlots(item.tradeOptions),
     status: item.status,
     createdAt: item.createdAt,
@@ -272,12 +279,17 @@ export async function updateListing(
             }),
           );
         const complete = validateTradeOptions(resulting, true);
-        const content = validateListingContent({
-          title: validation.data.title ?? listing.title,
-          description: validation.data.description ?? listing.description,
-          city: validation.data.city ?? listing.city,
-          state: validation.data.uf ?? listing.uf,
-        });
+        const content = validateListingContent(
+          {
+            title: validation.data.title ?? listing.title,
+            description: validation.data.description ?? listing.description,
+            city: validation.data.city ?? listing.city,
+            state: validation.data.uf ?? listing.uf,
+            category:
+              validation.data.category === undefined ? listing.category : validation.data.category,
+          },
+          true,
+        );
         if (!complete.ok || !content.ok) {
           throw new EditAbort('validation', {
             ...(content.ok ? {} : content.fieldErrors),
@@ -416,6 +428,7 @@ export async function discardDraft(listingId: string): Promise<LifecycleResult> 
 }
 
 export interface PublicListingFeedItem {
+  category: string | null;
   id: string;
   title: string;
   description: string;
@@ -517,6 +530,7 @@ export async function getPublicFeed(options?: {
         description: true,
         city: true,
         uf: true,
+        category: true,
         createdAt: true,
         images: {
           where: { status: 'ready' },
@@ -545,6 +559,7 @@ export async function getPublicFeed(options?: {
     description: publicDescription(item.description),
     city: item.city,
     state: item.uf,
+    category: item.category ?? null,
     createdAt: item.createdAt,
     images: item.images.map((img) => ({
       id: img.id,
@@ -588,6 +603,7 @@ export async function getPublicListingDetail(
       description: true,
       city: true,
       uf: true,
+      category: true,
       createdAt: true,
       tradeOptions: TRADE_OPTIONS_SELECT,
       images: {
@@ -618,6 +634,7 @@ export async function getPublicListingDetail(
     description: publicDescription(item.description),
     city: item.city,
     state: item.uf,
+    category: item.category ?? null,
     tradeOptions: item.tradeOptions.map((option) => publicTradeOption(option.label)),
     createdAt: item.createdAt,
     images: item.images.map((img) => ({

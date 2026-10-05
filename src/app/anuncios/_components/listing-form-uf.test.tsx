@@ -38,7 +38,7 @@ function renderEdit(state: string) {
       mode="edit"
       listingId={LISTING_ID}
       requireTradeOptions
-      initialValues={{ ...content, state, tradeOptions: options }}
+      initialValues={{ ...content, state, tradeOptions: options, category: 'esportes' }}
     />,
   );
 }
@@ -97,6 +97,7 @@ describe('ListingForm — UF por lista (#90)', () => {
       ...content,
       state: 'SP',
       tradeOptions: ['', '', ''],
+      category: '',
     });
   });
 
@@ -111,6 +112,7 @@ describe('ListingForm — UF por lista (#90)', () => {
       ...content,
       state: 'PE',
       tradeOptions: options,
+      category: 'esportes',
     });
   });
 
@@ -137,6 +139,7 @@ describe('ListingForm — UF por lista (#90)', () => {
       ...content,
       state: 'RN',
       tradeOptions: options,
+      category: 'esportes',
     });
   });
 });

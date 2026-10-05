@@ -34,6 +34,7 @@ const LISTING_ID = '0b6f2d9e-3c4a-4e8b-9f1a-2d3c4b5a6e7f';
 const listing = {
   id: LISTING_ID,
   title: 'Bicicleta',
+  category: 'esportes',
   description: 'Aro 29',
   city: 'Recife',
   state: 'PE',

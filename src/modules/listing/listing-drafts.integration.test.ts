@@ -115,6 +115,7 @@ async function fixture(
       description: 'Fixture sintetica.',
       city: 'Recife',
       uf: 'PE',
+      category: legacy ? null : 'esportes',
       ...(legacy
         ? {}
         : {
@@ -478,6 +479,7 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
         const titleOnly = await updateListing(id, { title: 'Titulo novo do legado' });
         expect(titleOnly).toMatchObject({ success: false, reason: 'validation' });
         expect(Object.keys(titleOnly.fieldErrors ?? {})).toEqual([
+          'category',
           'tradeOption1',
           'tradeOption2',
           'tradeOption3',
@@ -485,7 +487,11 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
         expect(await readRow(id)).toEqual(rowBefore);
 
         expect(
-          await updateListing(id, { title: 'Titulo novo do legado', tradeOptions: OPTIONS }),
+          await updateListing(id, {
+            title: 'Titulo novo do legado',
+            tradeOptions: OPTIONS,
+            category: 'esportes',
+          }),
         ).toEqual({ success: true, listingId: id });
         const after = await getPublicListingDetail(id);
         expect(after?.title).toBe('Titulo novo do legado');

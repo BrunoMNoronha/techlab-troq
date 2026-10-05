@@ -1,3 +1,4 @@
+import { productCategoryLabel } from '@/modules/listing/categories';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
@@ -169,6 +170,7 @@ export default async function DetalheAnuncioPublicoPage({
         {/* Alternativas de troca (listing-contract.md, 3.1 e 9.4): texto puro, na
             ordem do anunciante. Anuncio anterior a #76 ainda sem elas nao mostra
             a secao (secao 17.3). */}
+        <p style={{ color: '#4b5563' }}>Categoria: {productCategoryLabel(listing.category)}</p>
         {listing.tradeOptions.length > 0 ? (
           <section
             aria-labelledby="alternativas-de-troca"
