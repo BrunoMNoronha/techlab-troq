@@ -92,3 +92,20 @@ Para fixar uma execução de Preview específica, usar `-f preview_run_id=<execu
 A primeira publicação também exige esse disparo. Nunca ativar cobranças reais para fazer smoke.
 
 Estado de configuração nesta entrega: Neon dos dois ambientes verificado; GitHub environments e proteção de main configurados; Vercel com URLs, conexão pooled e segredos de auth/cron isolados; `PRODUCTION_READY=false`. Ainda é necessário comprovar as credenciais próprias de Production para R2, Resend, Sentry e Mercado Pago, sandbox do Mercado Pago em Preview, Google nos dois ambientes e as jornadas funcionais. Nenhum valor faltante foi preenchido com placeholder. SHAs, runs e deployments aprovados serão registrados na entrega após execução do pipeline.
+
+**Atualização de 2026-10-05 (DEC-050).**
+
+- **GitHub:** o ruleset `Protect production` protege `refs/heads/production` contra deleção e force-push. Ele substitui o antigo `Protect preview`.
+- **R2 de Production:**
+  - Bucket privado `troq-media-production`, na conta TechLab+, Standard, localização automática.
+  - CORS mínimo: só `PUT` de `https://troqs.app`, com `content-type` e `if-none-match`.
+  - Account API Token `troq-media-production-rw`, com *Object Read & Write* restrito a esse bucket.
+  - Na Vercel Production: `R2_S3_ENDPOINT`, `R2_REGION=auto` e `R2_BUCKET`.
+- **Resend de Production:**
+  - Domínio `troqs.app` na região `sa-east-1`, com DKIM (`resend._domainkey`), SPF (CNAMEs `send` e `rsend`) e DMARC `p=none` publicados na Cloudflare. O envio está verificado.
+  - O recebimento ativado por padrão pelo provedor não é usado e ficou pendente, sem MX no apex.
+  - API key `troq-production-sending`, com *Sending access* restrito a `troqs.app`.
+  - `EMAIL_FROM=TROQ <nao-responda@troqs.app>` na Vercel Production.
+- **Mudança em development:** para liberar a vaga no plano do Resend, o domínio `dev.troqs.app` foi removido. O envio em development não funciona até haver novo remetente.
+- **Valores secretos:** `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` e `RESEND_API_KEY` são exibidos uma única vez pelo provedor. O responsável os cadastra diretamente na Vercel Production como *sensitive*.
+- **Pendências de Production:** Mercado Pago e `GOOGLE_CLIENT_ID`.
