@@ -267,6 +267,15 @@ const RSC_NOT_FOUND = 'NEXT_HTTP_ERROR_FALLBACK;404';
 const NOT_FOUND_ROW =
   /(?<=\\n|\n|")[0-9a-f]+:E\{\\?"digest\\?":\\?"NEXT_HTTP_ERROR_FALLBACK;404\\?"\}(?:\\n|\n)/g;
 
+// ID malformado com o comprimento de um UUID (36). O payload RSC do layout e
+// dividido em linhas por orcamento de bytes, e o ponto de corte muda com o
+// tamanho da URL: um ID de outro comprimento da o mesmo conteudo com outra
+// divisao em linhas, sem carregar dado (listing-contract.md, secao 16.3). A
+// comparacao byte a byte usa por isso um malformado de mesmo comprimento; o
+// curto continua provado como 404 limpo, sem a comparacao.
+const MALFORMED_SAME_LENGTH = 'nao-e-uuid-nao-e-uuid-nao-e-uuid-zzz';
+const MALFORMED_SHORT = 'nao-uuid';
+
 /**
  * Remove o que varia por requisicao: o proprio ID, rastros do Sentry e a
  * posicao da linha do 404 (cuja presenca e conferida a parte).
@@ -600,7 +609,8 @@ describe.skipIf(!enabled)('superficies publicas por HTTP real (#49, D-13)', () =
     const targets = [
       ...Object.entries(hidden),
       ['inexistente', randomUUID()],
-      ['malformado', 'nao-uuid'],
+      ['malformado', MALFORMED_SAME_LENGTH],
+      ['malformado curto', MALFORMED_SHORT],
     ];
     for (const rsc of [false, true]) {
       let reference: string | null = null;
@@ -624,6 +634,7 @@ describe.skipIf(!enabled)('superficies publicas por HTTP real (#49, D-13)', () =
           const normalized = rsc
             ? normalize(page.body, id).split('\n').sort().join('\n')
             : normalize(page.body, id);
+          if (id === MALFORMED_SHORT) continue;
           reference ??= normalized;
           expect(normalized, tag).toBe(reference);
         }

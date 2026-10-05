@@ -160,6 +160,15 @@ async function fetchPage(path: string, cookie: string, rsc = false): Promise<Pag
 const NOT_FOUND_ROW =
   /(?<=\\n|\n|")[0-9a-f]+:E\{\\?"digest\\?":\\?"NEXT_HTTP_ERROR_FALLBACK;404\\?"\}(?:\\n|\n)/g;
 
+// ID malformado com o comprimento de um UUID (36). O payload RSC do layout e
+// dividido em linhas por orcamento de bytes, e o ponto de corte muda com o
+// tamanho da URL: um ID de outro comprimento da o mesmo conteudo com outra
+// divisao em linhas, sem carregar dado (listing-contract.md, secao 16.3). A
+// comparacao byte a byte usa por isso um malformado de mesmo comprimento; o
+// curto continua provado como 404 limpo, sem a comparacao.
+const MALFORMED_SAME_LENGTH = 'nao-e-uuid-nao-e-uuid-nao-e-uuid-zzz';
+const MALFORMED_SHORT = 'nao-uuid';
+
 /** Mesma normalizacao da suite publica (listing-contract.md, 16.3). */
 function normalize(body: string, id: string, rsc: boolean): string {
   const out = body
@@ -325,7 +334,8 @@ describe.skipIf(!enabled)('superficies restritas por HTTP real (#50)', () => {
         ['do dono (rascunho)', ownerDraft],
         ['do dono (publicado)', ownerPublished],
         ['inexistente', randomUUID()],
-        ['malformado', 'nao-uuid'],
+        ['malformado', MALFORMED_SAME_LENGTH],
+        ['malformado curto', MALFORMED_SHORT],
       ] as const) {
         const page = await fetchPage(`/anuncios/${id}/editar`, third.cookie, rsc);
         const tag = `terceiro ${rsc ? 'RSC' : 'HTML'} editar ${label}`;
@@ -336,6 +346,7 @@ describe.skipIf(!enabled)('superficies restritas por HTTP real (#50)', () => {
         }
         expect(page.body, tag).not.toContain('do dono');
         expectClean(tag, page, third, id);
+        if (id === MALFORMED_SHORT) continue;
         const normalized = normalize(page.body, id, rsc);
         reference ??= normalized;
         expect(normalized, tag).toBe(reference);
