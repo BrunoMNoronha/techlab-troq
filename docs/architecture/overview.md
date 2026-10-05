@@ -4,7 +4,7 @@ Documento de arquitetura pré-implementação do MVP. Produzido por **F0-022**, 
 
 Este documento **converte decisões já homologadas em arquitetura**. Ele não cria regra de negócio, não reabre decisão registrada e não implementa código. Onde uma decisão já existe, ela é citada e obedecida; onde faltava escolha técnica, ela é feita aqui e marcada como decisão arquitetural; onde a escolha depende de informação que ainda não existe, ela é marcada como detalhe de implementação.
 
-**Atualização de 2026-10-05 (PT-00, [#186](https://github.com/BrunoMNoronha/techlab-troq/issues/186)).** O TROQS passou a ter duas regras de troca cadastradas ([ADR-0009](../adr/0009-trade-rules-environment-selector.md), DEC-052). Este documento continua descrevendo a arquitetura comum e, onde fala de solicitação, vaga e escolha, a regra **solicitação paga**. O desenho da regra **proposta de troca** está em [trade-proposal-design.md](trade-proposal-design.md). As mudanças aqui são o décimo módulo de AR-3.3, as notas de AR-3.5 e AR-5.1 e a jornada 6.4. Nenhuma outra afirmação foi alterada.
+**Atualização de 2026-10-05 (PT-00, [#186](https://github.com/BrunoMNoronha/techlab-troq/issues/186)).** O TROQS passou a ter duas regras de troca cadastradas ([ADR-0009](../adr/0009-trade-rules-environment-selector.md), DEC-053). Este documento continua descrevendo a arquitetura comum e, onde fala de solicitação, vaga e escolha, a regra **solicitação paga**. O desenho da regra **proposta de troca** está em [trade-proposal-design.md](trade-proposal-design.md). As mudanças aqui são o décimo módulo de AR-3.3, as notas de AR-3.5 e AR-5.1 e a jornada 6.4. Nenhuma outra afirmação foi alterada.
 
 ## 1. Como ler este documento
 
@@ -332,7 +332,7 @@ Consequências concretas, cada uma detalhada no documento indicado:
 | ADR-0001 a ADR-0005 | Obedecidos integralmente; nenhum é alterado |
 | [ADR-0006](../adr/0006-async-work-scheduling-concurrency.md) | **Criado** por F0-022 (DEC-038), para o tema que a seção 15 exigia decidir |
 | [ADR-0007](../adr/0007-observability-sentry.md) | **Criado** por F1-008 (DEC-039), que fechou a lacuna de ferramenta e escopo de AR-14.1. **Preserva integralmente AR-14.2, AR-14.3 — os seis sinais mínimos, sem redução — e AR-14.4**; nenhuma outra parte deste documento é alterada |
-| [ADR-0009](../adr/0009-trade-rules-environment-selector.md) | **Criado** por PT-00 (DEC-052). Acrescenta o módulo `proposal` a AR-3.3, a jornada 6.4 e as notas de AR-3.5 e AR-5.1; nenhuma outra parte deste documento é alterada |
+| [ADR-0009](../adr/0009-trade-rules-environment-selector.md) | **Criado** por PT-00 (DEC-053). Acrescenta o módulo `proposal` a AR-3.3, a jornada 6.4 e as notas de AR-3.5 e AR-5.1; nenhuma outra parte deste documento é alterada |
 | RB-007 a RB-010 | Sustentadas por [trade-proposal-design.md](trade-proposal-design.md); a jornada está em 6.4 |
 | DEC-019 | Materializada: a reserva atômica antes da cobrança deixa de ser recomendação e ganha mecanismo |
 | DEC-037 | Obedecida integralmente; CI-1 a CI-12 são rastreados em [payments-design.md](payments-design.md) |

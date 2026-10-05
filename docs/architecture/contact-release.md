@@ -10,7 +10,7 @@ Os itens são identificados como `CR-x`.
 
 **Atualização de 2026-10-01 ([F3-001](https://github.com/BrunoMNoronha/techlab-troq/issues/91)).** Reconciliação com o código e o framework entregues pela Fase 2, sem alterar RB-001 nem decisão vigente: formato e resposta da escrita do contato (CR-2.5), registro das entregas e das negativas (nota de CR-5.5), mecanismo concreto de não cache no Next.js 16.3.5 (CR-7.4) e prova de C-5 sem papel de moderação (nota da seção 10). Inventário em [../delivery/phase-3-plan.md](../delivery/phase-3-plan.md), seção 2.1.
 
-**Atualização de 2026-10-05 (PT-00, [#186](https://github.com/BrunoMNoronha/techlab-troq/issues/186)).** O TROQS passou a ter duas regras de troca cadastradas ([ADR-0009](../adr/0009-trade-rules-environment-selector.md), DEC-052). Este documento continua sendo o desenho da liberação de RB-001, na regra **solicitação paga**, e nada dele foi alterado. Na regra **proposta de troca**, RB-010 libera o contato nos dois sentidos, e cada sentido reaproveita, sem exceção, a separação de CR-1, as proteções de CR-2 a CR-7 e as condições A1 a A6; o desenho está em [trade-proposal-design.md](trade-proposal-design.md), seção 7. A única nota datada aqui é a de CR-8.2.
+**Atualização de 2026-10-05 (PT-00, [#186](https://github.com/BrunoMNoronha/techlab-troq/issues/186)).** O TROQS passou a ter duas regras de troca cadastradas ([ADR-0009](../adr/0009-trade-rules-environment-selector.md), DEC-053). Este documento continua sendo o desenho da liberação de RB-001, na regra **solicitação paga**, e nada dele foi alterado. Na regra **proposta de troca**, RB-010 libera o contato nos dois sentidos, e cada sentido reaproveita, sem exceção, a separação de CR-1, as proteções de CR-2 a CR-7 e as condições A1 a A6; o desenho está em [trade-proposal-design.md](trade-proposal-design.md), seção 7. A única nota datada aqui é a de CR-8.2.
 
 ## 1. A fronteira que organiza todo o desenho
 
@@ -230,7 +230,7 @@ Motivo: uma propriedade entregue a um Client Component **está no payload**, mes
 
 **CR-8.2.** A última linha registra uma fronteira que nenhum documento anterior precisou enunciar: RB-001 fala do contato do **anunciante**. Este desenho **não** cria liberação no sentido contrário, porque nenhuma decisão vigente a prevê — e inventá-la seria criar requisito de produto ausente. A comunicação entre as partes, depois da liberação, ocorre fora da plataforma, exatamente como DEC-029 já reconhece.
 
-_Atualização de 2026-10-05 (DEC-053, RB-010)._ CR-8.1 e CR-8.2 continuam valendo, como estão, para a regra solicitação paga: nela não existe liberação do contato do solicitante ao anunciante. A decisão que faltava foi tomada pelo Bruno **só para a regra proposta de troca**: ali o pagamento aprovado cria duas autorizações, uma para cada parte, cada uma com um titular e um destinatário ([trade-proposal-design.md](trade-proposal-design.md), TD-7.1). Nenhuma autorização passa a ter dois destinatários, e a pergunta de CR-5.3 — "dado este ator, quais autorizações são dele?" — não muda.
+_Atualização de 2026-10-05 (DEC-054, RB-010)._ CR-8.1 e CR-8.2 continuam valendo, como estão, para a regra solicitação paga: nela não existe liberação do contato do solicitante ao anunciante. A decisão que faltava foi tomada pelo Bruno **só para a regra proposta de troca**: ali o pagamento aprovado cria duas autorizações, uma para cada parte, cada uma com um titular e um destinatário ([trade-proposal-design.md](trade-proposal-design.md), TD-7.1). Nenhuma autorização passa a ter dois destinatários, e a pergunta de CR-5.3 — "dado este ator, quais autorizações são dele?" — não muda.
 
 ## 9. Cenários de consistência
 
@@ -307,7 +307,7 @@ _Atualização de 2026-10-01 (F3-001, DV-13)._ O MVP ainda não tem papel de mod
 | DEC-034 | Conta bloqueada não recebe contato; o bloqueio não revoga o já divulgado |
 | DEC-037 | Estado incerto nunca concede acesso; reversão não revoga (CR-4) |
 | R-03 | Mitigação deixa de ser princípio e passa a ter mecanismo, superfícies proibidas e contrato de teste |
-| DEC-052, DEC-053, RB-010 | Nota datada em CR-8.2. A liberação nos dois sentidos da regra proposta de troca está em [trade-proposal-design.md](trade-proposal-design.md), seção 7, com o contrato TT-14 a TT-16. P1 a P7, A1 a A6 e C-1 a C-11 não mudam |
+| DEC-053, DEC-054, RB-010 | Nota datada em CR-8.2. A liberação nos dois sentidos da regra proposta de troca está em [trade-proposal-design.md](trade-proposal-design.md), seção 7, com o contrato TT-14 a TT-16. P1 a P7, A1 a A6 e C-1 a C-11 não mudam |
 
 ## 13. Revisão
 

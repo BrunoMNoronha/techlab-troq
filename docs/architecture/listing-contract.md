@@ -119,7 +119,7 @@ O anunciante informa **três alternativas do que aceita receber** em troca do it
 - **Privacidade.** É texto livre, com o mesmo tratamento da seção 10: a instrução do formulário pede para não incluir telefone, WhatsApp, e-mail ou endereço, o texto é sempre renderizado como texto e a recusa de contato e endereço de [#86](https://github.com/BrunoMNoronha/techlab-troq/issues/86) (seção 10.1) vale também aqui, em qualquer estado, com erro no campo da alternativa. Nada do dono entra no DTO por causa delas.
 - **Não confundir com RB-003.** As três alternativas de troca **não** têm relação com o limite de **três solicitações pagas** por anúncio (RB-003, [data-model.md](data-model.md), seção 6). Esta regra não altera cobrança, vaga, escolha do solicitante nem liberação de contato, e o solicitante não precisa escolher uma das alternativas.
 - **Fora do escopo:** chat, contraproposta de interessado, escolha obrigatória de uma alternativa pelo solicitante, matching automático, vínculo a outros anúncios e oferta em dinheiro.
-- **Regra proposta de troca (DEC-053, 2026-10-05).** O item acima continua valendo para o **anúncio**: as alternativas de troca seguem informativas, o formulário não ganha campo de proposta e o anúncio não ganha valor estimado (seção 2.5). O vínculo entre dois anúncios passa a existir **fora** deste contrato, como proposta de troca ([../product/trade-proposal.md](../product/trade-proposal.md)), e só em ambiente que opere essa regra. As alternativas de troca não limitam o que pode ser oferecido numa proposta.
+- **Regra proposta de troca (DEC-054, 2026-10-05).** O item acima continua valendo para o **anúncio**: as alternativas de troca seguem informativas, o formulário não ganha campo de proposta e o anúncio não ganha valor estimado (seção 2.5). O vínculo entre dois anúncios passa a existir **fora** deste contrato, como proposta de troca ([../product/trade-proposal.md](../product/trade-proposal.md)), e só em ambiente que opere essa regra. As alternativas de troca não limitam o que pode ser oferecido numa proposta.
 
 ### 3.2 Lista de UFs ([#90](https://github.com/BrunoMNoronha/techlab-troq/issues/90))
 
@@ -298,7 +298,7 @@ Usado em "meus anúncios" e na edição, somente para o dono autenticado: `id`, 
 
 ## 9. Consulta pública
 
-_Atualização de 2026-10-05 (DEC-053)._ Na regra proposta de troca, o anúncio com compromisso sai da listagem e da vitrine sem deixar de ser `published`, e o detalhe por link direto continua respondendo, com aviso ([trade-proposal-design.md](trade-proposal-design.md), seção 8). A consulta descrita nesta seção não muda até PT-03 ([#189](https://github.com/BrunoMNoronha/techlab-troq/issues/189)).
+_Atualização de 2026-10-05 (DEC-054)._ Na regra proposta de troca, o anúncio com compromisso sai da listagem e da vitrine sem deixar de ser `published`, e o detalhe por link direto continua respondendo, com aviso ([trade-proposal-design.md](trade-proposal-design.md), seção 8). A consulta descrita nesta seção não muda até PT-03 ([#189](https://github.com/BrunoMNoronha/techlab-troq/issues/189)).
 
 A consulta do MVP é simples: listagem paginada e detalhe. **Não** há busca textual, busca avançada, filtro por categoria, preço ou raio, mapa nem geolocalização.
 
@@ -448,7 +448,7 @@ Conferência feita em `7296cb3`. Nenhuma foi corrigida por F2-005, que é docume
 | RNF-007, RNF-014 | Seções 3, 4 e 9.1: validação e autorização no servidor |
 | DEC-027, DEC-028, DEC-031 | Preservadas integralmente |
 | DEC-049 | Seções 10.1, 10.2 e 18 |
-| DEC-052, DEC-053 | Notas datadas nas seções 3.1 e 9. O contrato do anúncio não muda: a proposta de troca vive em [../product/trade-proposal.md](../product/trade-proposal.md) e em [trade-proposal-design.md](trade-proposal-design.md) |
+| DEC-053, DEC-054 | Notas datadas nas seções 3.1 e 9. O contrato do anúncio não muda: a proposta de troca vive em [../product/trade-proposal.md](../product/trade-proposal.md) e em [trade-proposal-design.md](trade-proposal-design.md) |
 
 ## 14. Histórico desta versão
 

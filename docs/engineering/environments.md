@@ -172,7 +172,7 @@ Legenda das colunas:
 | --- | --- | --- | --- | --- | --- |
 | `NEXT_PUBLIC_APP_URL` | os três | **pública** | obrigatória | previsto | URL pública canônica da aplicação no ambiente. É lida pelo navegador para compor URLs absolutas e canônicas; não é segredo. Necessária a links absolutos de email transacional (RF-002, RF-021) e à navegação mobile-first ([../architecture/overview.md](../architecture/overview.md), AR-13) |
 | `APP_ENV` | os três | server-side | obrigatória | **consumido** por `src/modules/platform` (fronteira de telemetria, F1-010), que passa o seu valor como `environment` à SDK de observabilidade, e por `src/modules/identity/auth.ts` (F2-002), que recusa valor ausente ou fora dos três e aplica as regras de URL de `preview`/`production` (seção 5.5) | Rótulo do ambiente corrente, com os três valores desta seção 2: `development`, `preview`, `production`. É o que permite ao servidor recusar configuração incoerente — por exemplo, credencial de produção fora de `production` (seção 2.5, RNF-015). Não é segredo e o cliente não precisa dela |
-| `TRADE_RULE` | os três | server-side | obrigatória | previsto | Regra de troca dos fluxos novos do ambiente, com conjunto fechado de valores: `paid_request` (solicitação paga) ou `trade_proposal` (proposta de troca). Não é segredo. Exigida por [../adr/0009-trade-rules-environment-selector.md](../adr/0009-trade-rules-environment-selector.md) (DEC-052), decisões 2 e 5 a 7: lida em runtime num ponto único de `src/modules/platform`, com falha fechada — ausente, vazia ou fora do conjunto, nenhum fluxo novo nasce. **Não** pode usar o prefixo `NEXT_PUBLIC_` nem a chave `env` de `next.config.ts`, que fixariam o valor no build. O nome segue o vocabulário de produto (seção 4, item 5) |
+| `TRADE_RULE` | os três | server-side | obrigatória | previsto | Regra de troca dos fluxos novos do ambiente, com conjunto fechado de valores: `paid_request` (solicitação paga) ou `trade_proposal` (proposta de troca). Não é segredo. Exigida por [../adr/0009-trade-rules-environment-selector.md](../adr/0009-trade-rules-environment-selector.md) (DEC-053), decisões 2 e 5 a 7: lida em runtime num ponto único de `src/modules/platform`, com falha fechada — ausente, vazia ou fora do conjunto, nenhum fluxo novo nasce. **Não** pode usar o prefixo `NEXT_PUBLIC_` nem a chave `env` de `next.config.ts`, que fixariam o valor no build. O nome segue o vocabulário de produto (seção 4, item 5) |
 
 **Nota.** `APP_ENV` é variável **do projeto**, deliberadamente distinta das variáveis que a plataforma de deploy injeta por conta própria. Depender apenas do que a plataforma injeta acoplaria a aplicação ao provedor de deploy e quebraria o ambiente `development`, que não roda na plataforma (RNF-017).
 
@@ -451,7 +451,7 @@ Esse trecho **não** é alterado por este trabalho: ele já estava correto e a s
 | ADR-0003 e DEC-028 — R2 e derivados públicos | Seção 5.3 |
 | DEC-012, DEC-013 — autenticação | Seção 5.5 |
 | DEC-015 — email transacional | Seção 5.4 |
-| DEC-052 / ADR-0009 — seletor da regra de troca | Seção 5.1 (`TRADE_RULE`, `previsto`) |
+| DEC-053 / ADR-0009 — seletor da regra de troca | Seção 5.1 (`TRADE_RULE`, `previsto`) |
 
 ## 9. Referências
 

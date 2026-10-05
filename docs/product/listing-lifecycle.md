@@ -6,7 +6,7 @@ Este documento define **apenas** o ciclo de vida do anúncio. Não define o cicl
 
 Regras de negócio preservadas integralmente: RB-001 a RB-006 em [business-rules.md](business-rules.md).
 
-**Escopo de regra (DEC-052, 2026-10-05).** Os cinco estados e a matriz T1 a T9 valem para as duas regras de troca e não foram alterados; `negotiating` continua rejeitado. As seções 3, 5 e 8, onde falam de interesse, de solicitações e da independência entre anúncio e negociação, descrevem a regra **solicitação paga**. Na regra **proposta de troca** ([trade-proposal.md](trade-proposal.md), DEC-053):
+**Escopo de regra (DEC-053, 2026-10-05).** Os cinco estados e a matriz T1 a T9 valem para as duas regras de troca e não foram alterados; `negotiating` continua rejeitado. As seções 3, 5 e 8, onde falam de interesse, de solicitações e da independência entre anúncio e negociação, descrevem a regra **solicitação paga**. Na regra **proposta de troca** ([trade-proposal.md](trade-proposal.md), DEC-054):
 
 - o anúncio em aceite ou em negociação fica fora do feed por um **compromisso**, que não é estado: ele continua `published` (seção 8 daquele documento);
 - o encerramento por "Trocamos" é a transição T5 ou T6 desta matriz, acionada pelo próprio dono ao declarar (seção 10 daquele documento).

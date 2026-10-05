@@ -10,7 +10,7 @@ Os itens são identificados como `PD-x`.
 
 **Atualização de 2026-10-01 ([F3-001](https://github.com/BrunoMNoronha/techlab-troq/issues/91)).** Reconciliação com o código entregue pela Fase 2, sem alterar regra de negócio nem decisão vigente: trava e relógio (PD-4.6), registro da notificação rejeitada (PD-6.2), identificação da aplicação antes do HMAC (PD-6.10), reserva durante a pausa do anúncio (PD-6.11), cancelamento da cobrança de reserva encerrada antes da janela (PD-8.10) e reclamação de trabalho (PD-10.7). Inventário em [../delivery/phase-3-plan.md](../delivery/phase-3-plan.md), seção 2.1.
 
-**Atualização de 2026-10-05 (PT-00, [#186](https://github.com/BrunoMNoronha/techlab-troq/issues/186)).** O TROQS passou a ter duas regras de troca cadastradas ([ADR-0009](../adr/0009-trade-rules-environment-selector.md), DEC-052). Este documento continua sendo o desenho de pagamentos das duas quanto a fonte de verdade, idempotência, confirmação, reembolso técnico, reversão e reconciliação. Onde fala em reserva de vaga, em janela de 30 minutos e em R$ 0,99, ele descreve a regra **solicitação paga**. O que a regra **proposta de troca** muda — sujeito e valor da tentativa, prazo de 24 horas e efeito do pagamento — está em [trade-proposal-design.md](trade-proposal-design.md), seções 5 e 6, e é apontado por notas datadas em PD-2.1, PD-3.1 e PD-4.5. Nenhuma outra afirmação foi alterada.
+**Atualização de 2026-10-05 (PT-00, [#186](https://github.com/BrunoMNoronha/techlab-troq/issues/186)).** O TROQS passou a ter duas regras de troca cadastradas ([ADR-0009](../adr/0009-trade-rules-environment-selector.md), DEC-053). Este documento continua sendo o desenho de pagamentos das duas quanto a fonte de verdade, idempotência, confirmação, reembolso técnico, reversão e reconciliação. Onde fala em reserva de vaga, em janela de 30 minutos e em R$ 0,99, ele descreve a regra **solicitação paga**. O que a regra **proposta de troca** muda — sujeito e valor da tentativa, prazo de 24 horas e efeito do pagamento — está em [trade-proposal-design.md](trade-proposal-design.md), seções 5 e 6, e é apontado por notas datadas em PD-2.1, PD-3.1 e PD-4.5. Nenhuma outra afirmação foi alterada.
 
 ## 1. A regra que governa todo o desenho
 
@@ -81,7 +81,7 @@ Efeitos concretos:
 - **não** há prorrogação automática, extensão silenciosa nem reabertura, inclusive em indisponibilidade do provedor (PE-4.7);
 - a validação da tempestividade **não** é delegada ao gateway: o TROQS compara o instante de acreditação autoritativo com `reservedUntil` por conta própria, e o `expiration_time` é apenas defesa adicional (PE-4.6).
 
-_Atualização de 2026-10-05 (DEC-053)._ A janela de 30 minutos é a da reserva de vaga da regra solicitação paga. Na proposta de troca não há reserva de vaga: o prazo de pagamento é de 24 horas depois do aceite, e a cobrança é criada com a validade que falta para esse prazo, nunca abaixo do mínimo do provedor ([trade-proposal-design.md](trade-proposal-design.md), TD-6.3).
+_Atualização de 2026-10-05 (DEC-054)._ A janela de 30 minutos é a da reserva de vaga da regra solicitação paga. Na proposta de troca não há reserva de vaga: o prazo de pagamento é de 24 horas depois do aceite, e a cobrança é criada com a validade que falta para esse prazo, nunca abaixo do mínimo do provedor ([trade-proposal-design.md](trade-proposal-design.md), TD-6.3).
 
 **PD-3.2 (detalhe de implementação).** Se a operação futura demonstrar, com dados, que 30 minutos é curto demais para o comportamento real do Pix do público-alvo, aumentar a janela é ajuste de design, não decisão aberta — desde que o `expiration_time` continue igual ao fim da janela e o piso de 30 minutos seja respeitado.
 
@@ -588,7 +588,7 @@ Os doze critérios necessários de DEC-037, seção 18, e onde este desenho os s
 | R-11 | Tratamento operacional em PD-3.5 e PD-8.5; os dois limites continuam fora do controle do TROQS |
 | [ADR-0006](../adr/0006-async-work-scheduling-concurrency.md) | PD-3.4, PD-10.3 e PD-10.6 aplicam suas decisões |
 | [testing.md](../engineering/testing.md) | O "contrato concreto de teste" que aquele documento condicionava a F0-022 está na seção 13 |
-| [ADR-0009](../adr/0009-trade-rules-environment-selector.md) (DEC-052) e DEC-053 | Notas datadas em PD-2.1, PD-3.1 e PD-4.5. O pagamento da regra proposta de troca está em [trade-proposal-design.md](trade-proposal-design.md), seções 5 e 6, com o contrato TT-8 a TT-13, TT-25 e TT-26. Os testes T-1 a T-18 não mudam |
+| [ADR-0009](../adr/0009-trade-rules-environment-selector.md) (DEC-053) e DEC-054 | Notas datadas em PD-2.1, PD-3.1 e PD-4.5. O pagamento da regra proposta de troca está em [trade-proposal-design.md](trade-proposal-design.md), seções 5 e 6, com o contrato TT-8 a TT-13, TT-25 e TT-26. Os testes T-1 a T-18 não mudam |
 
 ## 16. Revisão
 

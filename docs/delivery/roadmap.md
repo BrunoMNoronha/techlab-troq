@@ -16,7 +16,7 @@ Fontes: [../product/mvp-scope.md](../product/mvp-scope.md), [../product/requirem
 | 3 | Solicitações, pagamentos e contato | em execução; gate #105 aberto |
 | 4 | Encerramento, avaliações e moderação | decomposta em #163–#169; execução depende de #105 |
 | 5 | Hardening e lançamento | decomposta em #170–#179; homologação depende de #55 |
-| — | Frente proposta de troca (fora das fases) | registrada em 2026-10-05 (DEC-052 a DEC-054) e decomposta em #186–#197; o código depende de #105 |
+| — | Frente proposta de troca (fora das fases) | registrada em 2026-10-05 (DEC-053 a DEC-055) e decomposta em #186–#197; o código depende de #105 |
 | — | Pós-MVP (candidatos) | não planejado |
 
 **Estado em 2026-09-30.** A **Fase 2 está concluída**: o seu gate de saída foi reverificado por F2-013 (Issue #51) e **APROVADO** em 2026-09-30, com G1, G2 e G3 `PASS` ([phase-3-transition.md](phase-3-transition.md), seção V). A **Fase 3 está liberada para execução** e ainda não foi iniciada; o seu acompanhamento está em [#54](https://github.com/BrunoMNoronha/techlab-troq/issues/54). Nada neste roadmap afirma produção ou deploy atual. O parágrafo seguinte é o registro de 2026-09-29.
@@ -183,7 +183,7 @@ Fontes: [../product/mvp-scope.md](../product/mvp-scope.md), [../product/requirem
 
 ## Frente proposta de troca — fora das fases
 
-**Registrada em 2026-10-05:** doze issues executoras [#186–#197](trade-proposal-plan.md), vinculadas ao épico [#185](https://github.com/BrunoMNoronha/techlab-troq/issues/185). As decisões do Bruno estão registradas como DEC-052, DEC-053 e DEC-054. A frente **não** é fase do MVP, não altera os gates das Fases 3 a 5, e o lançamento comercial não a espera (DEC-054).
+**Registrada em 2026-10-05:** doze issues executoras [#186–#197](trade-proposal-plan.md), vinculadas ao épico [#185](https://github.com/BrunoMNoronha/techlab-troq/issues/185). As decisões do Bruno estão registradas como DEC-053, DEC-054 e DEC-055. A frente **não** é fase do MVP, não altera os gates das Fases 3 a 5, e o lançamento comercial não a espera (DEC-055).
 
 **Objetivo:** cadastrar a proposta de troca como segunda regra de troca, selecionável por ambiente, sem mudar o comportamento da solicitação paga.
 

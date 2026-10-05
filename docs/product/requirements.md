@@ -5,7 +5,7 @@ Catálogo inicial de requisitos rastreáveis do MVP. Contém **apenas** requisit
 ## Convenções
 
 - `RF-xxx`: requisito funcional. `RNF-xxx`: requisito não funcional.
-- **Prioridade MVP:** `obrigatória` (faz parte do núcleo do MVP) ou `direcionamento` (orienta a implementação, sem gate próprio de aceite no MVP). Os requisitos da regra proposta de troca usam `frente proposta de troca`: são obrigatórios para um ambiente operar essa regra e ficam fora do núcleo exigido para o lançamento comercial (DEC-054).
+- **Prioridade MVP:** `obrigatória` (faz parte do núcleo do MVP) ou `direcionamento` (orienta a implementação, sem gate próprio de aceite no MVP). Os requisitos da regra proposta de troca usam `frente proposta de troca`: são obrigatórios para um ambiente operar essa regra e ficam fora do núcleo exigido para o lançamento comercial (DEC-055).
 - **Status permitidos nesta fase:**
   - `definido`: descrição e critério de aceite suficientes para orientar design e implementação;
   - `parcialmente definido`: núcleo definido, mas há lacunas apontadas para uma decisão aberta;
@@ -120,7 +120,7 @@ Nenhum requisito permanece `bloqueado`. Há duas decisões abertas desde 2026-10
 
 ### Solicitações e pagamentos
 
-_Escopo (DEC-052)._ RF-008 a RF-011 descrevem a regra de troca **solicitação paga**. RF-012 vale para as duas regras. Na proposta de troca, os equivalentes são RF-024 a RF-026.
+_Escopo (DEC-053)._ RF-008 a RF-011 descrevem a regra de troca **solicitação paga**. RF-012 vale para as duas regras. Na proposta de troca, os equivalentes são RF-024 a RF-026.
 
 #### RF-008 — Demonstração de interesse
 
@@ -174,7 +174,7 @@ _Escopo (DEC-052)._ RF-008 a RF-011 descrevem a regra de troca **solicitação p
 
 ### Escolha e contato
 
-_Escopo (DEC-052)._ RF-013 e RF-015 descrevem a regra de troca **solicitação paga**. RF-014 vale para as duas regras e, na proposta de troca, protege o contato das duas partes. Os equivalentes da proposta de troca são RF-025 e RF-027.
+_Escopo (DEC-053)._ RF-013 e RF-015 descrevem a regra de troca **solicitação paga**. RF-014 vale para as duas regras e, na proposta de troca, protege o contato das duas partes. Os equivalentes da proposta de troca são RF-025 e RF-027.
 
 #### RF-013 — Escolha do solicitante pelo anunciante
 
@@ -208,7 +208,7 @@ _Escopo (DEC-052)._ RF-013 e RF-015 descrevem a regra de troca **solicitação p
 
 ### Encerramento e avaliações
 
-_Escopo (DEC-052)._ RF-016 descreve o encerramento na regra de troca **solicitação paga**. RF-017 vale para as duas regras. Na proposta de troca, o encerramento é o de RF-029.
+_Escopo (DEC-053)._ RF-016 descreve o encerramento na regra de troca **solicitação paga**. RF-017 vale para as duas regras. Na proposta de troca, o encerramento é o de RF-029.
 
 #### RF-016 — Encerramento da negociação
 
@@ -264,7 +264,7 @@ _Escopo (DEC-052)._ RF-016 descreve o encerramento na regra de troca **solicita�
 
 ### Proposta de troca (regra `trade_proposal`)
 
-Requisitos da segunda regra de troca cadastrada ([trade-proposal.md](trade-proposal.md), DEC-053). Nenhum deles altera os requisitos da solicitação paga. São contrato sem implementação: a entrega está em [../delivery/trade-proposal-plan.md](../delivery/trade-proposal-plan.md).
+Requisitos da segunda regra de troca cadastrada ([trade-proposal.md](trade-proposal.md), DEC-054). Nenhum deles altera os requisitos da solicitação paga. São contrato sem implementação: a entrega está em [../delivery/trade-proposal-plan.md](../delivery/trade-proposal-plan.md).
 
 #### RF-024 — Proposta de troca
 
@@ -511,7 +511,7 @@ Requisitos da segunda regra de troca cadastrada ([trade-proposal.md](trade-propo
 
 - **Descrição:** a regra dos fluxos novos de cada ambiente é a da variável server-side `TRADE_RULE`, e cada fluxo termina na regra em que nasceu.
 - **Prioridade MVP:** frente proposta de troca.
-- **Origem:** [../adr/0009-trade-rules-environment-selector.md](../adr/0009-trade-rules-environment-selector.md) (DEC-052); decisões 1 a 3 de [#185](https://github.com/BrunoMNoronha/techlab-troq/issues/185).
+- **Origem:** [../adr/0009-trade-rules-environment-selector.md](../adr/0009-trade-rules-environment-selector.md) (DEC-053); decisões 1 a 3 de [#185](https://github.com/BrunoMNoronha/techlab-troq/issues/185).
 - **Critério de aceite (alto nível):** conjunto fechado de valores; leitura em runtime num ponto único, de modo que o mesmo build serve as duas regras; falha fechada — com a variável ausente ou inválida, nenhum fluxo novo nasce em nenhuma regra; só o nascimento dos fluxos e a apresentação leem o seletor; trocar a variável não migra nem cancela fluxo em andamento; o preflight de deploy valida a variável.
 - **Status:** definido. **`definido` é definição do requisito, não implementação:** a variável não existe em ambiente nenhum e nenhum código a lê até PT-02 ([#188](https://github.com/BrunoMNoronha/techlab-troq/issues/188)).
 

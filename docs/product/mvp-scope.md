@@ -55,13 +55,13 @@ As regras de negócio que governam este fluxo estão em [business-rules.md](busi
 
 ## Regras de troca cadastradas
 
-O fluxo central acima é o da regra de troca **solicitação paga** (`paid_request`). Por decisão do Bruno em 2026-10-05, o MVP tem duas regras de troca cadastradas, e ele opta por qual usar ([../adr/0009-trade-rules-environment-selector.md](../adr/0009-trade-rules-environment-selector.md), DEC-052):
+O fluxo central acima é o da regra de troca **solicitação paga** (`paid_request`). Por decisão do Bruno em 2026-10-05, o MVP tem duas regras de troca cadastradas, e ele opta por qual usar ([../adr/0009-trade-rules-environment-selector.md](../adr/0009-trade-rules-environment-selector.md), DEC-053):
 
 - a regra dos fluxos novos de cada ambiente é a da variável `TRADE_RULE`; não há tela administrativa nem papel de operador;
 - cada fluxo termina na regra em que nasceu: trocar a variável não muda nada em andamento;
 - cadastrar a segunda regra **não** substitui a primeira, e nenhuma decisão da solicitação paga foi alterada.
 
-A segunda regra é a **proposta de troca** (`trade_proposal`), definida em [trade-proposal.md](trade-proposal.md) (DEC-053). O seu fluxo:
+A segunda regra é a **proposta de troca** (`trade_proposal`), definida em [trade-proposal.md](trade-proposal.md) (DEC-054). O seu fluxo:
 
 - P1. Usuário cria conta.
 - P2. Publica um anúncio. Só propõe quem tem anúncio publicado.
@@ -76,7 +76,7 @@ A segunda regra é a **proposta de troca** (`trade_proposal`), definida em [trad
 
 Nesta regra os papéis são o **anunciante**, dono do anúncio que recebe a proposta, e o **proponente**, dono do anúncio oferecido. A diferença em dinheiro entre os itens fica fora do produto.
 
-A proposta de troca é contrato, não comportamento: nenhum ambiente a opera. A implementação está em [../delivery/trade-proposal-plan.md](../delivery/trade-proposal-plan.md), fora das fases, e **não** faz parte do núcleo exigido para o lançamento comercial (DEC-054).
+A proposta de troca é contrato, não comportamento: nenhum ambiente a opera. A implementação está em [../delivery/trade-proposal-plan.md](../delivery/trade-proposal-plan.md), fora das fases, e **não** faz parte do núcleo exigido para o lançamento comercial (DEC-055).
 
 ## Capacidades obrigatórias
 
@@ -118,4 +118,4 @@ Fora do núcleo inicial do MVP:
 | Cadastro | Elegibilidade etária definida em [age-eligibility.md](age-eligibility.md) (DEC-034); sem dependência aberta |
 | Escolha e reseleção | Regras definidas em [reselection-policy.md](reselection-policy.md) (DEC-032); sem dependência aberta |
 | Demonstração de interesse | Natureza definida em [interest-flow.md](interest-flow.md) (DEC-035); sem dependência aberta |
-| Proposta de troca | Regra definida em [trade-proposal.md](trade-proposal.md) (DEC-053), seletor em [../adr/0009-trade-rules-environment-selector.md](../adr/0009-trade-rules-environment-selector.md) (DEC-052) e desenho em [../architecture/trade-proposal-design.md](../architecture/trade-proposal-design.md). Abertas: preço final ([OD-17](../decisions/open-decisions.md)) e aviso prévio com a forma final do consentimento ([OD-18](../decisions/open-decisions.md)) |
+| Proposta de troca | Regra definida em [trade-proposal.md](trade-proposal.md) (DEC-054), seletor em [../adr/0009-trade-rules-environment-selector.md](../adr/0009-trade-rules-environment-selector.md) (DEC-053) e desenho em [../architecture/trade-proposal-design.md](../architecture/trade-proposal-design.md). Abertas: preço final ([OD-17](../decisions/open-decisions.md)) e aviso prévio com a forma final do consentimento ([OD-18](../decisions/open-decisions.md)) |

@@ -4,7 +4,7 @@ Documento normativo que fecha [OD-14](../decisions/open-decisions.md) e registra
 
 Fontes: [business-rules.md](business-rules.md) (RB-003), [requirements.md](requirements.md) (RF-010), [../architecture/data-model.md](../architecture/data-model.md) (DM-6.2, DM-6.3, DM-6.11, DM-6.12), [../architecture/payments-design.md](../architecture/payments-design.md) (PD-3.1, PD-4.1), [../adr/0006-async-work-scheduling-concurrency.md](../adr/0006-async-work-scheduling-concurrency.md) (DEC-038).
 
-**Escopo de regra (DEC-052, 2026-10-05).** Este documento rege a regra de troca **solicitação paga** (`paid_request`) e não foi alterado. Os limites da regra **proposta de troca** são os de RB-008 ([trade-proposal.md](trade-proposal.md), DEC-053, seção 4) e são contagens independentes das vagas tratadas aqui.
+**Escopo de regra (DEC-053, 2026-10-05).** Este documento rege a regra de troca **solicitação paga** (`paid_request`) e não foi alterado. Os limites da regra **proposta de troca** são os de RB-008 ([trade-proposal.md](trade-proposal.md), DEC-054, seção 4) e são contagens independentes das vagas tratadas aqui.
 
 ## 1. Problema
 

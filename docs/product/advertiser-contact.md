@@ -4,7 +4,7 @@ Documento normativo que fecha [OD-13](../decisions/open-decisions.md) e registra
 
 Fontes: [business-rules.md](business-rules.md) (RB-001, RB-003, RB-004), [listing-lifecycle.md](listing-lifecycle.md) (DEC-027), [interest-flow.md](interest-flow.md) (DEC-035), [../architecture/contact-release.md](../architecture/contact-release.md) (CR-2), [../architecture/data-model.md](../architecture/data-model.md) (DM-4, DM-6.12), [../architecture/payments-design.md](../architecture/payments-design.md) (PD-4.1).
 
-**Escopo de regra (DEC-052, 2026-10-05).** Este documento rege a regra de troca **solicitação paga** (`paid_request`) e não foi alterado. Na regra **proposta de troca**, o mesmo princípio — ninguém paga por um contato que não existe — vale para as duas partes ([trade-proposal.md](trade-proposal.md), DEC-053, TP-3.4).
+**Escopo de regra (DEC-053, 2026-10-05).** Este documento rege a regra de troca **solicitação paga** (`paid_request`) e não foi alterado. Na regra **proposta de troca**, o mesmo princípio — ninguém paga por um contato que não existe — vale para as duas partes ([trade-proposal.md](trade-proposal.md), DEC-054, TP-3.4).
 
 ## 1. Problema
 

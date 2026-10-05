@@ -2,7 +2,7 @@
 
 Fonte oficial do ciclo mínimo e do encerramento da negociação no MVP do TROQS. Este documento fecha **OD-01** e é registrado como **DEC-029** em [../decisions/decision-log.md](../decisions/decision-log.md).
 
-**Escopo de regra (DEC-052, 2026-10-05).** Os dois estados e o encerramento unilateral, imediato e irreversível valem para as duas regras de troca. As seções 2, 4, 9.1 e 9.3 descrevem a regra **solicitação paga** e não foram alteradas. Na regra **proposta de troca** ([trade-proposal.md](trade-proposal.md), DEC-053, seção 10), as partes são o anunciante e o proponente, a negociação nasce com o pagamento aprovado, e cada parte declara "Trocamos" ou "Não deu certo", com efeito sobre os dois anúncios.
+**Escopo de regra (DEC-053, 2026-10-05).** Os dois estados e o encerramento unilateral, imediato e irreversível valem para as duas regras de troca. As seções 2, 4, 9.1 e 9.3 descrevem a regra **solicitação paga** e não foram alteradas. Na regra **proposta de troca** ([trade-proposal.md](trade-proposal.md), DEC-054, seção 10), as partes são o anunciante e o proponente, a negociação nasce com o pagamento aprovado, e cada parte declara "Trocamos" ou "Não deu certo", com efeito sobre os dois anúncios.
 
 ## 1. Propósito e escopo
 

@@ -325,11 +325,11 @@ A release operacional #135 está encerrada. #179 verifica a release final e a au
 
 ## Frente proposta de troca — decomposição em 2026-10-05
 
-O [plano da frente proposta de troca](trade-proposal-plan.md) reúne as doze issues executoras [#186–#197](https://github.com/BrunoMNoronha/techlab-troq/issues/185), vinculadas como subissues de #185. A frente está fora das fases e não altera os gates das Fases 3 a 5 (DEC-054).
+O [plano da frente proposta de troca](trade-proposal-plan.md) reúne as doze issues executoras [#186–#197](https://github.com/BrunoMNoronha/techlab-troq/issues/185), vinculadas como subissues de #185. A frente está fora das fases e não altera os gates das Fases 3 a 5 (DEC-055).
 
 | ID | Título | Objetivo | Dependências | Estado |
 | --- | --- | --- | --- | --- |
-| PT-00 | Registrar decisões, ADR e contratos ([#186](https://github.com/BrunoMNoronha/techlab-troq/issues/186)) | DEC-052 a DEC-054, OD-17 e OD-18, ADR-0009, contrato de produto e desenho técnico da proposta de troca, e as issues PT-01 a PT-11 | — | em revisão |
+| PT-00 | Registrar decisões, ADR e contratos ([#186](https://github.com/BrunoMNoronha/techlab-troq/issues/186)) | DEC-053 a DEC-055, OD-17 e OD-18, ADR-0009, contrato de produto e desenho técnico da proposta de troca, e as issues PT-01 a PT-11 | — | em revisão |
 | PT-01 | Provar no sandbox a cobrança de R$ 2,99 com validade de 24 horas ([#187](https://github.com/BrunoMNoronha/techlab-troq/issues/187)) | Evidência para OD-17 e para o valor por tentativa | — | próximo |
 | PT-02 a PT-11 | Seletor, compromisso do anúncio, pagamentos, proposta, aceite, efeito do pagamento, desfecho, jornada, moderação e homologação ([#188](https://github.com/BrunoMNoronha/techlab-troq/issues/188) a [#197](https://github.com/BrunoMNoronha/techlab-troq/issues/197)) | Detalhe, dependências e testes de cada uma no [plano](trade-proposal-plan.md), seção 4 | PT-00; gate #105 | bloqueado |
 

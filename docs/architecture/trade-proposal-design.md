@@ -1,6 +1,6 @@
 # Proposta de troca — desenho técnico — TROQS
 
-Desenho técnico da regra de troca **proposta de troca** (`trade_proposal`). Produzido por **PT-00** ([#186](https://github.com/BrunoMNoronha/techlab-troq/issues/186)), junto com [../adr/0009-trade-rules-environment-selector.md](../adr/0009-trade-rules-environment-selector.md) (DEC-052) e [../product/trade-proposal.md](../product/trade-proposal.md) (DEC-053).
+Desenho técnico da regra de troca **proposta de troca** (`trade_proposal`). Produzido por **PT-00** ([#186](https://github.com/BrunoMNoronha/techlab-troq/issues/186)), junto com [../adr/0009-trade-rules-environment-selector.md](../adr/0009-trade-rules-environment-selector.md) (DEC-053) e [../product/trade-proposal.md](../product/trade-proposal.md) (DEC-054).
 
 Este documento **converte a política em mecanismo**. Ele não cria regra de negócio: onde decide, decide entidades, invariantes, travas e contrato de teste. Não é schema, não cria migration e não implementa nada. A regra **solicitação paga** continua desenhada em [data-model.md](data-model.md), [payments-design.md](payments-design.md) e [contact-release.md](contact-release.md), e nada aqui a altera.
 
@@ -305,8 +305,8 @@ Não existe instante observável com proposta `paid` sem negociação, com negoc
 
 | Item | Efeito deste documento |
 | --- | --- |
-| DEC-052, ADR-0009 | Decisões 8, 12 e 13 materializadas nas seções 5, 6 e 12 |
-| DEC-053 | TP-3 a TP-12 têm entidade, invariante e teste correspondentes |
+| DEC-053, ADR-0009 | Decisões 8, 12 e 13 materializadas nas seções 5, 6 e 12 |
+| DEC-054 | TP-3 a TP-12 têm entidade, invariante e teste correspondentes |
 | RB-007, RB-008 | Seções 3 e 4; TT-1 a TT-4, TT-21 |
 | RB-009 | Seções 5 e 6; TT-8 a TT-13 |
 | RB-010 | Seção 7; TT-14 a TT-16 |

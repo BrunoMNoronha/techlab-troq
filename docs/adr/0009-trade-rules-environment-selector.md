@@ -2,7 +2,7 @@
 
 ## Status
 
-Aceito — 2026-10-05. Produzida por **PT-00** ([#186](https://github.com/BrunoMNoronha/techlab-troq/issues/186)) e registrada como **DEC-052** em [../decisions/decision-log.md](../decisions/decision-log.md).
+Aceito — 2026-10-05. Produzida por **PT-00** ([#186](https://github.com/BrunoMNoronha/techlab-troq/issues/186)) e registrada como **DEC-053** em [../decisions/decision-log.md](../decisions/decision-log.md).
 
 As decisões 1 a 4 registram escolhas do Bruno em 2026-10-05 ([#185](https://github.com/BrunoMNoronha/techlab-troq/issues/185), decisões 1 a 4). As decisões 5 a 13 são decisões arquiteturais desta entrega, tomadas dentro do espaço que aquelas deixaram, e passam pela homologação dele na revisão de #186.
 
@@ -14,7 +14,7 @@ Emenda o número de módulos de domínio fixado por [../architecture/overview.md
 
 Até esta ADR o TROQS tinha uma única regra de troca, escrita como única em toda a documentação normativa: o interessado paga R$ 0,99 antes da escolha, cada anúncio aceita três solicitações pagas e o anunciante escolhe uma (RB-001 a RB-004). A Fase 3 implementou essa regra.
 
-Em 2026-10-05 o Bruno decidiu cadastrar uma segunda regra, a **proposta de troca** ([../product/trade-proposal.md](../product/trade-proposal.md), DEC-053), sem substituir a primeira: as duas ficam cadastradas e ele opta por qual usar. Ele também decidiu como opta: por **variável de ambiente no servidor, por ambiente**, sem tela administrativa, sem papel de operador e sem segunda chave em `production`.
+Em 2026-10-05 o Bruno decidiu cadastrar uma segunda regra, a **proposta de troca** ([../product/trade-proposal.md](../product/trade-proposal.md), DEC-054), sem substituir a primeira: as duas ficam cadastradas e ele opta por qual usar. Ele também decidiu como opta: por **variável de ambiente no servidor, por ambiente**, sem tela administrativa, sem papel de operador e sem segunda chave em `production`.
 
 O que existia na data desta ADR, conferido em `main@373748f`:
 
@@ -63,7 +63,7 @@ O que existia na data desta ADR, conferido em `main@373748f`:
 
 1. **Duas regras de troca cadastradas.** O TROQS tem um catálogo fechado de regras de troca, com dois valores:
    - `paid_request`, a **solicitação paga**: RB-001, RB-003 e RB-004 e as políticas que as detalham (DEC-019, DEC-032, DEC-035, DEC-040, DEC-041, DEC-051);
-   - `trade_proposal`, a **proposta de troca**: RB-007 a RB-010 e [../product/trade-proposal.md](../product/trade-proposal.md) (DEC-053).
+   - `trade_proposal`, a **proposta de troca**: RB-007 a RB-010 e [../product/trade-proposal.md](../product/trade-proposal.md) (DEC-054).
 
    Cadastrar a segunda não substitui nem revoga nenhuma decisão da primeira. Uma terceira regra exige nova decisão registrada.
 2. **O seletor é uma variável de ambiente no servidor.** A regra dos fluxos novos de um ambiente é a que a variável indica. Cada ambiente tem o seu valor: `preview` pode operar `trade_proposal` enquanto `production` opera `paid_request`. Trocar a regra é alterar o valor no ambiente e republicar. Não há tela administrativa, papel de operador nem configuração em banco.
@@ -115,7 +115,7 @@ O que existia na data desta ADR, conferido em `main@373748f`:
 
 ## Rastreabilidade
 
-- **Registra:** DEC-052 em [../decisions/decision-log.md](../decisions/decision-log.md).
+- **Registra:** DEC-053 em [../decisions/decision-log.md](../decisions/decision-log.md).
 - **Emenda:** AR-3.3 em [../architecture/overview.md](../architecture/overview.md); seção 2.5 de [../engineering/conventions.md](../engineering/conventions.md); alcance da decisão 5 de [ADR-0004](0004-mercado-pago-pix.md).
 - **Aplica-se a:** DM-6.12 e DM-7.1 em [../architecture/data-model.md](../architecture/data-model.md); PD-2.1 e PD-4.5 em [../architecture/payments-design.md](../architecture/payments-design.md); seção 5.1 de [../engineering/environments.md](../engineering/environments.md).
 - **Preserva:** RB-001 a RB-006, AR-3.5, AR-5.1, AR-7.4, AR-15.3, DEC-038 e DEC-050.

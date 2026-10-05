@@ -2,7 +2,7 @@
 
 Fonte oficial da política de avaliações no MVP do TROQS. Este documento fecha **OD-02** e é registrado como **DEC-030** em [../decisions/decision-log.md](../decisions/decision-log.md).
 
-**Escopo de regra (DEC-052, 2026-10-05).** Este documento vale para as duas regras de troca e não foi alterado. Na regra **proposta de troca**, lê-se "anunciante" como o dono do anúncio que recebeu a proposta e "solicitante escolhido" como o proponente. A avaliação continua não exigindo troca concluída: ela é permitida nos dois desfechos ([trade-proposal.md](trade-proposal.md), DEC-053, seção 11).
+**Escopo de regra (DEC-053, 2026-10-05).** Este documento vale para as duas regras de troca e não foi alterado. Na regra **proposta de troca**, lê-se "anunciante" como o dono do anúncio que recebeu a proposta e "solicitante escolhido" como o proponente. A avaliação continua não exigindo troca concluída: ela é permitida nos dois desfechos ([trade-proposal.md](trade-proposal.md), DEC-054, seção 11).
 
 ## 1. Objetivo
 

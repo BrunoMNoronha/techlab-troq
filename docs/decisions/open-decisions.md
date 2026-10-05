@@ -11,7 +11,7 @@ Registro das questões que **ainda não foram decididas** (criado na Fase 0; rea
 
 ## Lista de decisões abertas
 
-Duas decisões abertas, registradas por PT-00 ([#186](https://github.com/BrunoMNoronha/techlab-troq/issues/186)) em 2026-10-05. As duas pertencem à regra de troca **proposta de troca** ([../product/trade-proposal.md](../product/trade-proposal.md), DEC-053) e **não** afetam a solicitação paga.
+Duas decisões abertas, registradas por PT-00 ([#186](https://github.com/BrunoMNoronha/techlab-troq/issues/186)) em 2026-10-05. As duas pertencem à regra de troca **proposta de troca** ([../product/trade-proposal.md](../product/trade-proposal.md), DEC-054) e **não** afetam a solicitação paga.
 
 | ID | Decisão aberta | O que já está decidido | O que falta decidir | O que depende dela |
 | --- | --- | --- | --- | --- |

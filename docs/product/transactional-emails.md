@@ -4,7 +4,7 @@ Contrato do catálogo de emails transacionais dos fluxos de solicitação, pagam
 
 Fontes: [requirements.md](requirements.md) (RF-021), [../architecture/contact-release.md](../architecture/contact-release.md) (CR-5, CR-6.1), [../architecture/payments-design.md](../architecture/payments-design.md) (PD-6.6, PD-6.7), [reselection-policy.md](reselection-policy.md) (DEC-032), [../architecture/overview.md](../architecture/overview.md) (AR-3.3, AR-14), [../adr/0007-observability-sentry.md](../adr/0007-observability-sentry.md) (DEC-039).
 
-**Escopo de regra (DEC-052, 2026-10-05).** O catálogo da seção 2 (TE-1, TE-2, TE-3 e TE-6) é o da regra de troca **solicitação paga** e não foi alterado. As regras de conteúdo, envio e falha das seções 3 e 4 valem para as duas regras. O catálogo da regra **proposta de troca** ainda não existe: é decisão pendente do Bruno, a ser registrada neste documento por PT-09 ([#195](https://github.com/BrunoMNoronha/techlab-troq/issues/195)).
+**Escopo de regra (DEC-053, 2026-10-05).** O catálogo da seção 2 (TE-1, TE-2, TE-3 e TE-6) é o da regra de troca **solicitação paga** e não foi alterado. As regras de conteúdo, envio e falha das seções 3 e 4 valem para as duas regras. O catálogo da regra **proposta de troca** ainda não existe: é decisão pendente do Bruno, a ser registrada neste documento por PT-09 ([#195](https://github.com/BrunoMNoronha/techlab-troq/issues/195)).
 
 ## 1. Escopo
 

@@ -8,7 +8,7 @@ Os itens são identificados como `DM-x`.
 
 **Atualização de 2026-10-01 ([F3-001](https://github.com/BrunoMNoronha/techlab-troq/issues/91)).** Reconciliação com o código entregue pela Fase 2, sem alterar regra de negócio: a trava do anúncio e o relógio da alocação (DM-6.3, DM-6.12), o formato do contato (DM-4.5) e o papel de `ContactAccessEvent` diante das negativas (DM-4.4, DM-11.3). Cada ponto tem nota datada no próprio item; o inventário completo está em [../delivery/phase-3-plan.md](../delivery/phase-3-plan.md), seção 2.1.
 
-**Atualização de 2026-10-05 (PT-00, [#186](https://github.com/BrunoMNoronha/techlab-troq/issues/186)).** O TROQS passou a ter duas regras de troca cadastradas ([ADR-0009](../adr/0009-trade-rules-environment-selector.md), DEC-052). As seções 6 a 8 modelam a regra **solicitação paga** e não mudam de significado. O modelo da regra **proposta de troca** — as entidades novas e as mudanças compatíveis em `PaymentAttempt`, `Negotiation` e `ContactRelease` — está em [trade-proposal-design.md](trade-proposal-design.md). Aqui entram só notas datadas, no fim da seção 6 e no início das seções 7 e 8, apontando para lá.
+**Atualização de 2026-10-05 (PT-00, [#186](https://github.com/BrunoMNoronha/techlab-troq/issues/186)).** O TROQS passou a ter duas regras de troca cadastradas ([ADR-0009](../adr/0009-trade-rules-environment-selector.md), DEC-053). As seções 6 a 8 modelam a regra **solicitação paga** e não mudam de significado. O modelo da regra **proposta de troca** — as entidades novas e as mudanças compatíveis em `PaymentAttempt`, `Negotiation` e `ContactRelease` — está em [trade-proposal-design.md](trade-proposal-design.md). Aqui entram só notas datadas, no fim da seção 6 e no início das seções 7 e 8, apontando para lá.
 
 ## 1. Convenções
 
@@ -157,7 +157,7 @@ _Atualização de 2026-10-01 (F3-001, DV-4)._ `ContactAccessEvent` registra **so
 
 ## 6. Solicitação, vaga e o limite de três — o núcleo de concorrência
 
-_Escopo (DEC-052)._ Esta seção modela a regra de troca **solicitação paga**. A proposta de troca não usa `ContactRequest` nem as três vagas pagas: os limites dela estão em [trade-proposal-design.md](trade-proposal-design.md), seção 4.
+_Escopo (DEC-053)._ Esta seção modela a regra de troca **solicitação paga**. A proposta de troca não usa `ContactRequest` nem as três vagas pagas: os limites dela estão em [trade-proposal-design.md](trade-proposal-design.md), seção 4.
 
 Esta seção responde ao critério de aceite mais exigente de F0-022: **como o limite de três é protegido sob concorrência, no banco, e não por verificação prévia da aplicação.**
 
@@ -277,7 +277,7 @@ _Atualização de 2026-10-01 (DEC-043)._ A fonte do instante de acreditação au
 
 ## 8. Escolha, negociação e liberação
 
-_Escopo (DEC-052)._ Esta seção modela a regra de troca **solicitação paga**. DM-8.5 e DM-8.6 valem para as duas regras. Na proposta de troca não há `Selection`: a negociação nasce do pagamento da proposta aceita, tem dois anúncios e admite uma declaração por parte, e há duas liberações de contato por negociação, uma por destinatário. DM-8.7 e DM-8.8 continuam valendo, como estão, para a solicitação paga. Ver [trade-proposal-design.md](trade-proposal-design.md), seções 7 e 9.
+_Escopo (DEC-053)._ Esta seção modela a regra de troca **solicitação paga**. DM-8.5 e DM-8.6 valem para as duas regras. Na proposta de troca não há `Selection`: a negociação nasce do pagamento da proposta aceita, tem dois anúncios e admite uma declaração por parte, e há duas liberações de contato por negociação, uma por destinatário. DM-8.7 e DM-8.8 continuam valendo, como estão, para a solicitação paga. Ver [trade-proposal-design.md](trade-proposal-design.md), seções 7 e 9.
 
 ### 8.1 `Selection`
 
@@ -465,7 +465,7 @@ Consolidação verificável. A coluna "protegida por" é o compromisso que a Fas
 | DEC-037 | PE-2.1, PE-3.x, PE-4.x, PE-5.x, PE-8.x e PE-12.x têm proteção estrutural correspondente |
 | [ADR-0005](../adr/0005-prisma-orm-migrations.md) | Este documento é a entrada do schema inicial; nenhuma migration é criada aqui |
 | [ADR-0006](../adr/0006-async-work-scheduling-concurrency.md) | DM-6.3, DM-6.5 e DM-9.4 aplicam suas decisões |
-| [ADR-0009](../adr/0009-trade-rules-environment-selector.md), DEC-052 e DEC-053 | Notas datadas no fim da seção 6 e no início das seções 7 e 8. O modelo da regra proposta de troca está em [trade-proposal-design.md](trade-proposal-design.md). Nenhuma invariante de I-1 a I-14 é alterada |
+| [ADR-0009](../adr/0009-trade-rules-environment-selector.md), DEC-053 e DEC-054 | Notas datadas no fim da seção 6 e no início das seções 7 e 8. O modelo da regra proposta de troca está em [trade-proposal-design.md](trade-proposal-design.md). Nenhuma invariante de I-1 a I-14 é alterada |
 | R-02 | Mitigação deixa de ser recomendação e passa a ser restrição de banco (I-1) |
 
 ## 16. Revisão

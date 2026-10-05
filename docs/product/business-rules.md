@@ -6,7 +6,7 @@ Observações aparecem somente quando já confirmadas. Questões derivadas que a
 
 ## Regras de troca e escopo
 
-Desde DEC-052 ([../adr/0009-trade-rules-environment-selector.md](../adr/0009-trade-rules-environment-selector.md)) o TROQS tem **duas regras de troca cadastradas**, e a regra dos fluxos novos de cada ambiente é escolhida pela variável `TRADE_RULE`. Cada regra de negócio indica, no item **Escopo**, a que regra de troca se aplica:
+Desde DEC-053 ([../adr/0009-trade-rules-environment-selector.md](../adr/0009-trade-rules-environment-selector.md)) o TROQS tem **duas regras de troca cadastradas**, e a regra dos fluxos novos de cada ambiente é escolhida pela variável `TRADE_RULE`. Cada regra de negócio indica, no item **Escopo**, a que regra de troca se aplica:
 
 | Regra de troca | Regras de negócio |
 | --- | --- |
@@ -14,7 +14,7 @@ Desde DEC-052 ([../adr/0009-trade-rules-environment-selector.md](../adr/0009-tra
 | Proposta de troca (`trade_proposal`) | RB-007, RB-008, RB-009, RB-010 |
 | As duas | RB-002, RB-005, RB-006 |
 
-RB-001 a RB-006 **não** foram alteradas por DEC-052 nem por DEC-053. Limitar o escopo de uma regra não muda o que ela diz.
+RB-001 a RB-006 **não** foram alteradas por DEC-053 nem por DEC-054. Limitar o escopo de uma regra não muda o que ela diz.
 
 ## RB-001 — Liberação de contato
 
@@ -62,7 +62,7 @@ RB-001 a RB-006 **não** foram alteradas por DEC-052 nem por DEC-053. Limitar o 
 
 - **Regra:** só propõe quem tem anúncio publicado; a proposta oferece um anúncio próprio por um anúncio de outra pessoa, é gratuita e não tem texto livre.
 - **Implicação operacional:** quem não tem anúncio publicado não propõe. A proposta é só o par de anúncios: não carrega mensagem, imagem nem valor, e enviá-la não gera cobrança.
-- **Observações confirmadas:** decisão do Bruno em 2026-10-05, detalhada em [trade-proposal.md](trade-proposal.md) (DEC-053), seção 3. Antes do pagamento, o anunciante vê só o anúncio oferecido e a reputação de quem propõe; o nome aparece depois do pagamento. A diferença em dinheiro entre os itens fica fora do produto.
+- **Observações confirmadas:** decisão do Bruno em 2026-10-05, detalhada em [trade-proposal.md](trade-proposal.md) (DEC-054), seção 3. Antes do pagamento, o anunciante vê só o anúncio oferecido e a reputação de quem propõe; o nome aparece depois do pagamento. A diferença em dinheiro entre os itens fica fora do produto.
 - **Escopo:** regra de troca proposta de troca (`trade_proposal`).
 
 ## RB-008 — Limite de propostas abertas

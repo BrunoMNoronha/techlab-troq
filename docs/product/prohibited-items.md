@@ -8,7 +8,7 @@ Regras de negócio preservadas integralmente: RB-001 a RB-006 em [business-rules
 
 Este documento **não** é parecer jurídico, **não** é termo de uso, **não** é política de privacidade e **não** fecha nenhuma outra decisão aberta. Ver seção 14.
 
-**Escopo de regra (DEC-052, 2026-10-05).** Este documento vale para as duas regras de troca e não foi alterado. Os efeitos da remoção da seção 8.2 falam das solicitações da regra **solicitação paga**. Na regra **proposta de troca**, os efeitos sobre propostas, compromissos e negociações seguem o mesmo princípio e são detalhados por PT-10 ([#196](https://github.com/BrunoMNoronha/techlab-troq/issues/196)), com decisão do Bruno ([trade-proposal.md](trade-proposal.md), DEC-053, TP-8.8).
+**Escopo de regra (DEC-053, 2026-10-05).** Este documento vale para as duas regras de troca e não foi alterado. Os efeitos da remoção da seção 8.2 falam das solicitações da regra **solicitação paga**. Na regra **proposta de troca**, os efeitos sobre propostas, compromissos e negociações seguem o mesmo princípio e são detalhados por PT-10 ([#196](https://github.com/BrunoMNoronha/techlab-troq/issues/196)), com decisão do Bruno ([trade-proposal.md](trade-proposal.md), DEC-054, TP-8.8).
 
 ## 1. Finalidade e princípios
 

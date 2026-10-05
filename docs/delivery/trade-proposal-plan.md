@@ -1,6 +1,6 @@
 # Plano da frente proposta de troca — TROQS
 
-Documento produzido por **PT-00** ([#186](https://github.com/BrunoMNoronha/techlab-troq/issues/186)) em 2026-10-05, sobre `main` em `373748f`. Decompõe a frente [#185](https://github.com/BrunoMNoronha/techlab-troq/issues/185) em issues executoras e é a fonte oficial de **DEC-054** (escopo e ordem da frente).
+Documento produzido por **PT-00** ([#186](https://github.com/BrunoMNoronha/techlab-troq/issues/186)) em 2026-10-05, sobre `main` em `373748f`. Decompõe a frente [#185](https://github.com/BrunoMNoronha/techlab-troq/issues/185) em issues executoras e é a fonte oficial de **DEC-055** (escopo e ordem da frente).
 
 **Esta entrega é documentação.** Não altera código, schema, migration, ambiente nem provedor, e não muda o comportamento da regra solicitação paga. A regra proposta de troca continua **não implementada**.
 
@@ -12,11 +12,12 @@ Classificação usada: **CONFIRMADO** (verificado no código ou no documento cit
 | --- | --- |
 | Commit | `373748f` (`main`) |
 | Decisões do Bruno | 24, de 2026-10-05, em [#185](https://github.com/BrunoMNoronha/techlab-troq/issues/185), seção "Decisões do Bruno em 2026-10-05" |
-| Registro | DEC-052 ([../adr/0009-trade-rules-environment-selector.md](../adr/0009-trade-rules-environment-selector.md)), DEC-053 ([../product/trade-proposal.md](../product/trade-proposal.md)) e DEC-054 (este documento), em [../decisions/decision-log.md](../decisions/decision-log.md) |
+| Registro | DEC-053 ([../adr/0009-trade-rules-environment-selector.md](../adr/0009-trade-rules-environment-selector.md)), DEC-054 ([../product/trade-proposal.md](../product/trade-proposal.md)) e DEC-055 (este documento), em [../decisions/decision-log.md](../decisions/decision-log.md) |
+| Numeração | As decisões desta frente são DEC-053 a DEC-055. DEC-052 foi usada no mesmo dia por outra entrega ([#198](https://github.com/BrunoMNoronha/techlab-troq/pull/198), perfil de caixa do manifesto HMAC), mesclada antes desta |
 | Contratos | [../product/trade-proposal.md](../product/trade-proposal.md) (`TP-x`), [../architecture/trade-proposal-design.md](../architecture/trade-proposal-design.md) (`TD-x`, `TT-n`) |
 | Estado de partida | CONFIRMADO: não há seletor de regra, módulo `proposal`, entidade de proposta nem compromisso de anúncio; `PaymentAttempt` não guarda valor; a variável `TRADE_RULE` não existe em nenhum ambiente |
 
-## 2. Escopo e ordem (DEC-054)
+## 2. Escopo e ordem (DEC-055)
 
 DECISÃO do Bruno em 2026-10-05 (#185, decisões 20 e 21):
 

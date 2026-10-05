@@ -1,12 +1,12 @@
 # Proposta de troca — TROQS
 
-Documento normativo da regra de troca **proposta de troca** (`trade_proposal`). Registra **DEC-053** em [../decisions/decision-log.md](../decisions/decision-log.md), com as decisões do Bruno de 2026-10-05 reunidas em [#185](https://github.com/BrunoMNoronha/techlab-troq/issues/185). Produzido por **PT-00** ([#186](https://github.com/BrunoMNoronha/techlab-troq/issues/186)).
+Documento normativo da regra de troca **proposta de troca** (`trade_proposal`). Registra **DEC-054** em [../decisions/decision-log.md](../decisions/decision-log.md), com as decisões do Bruno de 2026-10-05 reunidas em [#185](https://github.com/BrunoMNoronha/techlab-troq/issues/185). Produzido por **PT-00** ([#186](https://github.com/BrunoMNoronha/techlab-troq/issues/186)).
 
-Fontes: [business-rules.md](business-rules.md) (RB-001 a RB-010), [listing-lifecycle.md](listing-lifecycle.md) (DEC-027), [negotiation-lifecycle.md](negotiation-lifecycle.md) (DEC-029), [ratings.md](ratings.md) (DEC-030), [payment-exceptions.md](payment-exceptions.md) (DEC-037), [advertiser-contact.md](advertiser-contact.md) (DEC-040), [../adr/0009-trade-rules-environment-selector.md](../adr/0009-trade-rules-environment-selector.md) (DEC-052). O desenho técnico está em [../architecture/trade-proposal-design.md](../architecture/trade-proposal-design.md).
+Fontes: [business-rules.md](business-rules.md) (RB-001 a RB-010), [listing-lifecycle.md](listing-lifecycle.md) (DEC-027), [negotiation-lifecycle.md](negotiation-lifecycle.md) (DEC-029), [ratings.md](ratings.md) (DEC-030), [payment-exceptions.md](payment-exceptions.md) (DEC-037), [advertiser-contact.md](advertiser-contact.md) (DEC-040), [../adr/0009-trade-rules-environment-selector.md](../adr/0009-trade-rules-environment-selector.md) (DEC-053). O desenho técnico está em [../architecture/trade-proposal-design.md](../architecture/trade-proposal-design.md).
 
 ## 1. Escopo e leitura
 
-**TP-1.1.** O TROQS tem duas regras de troca cadastradas (DEC-052). Este documento rege a **proposta de troca**. A outra, a **solicitação paga** (`paid_request`), continua regida por RB-001, RB-003, RB-004 e pelas políticas que as detalham, e **nada aqui a altera**.
+**TP-1.1.** O TROQS tem duas regras de troca cadastradas (DEC-053). Este documento rege a **proposta de troca**. A outra, a **solicitação paga** (`paid_request`), continua regida por RB-001, RB-003, RB-004 e pelas políticas que as detalham, e **nada aqui a altera**.
 
 **TP-1.2.** A regra dos fluxos novos de cada ambiente é escolhida pela variável `TRADE_RULE` (ADR-0009). Este documento só produz efeito num ambiente cuja variável seja `trade_proposal` e depois de implementado ([../delivery/trade-proposal-plan.md](../delivery/trade-proposal-plan.md)). Até lá ele é contrato, não comportamento.
 
@@ -333,33 +333,33 @@ Os itens abaixo não foram decididos um a um pelo Bruno. Eles decorrem das decis
 
 | Origem | Registro | Onde está |
 | --- | --- | --- |
-| R-1 | DEC-053 | TP-3.1, TP-3.2; RB-007 |
-| R-2 | DEC-053 | TP-4.1, TP-4.6, TP-6.1; RB-008 |
-| R-3 | DEC-053 | TP-6.1, TP-7.1, TP-9.1; RB-009, RB-010 |
-| R-4 | DEC-053 | TP-6.4, TP-8.1 |
-| R-5 | DEC-053 | TP-10.2, TP-10.3, TP-11.1, com D-17 e D-18 prevalecendo |
-| R-6 | DEC-053 | TP-3.7 |
-| D-1, D-2, D-3 | DEC-052 | [ADR-0009](../adr/0009-trade-rules-environment-selector.md), decisões 1 a 4 |
-| D-4 | DEC-053 | TP-12.1 |
-| D-5 | DEC-053 | TP-3.1, TP-3.7; RB-007 |
-| D-6 | DEC-053 | TP-4.1 a TP-4.3, TP-12.4; RB-008 |
-| D-7 | DEC-053 | TP-5.1 |
-| D-8 | DEC-053 | TP-6.3 |
-| D-9 | DEC-053 | TP-3.5, TP-9.3 |
-| D-10 | DEC-053 | TP-8.4, TP-8.6 |
-| D-11 | DEC-053 | TP-7.1, TP-7.2; RB-009; OD-17 |
-| D-12 | DEC-053 | TP-7.3; RB-009 |
-| D-13 | DEC-053 | TP-6.5, TP-6.6 |
-| D-14 | DEC-053 | TP-4.5, TP-6.7 |
-| D-15 | DEC-053 | TP-7.4, TP-10.7; RB-009 |
-| D-16 | DEC-053 | TP-6.4, TP-8.1, TP-8.3 |
-| D-17 | DEC-053 | TP-10.2, TP-10.3 |
-| D-18 | DEC-053 | TP-11.1 |
-| D-19 | DEC-053 | TP-13.1; OD-18 |
-| D-20 | DEC-054 | TP-3.6; [../delivery/trade-proposal-plan.md](../delivery/trade-proposal-plan.md) |
-| D-21 | DEC-054 | [../delivery/trade-proposal-plan.md](../delivery/trade-proposal-plan.md) |
-| D-22 | DEC-053 | TP-4.4; RB-008 |
-| D-23 | DEC-053 | TP-6.6 |
-| D-24 | DEC-053 | TP-4.5, TP-6.7 |
+| R-1 | DEC-054 | TP-3.1, TP-3.2; RB-007 |
+| R-2 | DEC-054 | TP-4.1, TP-4.6, TP-6.1; RB-008 |
+| R-3 | DEC-054 | TP-6.1, TP-7.1, TP-9.1; RB-009, RB-010 |
+| R-4 | DEC-054 | TP-6.4, TP-8.1 |
+| R-5 | DEC-054 | TP-10.2, TP-10.3, TP-11.1, com D-17 e D-18 prevalecendo |
+| R-6 | DEC-054 | TP-3.7 |
+| D-1, D-2, D-3 | DEC-053 | [ADR-0009](../adr/0009-trade-rules-environment-selector.md), decisões 1 a 4 |
+| D-4 | DEC-054 | TP-12.1 |
+| D-5 | DEC-054 | TP-3.1, TP-3.7; RB-007 |
+| D-6 | DEC-054 | TP-4.1 a TP-4.3, TP-12.4; RB-008 |
+| D-7 | DEC-054 | TP-5.1 |
+| D-8 | DEC-054 | TP-6.3 |
+| D-9 | DEC-054 | TP-3.5, TP-9.3 |
+| D-10 | DEC-054 | TP-8.4, TP-8.6 |
+| D-11 | DEC-054 | TP-7.1, TP-7.2; RB-009; OD-17 |
+| D-12 | DEC-054 | TP-7.3; RB-009 |
+| D-13 | DEC-054 | TP-6.5, TP-6.6 |
+| D-14 | DEC-054 | TP-4.5, TP-6.7 |
+| D-15 | DEC-054 | TP-7.4, TP-10.7; RB-009 |
+| D-16 | DEC-054 | TP-6.4, TP-8.1, TP-8.3 |
+| D-17 | DEC-054 | TP-10.2, TP-10.3 |
+| D-18 | DEC-054 | TP-11.1 |
+| D-19 | DEC-054 | TP-13.1; OD-18 |
+| D-20 | DEC-055 | TP-3.6; [../delivery/trade-proposal-plan.md](../delivery/trade-proposal-plan.md) |
+| D-21 | DEC-055 | [../delivery/trade-proposal-plan.md](../delivery/trade-proposal-plan.md) |
+| D-22 | DEC-054 | TP-4.4; RB-008 |
+| D-23 | DEC-054 | TP-6.6 |
+| D-24 | DEC-054 | TP-4.5, TP-6.7 |
 
 Não altera: RB-001 a RB-006 e nenhuma decisão vigente da regra solicitação paga.
