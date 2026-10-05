@@ -141,3 +141,11 @@ test('Production permanece manual e sem acionamento por push', () => {
   assert.doesNotMatch(preview, /git push[^\n]*(--force|-f\b)/);
   assert.equal(JSON.parse(readFileSync('vercel.json')).git.deploymentEnabled, false);
 });
+
+test('runner prepara Node sem exigir pnpm antes de fixar a revisão', () => {
+  for (const path of ['.github/workflows/deploy-preview.yml', '.github/workflows/deploy-production.yml']) {
+    const workflow = readFileSync(path, 'utf8');
+    assert.match(workflow, /node-version: 24\s+package-manager-cache: false/);
+    assert.ok(workflow.indexOf('actions/setup-node@') < workflow.indexOf('pnpm/action-setup@'));
+  }
+});
