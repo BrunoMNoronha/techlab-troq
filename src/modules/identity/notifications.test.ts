@@ -20,6 +20,7 @@ const RECIPIENT = '00000000-0000-4000-8000-000000000001';
 const REQUEST = '00000000-0000-4000-8000-000000000002';
 const LISTING = '00000000-0000-4000-8000-000000000003';
 const RELEASE = '00000000-0000-4000-8000-000000000004';
+const REFUND = '00000000-0000-4000-8000-000000000005';
 const ADDRESS = 'pessoa@exemplo.com.br';
 
 const NOTICES: UserNotice[] = [
@@ -31,6 +32,12 @@ const NOTICES: UserNotice[] = [
   },
   { kind: 'request_paid_owner', recipientId: RECIPIENT, contactRequestId: REQUEST },
   { kind: 'contact_released', recipientId: RECIPIENT, contactReleaseId: RELEASE },
+  {
+    kind: 'refund_concluded',
+    recipientId: RECIPIENT,
+    technicalRefundId: REFUND,
+    listingId: LISTING,
+  },
 ];
 
 describe('renderNotice', () => {
@@ -40,6 +47,7 @@ describe('renderNotice', () => {
       request_paid_requester: `/explorar/${LISTING}`,
       request_paid_owner: '/anuncios',
       contact_released: '/contatos',
+      refund_concluded: `/explorar/${LISTING}`,
     }[notice.kind];
     expect(r.subject).toMatch(/^TROQ: /);
     expect(r.text).toContain(`${BASE}${expectedPath}`);
@@ -50,6 +58,7 @@ describe('renderNotice', () => {
       expect(body).not.toContain(RECIPIENT);
       expect(body).not.toContain(REQUEST);
       expect(body).not.toContain(RELEASE);
+      expect(body).not.toContain(REFUND);
     }
   });
 
@@ -59,11 +68,19 @@ describe('renderNotice', () => {
     expect(r.text).not.toMatch(/\d{4,}[\s.-]?\d{4}/);
   });
 
+  it('TE-6 nao expoe causa tecnica nem valor', () => {
+    const r = renderNotice(NOTICES[3], BASE);
+    for (const body of [r.subject, r.text, r.html]) {
+      expect(body).not.toMatch(/rt_\d|duplic|janela|vaga|R\$|0,99/i);
+    }
+  });
+
   it('a chave de idempotencia e uma por transicao e tipo', () => {
     expect(NOTICES.map(noticeIdempotencyKey)).toEqual([
       `troq-notice/request_paid_requester/${REQUEST}`,
       `troq-notice/request_paid_owner/${REQUEST}`,
       `troq-notice/contact_released/${RELEASE}`,
+      `troq-notice/refund_concluded/${REFUND}`,
     ]);
   });
 });
