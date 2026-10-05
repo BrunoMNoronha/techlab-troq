@@ -36,3 +36,21 @@ export async function getListingGate(listingId: string): Promise<ListingRequestG
     select: { id: true, status: true, ownerId: true },
   });
 }
+
+/**
+ * Titulos dos anuncios pedidos, para a tela de quem ja tem relacao com eles
+ * (F3-010, #100: contatos liberados ao escolhido). Anuncio `removed` vem sem
+ * titulo: o conteudo retirado pela moderacao nao volta a ser exibido. O
+ * chamador decide quem pode pedir quais ids.
+ */
+export async function getListingTitles(
+  listingIds: readonly string[],
+): Promise<Map<string, string | null>> {
+  const ids = listingIds.filter(isUuid);
+  if (ids.length === 0) return new Map();
+  const rows = await getPrismaClient().listing.findMany({
+    where: { id: { in: ids } },
+    select: { id: true, title: true, status: true },
+  });
+  return new Map(rows.map((r) => [r.id, r.status === 'removed' ? null : r.title]));
+}

@@ -48,6 +48,28 @@ export async function lockRequestForSelection(
   return { id: row.id, requesterId: row.requesterId, eligible: paymentId !== null, paymentId };
 }
 
+export interface RequestLink {
+  listingId: string;
+  requesterId: string;
+  status: string;
+}
+
+/**
+ * Anuncio, solicitante e estado ATUAL da solicitacao, para a entrega do contato
+ * conferir a cadeia (CR-5.2, A4) e o `paid` (A5) no instante da leitura (F3-010,
+ * #100). Sem trava: `paid` nao tem transicao de saida (DM-6.7, I-8).
+ */
+export async function readRequestLinkInTx(
+  tx: Prisma.TransactionClient,
+  contactRequestId: string,
+): Promise<RequestLink | null> {
+  const [row] = await tx.$queryRaw<RequestLink[]>`
+    SELECT "listing_id"::text AS "listingId", "requester_id"::text AS "requesterId",
+           "status"::text AS "status"
+    FROM "contact_requests" WHERE "id" = ${contactRequestId}::uuid`;
+  return row ?? null;
+}
+
 export interface EligibleRequest {
   contactRequestId: string;
   requesterDisplayName: string;
