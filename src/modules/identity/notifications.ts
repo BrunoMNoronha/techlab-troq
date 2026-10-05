@@ -14,7 +14,7 @@ import { sendTransactionalEmail } from './email-transport';
 // Regras estruturais (TE-4):
 // - nenhum template recebe texto escrito por pessoa usuaria — titulo, descricao,
 //   nome de exibicao, alternativas de troca —, porque esse texto pode conter
-//   telefone/WhatsApp (CR-6.1, RF-021; o bloqueio no anuncio ainda e #86). O
+//   telefone/WhatsApp (CR-6.1, RF-021; DEC-049 filtra o anuncio, nao o nome). O
 //   aviso so carrega ids internos, usados nos links;
 // - o contato liberado NUNCA vai por email: TE-3 so manda a pessoa ao lugar
 //   autorizado (`/contatos`), onde a entrega passa por A1 a A6 (CR-5);

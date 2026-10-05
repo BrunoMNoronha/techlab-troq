@@ -307,4 +307,52 @@ describe.skipIf(!enabled)('consulta publica contra banco real (#49)', () => {
       expect(json).not.toContain(forbidden);
     }
   });
+
+  // Anuncio publicado antes de DEC-049 (#86; listing-contract.md, 10.2): segue
+  // publico, mas o campo com contato nunca sai na consulta. Cidade propria para
+  // nao mudar as contagens acima.
+  it('legado publicado com contato no texto: feed e detalhe mascaram so o campo afetado', async () => {
+    const prisma = getPrismaClient();
+    const legacyCity = `Legado ${RUN_ID}`;
+    const id = await createListing(active, 'published', {
+      city: legacyCity,
+      title: 'Bike wa.me/5511987654321',
+    });
+    await prisma.listing.update({
+      where: { id },
+      data: { description: 'Retirar na Rua Augusta, 500. Ou fulano@exemplo.test' },
+    });
+    await prisma.listingTradeOption.createMany({
+      data: [
+        { listingId: id, position: 1, label: 'Um notebook' },
+        { listingId: id, position: 2, label: '(11) 98765-4321' },
+        { listingId: id, position: 3, label: 'Uma camera' },
+      ],
+    });
+
+    const feed = await getPublicFeed({ city: legacyCity });
+    const detail = await getPublicListingDetail(id);
+
+    expect(feed.total).toBe(1);
+    expect(feed.listings[0]).toMatchObject({
+      id,
+      title: 'Anúncio em revisão',
+      description: 'A descrição deste anúncio está em revisão pelo anunciante.',
+      city: legacyCity,
+    });
+    expect(detail).toMatchObject({
+      title: 'Anúncio em revisão',
+      description: 'A descrição deste anúncio está em revisão pelo anunciante.',
+      tradeOptions: ['Um notebook', 'Alternativa em revisão', 'Uma camera'],
+    });
+    const json = JSON.stringify({ feed, detail });
+    for (const forbidden of ['wa.me', '98765', 'Augusta', 'fulano', '@exemplo']) {
+      expect(json).not.toContain(forbidden);
+    }
+    // Nada muda no banco: o estado e o texto ficam para o dono corrigir.
+    expect(await prisma.listing.findUniqueOrThrow({ where: { id } })).toMatchObject({
+      status: 'published',
+      title: 'Bike wa.me/5511987654321',
+    });
+  });
 });

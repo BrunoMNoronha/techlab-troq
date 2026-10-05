@@ -9,6 +9,7 @@ import {
   TITLE_MAX_LENGTH,
   TRADE_OPTION_FIELDS,
   TRADE_OPTION_MAX_LENGTH,
+  contactFieldErrors,
   validateListingContent,
   validateTradeOptions,
   type ListingField,
@@ -57,8 +58,11 @@ const LABELS: Record<ListingField, string> = {
   state: 'UF',
 };
 
+// A mesma orientacao que o servidor aplica (listing-contract.md, secao 10.1).
 const HINTS: Partial<Record<ListingField, string>> = {
-  description: 'Descreva o item. Não inclua telefone, WhatsApp, e-mail ou endereço.',
+  title: 'Diga o que é o item. Não inclua telefone, WhatsApp, e-mail ou endereço.',
+  description:
+    'Descreva o item. Não inclua telefone, WhatsApp, e-mail ou endereço: o contato só é liberado pelo TROQ.',
 };
 
 const inputStyle = (invalid: boolean): React.CSSProperties => ({
@@ -113,7 +117,11 @@ export function ListingForm({
 }: ListingFormProps) {
   const router = useRouter();
   const [values, setValues] = useState<ListingFormValues>(initialValues ?? EMPTY_VALUES);
-  const [fieldErrors, setFieldErrors] = useState<ListingFieldErrors>({});
+  // Conteudo gravado antes da regra de contato ja abre com o campo marcado,
+  // para o dono corrigir antes de salvar; o texto fica no campo, intacto.
+  const [fieldErrors, setFieldErrors] = useState<ListingFieldErrors>(() =>
+    initialValues ? contactFieldErrors(initialValues) : {},
+  );
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   // Contador de tentativas: cada submissao com erro dispara o foco de novo.

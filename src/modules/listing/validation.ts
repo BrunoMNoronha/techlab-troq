@@ -2,6 +2,10 @@
 // secao 3). Funcao pura, sem dependencia de servidor: as actions a aplicam como
 // autoridade e o formulario a reutiliza apenas para antecipar a mensagem.
 
+import { CONTACT_DATA_MESSAGE, containsContactData } from './contact-detection';
+
+export { CONTACT_DATA_MESSAGE };
+
 export const LISTING_FIELDS = ['title', 'description', 'city', 'state'] as const;
 
 export type ListingField = (typeof LISTING_FIELDS)[number];
@@ -49,6 +53,13 @@ const CHECKS: Record<ListingField, FieldCheck> = {
   state: (v) => UF_PATTERN.test(v),
 };
 
+/**
+ * Campos de texto livre exibidos publicamente em que telefone, WhatsApp, e-mail
+ * e endereco sao recusados (secao 10.1, DEC-049). Cidade e UF ficam de fora:
+ * tem regra propria de formato.
+ */
+const CONTACT_CHECKED_FIELDS: readonly ListingField[] = ['title', 'description'];
+
 function normalize(field: ListingField, value: string): string {
   const trimmed = value.trim();
   return field === 'state' ? trimmed.toUpperCase() : trimmed;
@@ -75,6 +86,10 @@ function validate(
     const value = typeof raw === 'string' ? normalize(field, raw) : null;
     if (value === null || !CHECKS[field](value)) {
       fieldErrors[field] = LISTING_FIELD_MESSAGES[field];
+      continue;
+    }
+    if (CONTACT_CHECKED_FIELDS.includes(field) && containsContactData(value)) {
+      fieldErrors[field] = CONTACT_DATA_MESSAGE;
       continue;
     }
     data[field === 'state' ? 'uf' : field] = value;
@@ -143,12 +158,35 @@ export function validateTradeOptions(
       value.length > TRADE_OPTION_MAX_LENGTH ||
       (requireComplete && value.length === 0);
     if (invalid) fieldErrors[field] = TRADE_OPTION_MESSAGES.field;
+    // Texto livre publico no detalhe: mesma regra do titulo (secao 3.1).
+    else if (value !== null && value.length > 0 && containsContactData(value))
+      fieldErrors[field] = CONTACT_DATA_MESSAGE;
     slots.push(value ?? '');
   });
 
   return Object.keys(fieldErrors).length > 0
     ? { ok: false, fieldErrors }
     : { ok: true, data: slots as TradeOptionSlots };
+}
+
+/**
+ * So os erros de contato/endereco do conteudo ja gravado. A edicao os mostra ao
+ * abrir o formulario de um anuncio anterior a DEC-049, para o dono corrigir o
+ * campo antes de salvar (secao 10.2).
+ */
+export function contactFieldErrors(values: {
+  title: string;
+  description: string;
+  tradeOptions: readonly string[];
+}): ListingFieldErrors {
+  const errors: ListingFieldErrors = {};
+  if (containsContactData(values.title)) errors.title = CONTACT_DATA_MESSAGE;
+  if (containsContactData(values.description)) errors.description = CONTACT_DATA_MESSAGE;
+  TRADE_OPTION_FIELDS.forEach((field, index) => {
+    const label = values.tradeOptions[index] ?? '';
+    if (label && containsContactData(label)) errors[field] = CONTACT_DATA_MESSAGE;
+  });
+  return errors;
 }
 
 /** Posicoes gravadas (1..3) de volta para as tres posicoes do formulario. */

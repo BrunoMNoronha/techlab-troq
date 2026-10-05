@@ -37,7 +37,7 @@ Uma transição que não está na tabela **não** envia email. Acrescentar uma l
 
 **TE-4.1 (normativa).** Um email transacional contém **somente** texto fixo do TROQ, a origem pública do ambiente (`BETTER_AUTH_URL`, a mesma regra de URL base de IC-12.3) e identificadores internos usados no link. **Nenhum** texto escrito por pessoa usuária entra no email: título, descrição e alternativas de troca do anúncio, nome de exibição de qualquer pessoa.
 
-Por quê: esses textos são livres e podem conter telefone/WhatsApp. O bloqueio de contato no título e na descrição ainda é [#86](https://github.com/BrunoMNoronha/techlab-troq/issues/86); e mesmo com ele, o nome de exibição continua livre. Excluir o texto da pessoa torna CR-6.1 uma propriedade estrutural do template, e não um filtro que pode falhar.
+Por quê: esses textos são livres. Desde DEC-049 ([#86](https://github.com/BrunoMNoronha/techlab-troq/issues/86)), título, descrição e alternativas recusam contato e endereço, mas essa recusa é um filtro, que pode deixar passar uma forma não prevista, e o texto gravado antes dela só é mascarado na exibição, não corrigido no banco; o nome de exibição continua livre. Excluir o texto da pessoa torna CR-6.1 uma propriedade estrutural do template, e não um filtro que pode falhar.
 
 **TE-4.2 (normativa).** O contato liberado **nunca** vai por email, nem para quem foi escolhido (CR-6.1, [contact-release.md](../architecture/contact-release.md), seção 11, alternativa rejeitada). TE-3 manda a pessoa a `/contatos`, onde a entrega passa por A1 a A6 e é auditada (CR-5).
 

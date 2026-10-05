@@ -165,8 +165,26 @@ describe.skipIf(!enabled)('telemetria e logs sem segredo com erros reais (#50)',
     // 1. Banco falhando no meio de Server Actions reais, com sessao valida.
     await prisma.$executeRawUnsafe(`ALTER TABLE "listings" RENAME TO "${hidden}"`);
     try {
+      // Conteudo valido chega ao banco, que falha.
       const results = [
         await getOwnerListings(),
+        await createDraftListing({
+          title: 'Bicicleta sintetica',
+          description: 'Descricao sintetica valida.',
+          city: 'Recife',
+          state: 'PE',
+        }),
+        await updateListing(listingId, { description: 'Descricao sintetica valida.' }),
+        await getOwnerListingImages(listingId),
+      ];
+      for (const result of results) {
+        expect(result).toMatchObject({ success: false, reason: 'error' });
+        const json = JSON.stringify(result);
+        for (const secret of secrets) expect(json.includes(secret)).toBe(false);
+      }
+      // Contato no texto livre e recusado antes do banco (DEC-049, #86), e a
+      // recusa nao ecoa o numero.
+      const refused = [
         await createDraftListing({
           title: `Contato ${PHONE}`,
           description: `Me chame no WhatsApp ${PHONE}`,
@@ -174,10 +192,9 @@ describe.skipIf(!enabled)('telemetria e logs sem segredo com erros reais (#50)',
           state: 'PE',
         }),
         await updateListing(listingId, { description: `WhatsApp ${PHONE}` }),
-        await getOwnerListingImages(listingId),
       ];
-      for (const result of results) {
-        expect(result).toMatchObject({ success: false, reason: 'error' });
+      for (const result of refused) {
+        expect(result).toMatchObject({ success: false, reason: 'validation' });
         const json = JSON.stringify(result);
         for (const secret of secrets) expect(json.includes(secret)).toBe(false);
       }

@@ -10,6 +10,8 @@ Contrato técnico canônico do anúncio no MVP: campos, validação do formulár
 
 **Atualização de [#76](https://github.com/BrunoMNoronha/techlab-troq/issues/76) (2026-10-04, DEC-046).** O anúncio passou a ter as **três alternativas de troca** aceitas pelo anunciante: campo novo de conteúdo (seções 2.1 e 3.1), pré-condição de T1 e T4 (seções 4.4 e 5), restrição da edição de anúncio `published` ou `paused` (seção 4.2), DTO do dono e do detalhe público (seções 6.1 e 6.3) e regra para os anúncios anteriores (seção 17.3). Estado, decisões e provas estão na seção 17; a homologação em `preview`, na seção 17.5.
 
+**Atualização de [#86](https://github.com/BrunoMNoronha/techlab-troq/issues/86) (2026-10-04, DEC-049).** Título, descrição e alternativas de troca passaram a **recusar telefone, WhatsApp, e-mail e endereço detectáveis** pelas regras documentadas, na criação, na edição e na releitura de T1 e T4 (seções 3, 3.1 e 10.1). O anúncio público gravado antes da regra continua público, com o campo afetado mascarado nas consultas públicas até o dono corrigi-lo (seção 10.2). Estado, decisões e provas estão na seção 18.
+
 ## 1. Escopo e hierarquia
 
 Este documento **não** cria regra de negócio, decisão de produto nem decisão aberta. Ele consolida, em forma de contrato técnico, o que já está definido em:
@@ -83,8 +85,8 @@ Os limites abaixo são **contrato técnico do formulário do MVP**, e não regra
 
 | Campo | Normalização | Regra |
 | --- | --- | --- |
-| `title` | `trim` | obrigatório; de **5 a 60** caracteres após `trim` |
-| `description` | `trim` | obrigatório; de **1 a 1000** caracteres após `trim` (vazio ou só espaços é inválido) |
+| `title` | `trim` | obrigatório; de **5 a 60** caracteres após `trim`; sem contato nem endereço detectável (seção 10.1) |
+| `description` | `trim` | obrigatório; de **1 a 1000** caracteres após `trim` (vazio ou só espaços é inválido); sem contato nem endereço detectável (seção 10.1) |
 | `city` | `trim` | obrigatório; não vazio após `trim`; texto informado pelo anunciante, sem integração com serviço de CEP |
 | `state` (UF) | `trim` + maiúsculas | obrigatório; exatamente **duas letras** (`A`–`Z`) após normalização |
 
@@ -111,7 +113,7 @@ O anunciante informa **três alternativas do que aceita receber** em troca do it
 - **O limite de 60 caracteres é técnico**, como os da seção 3: proporcional ao título (até 60), suficiente para nomear um item e sem criar regra comercial.
 - **Completude sob a trava.** A completude não é restrição de banco — o rascunho pode ficar incompleto e o anúncio anterior a DEC-046 não tem alternativas (seção 17.3). Por isso ela é verificada pela aplicação **sob a trava de linha do anúncio**, a mesma das transições: a edição e a publicação se serializam, e nenhuma corrida publica um anúncio com alternativa esvaziada.
 - **Edição.** `tradeOptions` ausente mantém as gravadas; presente, substitui as três posições. Em `published` ou `paused`, o resultado precisa ter as três — inclusive quando a edição só muda o título de um anúncio anterior a DEC-046.
-- **Privacidade.** É texto livre, com o mesmo tratamento da seção 10: a instrução do formulário pede para não incluir telefone, WhatsApp, e-mail ou endereço, o texto é sempre renderizado como texto e as validações preventivas de dados de contato, quando existirem ([#86](https://github.com/BrunoMNoronha/techlab-troq/issues/86)), valem também aqui. Nada do dono entra no DTO por causa delas.
+- **Privacidade.** É texto livre, com o mesmo tratamento da seção 10: a instrução do formulário pede para não incluir telefone, WhatsApp, e-mail ou endereço, o texto é sempre renderizado como texto e a recusa de contato e endereço de [#86](https://github.com/BrunoMNoronha/techlab-troq/issues/86) (seção 10.1) vale também aqui, em qualquer estado, com erro no campo da alternativa. Nada do dono entra no DTO por causa delas.
 - **Não confundir com RB-003.** As três alternativas de troca **não** têm relação com o limite de **três solicitações pagas** por anúncio (RB-003, [data-model.md](data-model.md), seção 6). Esta regra não altera cobrança, vaga, escolha do solicitante nem liberação de contato, e o solicitante não precisa escolher uma das alternativas.
 - **Fora do escopo:** chat, contraproposta de interessado, escolha obrigatória de uma alternativa pelo solicitante, matching automático, vínculo a outros anúncios e oferta em dinheiro.
 
@@ -128,6 +130,7 @@ O anunciante informa **três alternativas do que aceita receber** em troca do it
 - Editável pelo dono em `draft`, `published` e `paused`; `closed` e `removed` são histórico somente leitura ([listing-lifecycle.md](../product/listing-lifecycle.md), seção 3).
 - Edição em `published` altera o conteúdo público imediatamente e **não** muda o estado.
 - Edição de anúncio `published` **não pode resultar em zero imagens válidas** ([image-policy.md](../product/image-policy.md), seção 3).
+- Edição de anúncio `published` ou `paused` **não pode resultar em conteúdo com contato ou endereço detectável** (seção 10.1): o conteúdo resultante inteiro é revalidado, e o anúncio gravado antes de DEC-049 corrige o campo afetado na primeira edição (seção 10.2).
 - Edição de anúncio `published` ou `paused` **não pode resultar em menos de três alternativas de troca** (seção 3.1). Desde #76, a edição roda numa transação sob a trava de linha do anúncio, filtrada pelo dono: o estado e as alternativas são lidos depois da trava, e a recusa não grava nada.
 - Só o dono edita. Para quem não é o dono, a resposta não pode distinguir anúncio alheio de anúncio inexistente (seção 7).
 
@@ -223,6 +226,8 @@ Usado por listagem, detalhe, home e metadata. Somente estes campos existem; qual
 }
 ```
 
+`title`, `description` e cada item de `tradeOptions` são o texto gravado, exceto quando contêm contato ou endereço detectável (anúncio gravado antes de DEC-049): então o campo vem com o texto neutro da seção 10.2.
+
 A forma de construir `url` e sua revogação pertencem a [#47](https://github.com/BrunoMNoronha/techlab-troq/issues/47); este contrato só exige que a URL aponte para um derivado processado. Desde F2-009, `url` é sempre a rota relativa `/media/{imageId}/{kind}` ([media-pipeline-contract.md](media-pipeline-contract.md), seção 21).
 
 ### 6.2 Proibido em qualquer resposta pública
@@ -307,15 +312,50 @@ Pública. Apresenta o TROQ, mostra as ofertas recentes pela primeira página de 
 
 ## 10. Conteúdo livre e dados pessoais
 
-Título, descrição e cidade são **texto livre fornecido pelo usuário**.
+Título, descrição, alternativas de troca e cidade são **texto livre fornecido pelo usuário**.
 
 - A plataforma **não** instrui o usuário a inserir telefone, WhatsApp, email, endereço ou outro dado pessoal no conteúdo. Rótulos, dicas e exemplos do formulário orientam a descrever o item e informar apenas a cidade e a UF.
-- Podem existir validações preventivas e moderação auxiliares ([prohibited-items.md](../product/prohibited-items.md), seção 5). Elas **não** garantem detecção de dados pessoais: **não se promete detecção perfeita** de telefone, endereço ou similar em texto livre.
-- A proteção de RF-014 depende principalmente de **não serializar os campos protegidos do cadastro e do dono** (seção 6.2), e não de filtrar o texto digitado.
-- Conteúdo que exponha dado pessoal pode ser tratado por denúncia e moderação no nível do anúncio (RF-018 a RF-020).
+- **Título, descrição e alternativas de troca não podem conter telefone, WhatsApp, e-mail ou endereço** (DEC-049, [#86](https://github.com/BrunoMNoronha/techlab-troq/issues/86)): contato escrito no anúncio público contornaria a liberação controlada de RB-001. A recusa automática cobre **os formatos documentados na seção 10.1**; é prevenção auxiliar ([prohibited-items.md](../product/prohibited-items.md), seção 5, itens 3 a 6), e **não se promete detecção perfeita** de telefone, endereço ou similar em texto livre.
+- A proteção de RF-014 depende principalmente de **não serializar os campos protegidos do cadastro e do dono** (seção 6.2); a recusa no texto digitado é camada adicional.
+- **Prevenção não é moderação.** Uma gravação recusada não é decisão de moderação, não conta para reincidência e não gera sanção (prohibited-items.md, seção 5, item 5). Conteúdo que escape à detecção continua tratável por denúncia e moderação no nível do anúncio (RF-018 a RF-020).
 - O texto é sempre renderizado como texto, nunca como HTML.
 
-Não faz parte do MVP nenhum detector automático de telefone, NLP ou moderação automática de conteúdo.
+Não fazem parte do MVP NLP, IA, serviço externo de análise, OCR de imagens nem moderação automática de conteúdo: a detecção é um conjunto de regras determinísticas no próprio código.
+
+### 10.1 Contato e endereço no texto livre (DEC-049)
+
+**Onde vale.** `title`, `description` e cada alternativa de troca preenchida. Cidade e UF têm regra própria de formato (seção 3) e não passam por esta verificação.
+
+**Quando vale.** No servidor, que é a autoridade: criação, edição integral ou parcial (só os campos informados são lidos da entrada, e cada um passa pela regra) e chamada direta da Server Action com payload arbitrário. T1 (publicar) e T4 (reativar) **releem o conteúdo gravado sob a trava** e recusam o que a regra não aceita, sem transição, aceite ou auditoria. Editar anúncio `published` ou `paused` revalida o **conteúdo resultante inteiro**, não só o campo enviado (seção 10.2). Recusa não grava nada, nem o campo válido enviado junto.
+
+**Erro.** Cada campo afetado recebe, no próprio campo, **"Não inclua telefone, WhatsApp, e-mail ou endereço neste campo."**; se título e descrição forem inválidos, os dois recebem o erro. A mensagem é fixa e **nunca reproduz o trecho detectado**; o detector devolve só a categoria, e nada é registrado em log ou telemetria. O formulário antecipa a mesma regra e a mesma mensagem, mantém o texto no campo para correção e não remove nada silenciosamente.
+
+**Normalização só para detectar.** O texto gravado é o digitado (aparado). Para a detecção: NFKC (dígitos e letras de largura total, dígitos matemáticos, circulados e sobrescritos viram ASCII), remoção de caracteres invisíveis (largura zero, hífen suave, marcas de direção), traços Unicode unificados em `-`, acentos removidos, minúsculas e espaços colapsados.
+
+| Categoria | Reconhecido | Não bloqueado de propósito |
+| --- | --- | --- |
+| Telefone | Número brasileiro com DDD (11 a 99, sem zero), com ou sem `+55`/`55`, `0` de longa distância e parênteses no DDD, e número de 9 dígitos começando por 9 ou de 8 começando por 2 a 9; separadores espaço, ponto e hífen; dígitos contínuos (`11987654321`); celular sem DDD (`98765-4321`, `9 8765-4321`, `987654321`); fixo sem DDD só como `XXXX-XXXX` ou `XXXX.XXXX`. Evasões: dígitos espalhados por espaço, ponto, hífen, `_` ou `*` (`1 1 9 8 …`), letra `O` no lugar de zero entre dígitos ou no fim | Medidas e quantidades (`55 polegadas`, `128 GB`, `120 x 80 cm`), anos e intervalos de anos (`2019/2020`, `2019-2020`, `2019 2020`), oito dígitos soltos (`código 12345678`), IMEI (15 dígitos), EAN-13, listas de tamanhos (`38 39 40 41 42`), preço |
+| WhatsApp | `wa.me/…`, `wa.link/…`, `api.whatsapp.com`, `web.whatsapp.com`, `chat.whatsapp.com`, `whatsapp.com/send`, tolerando espaços em volta de `.` e `/` | A mera menção a "WhatsApp" ou "whats" |
+| E-mail | `local@domínio.tld` usual; espaços em volta de `@` e `.`; `arroba`, `(at)`/`[at]`/`{at}`, `ponto`/`(dot)`/`[dot]` entre as partes; provedor conhecido sem domínio de topo (`fulano@gmail`) | "e-mail" como palavra, `@perfil` sem domínio, "arroba" como unidade de peso |
+| Link de contato | `mailto:`, `tel:`, `callto:`, `sms:` com alvo colado aos dois-pontos; `whatsapp://` | O rótulo "Tel: a combinar" |
+| Endereço | Logradouro (`rua`, `avenida`, `av`/`av.`, `al.`, `alameda`, `travessa`/`trav.`, `estrada`/`estr.`, `rodovia`/`rod.`, `praça`, `largo`, `viela`, `beco`, `servidão`, `ladeira`) + nome de até 6 palavras + número marcado por vírgula ou `nº`/`n.`/`número`, ou número seguido de complemento (`apto`, `bloco`, `casa`, `sala`, `conj.`, `andar`, `lote`, `quadra`…); `quadra … lote/conjunto/casa …`; CEP com hífen (`01310-100`, `01.310-100`) ou precedido de "CEP"; coordenadas decimais (`-23.5505, -46.6333`) e em graus/minutos; links de mapa (Google Maps, `goo.gl/maps`, `maps.app.goo.gl`, Waze) | A palavra isolada "rua"; o tipo usado como adjetivo ou seguido de conjunção ("bike de rua aro 29, 21 marchas", "para rua ou esteira, 42"); número seguido de unidade ou quantidade (`, 10 km`, `, 3 anos`); `TV` (travessa colide com televisão), `R.` e `AL` sem ponto (UF); cidade/UF |
+
+**Limites conhecidos.** A regra é determinística e **contornável**: número por extenso ("onze nove oito…"), letras em outros alfabetos com aparência latina, dígitos espalhados com grupos de dois, endereço sem número marcado ("Rua Augusta 500") e outras redes sociais não são detectados. Falsos positivos possíveis: código de 10 ou 11 dígitos contínuos com a forma de DDD + número (inclusive ISBN-10), código no formato `12345-678`, e trechos como "estrada urbana, 18 marchas" fora dos padrões excluídos. O corpus está em `src/modules/listing/contact-detection.test.ts`; cada ajuste de regra entra com o caso que o motivou.
+
+### 10.2 Anúncios gravados antes de DEC-049
+
+A regra **não** executa limpeza em massa, **não** muda o estado de nenhum anúncio e **não** reescreve texto gravado.
+
+| Estado | Efeito |
+| --- | --- |
+| `published` | **Continua público.** Nas consultas públicas (`getPublicFeed` e `getPublicListingDetail`, base da home, de `/explorar`, do detalhe, da metadata e do payload RSC), cada campo afetado sai substituído por um texto neutro: título "Anúncio em revisão", descrição "A descrição deste anúncio está em revisão pelo anunciante." e alternativa "Alternativa em revisão". Os demais campos seguem intactos. O `alt` das imagens e o `<title>` derivam do título já mascarado |
+| `published`, `paused` (edição) | A primeira edição do dono, de qualquer campo, exige corrigir o campo afetado: o conteúdo resultante inteiro é revalidado. O formulário abre com o campo já marcado e a mensagem da seção 10.1, com o texto preservado |
+| `paused` (T4), `draft` (T1) | Reativar e publicar recusam por campo até a correção. O rascunho aceita edição parcial de outro campo |
+| `closed`, `removed` | Histórico somente leitura do dono, sem exposição pública |
+
+**Cache.** Não há o que invalidar: as superfícies públicas são dinâmicas e respondem `private, no-cache, no-store` (seção 16), e a máscara é aplicada na própria consulta, a cada requisição. Uma regra nova ou ajustada passa a valer para o legado na requisição seguinte.
+
+**Área privada.** O dono continua vendo o próprio texto ("Meus anúncios", edição): é o dado dele, e é dali que corrige. O DTO privado não é mascarado.
 
 ## 11. Interface e acessibilidade
 
@@ -340,6 +380,7 @@ Requisitos proporcionais ao contrato, sem redesign; o nível formal de acessibil
 - **Confirmação explícita** antes de T2, T5 e T6.
 - **Imagens com dimensões conhecidas** (`width`/`height` dos derivados), para reservar espaço, e **texto alternativo** derivado do título e da posição (por exemplo, "Imagem 1 de 3: Bicicleta aro 29").
 - A política de itens proibidos é acessível a partir do fluxo de publicação.
+- **Contato e endereço** (seção 10.1): título e descrição têm dica associada por `aria-describedby` ("Não inclua telefone, WhatsApp, e-mail ou endereço"); a recusa aparece no campo, com foco no primeiro inválido e o texto preservado. A edição de anúncio gravado antes de DEC-049 abre com o campo afetado já marcado (seção 10.2).
 - **Alternativas de troca** (seção 3.1): três campos rotulados "Alternativa 1" a "Alternativa 3", agrupados por `fieldset` com a legenda "O que você aceita em troca" e uma instrução comum (alternativas, não precisa oferecer as três, sem dado de contato, obrigatórias para publicar ou enquanto o anúncio estiver publicado ou pausado). Erro por campo, foco no primeiro inválido na ordem do formulário. O painel "Situação do anúncio" cita as alternativas como pré-condição de publicar e de reativar.
 
 ## 12. Divergências da implementação atual e destino
@@ -371,14 +412,16 @@ Conferência feita em `7296cb3`. Nenhuma foi corrigida por F2-005, que é docume
 | RB-001 | Seção 8: contato só ao escolhido com pagamento aprovado; nunca no anúncio público |
 | RB-005, RF-007, RNF-008 | Seções 2.5, 6.2 e 7: cidade/UF é a única localização coletada e exibida |
 | RB-006, RF-018 a RF-020 | Seções 4.4, 5 e 10: declaração de conformidade, validações auxiliares, `removed` só por moderação |
+| RB-001 | Seção 10.1: contato escrito no anúncio contornaria a liberação controlada, e por isso é recusado (DEC-049) |
 | RF-004 | Seções 2 a 5: campos do MVP, validação, rascunho, publicação; RF-004 passa a `definido`. Seção 3.1 e 17: alternativas de troca (DEC-046) |
 | RF-005 | Seções 7 e 9: visibilidade, paginação, ordenação, filtros e detalhe |
 | RF-006, RNF-005 | Seções 2.4, 4.3 e 6.1: 1 a 6 imagens, somente derivados `ready`, dimensões conhecidas |
-| RF-014 | Seções 6.2, 8 e 10: allowlist, contato fora de qualquer payload público, limites do texto livre |
+| RF-014 | Seções 6.2, 8 e 10: allowlist, contato fora de qualquer payload público, limites do texto livre; seções 10.1, 10.2 e 18: recusa de contato e endereço no texto livre e máscara do legado (DEC-049) |
 | RF-022 | Seções 2.2, 2.3 e 4.4: transições e aceitação de conformidade registradas |
 | RNF-001, RNF-010 | Seção 11 |
 | RNF-007, RNF-014 | Seções 3, 4 e 9.1: validação e autorização no servidor |
 | DEC-027, DEC-028, DEC-031 | Preservadas integralmente |
+| DEC-049 | Seções 10.1, 10.2 e 18 |
 
 ## 14. Histórico desta versão
 
@@ -554,3 +597,38 @@ Nenhum anúncio é retirado do ar por esta regra. Retirar ou pausar automaticame
 | Encerramento | o anúncio de teste foi encerrado (T5) com confirmação; o histórico somente leitura mostra "Aceita em troca"; o detalhe anônimo passou a 404 e o anúncio saiu da listagem |
 
 Não exercitado em `preview`: anúncio publicado anterior a DEC-046, porque não existe nenhum no Neon de `preview`. O comportamento está provado em banco descartável (seção 17.4).
+
+## 18. Estado da implementação de #86 (DEC-049)
+
+### 18.1 O que existe
+
+| Mecanismo | Onde |
+| --- | --- |
+| Detector determinístico e puro: normalização só para detectar e regras por categoria (seção 10.1); devolve só as categorias, nunca o trecho | `src/modules/listing/contact-detection.ts` |
+| Regra aplicada a `title`, `description` e alternativas de troca, com a mensagem fixa por campo; `contactFieldErrors` para o formulário marcar o conteúdo gravado | `src/modules/listing/validation.ts` |
+| Criação, edição (patch validado antes do banco; conteúdo resultante inteiro revalidado sob a trava em `published`/`paused`) | `createDraftListing` e `updateListing` em `src/modules/listing/actions.ts` |
+| T1 e T4 | sem mudança de código: `transitionListing` já relia o conteúdo sob a trava com `validateListingContent` e `validateTradeOptions`, que agora incluem a regra |
+| Máscara do legado nas consultas públicas (seção 10.2) | `src/modules/listing/public-content.ts`, aplicada em `getPublicFeed` e `getPublicListingDetail` |
+| Formulário: dica no título e na descrição, erro no campo, foco no primeiro inválido, texto preservado, campo legado marcado ao abrir | `src/app/anuncios/_components/listing-form.tsx` |
+
+Nenhuma migration, dependência ou variável de ambiente nova. Nada é registrado em log quando a regra recusa.
+
+### 18.2 Decisões técnicas
+
+- **Alternativas de troca incluídas.** A issue foi escrita antes de [#76](https://github.com/BrunoMNoronha/techlab-troq/issues/76) e deixou as alternativas fora do escopo; a seção 3.1, escrita depois por #76, já determinava que a validação de #86 valesse também para elas, e elas são texto livre público no detalhe. Excluí-las deixaria o mesmo desvio de RB-001 em outro campo.
+- **Máscara em vez de retirar o anúncio do ar.** Esconder o anúncio exigiria filtrar depois da consulta (o detector é código, não SQL), quebrando `total` e a paginação (seção 9), ou mudar o estado, o que seria decisão de produto nova (DEC-027). A máscara campo a campo mantém o contrato da listagem, não depende de cache e passa a valer na requisição seguinte a qualquer ajuste de regra. Mesmo critério do legado de DEC-046 (seção 17.3).
+- **Revalidação do conteúdo resultante só em `published`/`paused`.** É o conteúdo exposto (ou prestes a voltar); no rascunho, a edição parcial continua livre e T1 barra a publicação.
+- **Regex com lookbehind.** Suportado por todos os navegadores do alvo do Next 16 (Safari 16.4+); o detector roda também no cliente, só para antecipar a mensagem.
+
+### 18.3 Provas
+
+| Camada | O que prova | Onde |
+| --- | --- | --- |
+| Unitária (corpus) | 75 textos recusados por categoria — telefone (formatos e evasões: espalhado, `_`, largura total, dígitos matemáticos, largura zero, travessão, `O` por zero), WhatsApp, e-mail (ofuscações), links `mailto:`/`tel:`/`sms:`/`whatsapp://`, endereço (logradouro, complemento, quadra/lote, CEP, coordenadas, mapas) — e 41 aceitos, inclusive os casos da issue, anos, códigos, IMEI, EAN, tamanhos, "de rua"/"de estrada", menções a WhatsApp/e-mail e "Tel: a combinar"; categorias sem o trecho | `contact-detection.test.ts` |
+| Unitária | Cada categoria em título e descrição, erro nos dois campos, edição parcial, alternativa em qualquer estado, mensagem sem o dado; edição recusada antes do banco; legado `published`/`paused` exige corrigir sem escrita; correção aceita; rascunho legado com edição parcial; T1 e T4 recusados sem transição, aceite ou auditoria; feed e detalhe mascarando campo a campo | `validation.test.ts`, `listing.test.ts`, `lifecycle.test.ts` |
+| Unitária (interface) | Dica associada ao título e à descrição; erro antecipado nos dois campos com foco no título e texto preservado, sem chamar o servidor; recusa do servidor no campo; edição de legado abre com o campo marcado | `listing-form.test.tsx` |
+| Integração (PostgreSQL 17 descartável, Better Auth real) | Criação recusada sem linha nova; edição em `draft`/`published`/`paused` sem gravar nem o campo válido enviado junto; chamada direta com `status` adulterado; legado publicado bloqueia edição de outro campo, aceita a correção e o detalhe passa a mostrar o texto corrigido; T1 recusado e liberado após a correção; T4 recusado com o anúncio `paused` e contagens intactas; feed e detalhe mascarando título, descrição e alternativa sem alterar o banco; a prova de telemetria de #50 passou a separar o erro real de banco (conteúdo válido) da recusa da entrada com contato, que não chega ao banco nem ecoa o número | `listing-drafts`, `listing-lifecycle`, `public-listing` e `telemetry-redaction.integration.test.ts` |
+| HTTP real (`pnpm build` + `pnpm start`) | Legado publicado com telefone, endereço, e-mail e link de WhatsApp: home, `/explorar` e detalhe, em HTML e RSC, para anônimo, terceiro e dono, sem nenhum dos trechos no corpo nem nos cabeçalhos; `<title>`, `alt` e listagem com o texto neutro; `Cache-Control` nunca público | `public-surface.http.integration.test.ts` |
+| Navegador embutido, 375 px, build de produção local com banco descartável | Criar com telefone no título e endereço na descrição → erro nos dois campos, foco no título, texto mantido, sem rolagem horizontal → corrigir e salvar ("aro 29, 21 marchas" aceito) → editar com e-mail ofuscado na alternativa → erro no campo → corrigir e salvar → publicar (imagem pronta semeada no banco; sem R2 neste ambiente) → pausar → contato gravado direto no banco → edição abre com a descrição marcada → reativar recusado, segue `paused`, alerta sem o número → status forçado a `published` → detalhe com a descrição mascarada e título intacto; HTML e RSC anônimos de detalhe, `/explorar` e home sem o número → salvar sem corrigir recusado → corrigir → detalhe anônimo com o texto novo. Log do servidor sem nenhum dos dados | — |
+
+**Não executado:** homologação em `preview`. Não há migration; a prova em `preview` depende do deploy da branch com `BETTER_AUTH_URL` restrita a ela e de login assistido, como na seção 17.5.
