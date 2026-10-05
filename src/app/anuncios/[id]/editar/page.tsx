@@ -95,11 +95,13 @@ export default async function EditarAnuncioPage({ params }: { params: Promise<{ 
         <ListingForm
           mode="edit"
           listingId={listing.id}
+          requireTradeOptions={listing.status !== 'draft'}
           initialValues={{
             title: listing.title,
             description: listing.description,
             city: listing.city,
             state: listing.state,
+            tradeOptions: listing.tradeOptions,
           }}
         />
       ) : null}
@@ -146,6 +148,12 @@ export default async function EditarAnuncioPage({ params }: { params: Promise<{ 
             <dd style={{ margin: '4px 0 0' }}>{listing.title}</dd>
             <dt style={{ fontWeight: '600', marginTop: '16px' }}>Descrição</dt>
             <dd style={{ margin: '4px 0 0', whiteSpace: 'pre-wrap' }}>{listing.description}</dd>
+            <dt style={{ fontWeight: '600', marginTop: '16px' }}>Aceita em troca</dt>
+            <dd style={{ margin: '4px 0 0' }}>
+              {listing.tradeOptions.some(Boolean)
+                ? listing.tradeOptions.filter(Boolean).join('; ')
+                : 'Não informado'}
+            </dd>
             <dt style={{ fontWeight: '600', marginTop: '16px' }}>Localização</dt>
             <dd style={{ margin: '4px 0 0' }}>
               {listing.city} - {listing.state}

@@ -8,6 +8,8 @@ Contrato técnico canônico do anúncio no MVP: campos, validação do formulár
 
 **Atualização de F2-011 ([#49](https://github.com/BrunoMNoronha/techlab-troq/issues/49), 2026-09-30).** A vitrine pública (`/explorar`, `/explorar/[id]` e home) passou a cumprir as seções 9 e 11: parâmetros normalizados no servidor, ordem total, paginação e filtro pela URL, galeria completa no detalhe e prova por HTTP real de que nenhuma superfície pública carrega contato ou dado privado. D-10 a D-12 foram resolvidas, e a parte pública de D-13 também (seção 12). Estado, decisões e provas estão na seção 16.
 
+**Atualização de [#76](https://github.com/BrunoMNoronha/techlab-troq/issues/76) (2026-10-04, DEC-046).** O anúncio passou a ter as **três alternativas de troca** aceitas pelo anunciante: campo novo de conteúdo (seções 2.1 e 3.1), pré-condição de T1 e T4 (seções 4.4 e 5), restrição da edição de anúncio `published` ou `paused` (seção 4.2), DTO do dono e do detalhe público (seções 6.1 e 6.3) e regra para os anúncios anteriores (seção 17.3). Estado, decisões e provas estão na seção 17.
+
 ## 1. Escopo e hierarquia
 
 Este documento **não** cria regra de negócio, decisão de produto nem decisão aberta. Ele consolida, em forma de contrato técnico, o que já está definido em:
@@ -28,7 +30,7 @@ Estão fora deste contrato: execução do pipeline de imagens ([media-pipeline-c
 
 ## 2. Campos do anúncio (RF-004)
 
-O MVP adota o **conjunto mínimo já homologado** de conteúdo fornecido pelo anunciante: **título, descrição, imagens e cidade/UF**. Não há outro campo de conteúdo. Isso fecha a lacuna que mantinha RF-004 em `parcialmente definido` sem criar regra ou decisão nova.
+O MVP adota o **conjunto mínimo já homologado** de conteúdo fornecido pelo anunciante: **título, descrição, imagens e cidade/UF** e, desde DEC-046 ([#76](https://github.com/BrunoMNoronha/techlab-troq/issues/76)), as **três alternativas de troca** aceitas pelo anunciante (seção 3.1). Não há outro campo de conteúdo. Isso fecha a lacuna que mantinha RF-004 em `parcialmente definido` sem criar regra ou decisão nova.
 
 ### 2.1 Conteúdo fornecido pelo anunciante
 
@@ -39,6 +41,7 @@ O MVP adota o **conjunto mínimo já homologado** de conteúdo fornecido pelo an
 | `city` | `city` | sim | sim |
 | `state` (UF) | `uf` (`CHAR(2)`) | sim | sim |
 | imagens | entidade `ListingImage` (seção 2.4) | não no rascunho; de 1 a 6 prontas para publicar | somente derivados processados |
+| `tradeOptions` (alternativas de troca) | entidade `ListingTradeOption` (`position` 1 a 3, `label`) | de 0 a 3 no rascunho; exatamente 3 para publicar, reativar e editar `published`/`paused` (seção 3.1) | sim, somente no detalhe (seção 6.1) |
 
 O nome externo da UF é **`state`** nos DTOs e nos parâmetros de consulta; a coluna física é `uf`. Os dois nomes designam o mesmo dado.
 
@@ -92,12 +95,32 @@ Regras de aplicação:
 - O servidor usa **apenas** os campos de conteúdo da seção 2.1. `ownerId`, `status`, timestamps e dados de conformidade eventualmente enviados pelo cliente são ignorados.
 - Erro de validação retorna mensagem por campo, sem expor detalhe interno, e **não** persiste escrita parcial.
 
+### 3.1 Alternativas de troca (DEC-046, #76)
+
+O anunciante informa **três alternativas do que aceita receber** em troca do item — por exemplo, ao anunciar uma bicicleta, "um notebook", "um videogame" e "uma câmera". São **opções alternativas**: o interessado não precisa oferecer as três juntas. São preferências do próprio anunciante, informadas no cadastro, e **não** são contrapropostas, mensagens ou ofertas de interessados.
+
+| Aspecto | Regra |
+| --- | --- |
+| Entrada | `tradeOptions`: lista de **exatamente 3** textos, na ordem dos campos do formulário. Lista com outro tamanho, ou valor que não seja lista, é recusada inteira (erro `tradeOptions`) em qualquer estado |
+| Normalização | `trim` em cada texto |
+| Texto | de **1 a 60** caracteres após `trim` quando preenchido; acima de 60 é recusado em qualquer estado (erro do campo `tradeOption1`, `tradeOption2` ou `tradeOption3`) |
+| Completude | vazio ou só espaços só é aceito enquanto o anúncio está em `draft`. Publicar (T1), reativar (T4) e editar anúncio `published` ou `paused` exigem as três preenchidas |
+| Ordem | cada texto guarda a posição do seu campo (1 a 3); reabrir a edição devolve cada um no mesmo campo |
+| Persistência | entidade própria `ListingTradeOption`, separada da descrição: uma linha por posição preenchida, com `CHECK` de posição e de texto aparado e não vazio ([data-model.md](data-model.md), DM-5.10) |
+
+- **O limite de 60 caracteres é técnico**, como os da seção 3: proporcional ao título (até 60), suficiente para nomear um item e sem criar regra comercial.
+- **Completude sob a trava.** A completude não é restrição de banco — o rascunho pode ficar incompleto e o anúncio anterior a DEC-046 não tem alternativas (seção 17.3). Por isso ela é verificada pela aplicação **sob a trava de linha do anúncio**, a mesma das transições: a edição e a publicação se serializam, e nenhuma corrida publica um anúncio com alternativa esvaziada.
+- **Edição.** `tradeOptions` ausente mantém as gravadas; presente, substitui as três posições. Em `published` ou `paused`, o resultado precisa ter as três — inclusive quando a edição só muda o título de um anúncio anterior a DEC-046.
+- **Privacidade.** É texto livre, com o mesmo tratamento da seção 10: a instrução do formulário pede para não incluir telefone, WhatsApp, e-mail ou endereço, o texto é sempre renderizado como texto e as validações preventivas de dados de contato, quando existirem ([#86](https://github.com/BrunoMNoronha/techlab-troq/issues/86)), valem também aqui. Nada do dono entra no DTO por causa delas.
+- **Não confundir com RB-003.** As três alternativas de troca **não** têm relação com o limite de **três solicitações pagas** por anúncio (RB-003, [data-model.md](data-model.md), seção 6). Esta regra não altera cobrança, vaga, escolha do solicitante nem liberação de contato, e o solicitante não precisa escolher uma das alternativas.
+- **Fora do escopo:** chat, contraproposta de interessado, escolha obrigatória de uma alternativa pelo solicitante, matching automático, vínculo a outros anúncios e oferta em dinheiro.
+
 ## 4. Rascunho, edição e publicação
 
 ### 4.1 Criação
 
 - Todo anúncio **nasce em `draft`** (RF-004, [listing-lifecycle.md](../product/listing-lifecycle.md), seção 2), criado por conta autenticada, com email verificado e `status = active` (guard `validateSession`).
-- A criação exige título, descrição, cidade e UF válidos (seção 3). **O rascunho pode existir sem nenhuma imagem**, e com imagens ainda não processadas.
+- A criação exige título, descrição, cidade e UF válidos (seção 3). **O rascunho pode existir sem nenhuma imagem**, e com imagens ainda não processadas, e com as alternativas de troca incompletas (seção 3.1).
 - Criar rascunho não publica, não aceita termos e não torna nada visível a terceiros.
 
 ### 4.2 Edição
@@ -105,6 +128,7 @@ Regras de aplicação:
 - Editável pelo dono em `draft`, `published` e `paused`; `closed` e `removed` são histórico somente leitura ([listing-lifecycle.md](../product/listing-lifecycle.md), seção 3).
 - Edição em `published` altera o conteúdo público imediatamente e **não** muda o estado.
 - Edição de anúncio `published` **não pode resultar em zero imagens válidas** ([image-policy.md](../product/image-policy.md), seção 3).
+- Edição de anúncio `published` ou `paused` **não pode resultar em menos de três alternativas de troca** (seção 3.1). Desde #76, a edição roda numa transação sob a trava de linha do anúncio, filtrada pelo dono: o estado e as alternativas são lidos depois da trava, e a recusa não grava nada.
 - Só o dono edita. Para quem não é o dono, a resposta não pode distinguir anúncio alheio de anúncio inexistente (seção 7).
 
 ### 4.3 Quantidade de imagens
@@ -122,7 +146,7 @@ A publicação é **sempre uma transição explícita** do dono. Pré-condiçõe
 
 1. sessão válida do dono, com email verificado e conta `active`;
 2. anúncio em `draft`;
-3. campos de conteúdo válidos segundo a seção 3, revalidados no ato;
+3. campos de conteúdo válidos segundo a seção 3, revalidados no ato, **incluindo as três alternativas de troca** (seção 3.1), lidas sob a trava;
 4. entre **1 e 6** imagens, com **pelo menos uma `ready`**; imagens que não estejam `ready` não contam;
 5. **aceitação expressa** da declaração de conformidade com [prohibited-items.md](../product/prohibited-items.md) (seção 5, item 1), registrada como `TermsAcceptance` `listing_compliance` com **instante** (`acceptedAt`) e **versão** (`termsVersion`) do texto aceito;
 6. ausência de restrição ou bloqueio de publicação vigente ([prohibited-items.md](../product/prohibited-items.md), seção 10), quando as sanções existirem (Fase 4).
@@ -150,7 +174,7 @@ Não existe estado `INACTIVE`, "inativo", "vendido", "expirado" ou "em análise"
 | T1 | `draft` → `published` | dono | Publicar (seção 4.4) |
 | T2 | `draft` → `closed` | dono | Descartar rascunho, com confirmação explícita |
 | T3 | `published` → `paused` | dono | Pausar |
-| T4 | `paused` → `published` | dono | Reativar; exige pelo menos 1 imagem `ready` |
+| T4 | `paused` → `published` | dono | Reativar; exige pelo menos 1 imagem `ready` e as três alternativas de troca (seção 3.1) |
 | T5 | `published` → `closed` | dono | Encerrar, com confirmação explícita |
 | T6 | `paused` → `closed` | dono | Encerrar, com confirmação explícita |
 | T7–T9 | `draft`/`published`/`paused` → `removed` | **somente moderação** | Nenhuma ação do dono produz `removed` |
@@ -175,6 +199,7 @@ Usado por listagem, detalhe, home e metadata. Somente estes campos existem; qual
 | `images[].id` | UUID | identificador opaco da imagem, usado como chave de renderização |
 | `images[].position` | inteiro | ordem; a primeira é a capa |
 | `images[].derivatives[]` | lista | `kind` (`thumb`/`medium`/`large`), `url`, `width`, `height` |
+| `tradeOptions` | lista de strings | **somente no detalhe** (`PublicListingDetail`): `ListingTradeOption.label`, em `position` crescente. Anúncio anterior a DEC-046 ainda não completado devolve lista vazia (seção 17.3). Listagem e home **não** carregam este campo |
 
 ```json
 {
@@ -216,12 +241,12 @@ A projeção é explícita (`select` campo a campo); serializar a entidade intei
 
 ### 6.3 DTO privado do dono
 
-Usado em "meus anúncios" e na edição, somente para o dono autenticado: `id`, `title`, `description`, `city`, `state`, `status`, `createdAt`, `updatedAt` e, para a gestão de imagens, as imagens do próprio anúncio com seu estado de processamento. `ownerId` não é devolvido: o dono é a própria sessão. O aceite de termos não é exibido como campo editável.
+Usado em "meus anúncios" e na edição, somente para o dono autenticado: `id`, `title`, `description`, `city`, `state`, `tradeOptions` (as três posições, com texto vazio onde nada foi informado), `status`, `createdAt`, `updatedAt` e, para a gestão de imagens, as imagens do próprio anúncio com seu estado de processamento. `ownerId` não é devolvido: o dono é a própria sessão. O aceite de termos não é exibido como campo editável.
 
 ### 6.4 Entrada
 
-- Criação: `{ title, description, city, state }`, todos obrigatórios.
-- Edição: subconjunto dos mesmos quatro campos; os informados são validados como na criação.
+- Criação: `{ title, description, city, state }`, todos obrigatórios, e `tradeOptions` opcional (seção 3.1).
+- Edição: subconjunto dos mesmos quatro campos e `tradeOptions`; os informados são validados como na criação, e a completude das alternativas depende do estado (seção 3.1).
 - Publicação: identificador do anúncio e confirmação explícita da declaração de conformidade.
 - Pausar, reativar, encerrar e descartar: identificador do anúncio e, quando exigida, confirmação explícita.
 
@@ -273,6 +298,7 @@ Uma única ordenação no MVP: **mais recentes primeiro**, por `createdAt` decre
 - Devolve o mesmo DTO público (seção 6.1), com todas as imagens `ready` em ordem.
 - Identificador que não seja UUID é tratado como anúncio inexistente (404), sem erro de consulta; anúncio não visível também é 404 (seção 7).
 - A metadata usa somente campos do DTO público (título, cidade e UF); anúncio indisponível recebe metadata genérica.
+- Exibe as alternativas de troca (seção 3.1) numa seção "Aceita em troca", como lista de texto na ordem do anunciante e com a orientação de que basta uma delas. Anúncio anterior a DEC-046 ainda sem alternativas não exibe a seção.
 - Na navegação pelo cliente (payload RSC), o Next.js 16.3.5 responde **HTTP 200** com o marcador de "não encontrado" no conteúdo, e não 404: é o comportamento do framework para qualquer página que chame `notFound()`, inclusive rota inexistente. O requisito "da mesma forma" vale nesse canal também: o conteúdo é o mesmo para todo anúncio indisponível (seção 16.3).
 
 ### 9.5 Home (`/`)
@@ -314,6 +340,7 @@ Requisitos proporcionais ao contrato, sem redesign; o nível formal de acessibil
 - **Confirmação explícita** antes de T2, T5 e T6.
 - **Imagens com dimensões conhecidas** (`width`/`height` dos derivados), para reservar espaço, e **texto alternativo** derivado do título e da posição (por exemplo, "Imagem 1 de 3: Bicicleta aro 29").
 - A política de itens proibidos é acessível a partir do fluxo de publicação.
+- **Alternativas de troca** (seção 3.1): três campos rotulados "Alternativa 1" a "Alternativa 3", agrupados por `fieldset` com a legenda "O que você aceita em troca" e uma instrução comum (alternativas, não precisa oferecer as três, sem dado de contato, obrigatórias para publicar ou enquanto o anúncio estiver publicado ou pausado). Erro por campo, foco no primeiro inválido na ordem do formulário. O painel "Situação do anúncio" cita as alternativas como pré-condição de publicar e de reativar.
 
 ## 12. Divergências da implementação atual e destino
 
@@ -344,7 +371,7 @@ Conferência feita em `7296cb3`. Nenhuma foi corrigida por F2-005, que é docume
 | RB-001 | Seção 8: contato só ao escolhido com pagamento aprovado; nunca no anúncio público |
 | RB-005, RF-007, RNF-008 | Seções 2.5, 6.2 e 7: cidade/UF é a única localização coletada e exibida |
 | RB-006, RF-018 a RF-020 | Seções 4.4, 5 e 10: declaração de conformidade, validações auxiliares, `removed` só por moderação |
-| RF-004 | Seções 2 a 5: campos do MVP, validação, rascunho, publicação; RF-004 passa a `definido` |
+| RF-004 | Seções 2 a 5: campos do MVP, validação, rascunho, publicação; RF-004 passa a `definido`. Seção 3.1 e 17: alternativas de troca (DEC-046) |
 | RF-005 | Seções 7 e 9: visibilidade, paginação, ordenação, filtros e detalhe |
 | RF-006, RNF-005 | Seções 2.4, 4.3 e 6.1: 1 a 6 imagens, somente derivados `ready`, dimensões conhecidas |
 | RF-014 | Seções 6.2, 8 e 10: allowlist, contato fora de qualquer payload público, limites do texto livre |
@@ -458,3 +485,46 @@ Deployment `dpl_EDzuWuXqsJdCHKvmEg1Fnr2GYyMG` (branch `feat/f2-011-public-listin
 Resultado: 71 verificações, 0 falhas.
 
 **Limite.** Paginação com dados, detalhe visível e retirada após T3/T5 **não** foram exercitados no Preview, porque não havia anúncio publicado, e publicar exigiria escrever no banco compartilhado com a conta do responsável. Essas provas estão na seção 16.4, sobre build de produção local, com banco descartável e R2 de `development`.
+
+## 17. Estado da implementação de #76 (DEC-046)
+
+### 17.1 O que existe
+
+- **Modelo.** `ListingTradeOption` (`listing_trade_options`): `listing_id`, `position` (`SMALLINT`), `label`, com `UNIQUE (listing_id, position)`, `CHECK (position BETWEEN 1 AND 3)` e `CHECK (label = btrim(label) AND char_length(label) BETWEEN 1 AND 60)`. A chave estrangeira usa `ON DELETE CASCADE`: a alternativa é conteúdo do anúncio, sem objeto externo nem fato histórico. Migration aditiva `20261004232041_listing_trade_options` ([../engineering/database.md](../engineering/database.md), seção 19).
+- **Validação.** `validateTradeOptions(input, requireComplete)` e `toTradeOptionSlots` em `src/modules/listing/validation.ts`, reutilizadas pelo formulário só para antecipar a mensagem.
+- **Escrita.** `createDraftListing` grava o anúncio e as alternativas preenchidas numa criação aninhada (tudo ou nada). `updateListing` passou de `updateMany` condicionado para uma transação sob `lockOwnedListing` (`FOR UPDATE` filtrado pelo dono, exportado de `lifecycle.ts`): anúncio alheio ou inexistente continua `not_found`, terminal continua `not_editable`, e a completude em `published`/`paused` é verificada antes de qualquer escrita.
+- **Transições.** `transitionListing` lê as alternativas depois da trava e recusa T1 e T4 incompletos com `validation` e erro por campo (`tradeOption1` a `tradeOption3`), junto com os erros de conteúdo.
+- **Leitura.** `getListingForEdit` e `getOwnerListings` devolvem `tradeOptions` com as três posições; `getPublicListingDetail` devolve `PublicListingDetail`, com os textos em ordem. `getPublicFeed` não mudou.
+- **Interface.** Formulário de criação e edição (seção 11), histórico somente leitura de `closed`/`removed` com as alternativas, seção "Aceita em troca" no detalhe público e textos do painel de situação.
+
+### 17.2 Decisões técnicas
+
+- **Tabela própria em vez de coluna `text[]`.** Dá `CHECK` por linha (posição e texto), unicidade da posição e o mesmo padrão de `ListingImage`, sem `CHECK` sobre elementos de vetor.
+- **Posição preservada no rascunho.** Só as posições preenchidas viram linha; a posição vazia volta como texto vazio no mesmo campo.
+- **Completude como regra de aplicação sob a trava**, e não de banco (seção 3.1), por causa do rascunho e do legado.
+- **Mensagem única por campo** ("Informe esta alternativa de troca, com até 60 caracteres."), para vazio e para excesso, no estilo das mensagens da seção 3.
+
+### 17.3 Anúncios anteriores a DEC-046
+
+A migration **não** preenche alternativas, **não** muda o estado de nenhum anúncio e **não** apaga nada. O tratamento dos registros existentes:
+
+| Estado no momento da migration | Efeito |
+| --- | --- |
+| `draft` | Nada muda; o dono completa as três antes de publicar (T1 recusa incompleto) |
+| `published` | **Continua público**, sem retirada silenciosa. O detalhe não mostra a seção "Aceita em troca". A primeira edição do dono, de qualquer campo, exige completar as três; até lá, o anúncio segue como está |
+| `paused` | Continua pausado. Reativar (T4) e editar exigem as três |
+| `closed`, `removed` | Histórico somente leitura, sem alternativas ("Não informado") |
+
+Nenhum anúncio é retirado do ar por esta regra. Retirar ou pausar automaticamente os publicados incompletos seria decisão de produto nova e não foi tomada. Conferência só de leitura e por agregados no Neon de `preview` em 2026-10-04, antes do `migrate deploy`: 4 anúncios, todos `closed`; nenhum `draft`, `published` ou `paused` fica sem alternativas. `production` não está provisionado.
+
+### 17.4 Provas
+
+| Camada | O que prova | Onde |
+| --- | --- | --- |
+| Unitária | Forma (0, 2 e 4 itens, texto, objeto, nulo), vazio e só espaços por estado, limite de 60 após `trim`, item não texto, posições | `validation.test.ts` |
+| Unitária | Criação aninhada, rascunho incompleto por posição, recusa antes do banco, edição sob a trava filtrada pelo dono, `published`/`paused` sem esvaziar, legado exigindo completar, terminal e alheio sem escrita | `listing.test.ts`, `security-audit.test.ts` |
+| Unitária | T1 recusado sem as três, com erro por campo e sem transição, aceite ou auditoria | `lifecycle.test.ts` |
+| Unitária (interface) | Grupo com legenda e instrução, três campos com rótulo e `maxLength`, rascunho incompleto enviado na ordem, exigência em publicado com foco no primeiro inválido, erro do servidor no campo; detalhe com lista de texto (marcação injetada continua texto) e legado sem seção | `listing-form.test.tsx`, `explorar/[id]/page.test.tsx` |
+| Integração (PostgreSQL descartável, Better Auth real) | Criar, reabrir e editar preservando conteúdo e ordem; rascunho incompleto retomado; publicado recusando 2, 4, vazio, só espaços e 61 caracteres sem alteração parcial (nem do título enviado junto); terceiro recebendo o mesmo `not_found` de um UUID inexistente sem alterar nada; legado publicado visível e completado pela edição; corrida com transição para `closed` | `listing-drafts.integration.test.ts` |
+| Integração | T1 incompleto recusado e liberado depois de completar; `CHECK` do banco recusando texto só com espaços; corrida determinística (edição segura a trava e esvazia uma alternativa, a publicação espera e recusa); corrida pelas actions reais em 6 rodadas sem anúncio público incompleto; T4 de pausado sem alternativas recusado e liberado depois de completar | `listing-lifecycle.integration.test.ts` |
+| Integração | Allowlist: o feed mantém os sete campos e só o detalhe acrescenta `tradeOptions`; ordem por posição mesmo gravadas fora de ordem; legado publicado continua no detalhe com lista vazia | `public-listing.integration.test.ts` |

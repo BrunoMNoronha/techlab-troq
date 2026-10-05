@@ -165,6 +165,46 @@ export default async function DetalheAnuncioPublicoPage({
           </p>
         </div>
 
+        {/* Alternativas de troca (listing-contract.md, 3.1 e 9.4): texto puro, na
+            ordem do anunciante. Anuncio anterior a #76 ainda sem elas nao mostra
+            a secao (secao 17.3). */}
+        {listing.tradeOptions.length > 0 ? (
+          <section
+            aria-labelledby="alternativas-de-troca"
+            style={{
+              padding: '16px',
+              backgroundColor: '#f9fafb',
+              borderRadius: '8px',
+              border: '1px solid #e5e7eb',
+              marginBottom: '24px',
+            }}
+          >
+            <h2
+              id="alternativas-de-troca"
+              style={{ fontSize: '16px', fontWeight: '600', marginBottom: '4px' }}
+            >
+              Aceita em troca
+            </h2>
+            <p style={{ color: '#4b5563', fontSize: '14px', margin: '0 0 8px' }}>
+              Qualquer uma destas alternativas; não é preciso oferecer todas.
+            </p>
+            <ul
+              style={{
+                color: '#374151',
+                fontSize: '15px',
+                lineHeight: '1.6',
+                margin: 0,
+                paddingLeft: '20px',
+                overflowWrap: 'anywhere',
+              }}
+            >
+              {listing.tradeOptions.map((option, index) => (
+                <li key={index}>{option}</li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
+
         {/* Garantia RF-014: nenhum telefone/WhatsApp transita nesta resposta. */}
         <ContactRequestEntry listingId={listing.id} state={entryState} />
 

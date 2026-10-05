@@ -31,6 +31,7 @@ User ──1:0..1── UserContact              (dado protegido, modulo `contac
  │
  ├──1:N── Listing ──1:N── ListingTransition
  │            └──1:N── ListingImage ──1:N── ImageDerivative
+ │            └──1:0..3── ListingTradeOption   (3 para publicar — DEC-046)
  │            └──1:N── ContactRequest        (max 3 vagas ocupadas — RB-003)
  │            └──1:N── Report
  │
@@ -117,20 +118,22 @@ _Atualização de 2026-10-01 (F3-001, DV-4)._ `ContactAccessEvent` registra **so
 | --- | --- |
 | Estados | `draft`, `published`, `paused`, `closed`, `removed` (DEC-027, seção 2) |
 | Inicial / terminais | Inicial `draft`; terminais `closed` e `removed` |
-| Campos de negócio | Dono, título, descrição, cidade, UF, ordenação das imagens, instantes de cada transição |
+| Campos de negócio | Dono, título, descrição, cidade, UF, ordenação das imagens, alternativas de troca (DM-5.10), instantes de cada transição |
 | Localização | Apenas cidade e UF. **Sem** coordenadas, endereço, CEP ou bairro (RF-007, RB-005) |
 
 **DM-5.1 (invariante, restrição de banco + transação).** As transições permitidas são exatamente T1 a T9 de DEC-027, seção 4. Toda transição é aplicada por atualização condicionada ao estado de origem esperado — de modo que duas transições concorrentes não se sobreponham — e qualquer par (origem, destino) fora da matriz é rejeitado. `closed` e `removed` não têm transição de saída.
 
 **DM-5.2 (invariante, aplicação).** Somente `published` é consultável publicamente. Qualquer outro estado responde ao público como recurso não disponível, sem revelar existência prévia nem estado interno (DEC-027, seção 3).
 
-**DM-5.3 (invariante, transação).** Publicar exige, verificado na mesma transação: dono autenticado e verificado; ao menos **uma** imagem processada com sucesso; e aceitação da declaração de conformidade registrada (DEC-028 seção 3, DEC-031 seção 5).
+**DM-5.3 (invariante, transação).** Publicar exige, verificado na mesma transação: dono autenticado e verificado; ao menos **uma** imagem processada com sucesso; as **três** alternativas de troca (DM-5.10); e aceitação da declaração de conformidade registrada (DEC-028 seção 3, DEC-031 seção 5, DEC-046).
 
 **DM-5.4 (invariante, transação).** Edição de anúncio `published` **não pode** resultar em zero imagens válidas (DEC-028, seção 3).
 
 **DM-5.5 (invariante, transação).** Sair de `published` retira as imagens da superfície pública **imediatamente**, inclusive de caches, sem implicar exclusão física dos objetos (DEC-028 seção 8, DEC-033 seção 4).
 
 **DM-5.6.** `ListingTransition` registra cada mudança de estado com ator, instante, estado anterior, estado resultante e, na remoção administrativa, o motivo e a categoria (DEC-027 seção 4, DEC-031 seção 12). É fato histórico e alimenta `AuditEvent`.
+
+**DM-5.10 (invariante, restrição de banco + transação; DEC-046).** `ListingTradeOption` guarda as alternativas de troca aceitas pelo anunciante: no máximo **3** por anúncio, posição única de 1 a 3 e texto aparado de 1 a 60 caracteres (restrição de banco). Exatamente **3** são exigidas para publicar (T1), reativar (T4) e manter um anúncio `published` ou `paused` após edição, verificadas sob a trava de linha do anúncio (transação); o rascunho pode ter de 0 a 3, e anúncio anterior a DEC-046 pode ter 0 até ser editado ([listing-contract.md](listing-contract.md), seções 3.1 e 17.3). Não tem relação com as três vagas pagas de RB-003 (seção 6).
 
 ### 5.2 `ListingImage` e `ImageDerivative`
 

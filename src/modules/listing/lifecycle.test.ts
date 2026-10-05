@@ -38,6 +38,8 @@ interface FakeListing {
   description?: string;
   city?: string;
   uf?: string;
+  /** Alternativas gravadas; padrao: as tres preenchidas (#76). */
+  tradeOptions?: { position: number; label: string }[];
 }
 
 interface FakeDb {
@@ -106,6 +108,16 @@ function fakeDb(listing: FakeListing | null, ready = 1): FakeDb {
         db.audits.push(data);
         return {};
       }),
+    },
+    listingTradeOption: {
+      findMany: vi.fn(
+        async () =>
+          db.listing?.tradeOptions ?? [
+            { position: 1, label: 'Um notebook' },
+            { position: 2, label: 'Um videogame' },
+            { position: 3, label: 'Uma câmera' },
+          ],
+      ),
     },
   };
   vi.spyOn(prismaModule, 'getPrismaClient').mockReturnValue({
@@ -218,6 +230,32 @@ describe('modulo listing — transicoes de ciclo de vida (#48)', () => {
       expect(res.success === false && res.fieldErrors?.state).toBeTruthy();
       expect(db.updates).toHaveLength(0);
     });
+
+    it.each([
+      ['nenhuma alternativa (rascunho ou anuncio anterior a #76)', [], 3],
+      [
+        'so duas alternativas',
+        [
+          { position: 1, label: 'Um notebook' },
+          { position: 3, label: 'Uma câmera' },
+        ],
+        1,
+      ],
+    ])(
+      'sem as tres alternativas de troca (%s): recusa por campo, sem gravar',
+      async (_c, tradeOptions, missing) => {
+        signedIn();
+        const db = fakeDb({ status: 'draft', tradeOptions });
+        const res = await publishListing(listingId, true);
+        expect(res).toMatchObject({ success: false, reason: 'validation' });
+        const fields = res.success ? [] : Object.keys(res.fieldErrors ?? {});
+        expect(fields).toHaveLength(missing);
+        expect(fields.every((f) => f.startsWith('tradeOption'))).toBe(true);
+        expect(db.updates).toHaveLength(0);
+        expect(db.transitions).toHaveLength(0);
+        expect(db.acceptances).toHaveLength(0);
+      },
+    );
 
     it('publica: estado, transicao, aceite versionado e auditoria na mesma transacao', async () => {
       signedIn();

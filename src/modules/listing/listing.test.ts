@@ -110,9 +110,46 @@ describe('modulo listing — rascunhos, edicao e meus anuncios (#44 / F2-006)', 
           uf: 'SP',
           ownerId: userId,
           status: 'draft',
+          tradeOptions: { create: [] },
         },
         select: { id: true },
       });
+    });
+
+    it('rascunho aceita alternativas incompletas e grava so as preenchidas, na posicao', async () => {
+      asUser();
+      const create = vi.fn().mockResolvedValueOnce({ id: listingId });
+      mockPrisma({ create });
+
+      const res = await createDraftListing({
+        ...validInput,
+        tradeOptions: ['', ' Um videogame ', '   '],
+      });
+
+      expect(res).toEqual({ success: true, listingId });
+      expect(create.mock.calls[0][0].data.tradeOptions).toEqual({
+        create: [{ position: 2, label: 'Um videogame' }],
+      });
+    });
+
+    it.each([
+      ['mais de tres', ['a', 'b', 'c', 'd'], 'tradeOptions'],
+      ['menos de tres', ['a', 'b'], 'tradeOptions'],
+      ['texto acima de 60 caracteres', ['a', 'b', 'c'.repeat(61)], 'tradeOption3'],
+      ['item que nao e texto', ['a', 7, 'c'], 'tradeOption2'],
+    ])('rejeita alternativas com %s, sem escrita', async (_c, tradeOptions, field) => {
+      asUser();
+      const create = vi.fn();
+      mockPrisma({ create });
+
+      const res = await createDraftListing({
+        ...validInput,
+        tradeOptions: tradeOptions as string[],
+      });
+
+      expect(res).toMatchObject({ success: false, reason: 'validation' });
+      expect(Object.keys(res.fieldErrors ?? {})).toEqual([field]);
+      expect(create).not.toHaveBeenCalled();
     });
 
     it('falha de banco vira erro controlado, sem detalhe interno', async () => {
@@ -129,34 +166,60 @@ describe('modulo listing — rascunhos, edicao e meus anuncios (#44 / F2-006)', 
   });
 
   describe('updateListing', () => {
-    it('grava com posse e estado editavel como condicao do proprio UPDATE', async () => {
+    /**
+     * Transacao simulada: `$queryRaw` e a trava `FOR UPDATE` ja filtrada pelo
+     * dono (lifecycle.ts, lockOwnedListing); `null` = nenhuma linha do dono.
+     */
+    function mockTx(
+      lockedStatus: string | null,
+      storedOptions: { position: number; label: string }[] = [],
+    ) {
+      const tx = {
+        $queryRaw: vi
+          .fn()
+          .mockResolvedValue(lockedStatus ? [{ id: listingId, status: lockedStatus }] : []),
+        listing: { update: vi.fn().mockResolvedValue({}) },
+        listingTradeOption: {
+          findMany: vi.fn().mockResolvedValue(storedOptions),
+          deleteMany: vi.fn().mockResolvedValue({ count: storedOptions.length }),
+          createMany: vi.fn().mockResolvedValue({ count: 3 }),
+        },
+      };
+      const $transaction = vi.fn(async (fn: (client: typeof tx) => Promise<unknown>) => fn(tx));
+      vi.spyOn(prismaModule, 'getPrismaClient').mockReturnValue({
+        $transaction,
+      } as unknown as prismaModule.PrismaClient);
+      return { tx, $transaction };
+    }
+
+    const options = ['Um notebook', 'Um videogame', 'Uma câmera'];
+    const stored = options.map((label, i) => ({ position: i + 1, label }));
+
+    it('grava sob a trava do anuncio, filtrada pelo dono da sessao', async () => {
       asUser();
-      const updateMany = vi.fn().mockResolvedValueOnce({ count: 1 });
-      mockPrisma({ updateMany });
+      const { tx } = mockTx('draft');
 
       const res = await updateListing(listingId, { title: ' Título Atualizado ', state: 'rj' });
 
       expect(res).toEqual({ success: true, listingId });
-      expect(updateMany).toHaveBeenCalledWith({
-        where: { id: listingId, ownerId: userId, status: { in: ['draft', 'published', 'paused'] } },
-        data: { title: 'Título Atualizado', uf: 'RJ' },
+      expect(tx.$queryRaw.mock.calls[0].slice(1)).toEqual([listingId, userId]);
+      expect(tx.listing.update).toHaveBeenCalledWith({
+        where: { id: listingId },
+        data: { title: 'Título Atualizado', uf: 'RJ', updatedAt: expect.any(Date) },
       });
+      // Sem `tradeOptions` na entrada, as gravadas ficam como estao.
+      expect(tx.listingTradeOption.deleteMany).not.toHaveBeenCalled();
+      expect(tx.listingTradeOption.createMany).not.toHaveBeenCalled();
     });
 
     it('anuncio alheio e UUID inexistente produzem a mesma resposta', async () => {
       const otherUser = '33333333-3333-4333-8333-333333333333';
       asUser(otherUser);
-      mockPrisma({
-        updateMany: vi.fn().mockResolvedValueOnce({ count: 0 }),
-        findFirst: vi.fn().mockResolvedValueOnce(null),
-      });
+      const first = mockTx(null);
       const foreign = await updateListing(listingId, { title: 'Tentativa de terceiro' });
 
       asUser(otherUser);
-      mockPrisma({
-        updateMany: vi.fn().mockResolvedValueOnce({ count: 0 }),
-        findFirst: vi.fn().mockResolvedValueOnce(null),
-      });
+      mockTx(null);
       const missing = await updateListing('44444444-4444-4444-8444-444444444444', {
         title: 'Tentativa de terceiro',
       });
@@ -168,66 +231,152 @@ describe('modulo listing — rascunhos, edicao e meus anuncios (#44 / F2-006)', 
       });
       expect(missing).toEqual(foreign);
       expect(JSON.stringify(foreign)).not.toMatch(/permiss/i);
+      expect(first.tx.$queryRaw.mock.calls[0].slice(1)).toEqual([listingId, otherUser]);
+      expect(first.tx.listing.update).not.toHaveBeenCalled();
     });
 
-    it('a consulta de desempate e restrita ao dono da sessao', async () => {
-      asUser();
-      const findFirst = vi.fn().mockResolvedValueOnce(null);
-      mockPrisma({ updateMany: vi.fn().mockResolvedValueOnce({ count: 0 }), findFirst });
+    it.each(['closed', 'removed'])(
+      'anuncio proprio em estado terminal (%s) responde not_editable',
+      async (status) => {
+        asUser();
+        const { tx } = mockTx(status, stored);
 
-      await updateListing(listingId, { title: 'Titulo valido' });
+        const res = await updateListing(listingId, { title: 'Novo Título Válido' });
 
-      expect(findFirst).toHaveBeenCalledWith({
-        where: { id: listingId, ownerId: userId },
-        select: { id: true },
-      });
-    });
-
-    it('anuncio proprio em estado terminal responde not_editable', async () => {
-      asUser();
-      mockPrisma({
-        updateMany: vi.fn().mockResolvedValueOnce({ count: 0 }),
-        findFirst: vi.fn().mockResolvedValueOnce({ id: listingId }),
-      });
-
-      const res = await updateListing(listingId, { title: 'Novo Título Válido' });
-
-      expect(res).toMatchObject({ success: false, reason: 'not_editable' });
-      expect(res.error).toContain('encerrados ou removidos');
-    });
+        expect(res).toMatchObject({ success: false, reason: 'not_editable' });
+        expect(res.error).toContain('encerrados ou removidos');
+        expect(tx.listing.update).not.toHaveBeenCalled();
+      },
+    );
 
     it('ID malformado responde not_found sem consultar o banco', async () => {
       asUser();
-      const updateMany = vi.fn();
-      mockPrisma({ updateMany });
+      const { $transaction } = mockTx('draft');
 
       const res = await updateListing('listing-200', { title: 'Novo Título Válido' });
 
       expect(res.reason).toBe('not_found');
-      expect(updateMany).not.toHaveBeenCalled();
+      expect($transaction).not.toHaveBeenCalled();
     });
 
     it('valida antes do banco, com a mesma regra da criacao', async () => {
       asUser();
-      const updateMany = vi.fn();
-      mockPrisma({ updateMany });
+      const { $transaction } = mockTx('draft');
 
       const res = await updateListing(listingId, { description: '   ', city: '', state: '12' });
 
       expect(res.reason).toBe('validation');
       expect(Object.keys(res.fieldErrors ?? {}).sort()).toEqual(['city', 'description', 'state']);
-      expect(updateMany).not.toHaveBeenCalled();
+      expect($transaction).not.toHaveBeenCalled();
     });
 
     it('rejeita edicao sem nenhum campo de conteudo', async () => {
       asUser();
-      const updateMany = vi.fn();
-      mockPrisma({ updateMany });
+      const { $transaction } = mockTx('draft');
 
       const res = await updateListing(listingId, {});
 
       expect(res.reason).toBe('validation');
-      expect(updateMany).not.toHaveBeenCalled();
+      expect($transaction).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      ['duas alternativas', ['Um notebook', 'Um videogame']],
+      ['quatro alternativas', [...options, 'Um tablet']],
+      ['lista ausente como texto', 'Um notebook'],
+      ['nulo', null],
+    ])('forma errada das alternativas (%s) e recusada antes do banco', async (_c, value) => {
+      asUser();
+      const { $transaction } = mockTx('published', stored);
+
+      const res = await updateListing(listingId, {
+        tradeOptions: value as unknown as string[],
+      });
+
+      expect(res).toMatchObject({ success: false, reason: 'validation' });
+      expect(res.fieldErrors).toEqual({
+        tradeOptions: 'Informe exatamente 3 alternativas de troca.',
+      });
+      expect($transaction).not.toHaveBeenCalled();
+    });
+
+    it('alternativa acima do limite e recusada mesmo em rascunho', async () => {
+      asUser();
+      const { $transaction } = mockTx('draft');
+
+      const res = await updateListing(listingId, {
+        tradeOptions: ['Um notebook', 'x'.repeat(61), ''],
+      });
+
+      expect(res.fieldErrors).toEqual({ tradeOption2: expect.stringContaining('60 caracteres') });
+      expect($transaction).not.toHaveBeenCalled();
+    });
+
+    it('rascunho grava alternativas incompletas na posicao informada', async () => {
+      asUser();
+      const { tx } = mockTx('draft');
+
+      const res = await updateListing(listingId, {
+        tradeOptions: [' Um notebook ', '  ', 'Uma câmera'],
+      });
+
+      expect(res).toEqual({ success: true, listingId });
+      expect(tx.listingTradeOption.deleteMany).toHaveBeenCalledWith({ where: { listingId } });
+      expect(tx.listingTradeOption.createMany).toHaveBeenCalledWith({
+        data: [
+          { position: 1, label: 'Um notebook', listingId },
+          { position: 3, label: 'Uma câmera', listingId },
+        ],
+      });
+    });
+
+    it.each(['published', 'paused'])(
+      'anuncio %s nao aceita esvaziar uma alternativa, sem nenhuma escrita',
+      async (status) => {
+        asUser();
+        const { tx } = mockTx(status, stored);
+
+        const res = await updateListing(listingId, {
+          title: 'Título novo e válido',
+          tradeOptions: ['Um notebook', '   ', 'Uma câmera'],
+        });
+
+        expect(res).toMatchObject({ success: false, reason: 'validation' });
+        expect(res.fieldErrors).toEqual({ tradeOption2: expect.any(String) });
+        expect(tx.listing.update).not.toHaveBeenCalled();
+        expect(tx.listingTradeOption.deleteMany).not.toHaveBeenCalled();
+      },
+    );
+
+    it('anuncio publicado anterior a #76 precisa completar as alternativas para editar', async () => {
+      asUser();
+      const { tx } = mockTx('published', []);
+
+      const res = await updateListing(listingId, { title: 'Título novo e válido' });
+
+      expect(res).toMatchObject({ success: false, reason: 'validation' });
+      expect(Object.keys(res.fieldErrors ?? {})).toEqual([
+        'tradeOption1',
+        'tradeOption2',
+        'tradeOption3',
+      ]);
+      expect(tx.listing.update).not.toHaveBeenCalled();
+    });
+
+    it('anuncio publicado aceita as tres alternativas, substituindo as gravadas', async () => {
+      asUser();
+      const { tx } = mockTx('published', []);
+
+      const res = await updateListing(listingId, { tradeOptions: options });
+
+      expect(res).toEqual({ success: true, listingId });
+      expect(tx.listing.update).toHaveBeenCalledWith({
+        where: { id: listingId },
+        data: { updatedAt: expect.any(Date) },
+      });
+      expect(tx.listingTradeOption.createMany).toHaveBeenCalledWith({
+        data: stored.map((row) => ({ ...row, listingId })),
+      });
     });
   });
 
@@ -244,6 +393,7 @@ describe('modulo listing — rascunhos, edicao e meus anuncios (#44 / F2-006)', 
           status: 'closed',
           createdAt: new Date(),
           updatedAt: new Date(),
+          tradeOptions: [{ position: 3, label: 'Uma câmera' }],
         },
       ]);
       mockPrisma({ findMany });
@@ -255,6 +405,7 @@ describe('modulo listing — rascunhos, edicao e meus anuncios (#44 / F2-006)', 
         title: 'Anúncio 1',
         state: 'SP',
         status: 'closed',
+        tradeOptions: ['', '', 'Uma câmera'],
       });
       expect(res.listings?.[0]).not.toHaveProperty('ownerId');
       expect(findMany).toHaveBeenCalledWith(
