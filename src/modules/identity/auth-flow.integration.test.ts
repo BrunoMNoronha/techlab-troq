@@ -366,7 +366,7 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
 
         const res = await loginUser(emails.a, PASSWORD);
 
-        expect(res).toEqual({ success: true, redirectTo: '/conta' });
+        expect(res).toEqual({ success: true, redirectTo: '/explorar' });
         expect(await sessionsOf(emails.a)).toHaveLength(before + 1);
       });
 

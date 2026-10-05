@@ -1,4 +1,8 @@
 import { redirect } from 'next/navigation';
+import { CardList } from '@/components/data-display';
+import { EmptyState } from '@/components/feedback';
+import { PageContainer, PageHeader, Stack } from '@/components/layout';
+import { Card, Heading, Text } from '@/components/ui';
 import { listOwnContactReleases } from '@/modules/contact';
 import { loginRedirectPath, validateSession } from '@/modules/identity';
 import { getListingTitles } from '@/modules/listing';
@@ -34,45 +38,33 @@ export default async function ContatosPage() {
   const titles = await getListingTitles(releases.map((r) => r.listingId));
 
   return (
-    <main
-      style={{ maxWidth: '600px', margin: '40px auto', padding: '24px', fontFamily: 'sans-serif' }}
-    >
-      <h1 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '8px' }}>
-        Contatos liberados para você
-      </h1>
-      <p style={{ color: '#6b7280', fontSize: '14px', marginBottom: '24px' }}>
-        Quando um anunciante escolhe a sua solicitação paga, o contato dele fica disponível aqui.
-        Cada consulta é registrada.
-      </p>
+    <PageContainer width="content">
+      <PageHeader
+        title="Contatos liberados para você"
+        description="Quando um anunciante escolhe a sua solicitação paga, o contato dele fica disponível aqui. Cada consulta é registrada."
+      />
 
       {releases.length === 0 ? (
-        <p style={{ color: '#374151', fontSize: '15px' }}>
-          Nenhum contato foi liberado para você ainda.
-        </p>
+        <EmptyState icon="phone" titleAs="p" title="Nenhum contato foi liberado para você ainda." />
       ) : (
-        <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+        <CardList>
           {releases.map((release) => (
-            <li
-              key={release.contactReleaseId}
-              style={{
-                padding: '20px',
-                backgroundColor: '#f9fafb',
-                border: '1px solid #e5e7eb',
-                borderRadius: '8px',
-                marginBottom: '16px',
-              }}
-            >
-              <h2 style={{ fontSize: '17px', fontWeight: 600, margin: '0 0 4px' }}>
-                {titles.get(release.listingId) ?? 'Anúncio indisponível'}
-              </h2>
-              <p style={{ color: '#6b7280', fontSize: '13px', margin: 0 }}>
-                Liberado em {DATE_FORMAT.format(new Date(release.authorizedAt))}
-              </p>
-              <ContactReveal contactReleaseId={release.contactReleaseId} />
-            </li>
+            <Card as="li" key={release.contactReleaseId}>
+              <Stack gap={3}>
+                <Stack gap={1}>
+                  <Heading level={2} size="h3" wrapAnywhere>
+                    {titles.get(release.listingId) ?? 'Anúncio indisponível'}
+                  </Heading>
+                  <Text size="small" tone="muted">
+                    Liberado em {DATE_FORMAT.format(new Date(release.authorizedAt))}
+                  </Text>
+                </Stack>
+                <ContactReveal contactReleaseId={release.contactReleaseId} />
+              </Stack>
+            </Card>
           ))}
-        </ul>
+        </CardList>
       )}
-    </main>
+    </PageContainer>
   );
 }

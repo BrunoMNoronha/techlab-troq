@@ -1,0 +1,38 @@
+/* Estilos exclusivos da vitrine: amostras de token. Não são padrão de tela. */
+
+.swatch {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.swatchColor {
+  height: 3rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background-color: var(--swatch);
+}
+
+.spaceBar {
+  width: var(--swatch);
+  height: var(--space-3);
+  border-radius: var(--radius-sm);
+  background-color: var(--color-primary);
+}
+
+.radiusBox {
+  width: 3.5rem;
+  height: 3.5rem;
+  border: 2px solid var(--color-primary);
+  border-radius: var(--swatch);
+  background-color: var(--color-primary-soft);
+}
+
+.shadowBox {
+  width: 5rem;
+  height: 3.5rem;
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface);
+  box-shadow: var(--swatch);
+}

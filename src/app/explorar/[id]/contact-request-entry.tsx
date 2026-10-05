@@ -1,4 +1,6 @@
-import Link from 'next/link';
+import { Alert } from '@/components/feedback';
+import { Cluster, Stack } from '@/components/layout';
+import { ButtonLink, Card, Heading, Text } from '@/components/ui';
 import type { ContactRequestEntryState } from '@/modules/request';
 import { InterestFlow } from './interest-flow';
 
@@ -18,31 +20,25 @@ export function ContactRequestEntry({
   const loginHref = `/login?motivo=solicitar&next=${encodeURIComponent(`/explorar/${listingId}`)}`;
 
   return (
-    <section
-      aria-labelledby="solicitar-contato"
-      style={{
-        padding: '20px',
-        backgroundColor: '#eff6ff',
-        border: '1px solid #bfdbfe',
-        borderRadius: '8px',
-        color: '#1e3a8a',
-        fontSize: '15px',
-        lineHeight: 1.5,
-      }}
-    >
-      <h2 id="solicitar-contato" style={{ fontSize: '18px', margin: '0 0 8px' }}>
-        Contato do anunciante
-      </h2>
-      <p style={{ margin: '0 0 12px' }}>
-        O WhatsApp/telefone do anunciante é protegido pela plataforma e não aparece nesta página.
-      </p>
-      <EntryMessage
-        state={state}
-        loginHref={loginHref}
-        listingId={listingId}
-        ownRequestId={ownRequestId}
-      />
-    </section>
+    <Card as="section" aria-labelledby="solicitar-contato" padding="lg">
+      <Stack gap={4}>
+        <Stack gap={2}>
+          <Heading level={2} size="h3" id="solicitar-contato">
+            Contato do anunciante
+          </Heading>
+          <Text tone="muted">
+            O WhatsApp/telefone do anunciante é protegido pela plataforma e não aparece nesta
+            página.
+          </Text>
+        </Stack>
+        <EntryMessage
+          state={state}
+          loginHref={loginHref}
+          listingId={listingId}
+          ownRequestId={ownRequestId}
+        />
+      </Stack>
+    </Card>
   );
 }
 
@@ -60,91 +56,80 @@ function EntryMessage({
   switch (state) {
     case 'login_required':
       return (
-        <>
-          <p style={{ margin: '0 0 12px' }}>
+        <Stack gap={3}>
+          <Text>
             Para solicitar o desbloqueio do contato, entre na sua conta. Entrar não gera cobrança
             nem solicitação.
-          </p>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
-            <Link href={loginHref} style={primaryLink}>
-              Entrar para solicitar
-            </Link>
-            <Link href="/cadastro" style={secondaryLink}>
+          </Text>
+          <Cluster gap={3}>
+            <ButtonLink href={loginHref}>Entrar para solicitar</ButtonLink>
+            <ButtonLink href="/cadastro" variant="outline">
               Criar conta
-            </Link>
-          </div>
-        </>
+            </ButtonLink>
+          </Cluster>
+        </Stack>
       );
     case 'email_unverified':
       return (
-        <p role="status" style={{ margin: 0 }}>
-          Confirme seu e-mail para poder solicitar o desbloqueio do contato. Confira sua caixa de
-          entrada.
-        </p>
+        <Alert tone="warning" role="status">
+          <p>
+            Confirme seu e-mail para poder solicitar o desbloqueio do contato. Confira sua caixa de
+            entrada.
+          </p>
+        </Alert>
       );
     case 'account_restricted':
       return (
-        <p role="status" style={{ margin: 0 }}>
-          Sua conta está suspensa ou em exclusão e não pode solicitar o desbloqueio do contato.
-        </p>
+        <Alert tone="warning" role="status">
+          <p>
+            Sua conta está suspensa ou em exclusão e não pode solicitar o desbloqueio do contato.
+          </p>
+        </Alert>
       );
     case 'own_listing':
       return (
-        <p role="status" style={{ margin: 0 }}>
-          Este anúncio é seu. Você não pode solicitar o próprio contato.
-        </p>
+        <Alert tone="info" role="status">
+          <p>Este anúncio é seu. Você não pode solicitar o próprio contato.</p>
+        </Alert>
       );
     case 'not_accepting':
       // Anunciante sem contato cadastrado (DEC-040): o motivo nao e exposto.
       return (
-        <p role="status" style={{ margin: 0 }}>
-          Este anúncio não está aceitando solicitações no momento. Nenhuma solicitação foi criada e
-          nada foi cobrado.
-        </p>
+        <Alert role="status">
+          <p>
+            Este anúncio não está aceitando solicitações no momento. Nenhuma solicitação foi criada
+            e nada foi cobrado.
+          </p>
+        </Alert>
       );
     case 'own_request':
       return (
-        <>
-          <p role="status" style={{ margin: '0 0 12px' }}>
-            Você já tem uma solicitação neste anúncio. Acompanhe o pagamento e a escolha do
-            anunciante por lá; não é preciso solicitar de novo.
-          </p>
+        <Stack gap={3}>
+          <Alert tone="info" role="status">
+            <p>
+              Você já tem uma solicitação neste anúncio. Acompanhe o pagamento e a escolha do
+              anunciante por lá; não é preciso solicitar de novo.
+            </p>
+          </Alert>
           {ownRequestId && (
-            <Link href={`/solicitacoes/${ownRequestId}`} style={primaryLink}>
-              Acompanhar minha solicitação
-            </Link>
+            <Cluster>
+              <ButtonLink href={`/solicitacoes/${ownRequestId}`} iconEnd="arrow-right">
+                Acompanhar minha solicitação
+              </ButtonLink>
+            </Cluster>
           )}
-        </>
+        </Stack>
       );
     case 'request_available':
       return <InterestFlow listingId={listingId} />;
     case 'no_slots':
       return (
-        <p role="status" style={{ margin: 0 }}>
-          As vagas de solicitação deste anúncio estão ocupadas no momento. Nenhuma solicitação foi
-          criada e nada foi cobrado.
-        </p>
+        <Alert role="status">
+          <p>
+            As vagas de solicitação deste anúncio estão ocupadas no momento. Nenhuma solicitação foi
+            criada e nada foi cobrado.
+          </p>
+        </Alert>
       );
   }
 }
-
-const primaryLink = {
-  display: 'inline-block',
-  padding: '10px 18px',
-  backgroundColor: '#1d4ed8',
-  color: 'white',
-  borderRadius: '6px',
-  fontWeight: 600,
-  textDecoration: 'none',
-} as const;
-
-const secondaryLink = {
-  display: 'inline-block',
-  padding: '10px 18px',
-  backgroundColor: 'white',
-  color: '#1d4ed8',
-  border: '1px solid #bfdbfe',
-  borderRadius: '6px',
-  fontWeight: 600,
-  textDecoration: 'none',
-} as const;

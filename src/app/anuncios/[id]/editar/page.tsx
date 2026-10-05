@@ -1,5 +1,10 @@
 import { productCategoryLabel } from '@/modules/listing/categories';
 import { notFound, redirect } from 'next/navigation';
+import { DescriptionList } from '@/components/data-display';
+import { Alert, ErrorState } from '@/components/feedback';
+import { PageContainer, PageHeader, Stack } from '@/components/layout';
+import { BackLink } from '@/components/navigation';
+import { Badge, ButtonLink, Text } from '@/components/ui';
 import { loginRedirectPath, validateSession } from '@/modules/identity';
 import { getListingForEdit } from '@/modules/listing';
 import { getOwnerListingImages } from '@/modules/media/upload';
@@ -13,19 +18,12 @@ export const dynamic = 'force-dynamic';
 // com after(), que herda este limite (media-pipeline-contract.md, secao 6).
 export const maxDuration = 300;
 
-const mainStyle: React.CSSProperties = {
-  maxWidth: '540px',
-  margin: '24px auto',
-  padding: '16px',
-  fontFamily: 'sans-serif',
-};
-
-const backLinkStyle: React.CSSProperties = {
-  color: '#1d4ed8',
-  textDecoration: 'none',
-  fontSize: '14px',
-  fontWeight: '600',
-};
+// Retorno com recarga completa (`<a>` nativo), como antes da migracao visual.
+const backToListings = (
+  <BackLink href="/anuncios" reload>
+    Meus anúncios
+  </BackLink>
+);
 
 export default async function EditarAnuncioPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -49,28 +47,22 @@ export default async function EditarAnuncioPage({ params }: { params: Promise<{ 
 
   if (!res.success || !res.listing) {
     return (
-      <main style={mainStyle}>
-        <a href="/anuncios" style={backLinkStyle}>
-          ← Meus anúncios
-        </a>
-        <div
-          role="alert"
-          style={{
-            marginTop: '16px',
-            padding: '16px',
-            backgroundColor: '#fef2f2',
-            border: '1px solid #fecaca',
-            borderRadius: '6px',
-            color: '#991b1b',
-            fontSize: '14px',
-          }}
-        >
-          <p style={{ margin: '0 0 8px' }}>{res.error}</p>
-          <a href={`/anuncios/${id}/editar`} style={{ color: '#991b1b', fontWeight: '600' }}>
-            Tentar novamente
-          </a>
-        </div>
-      </main>
+      <PageContainer width="content">
+        <PageHeader navigation={backToListings} title="Anúncio" />
+        <ErrorState
+          title={res.error}
+          action={
+            <ButtonLink
+              href={`/anuncios/${id}/editar`}
+              reload
+              variant="outline"
+              iconStart="refresh"
+            >
+              Tentar novamente
+            </ButtonLink>
+          }
+        />
+      </PageContainer>
     );
   }
 
@@ -80,91 +72,90 @@ export default async function EditarAnuncioPage({ params }: { params: Promise<{ 
   const images = editable ? await getOwnerListingImages(listing.id) : null;
 
   return (
-    <main style={mainStyle}>
-      <a href="/anuncios" style={backLinkStyle}>
-        ← Meus anúncios
-      </a>
-      <h1 style={{ fontSize: '24px', fontWeight: 'bold', margin: '12px 0 8px' }}>
-        {editable ? 'Editar anúncio' : 'Anúncio'}
-      </h1>
-      <p style={{ color: '#6b7280', fontSize: '14px', marginBottom: '24px' }}>
-        Estado atual: <strong>{statusInfo.label}</strong>
-        {listing.status === 'published' && ' — as alterações aparecem na oferta pública ao salvar.'}
-      </p>
+    <PageContainer width="content">
+      <PageHeader
+        navigation={backToListings}
+        title={editable ? 'Editar anúncio' : 'Anúncio'}
+        description={
+          <>
+            Estado atual: <Badge tone={statusInfo.tone}>{statusInfo.label}</Badge>
+            {listing.status === 'published' &&
+              ' — as alterações aparecem na oferta pública ao salvar.'}
+          </>
+        }
+      />
 
-      {editable ? (
-        <ListingForm
-          mode="edit"
-          listingId={listing.id}
-          requireTradeOptions={listing.status !== 'draft'}
-          initialValues={{
-            title: listing.title,
-            description: listing.description,
-            city: listing.city,
-            state: listing.state,
-            tradeOptions: listing.tradeOptions,
-            category: listing.category,
-          }}
-        />
-      ) : null}
-
-      {editable && images?.success ? (
-        <ImageManager listingId={listing.id} initialImages={images.data.images} />
-      ) : null}
-
-      {editable && images && !images.success ? (
-        <p role="alert" style={{ marginTop: '24px', color: '#991b1b', fontSize: '14px' }}>
-          Não foi possível carregar as imagens. Recarregue a página.
-        </p>
-      ) : null}
-
-      {listing.status === 'draft' ||
-      listing.status === 'published' ||
-      listing.status === 'paused' ? (
-        <LifecyclePanel
-          listingId={listing.id}
-          status={listing.status}
-          readyImageCount={
-            images?.success ? images.data.images.filter((i) => i.state === 'ready').length : 0
-          }
-        />
-      ) : null}
-
-      {editable ? null : (
-        <section aria-labelledby="historico">
-          <p
-            id="historico"
-            style={{
-              padding: '12px 16px',
-              backgroundColor: '#f3f4f6',
-              borderRadius: '6px',
-              color: '#374151',
-              fontSize: '14px',
+      <Stack gap={8}>
+        {editable ? (
+          <ListingForm
+            mode="edit"
+            listingId={listing.id}
+            requireTradeOptions={listing.status !== 'draft'}
+            initialValues={{
+              title: listing.title,
+              description: listing.description,
+              city: listing.city,
+              state: listing.state,
+              tradeOptions: listing.tradeOptions,
+              category: listing.category,
             }}
-          >
-            Este anúncio está <strong>{statusInfo.label.toLowerCase()}</strong> e fica no seu
-            histórico somente para leitura.
-          </p>
-          <dl style={{ fontSize: '15px', color: '#111827', overflowWrap: 'anywhere' }}>
-            <dt style={{ fontWeight: '600', marginTop: '16px' }}>Título</dt>
-            <dd style={{ margin: '4px 0 0' }}>{listing.title}</dd>
-            <dt style={{ fontWeight: '600', marginTop: '16px' }}>Descrição</dt>
-            <dd style={{ margin: '4px 0 0', whiteSpace: 'pre-wrap' }}>{listing.description}</dd>
-            <dt>Categoria</dt>
-            <dd>{productCategoryLabel(listing.category)}</dd>
-            <dt style={{ fontWeight: '600', marginTop: '16px' }}>Aceita em troca</dt>
-            <dd style={{ margin: '4px 0 0' }}>
-              {listing.tradeOptions.some(Boolean)
-                ? listing.tradeOptions.filter(Boolean).join('; ')
-                : 'Não informado'}
-            </dd>
-            <dt style={{ fontWeight: '600', marginTop: '16px' }}>Localização</dt>
-            <dd style={{ margin: '4px 0 0' }}>
-              {listing.city} - {listing.state}
-            </dd>
-          </dl>
-        </section>
-      )}
-    </main>
+          />
+        ) : null}
+
+        {editable && images?.success ? (
+          <ImageManager listingId={listing.id} initialImages={images.data.images} />
+        ) : null}
+
+        {editable && images && !images.success ? (
+          <Alert tone="error" role="alert">
+            Não foi possível carregar as imagens. Recarregue a página.
+          </Alert>
+        ) : null}
+
+        {listing.status === 'draft' ||
+        listing.status === 'published' ||
+        listing.status === 'paused' ? (
+          <LifecyclePanel
+            listingId={listing.id}
+            status={listing.status}
+            readyImageCount={
+              images?.success ? images.data.images.filter((i) => i.state === 'ready').length : 0
+            }
+          />
+        ) : null}
+
+        {editable ? null : (
+          <Stack as="section" gap={6} aria-labelledby="historico">
+            <Alert tone="neutral">
+              <p id="historico">
+                Este anúncio está <strong>{statusInfo.label.toLowerCase()}</strong> e fica no seu
+                histórico somente para leitura.
+              </p>
+            </Alert>
+            <DescriptionList
+              items={[
+                { term: 'Título', detail: listing.title },
+                {
+                  term: 'Descrição',
+                  detail: (
+                    <Text as="span" preserveLines>
+                      {listing.description}
+                    </Text>
+                  ),
+                },
+                { term: 'Categoria', detail: productCategoryLabel(listing.category) },
+                {
+                  term: 'Aceita em troca',
+                  detail: listing.tradeOptions.some(Boolean)
+                    ? listing.tradeOptions.filter(Boolean).join('; ')
+                    : 'Não informado',
+                },
+                { term: 'Localização', detail: `${listing.city} - ${listing.state}` },
+              ]}
+            />
+          </Stack>
+        )}
+      </Stack>
+    </PageContainer>
   );
 }
