@@ -22,6 +22,10 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vites
 import type { Prisma } from '@/generated/prisma/client';
 import { handleMercadoPagoWebhook } from '@/app/api/webhooks/mercadopago/handler';
 import { registerOwnContact } from '@/modules/contact';
+import { revealContact } from '@/app/contatos/actions';
+import { chooseRequester } from '@/modules/negotiation';
+import * as Sentry from '@sentry/nextjs';
+import { createTelemetryOptions } from '@/modules/platform';
 import { registerUser } from '@/modules/identity/actions';
 import { getAuth } from '@/modules/identity/auth';
 import { createDraftListing, pauseListing } from '@/modules/listing/actions';
@@ -70,7 +74,7 @@ const PASSWORD = 'senha-sintetica-123';
 const TOKEN = 'TEST-sintetico-confirmacao-000000';
 const SECRET = randomBytes(32).toString('hex');
 const APP_ID = '9900000000000001';
-const REQUEST_PREFIX = `it96-${RUN_ID}`;
+const REQUEST_PREFIX = `it96-R${RUN_ID}`;
 const email = (tag: string) => `it-confirma-${tag}-${RUN_ID}@example.test`;
 const prisma = () => getPrismaClient();
 
@@ -477,6 +481,12 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
           ],
         },
       });
+      await prisma().contactAccessEvent.deleteMany({
+        where: { contactRelease: { listingId: { in: listingIds } } },
+      });
+      await prisma().contactRelease.deleteMany({ where: { listingId: { in: listingIds } } });
+      await prisma().negotiation.deleteMany({ where: { listingId: { in: listingIds } } });
+      await prisma().selection.deleteMany({ where: { listingId: { in: listingIds } } });
       await prisma().payment.deleteMany({ where: { paymentAttemptId: { in: attemptIds } } });
       await prisma().paymentAttempt.deleteMany({ where: { id: { in: attemptIds } } });
       await prisma().contactRequest.deleteMany({ where: { id: { in: requestIds } } });
@@ -498,7 +508,133 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
     });
 
     // -----------------------------------------------------------------------
+    it('C-8 (#104): fluxo completo e erro real sem contato em logs, envelopes, auditoria ou erros', async () => {
+      const phone = '+5511912345678';
+      const markers = [phone, phone.slice(1), '11912345678', '91234-5678'];
+      const envelopes: string[] = [];
+      const logged: string[] = [];
+      const spies = ['log', 'warn', 'error', 'info', 'debug'].map((method) =>
+        vi.spyOn(console, method as 'log').mockImplementation((...args: unknown[]) => {
+          logged.push(
+            args
+              .map((a) =>
+                a instanceof Error ? `${a.name}: ${a.message}\n${a.stack}` : JSON.stringify(a),
+              )
+              .join(' '),
+          );
+        }),
+      );
+      Sentry.init({
+        ...createTelemetryOptions(),
+        dsn: 'https://public@o0.ingest.sentry.io/0',
+        transport: () => ({
+          send: async (envelope: unknown) => {
+            envelopes.push(JSON.stringify(envelope));
+            return {};
+          },
+          flush: async () => true,
+        }),
+      });
+      try {
+        const listingId = await publishedListing();
+        const r = await reserve('r0', listingId);
+        const window = await windowOf(r.contactRequestId);
+        accredit(r.orderId, new Date(window.reservedFrom.getTime() + 1_000));
+        const payment = await deliver(notification(r.orderId));
+        expect(payment.status).toBe(200);
+        expect((await state(r)).request.status).toBe('paid');
+        const chosen = await as('owner', () =>
+          chooseRequester({ listingId, contactRequestId: r.contactRequestId, confirmed: true }),
+        );
+        expect(chosen.success).toBe(true);
+        if (!chosen.success) throw new Error('Escolha recusada');
+        const release = await prisma().contactRelease.findUniqueOrThrow({
+          where: { negotiationId: chosen.negotiationId },
+        });
+        const legitimate = await as('r0', () => revealContact(release.id));
+        expect(legitimate).toEqual({ success: true, phone });
+        const denied = await as('r1', () => revealContact(release.id));
+        expect(denied).toMatchObject({ success: false });
+        // Falha real do banco ao gravar a entrega: rollback e mensagem generica.
+        await prisma().$executeRawUnsafe(
+          `ALTER TABLE "contact_access_events" ADD CONSTRAINT "it104_block_delivery" CHECK (false) NOT VALID`,
+        );
+        let errorReply: unknown;
+        try {
+          errorReply = await as('r0', () => revealContact(release.id));
+          expect(errorReply).toMatchObject({ success: false, reason: 'unavailable' });
+          try {
+            await prisma().contactAccessEvent.create({
+              data: {
+                contactReleaseId: release.id,
+                actorId: release.recipientId,
+                accessedAt: new Date(),
+              },
+            });
+          } catch (error) {
+            Sentry.captureException(error, {
+              extra: { phone, response: legitimate, cookie: cookies.r0 },
+            });
+          }
+        } finally {
+          await prisma().$executeRawUnsafe(
+            `ALTER TABLE "contact_access_events" DROP CONSTRAINT "it104_block_delivery"`,
+          );
+        }
+        Sentry.addBreadcrumb({ category: 'contact', message: `Contato ${phone}`, data: { phone } });
+        Sentry.captureMessage('f3-security-flow-completed');
+        Sentry.logger.info('f3-security-flow-completed', { phone, response: legitimate });
+        await Sentry.flush(3000);
+        await Sentry.close(3000);
+        expect(envelopes.length).toBeGreaterThanOrEqual(2);
+        expect(logged.length).toBeGreaterThan(0);
+        const audit = await prisma().auditEvent.findMany({
+          where: { OR: [{ actorId: { in: userIds } }, { targetId: release.id }] },
+        });
+        const outputs = JSON.stringify({ envelopes, logged, audit, denied, errorReply, chosen });
+        for (const marker of markers)
+          expect(outputs.includes(marker), 'C-8: contato fora da resposta autorizada').toBe(false);
+        expect(
+          await prisma().contactAccessEvent.count({ where: { contactReleaseId: release.id } }),
+        ).toBe(1);
+        // Captura nao vacua: confirma o marcador de controle no transporte.
+        expect(envelopes.join('\n')).toContain('f3-security-flow-completed');
+      } finally {
+        await Sentry.close(3000);
+        for (const spy of spies) spy.mockRestore();
+      }
+    });
+
+    // -----------------------------------------------------------------------
     describe('T-13 e T-14: autenticidade na fronteira, sem efeito', () => {
+      it('F3-014: correlacao hostil nao grava telefone como identificador tecnico na auditoria', async () => {
+        const phone = '5511912345678';
+        const before = await prisma().auditEvent.findMany({
+          where: { eventType: 'payment.notification_rejected' },
+          select: { id: true },
+        });
+        const reply = await deliver(
+          notification(phone, { requestId: phone, signature: `ts=1,v1=${'0'.repeat(64)}` }),
+        );
+        expect(reply.status).toBe(401);
+        expect(await reply.text()).toBe('');
+        const fresh = await prisma().auditEvent.findMany({
+          where: {
+            eventType: 'payment.notification_rejected',
+            id: { notIn: before.map((e) => e.id) },
+          },
+        });
+        expect(fresh).toHaveLength(1);
+        expect(fresh[0].details).toMatchObject({
+          reason: 'signature_invalid',
+          providerRequestId: null,
+          providerDataId: null,
+        });
+        expect(JSON.stringify(fresh)).not.toContain(phone);
+        // Evento desta fixture nao tem id de correlacao; limpeza pelo id gerado.
+        await prisma().auditEvent.deleteMany({ where: { id: { in: fresh.map((e) => e.id) } } });
+      });
+
       async function expectRejected(r: Reserved, request: Request, status: number) {
         const before = await state(r);
         const notificationsBefore = await prisma().paymentNotification.count({
