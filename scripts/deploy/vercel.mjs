@@ -4,6 +4,7 @@ import {
   TEAM_ID,
   PREVIEW_URL,
   PRODUCTION_URL,
+  RELEASE_BRANCH,
   REPOSITORY,
   SHA_PATTERN,
   requireEnvironmentMetadata,
@@ -50,7 +51,9 @@ async function createDeployment() {
       type: 'github',
       org: 'BrunoMNoronha',
       repo: 'techlab-troq',
-      ref: target === 'preview' ? 'preview' : 'main',
+      // Os dois alvos publicam o mesmo SHA da branch de release; o alvo é
+      // explícito e checkDeployment recusa qualquer inferência divergente.
+      ref: RELEASE_BRANCH,
       sha: process.env.RELEASE_SHA,
     },
     ...(target === 'production' ? { target: 'production', autoAssignCustomDomains: false } : {}),

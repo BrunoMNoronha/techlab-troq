@@ -4,8 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       preview_run_id:
-        description: Identificador da execução aprovada do workflow Deploy Preview
-        required: true
+        description: Execução aprovada do Deploy Preview (vazio = a mais recente do HEAD de production)
+        required: false
+        default: ''
         type: string
 
 permissions:
@@ -19,7 +20,7 @@ concurrency:
 jobs:
   release:
     name: Backup, migration e publicação manual de Production
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/production'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     environment:
@@ -48,10 +49,10 @@ jobs:
       VERCEL_PROJECT_ID: prj_mpILJv4OGXwsW3boJdXBPx3PSJGT
 
     steps:
-      - name: Checkout da automação confiável
+      - name: Checkout da revisão de production
         uses: actions/checkout@v5
         with:
-          ref: main
+          ref: ${{ github.sha }}
           fetch-depth: 0
 
       - name: Setup Node.js 24
@@ -69,16 +70,17 @@ jobs:
         with:
           name: preview-release-${{ steps.source.outputs.run_attempt }}
           github-token: ${{ github.token }}
-          run-id: ${{ inputs.preview_run_id }}
+          run-id: ${{ steps.source.outputs.run_id }}
           path: release-proof
 
       - name: Conferir evidência antes de liberar credenciais
         env:
           RELEASE_SHA: ${{ steps.source.outputs.sha }}
+          SOURCE_RUN_ID: ${{ steps.source.outputs.run_id }}
         run: |
           node scripts/deploy/verify-proof.mjs
-          git merge-base --is-ancestor '${{ steps.source.outputs.sha }}' origin/main
-          git checkout --detach '${{ steps.source.outputs.sha }}'
+          git merge-base --is-ancestor "$RELEASE_SHA" origin/main
+          git checkout --detach "$RELEASE_SHA"
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4

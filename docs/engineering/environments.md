@@ -1,6 +1,6 @@
 # Ambientes, variáveis e segredos — TROQ
 
-**Estado operacional vigente — 2026-10-04.** O fluxo de publicação, inventário atual e pendências estão em [deployment.md](deployment.md), que substitui as afirmações operacionais históricas abaixo. Neon agora tem branches independentes Preview e Production, com Production padrão. Auth, cron e URLs foram configurados nos dois escopos Vercel; Production continua bloqueada para lançamento por credenciais externas e homologação. Os parágrafos de F1/F2 preservam o estado de cada entrega na sua data.
+**Estado operacional vigente — 2026-10-04, fluxo revisto em 2026-10-05 (DEC-050).** O fluxo de publicação (`main → production → Preview → Production`, com dois passos manuais), inventário atual e pendências estão em [deployment.md](deployment.md), que substitui as afirmações operacionais históricas abaixo. Neon agora tem branches independentes Preview e Production, com Production padrão. Auth, cron e URLs foram configurados nos dois escopos Vercel; Production continua bloqueada para lançamento por credenciais externas e homologação. Os parágrafos de F1/F2 preservam o estado de cada entrega na sua data.
 
 
 Fonte normativa dos **ambientes** da aplicação e do **contrato de variáveis de ambiente e segredos**. Produzido por **F1-001**, o primeiro trabalho da Fase 1 ([../delivery/prompts/f1-001-environments-and-secrets.md](../delivery/prompts/f1-001-environments-and-secrets.md)).
@@ -52,11 +52,11 @@ O projeto tem exatamente **três** ambientes. Ambiente é uma fronteira de isola
 | Aspecto | Definição |
 | --- | --- |
 | Propósito | Validar a revisão integrada em main antes de publicação manual |
-| Onde roda | Deployment Preview da Vercel, publicado pelo CI aprovado de main |
+| Onde roda | Deployment Preview da Vercel, publicado depois da promoção manual de um commit de `main` para a branch `production` |
 | Origem dos dados | Banco de preview, isolado de produção, com dados fictícios. **Nenhum dado pessoal real** |
-| Quem acessa | Equipe de validação; URL estável da branch preview e URL de cada deployment |
+| Quem acessa | Equipe de validação; alias estável `techlab-troq-git-preview-bruno-m-noronha.vercel.app`, atribuído pelo pipeline ao deployment do HEAD de `production`, e URL de cada deployment |
 | Classe de credencial admissível | Credencial de teste ou de sandbox, **própria deste ambiente**. Credencial de produção **nunca** é usada aqui |
-| Onde os valores vivem | Configuração de variáveis do projeto na Vercel, no escopo `preview`; e, para as conexões usadas pelo workflow de migrations, secrets do GitHub Environment `preview`, liberados apenas para jobs originados de `main` ([database.md](database.md), seção 15.2) |
+| Onde os valores vivem | Configuração de variáveis do projeto na Vercel, no escopo `preview`; e, para as conexões usadas pelo workflow de migrations, secrets do GitHub Environment `preview`, liberados apenas para jobs do ref `production` ([deployment.md](deployment.md)) |
 
 **Isolamento é requisito, não preferência.** Um preview que aponte para o banco, o bucket ou a conta de pagamento de produção deixa de ser preview: passa a ser produção operada por código não revisado.
 
