@@ -317,11 +317,17 @@ A Fase 3 está **liberada para execução** desde a aprovação do gate da Fase 
 | F3-014 | Verificação de segurança e revisão reforçada ([#104](https://github.com/BrunoMNoronha/techlab-troq/issues/104)) | Matriz de atores e C-8 | F3-011, F3-012, F3-013 | bloqueado |
 | F3-015 | Gate de saída da Fase 3 ([#105](https://github.com/BrunoMNoronha/techlab-troq/issues/105)) | Auditoria por SHA e transição para a Fase 4 | F3-014; OD-15; recomendação #86 | bloqueado |
 
+## Fases 4 e 5 — decomposição em 2026-10-05
+
+O [plano das Fases 4 e 5](phase-4-5-plan.md) reúne as 17 issues executoras, vinculadas como subissues: [#163–#169](https://github.com/BrunoMNoronha/techlab-troq/issues/55) na Fase 4 e [#170–#179](https://github.com/BrunoMNoronha/techlab-troq/issues/56) na Fase 5. Todas estão abertas; nenhuma fase foi implementada ou homologada por esta decomposição. O gate #105 permanece pré-requisito da execução da Fase 4.
+
+A release operacional #135 está encerrada. #179 verifica a release final e a autorização comercial, sem duplicar a publicação já feita. Responsáveis, datas, prioridades e valores das métricas permanecem TBD até decisão na issue correspondente.
+
 ## Fora deste backlog
 
 - Tarefas de implementação da Fase 2 em diante (telas, fluxos, integrações de produto): detalhadas no backlog da própria fase, não aqui. O scaffold e o CI que o roadmap lista como entregáveis da Fase 1 **já existem** e não devem ser recriados ([phase-1-transition.md](phase-1-transition.md), seção 10).
 - Candidatos pós-MVP listados em [roadmap.md](roadmap.md).
-- Entrada com Conta Google ([#81](https://github.com/BrunoMNoronha/techlab-troq/issues/81)): incremento de identidade aprovado por DEC-047 (2026-10-04), fora das fases e de qualquer gate. A implementação ([../architecture/identity-contract.md](../architecture/identity-contract.md), seção 15) fica desligada até `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` existirem no ambiente; o Google é oferecido só em `preview` e `production`. Não reabre [#51](https://github.com/BrunoMNoronha/techlab-troq/issues/51), e nenhuma tarefa da Fase 3 depende dela. A prova real em `preview` passou em 2026-10-05 ([google-sign-in-proof.md](google-sign-in-proof.md)). Pendente: `production`, que depende da origem `https` de [#77](https://github.com/BrunoMNoronha/techlab-troq/issues/77) e da configuração de autenticação de `production`.
+- Entrada com Conta Google ([#81](https://github.com/BrunoMNoronha/techlab-troq/issues/81)): incremento de identidade aprovado por DEC-047 (2026-10-04), fora das fases. Não reabre [#51](https://github.com/BrunoMNoronha/techlab-troq/issues/51). A configuração atual e a homologação das origens estáveis pertencem a [#133](https://github.com/BrunoMNoronha/techlab-troq/issues/133): consentimento externo publicado, login Production previamente relatado pelo Bruno e Preview estável ainda pendente ([google-sign-in-proof.md](google-sign-in-proof.md)). A prova descartável de #81 continua registrada como histórica.
 
 ## Revisão
 

@@ -211,7 +211,7 @@ Confirmações concorrentes do mesmo token resultam em exatamente uma confirmaç
 
 **IC-12.4 (escopo).** Este contrato não provisiona nem altera variáveis em nenhum provedor. `production` continua inexistente.
 
-**IC-12.5 (decisão arquitetural).** `GOOGLE_CLIENT_ID` e `GOOGLE_CLIENT_SECRET` são **opcionais**, ao contrário do núcleo: a ausência desliga só a entrada com Google, nunca o login por senha (IC-15.8).
+**IC-12.5 (decisão arquitetural).** `GOOGLE_CLIENT_ID` e `GOOGLE_CLIENT_SECRET` podem faltar em `development`, onde a ausência desliga só a entrada com Google e nunca o login por senha (IC-15.8). Em `preview` e `production`, porém, o release exige o par completo e o preflight recusa ambiente sem as duas variáveis ou com configuração incoerente.
 
 ## 13. Superfície HTTP do provedor
 
@@ -285,7 +285,7 @@ Não há vinculação implícita por igualdade de e-mail (`disableImplicitLinkin
 
 **IC-15.7 (normativo — minimização e retenção).** Escopos pedidos: só `openid` e `email` (`disableDefaultScope`), sem `profile` — o nome de exibição é digitado na conclusão —, sem foto, sem acesso offline e com `include_granted_scopes=false`. Tokens do Google (`access_token`, `refresh_token`, `id_token`) **não são guardados**: os hooks de criação e atualização de `accounts` os descartam e `updateAccountOnSignIn: false` evita reescrevê-los; a retenção é zero, porque o TROQ não chama APIs do Google depois da entrada. Ficam só `provider_id`, `account_id` (`sub`) e `scope`. A pendência guarda `sub` e e-mail por no máximo 15 minutos. Nada disso vai a log, Sentry, DTO ou URL (IC-11.2).
 
-**IC-15.8 (decisão arquitetural — configuração).** `GOOGLE_CLIENT_ID` e `GOOGLE_CLIENT_SECRET` são server-side e por ambiente, provisionadas só em `preview` e `production` (DEC-047) ([../engineering/environments.md](../engineering/environments.md), seção 5.5). Sem as duas, com placeholder, parciais ou com client ID fora do formato, o provedor Google não é registrado, os layouts de `/login` e `/cadastro` não mostram o botão, as actions respondem "indisponível" e `/conta` informa a indisponibilidade; o login por senha não muda. A URI de redirecionamento é sempre `<BETTER_AUTH_URL>/api/auth/callback/google`, cadastrada exata no cliente OAuth de cada ambiente.
+**IC-15.8 (decisão arquitetural — configuração).** `GOOGLE_CLIENT_ID` e `GOOGLE_CLIENT_SECRET` são server-side e por ambiente; `development` pode rodar sem elas, mas `preview` e `production` exigem o par completo no release gate (DEC-047) ([../engineering/environments.md](../engineering/environments.md), seção 5.5). Sem as duas, com placeholder, parciais ou com client ID fora do formato, o provedor Google não é registrado, os layouts de `/login` e `/cadastro` não mostram o botão, as actions respondem "indisponível" e `/conta` informa a indisponibilidade; o login por senha não muda. A URI de redirecionamento é sempre `<BETTER_AUTH_URL>/api/auth/callback/google`, cadastrada exata no cliente OAuth de cada ambiente.
 
 **IC-15.9 (normativo — status, sessão e permissões).** O hook de criação de sessão (IC-5.3) vale também no callback: conta `blocked_*` ou `deletion_requested` volta com `ACCOUNT_NOT_ACTIVE` e sem sessão. Logout (IC-5.5), revogação (IC-5.6) e o guard (IC-8) não mudam. Entrar pelo Google não concede contato, pagamento nem qualquer permissão além das de uma conta por senha.
 

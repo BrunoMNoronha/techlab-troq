@@ -71,6 +71,8 @@ Ponto de partida: [project-state.md](project-state.md), cuja seção 3.3 traz o 
 
 ### delivery — entrega, riscos e planejamento
 
+Estado corrente das Fases 4 e 5: [plano de execução e issues #163–#179](delivery/phase-4-5-plan.md), decomposto em 2026-10-05, com gates ainda pendentes. As descrições datadas da tabela abaixo preservam o histórico.
+
 | Documento | Status | Conteúdo |
 | --- | --- | --- |
 | [delivery/risks.md](delivery/risks.md) | existente | Riscos conhecidos, impacto e mitigação inicial |
