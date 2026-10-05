@@ -33,3 +33,12 @@ export type { ContactReader } from './contact';
 // escolha. Nao toca `UserContact` e nao devolve o numero.
 export { authorizeContactReleaseInTx } from './release';
 export type { ContactReleaseInput } from './release';
+// F3-010 (#100): a segunda operacao de CR-2.2, a entrega ao escolhido sob A1 a
+// A6, com a porta da cadeia (A4, A5) composta em `src/app/contatos`.
+export { deliverAuthorizedContact, listOwnContactReleases } from './delivery';
+export type {
+  AuthorizedRelease,
+  ContactChainCheck,
+  ContactDeliveryResult,
+  OwnContactRelease,
+} from './delivery';

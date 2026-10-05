@@ -163,6 +163,12 @@ Regras e expectativas:
   - os desfechos de PD-8.5 e o cancelamento depois de T5.
 
   Os ids sintéticos da Payments API são únicos por execução, porque `payments.provider_payment_id` é único no banco. A suíte opcional de sandbox ganhou o reembolso real de uma order `APRO` e a retentativa.
+- Entrega do contato ao escolhido (#100 / F3-010), três camadas:
+  - `src/app/contatos/contact-delivery.integration.test.ts` exige `INTEGRATION_EPHEMERAL_DB=1` e exercita a composição real da Server Action com o Better Auth real. Cobre C-6, com cada acesso registrado; C-2, C-4 e C-5 (substituta de DV-13, mais o próprio anunciante), sempre com a resposta idêntica à de um id inexistente; A1; A6, sem revogar; a releitura depois da reversão, do encerramento da negociação e da remoção do anúncio; e C-3 e A4 sobre uma cadeia **forjada** no banco, que o caso de uso nunca produz;
+  - `src/app/contatos/contact-delivery.http.integration.test.ts` exige também `PRIVATE_SURFACE_BASE_URL` e o servidor do `pnpm build`. O id da action vem de `.next/server/server-reference-manifest.json`. Cobre C-7 (página `private` e `no-store`, action `no-store`, rota fora do manifesto de pré-renderização) e C-11 no payload (HTML e RSC sem o número). Mostra também que pago não escolhido, terceiro, dono e anônimo não recebem o número por HTTP;
+  - `src/app/contatos/contact-reveal.test.tsx` (suíte padrão) prova C-11 no componente: a única propriedade é o id, nada aparece antes do gesto, e o atalho é montado no cliente.
+
+  As mutações locais (buscar a autorização só pelo id; porta da cadeia sempre verdadeira) são detectadas por C-2, C-4 e C-5 e por C-3 e A4.
 - Escolha, negociação e autorização (#99 / F3-009): `src/modules/negotiation/selection.integration.test.ts` exige `INTEGRATION_EPHEMERAL_DB=1` e usa o Better Auth real. A reserva é real; o estado pago, a reversão e os estados incertos são semeados como F3-006 os grava, porque o caminho da confirmação já é provado na suíte de F3-006. Cobre:
   - **C-9 concorrente:** com a trava do anúncio segurada, N escolhas do dono esperam em `pg_stat_activity` e terminam com uma única autorização e uma única negociação `active`. Há também uma variante de disparo livre e a recusa do banco a uma segunda negociação `active` forjada fora do caso de uso (DM-8.5);
   - um teste negativo para cada pré-condição, de P1 a P7, mais sessão e confirmação explícita, sem criar autorização;

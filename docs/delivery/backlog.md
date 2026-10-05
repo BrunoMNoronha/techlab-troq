@@ -310,10 +310,10 @@ A Fase 3 está **liberada para execução** desde a aprovação do gate da Fase 
 | F3-007 | Duplicidade, fora da janela e reembolso técnico ([#97](https://github.com/BrunoMNoronha/techlab-troq/issues/97)) | PD-7 e PD-8 (T-7 a T-9, T-16) | F3-006 | bloqueado |
 | F3-008 | Reconciliação periódica e retentativa de reembolso ([#98](https://github.com/BrunoMNoronha/techlab-troq/issues/98)) | PD-10 (T-5, T-18) | F3-007 | bloqueado |
 | F3-009 | Escolha, negociação e autorização ([#99](https://github.com/BrunoMNoronha/techlab-troq/issues/99)) | CR-3 e DEC-032 (C-9) | F3-002, F3-006 | implementado (2026-10-04) |
-| F3-010 | Entrega do contato ao escolhido ([#100](https://github.com/BrunoMNoronha/techlab-troq/issues/100)) | CR-5 a CR-7 (C-2 a C-7, C-11) | F3-009 | bloqueado |
+| F3-010 | Entrega do contato ao escolhido ([#100](https://github.com/BrunoMNoronha/techlab-troq/issues/100)) | CR-5 a CR-7 (C-2 a C-7, C-11) | F3-009 | implementado (2026-10-04) |
 | F3-011 | Reversões e seus efeitos ([#101](https://github.com/BrunoMNoronha/techlab-troq/issues/101)) | PD-9 e CR-4 (T-17, C-10) | F3-008, F3-010 | bloqueado |
 | F3-012 | Jornada de interface e homologação em `preview` ([#102](https://github.com/BrunoMNoronha/techlab-troq/issues/102)) | Jornada completa a 375 px com sandbox do Mercado Pago; fecha #59 | F3-008, F3-010; PX-2, PX-3, OD-15, DP-4 | bloqueado |
-| F3-013 | E-mails transacionais e observabilidade ([#103](https://github.com/BrunoMNoronha/techlab-troq/issues/103)) | Catálogo RF-021 da fase e sinais no Sentry | F3-006, F3-009 | bloqueado |
+| F3-013 | E-mails transacionais e observabilidade ([#103](https://github.com/BrunoMNoronha/techlab-troq/issues/103)) | Catálogo RF-021 da fase e sinais no Sentry | F3-006, F3-009 | próximo |
 | F3-014 | Verificação de segurança e revisão reforçada ([#104](https://github.com/BrunoMNoronha/techlab-troq/issues/104)) | Matriz de atores e C-8 | F3-011, F3-012, F3-013 | bloqueado |
 | F3-015 | Gate de saída da Fase 3 ([#105](https://github.com/BrunoMNoronha/techlab-troq/issues/105)) | Auditoria por SHA e transição para a Fase 4 | F3-014; OD-15; recomendação #86 | bloqueado |
 

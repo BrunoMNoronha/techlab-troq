@@ -22,3 +22,5 @@ export type {
   SelectionResult,
   SelectRequesterInput,
 } from './selection';
+// F3-010 (#100): A4 e A5 da entrega do contato, porta de `contact`.
+export { verifyContactReleaseChain } from './delivery-chain';
