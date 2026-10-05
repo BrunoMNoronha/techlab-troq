@@ -220,13 +220,26 @@ export default async function MeusAnunciosPage() {
                   <span style={{ minWidth: 0, overflowWrap: 'anywhere' }}>
                     📍 {item.city} - {item.state}
                   </span>
-                  <a
-                    href={`/anuncios/${item.id}/editar`}
-                    aria-label={`${editable ? 'Editar' : 'Ver histórico de'} ${item.title}`}
-                    style={{ color: '#2563eb', textDecoration: 'none', fontWeight: '600' }}
-                  >
-                    {editable ? 'Editar' : 'Ver'}
-                  </a>
+                  <span style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', flexShrink: 0 }}>
+                    {/* F3-012 (#102): solicitacoes pagas e escolha. Rascunho nunca
+                        recebeu solicitacao; removido nao admite escolha (P5). */}
+                    {item.status !== 'draft' && item.status !== 'removed' && (
+                      <a
+                        href={`/anuncios/${item.id}/solicitacoes`}
+                        aria-label={`Solicitações pagas de ${item.title}`}
+                        style={{ color: '#2563eb', textDecoration: 'none', fontWeight: '600' }}
+                      >
+                        Solicitações
+                      </a>
+                    )}
+                    <a
+                      href={`/anuncios/${item.id}/editar`}
+                      aria-label={`${editable ? 'Editar' : 'Ver histórico de'} ${item.title}`}
+                      style={{ color: '#2563eb', textDecoration: 'none', fontWeight: '600' }}
+                    >
+                      {editable ? 'Editar' : 'Ver'}
+                    </a>
+                  </span>
                 </div>
               </li>
             );

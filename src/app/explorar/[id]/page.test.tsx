@@ -5,15 +5,17 @@ import * as requestModule from '@/modules/request';
 import DetalheAnuncioPublicoPage, { generateMetadata } from './page';
 
 vi.mock('@/modules/listing', () => ({ getPublicListingDetail: vi.fn() }));
-vi.mock('@/modules/request', () => ({ getContactRequestEntry: vi.fn() }));
+vi.mock('@/modules/request', () => ({ getContactRequestEntryView: vi.fn() }));
+vi.mock('@/modules/request/actions', () => ({ requestContactUnlock: vi.fn() }));
 vi.mock('next/navigation', () => ({
   notFound: () => {
     throw new Error('NEXT_NOT_FOUND');
   },
+  useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
 }));
 
 const getPublicListingDetail = vi.mocked(listingModule.getPublicListingDetail);
-const getContactRequestEntry = vi.mocked(requestModule.getContactRequestEntry);
+const getContactRequestEntry = vi.mocked(requestModule.getContactRequestEntryView);
 
 const ID = '0b6f2d9e-3c4a-4e8b-9f1a-2d3c4b5a6e7f';
 
@@ -47,7 +49,9 @@ const params = (id: string) => ({ params: Promise.resolve({ id }) });
 describe('detalhe publico /explorar/[id]', () => {
   beforeEach(() => {
     getPublicListingDetail.mockReset();
-    getContactRequestEntry.mockReset().mockResolvedValue('login_required');
+    getContactRequestEntry
+      .mockReset()
+      .mockResolvedValue({ state: 'login_required', ownRequestId: null });
   });
 
   it('mostra todas as imagens prontas, na ordem, com dimensoes, srcset e alt posicional', async () => {
@@ -108,6 +112,26 @@ describe('detalhe publico /explorar/[id]', () => {
     render(await DetalheAnuncioPublicoPage(params(ID)));
     expect(screen.queryByRole('region', { name: 'Aceita em troca' })).toBeNull();
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Bicicleta aro 29');
+  });
+
+  it('quem ja tem solicitacao aberta e levado a ela, sem nova solicitacao (F3-012)', async () => {
+    const OWN = '7c6b5a49-3827-4615-8a9b-0c1d2e3f4a5b';
+    getPublicListingDetail.mockResolvedValue(listing);
+    getContactRequestEntry.mockResolvedValue({ state: 'own_request', ownRequestId: OWN });
+    render(await DetalheAnuncioPublicoPage(params(ID)));
+
+    expect(screen.getByRole('link', { name: 'Acompanhar minha solicitação' })).toHaveAttribute(
+      'href',
+      `/solicitacoes/${OWN}`,
+    );
+    expect(screen.queryByRole('button', { name: 'Tenho interesse' })).toBeNull();
+  });
+
+  it('elegivel ve "Tenho interesse"; o anuncio indisponivel nem chega a abrir a jornada', async () => {
+    getPublicListingDetail.mockResolvedValue(listing);
+    getContactRequestEntry.mockResolvedValue({ state: 'request_available', ownRequestId: null });
+    render(await DetalheAnuncioPublicoPage(params(ID)));
+    expect(screen.getByRole('button', { name: 'Tenho interesse' })).toBeInTheDocument();
   });
 
   it('metadata usa so titulo, cidade e UF', async () => {

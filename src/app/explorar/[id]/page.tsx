@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { cache } from 'react';
 import { getPublicListingDetail } from '@/modules/listing';
-import { getContactRequestEntry } from '@/modules/request';
+import { getContactRequestEntryView } from '@/modules/request';
 import { HowItWorks } from '../../_components/how-it-works';
 import { derivativeSrcSet, listingImageAlt, pickDerivative } from '../../_components/listing-image';
 import { ContactRequestEntry } from './contact-request-entry';
@@ -38,7 +38,8 @@ export default async function DetalheAnuncioPublicoPage({
     notFound();
   }
 
-  const entryState = await getContactRequestEntry(listing.id);
+  const entry = await getContactRequestEntryView(listing.id);
+  const entryState = entry.state;
   if (entryState === 'listing_unavailable') {
     notFound();
   }
@@ -206,7 +207,11 @@ export default async function DetalheAnuncioPublicoPage({
         ) : null}
 
         {/* Garantia RF-014: nenhum telefone/WhatsApp transita nesta resposta. */}
-        <ContactRequestEntry listingId={listing.id} state={entryState} />
+        <ContactRequestEntry
+          listingId={listing.id}
+          state={entryState}
+          ownRequestId={entry.ownRequestId}
+        />
 
         <div style={{ marginTop: '24px' }}>
           <HowItWorks />

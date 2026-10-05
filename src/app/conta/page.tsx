@@ -174,9 +174,24 @@ export default async function ContaPage({
         )}
       </section>
 
-      <p style={{ margin: '0 0 24px', fontSize: '15px' }}>
-        <Link href="/contatos">Contatos liberados para você</Link>
-      </p>
+      <ul
+        style={{
+          margin: '0 0 24px',
+          padding: 0,
+          listStyle: 'none',
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: '16px',
+          fontSize: '15px',
+        }}
+      >
+        <li>
+          <Link href="/solicitacoes">Minhas solicitações</Link>
+        </li>
+        <li>
+          <Link href="/contatos">Contatos liberados para você</Link>
+        </li>
+      </ul>
 
       {logoutFailed && (
         <div

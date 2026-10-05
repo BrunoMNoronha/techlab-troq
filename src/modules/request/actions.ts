@@ -5,7 +5,8 @@ import { getPixPaymentFlow, requestContactUnlockFlow, type PixChargeResult } fro
 // Fronteira chamavel pelo cliente da solicitacao de desbloqueio (F3-003, #93;
 // F3-005, #95). A regra inteira -- sessao, trava, vaga, tentativa, cobranca e
 // auditoria -- vive em reservation.ts, charge-flow.ts e no modulo `payments`.
-// Nenhuma tela chama estas actions ainda: a jornada e F3-012 (#102).
+// Chamadas pela jornada de F3-012 (#102): a confirmacao no detalhe publico
+// (`/explorar/[id]`) e a tela do Pix (`/solicitacoes/[id]`).
 
 /** Reserva uma vaga e gera o Pix de R$ 0,99 (PD-4.1, passos 1 a 3). */
 export async function requestContactUnlock(listingId: string): Promise<PixChargeResult> {

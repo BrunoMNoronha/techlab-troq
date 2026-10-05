@@ -1,16 +1,19 @@
 import Link from 'next/link';
 import type { ContactRequestEntryState } from '@/modules/request';
+import { InterestFlow } from './interest-flow';
 
 // Bloco "Solicitar desbloqueio do contato" do detalhe publico (#59). O estado
-// vem do servidor (getContactRequestEntry). Nenhum estado cria solicitacao,
-// reserva ou cobranca: a reserva existe no servidor desde F3-003 (#93), mas a
-// tela que a dispara, com a cobranca Pix, e de F3-012 (#102).
+// vem do servidor (getContactRequestEntryView). Renderizar nao cria
+// solicitacao, reserva nem cobranca: so a confirmacao explicita do
+// `InterestFlow` chama o servidor (F3-012, #102), que revalida tudo.
 export function ContactRequestEntry({
   listingId,
   state,
+  ownRequestId = null,
 }: {
   listingId: string;
   state: Exclude<ContactRequestEntryState, 'listing_unavailable'>;
+  ownRequestId?: string | null;
 }) {
   const loginHref = `/login?motivo=solicitar&next=${encodeURIComponent(`/explorar/${listingId}`)}`;
 
@@ -33,7 +36,12 @@ export function ContactRequestEntry({
       <p style={{ margin: '0 0 12px' }}>
         O WhatsApp/telefone do anunciante é protegido pela plataforma e não aparece nesta página.
       </p>
-      <EntryMessage state={state} loginHref={loginHref} />
+      <EntryMessage
+        state={state}
+        loginHref={loginHref}
+        listingId={listingId}
+        ownRequestId={ownRequestId}
+      />
     </section>
   );
 }
@@ -41,9 +49,13 @@ export function ContactRequestEntry({
 function EntryMessage({
   state,
   loginHref,
+  listingId,
+  ownRequestId,
 }: {
   state: Exclude<ContactRequestEntryState, 'listing_unavailable'>;
   loginHref: string;
+  listingId: string;
+  ownRequestId: string | null;
 }) {
   switch (state) {
     case 'login_required':
@@ -90,13 +102,22 @@ function EntryMessage({
           nada foi cobrado.
         </p>
       );
-    case 'request_available':
+    case 'own_request':
       return (
-        <p role="status" style={{ margin: 0 }}>
-          A solicitação paga de desbloqueio ainda não está disponível nesta versão do TROQ. Nenhuma
-          solicitação foi criada e nada foi cobrado.
-        </p>
+        <>
+          <p role="status" style={{ margin: '0 0 12px' }}>
+            Você já tem uma solicitação neste anúncio. Acompanhe o pagamento e a escolha do
+            anunciante por lá; não é preciso solicitar de novo.
+          </p>
+          {ownRequestId && (
+            <Link href={`/solicitacoes/${ownRequestId}`} style={primaryLink}>
+              Acompanhar minha solicitação
+            </Link>
+          )}
+        </>
       );
+    case 'request_available':
+      return <InterestFlow listingId={listingId} />;
     case 'no_slots':
       return (
         <p role="status" style={{ margin: 0 }}>
