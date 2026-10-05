@@ -19,12 +19,12 @@ function run(overrides = {}) {
     run_attempt: 1,
     repository: { full_name: REPOSITORY },
     head_repository: { full_name: REPOSITORY },
-    head_branch: 'main',
+    head_branch: 'production',
     status: 'completed',
     conclusion: 'success',
     head_sha: sha,
     path: '.github/workflows/deploy-preview.yml',
-    event: 'workflow_run',
+    event: 'workflow_dispatch',
     ...overrides,
   };
 }
@@ -44,7 +44,11 @@ function proof(overrides = {}) {
 }
 test('promove apenas SHA exato de Preview aprovado no repositório correto', () => {
   assert.equal(requirePreviewProof(proof(), run()), sha);
+  assert.equal(requirePreviewProof(proof(), run({ event: 'push' })), sha);
   for (const overrides of [
+    { head_branch: 'main' },
+    { head_branch: 'preview' },
+    { event: 'workflow_run' },
     { head_repository: { full_name: 'attacker/fork' } },
     { repository: { full_name: 'attacker/fork' } },
     { head_branch: 'feature' },
@@ -70,8 +74,15 @@ test('recusa artefato de outra tentativa, revisão, ambiente ou deployment', () 
     assert.throws(() => requirePreviewProof(proof(overrides), run()));
 });
 test('CI de PR não autoriza deploy com secrets', () => {
-  assert.throws(() => requireSuccessfulRun(run({ event: 'pull_request' }), { event: 'push' }));
-  assert.throws(() => requireSuccessfulRun(run(), { sha: 'b'.repeat(40) }));
+  const ci = { head_branch: 'main', path: '.github/workflows/ci.yml', event: 'push' };
+  assert.equal(requireSuccessfulRun(run(ci), { event: 'push', sha }), sha);
+  assert.throws(() =>
+    requireSuccessfulRun(run({ ...ci, event: 'pull_request' }), { event: 'push' }),
+  );
+  assert.throws(() =>
+    requireSuccessfulRun(run({ ...ci, head_branch: 'feature' }), { event: 'push' }),
+  );
+  assert.throws(() => requireSuccessfulRun(run(ci), { sha: 'b'.repeat(40) }));
 });
 test('conexões direta e pooled devem identificar o mesmo banco', () => {
   const direct = 'postgresql://test:fake@ep-example.aws.neon.tech/troq?sslmode=require';
@@ -107,7 +118,7 @@ test('preflight não precisa recuperar secrets sensíveis e respeita overrides d
         {
           key: 'APP_ENV',
           target: ['preview'],
-          gitBranch: 'preview',
+          gitBranch: 'production',
           type: 'plain',
           value: 'production',
         },
@@ -136,13 +147,14 @@ test('Production permanece manual e sem acionamento por push', () => {
   assert.ok(production.indexOf('vercel.mjs preflight') < production.indexOf('backup.sh'));
   assert.ok(production.indexOf('backup.sh') < production.indexOf('prisma migrate deploy'));
   assert.ok(production.indexOf('prisma migrate deploy') < production.indexOf('vercel.mjs deploy'));
+  assert.match(production, /if: github\.ref == 'refs\/heads\/production'/);
   const preview = readFileSync('.github/workflows/deploy-preview.yml', 'utf8');
-  assert.match(preview, /workflow_run:/);
-  assert.match(preview, /git ls-remote --exit-code --heads origin refs\/heads\/preview/);
-  assert.match(preview, /if \[ "\$status" -ne 2 \]; then exit "\$status"; fi/);
-  assert.match(preview, /git merge-base --is-ancestor origin\/preview "\$RELEASE_SHA"/);
-  assert.doesNotMatch(preview, /git fetch origin main preview/);
-  assert.doesNotMatch(preview, /git push[^\n]*(--force|-f\b)/);
+  assert.match(preview, /push:\s+branches: \[production\]/);
+  assert.match(preview, /workflow_dispatch:/);
+  assert.doesNotMatch(preview, /^\s+(workflow_run|pull_request):/m);
+  assert.doesNotMatch(preview, /contents: write/);
+  assert.match(preview, /if: github\.ref == 'refs\/heads\/production'/);
+  assert.ok(preview.indexOf('resolve-run.mjs') < preview.indexOf('prisma migrate deploy'));
   assert.equal(JSON.parse(readFileSync('vercel.json')).git.deploymentEnabled, false);
 });
 
@@ -155,4 +167,19 @@ test('runner prepara Node sem exigir pnpm antes de fixar a revisão', () => {
     assert.match(workflow, /node-version: 24\s+package-manager-cache: false/);
     assert.ok(workflow.indexOf('actions/setup-node@') < workflow.indexOf('pnpm/action-setup@'));
   }
+});
+
+test('promoção main → production é manual, só por fast-forward e exige CI de main', () => {
+  const promote = readFileSync('.github/workflows/promote-production.yml', 'utf8');
+  assert.match(promote, /^on:\s+workflow_dispatch:/m);
+  assert.doesNotMatch(promote, /^\s+(push|workflow_run|pull_request|schedule):/m);
+  assert.match(promote, /if: github\.ref == 'refs\/heads\/main'/);
+  assert.match(
+    promote,
+    /actions\/workflows\/ci\.yml\/runs\?head_sha=\$\{sha\}&event=push&branch=main&status=success/,
+  );
+  assert.match(promote, /git merge-base --is-ancestor origin\/production "\$RELEASE_SHA"/);
+  assert.doesNotMatch(promote, /git push[^\n]*(--force|-f\b|\+)/);
+  assert.doesNotMatch(promote, /environment:/);
+  assert.match(promote, /gh workflow run deploy-preview\.yml --ref production/);
 });

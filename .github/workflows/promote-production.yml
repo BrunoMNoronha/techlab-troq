@@ -1,0 +1,88 @@
+name: Promover para production
+
+# Passo manual main → production. Só avança production por fast-forward até um
+# commit de main com CI de push aprovado e então dispara o Deploy Preview nessa
+# revisão. Production (Neon + Vercel) continua exigindo o disparo manual de
+# Deploy Production depois da validação em Preview.
+on:
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: Commit de main a promover (vazio = HEAD de main)
+        required: false
+        default: ''
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: promote-production
+  cancel-in-progress: false
+
+jobs:
+  promote:
+    name: Avançar production e disparar Preview
+    if: github.ref == 'refs/heads/main' && github.repository == 'BrunoMNoronha/techlab-troq'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      actions: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REQUESTED_SHA: ${{ inputs.sha }}
+
+    steps:
+      - name: Checkout de main
+        uses: actions/checkout@v5
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Resolver commit e conferir CI de main
+        id: target
+        run: |
+          sha="${REQUESTED_SHA:-$(git rev-parse origin/main)}"
+          if ! [[ "$sha" =~ ^[a-f0-9]{40}$ ]]; then
+            echo 'Informe o SHA completo (40 caracteres hexadecimais).' >&2
+            exit 1
+          fi
+          git merge-base --is-ancestor "$sha" origin/main
+          ci=$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/ci.yml/runs?head_sha=${sha}&event=push&branch=main&status=success&per_page=1" --jq '.workflow_runs | length')
+          if [ "$ci" != "1" ]; then
+            echo "Commit ${sha} sem CI de push aprovado em main." >&2
+            exit 1
+          fi
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+
+      - name: Avançar production sem force-push
+        env:
+          RELEASE_SHA: ${{ steps.target.outputs.sha }}
+        run: |
+          if git ls-remote --exit-code --heads origin refs/heads/production >/dev/null; then
+            git fetch origin production
+            if ! git merge-base --is-ancestor origin/production "$RELEASE_SHA"; then
+              echo 'production não é ancestral do commit escolhido; promoção recusada (sem force-push).' >&2
+              exit 1
+            fi
+          else
+            status=$?
+            if [ "$status" -ne 2 ]; then exit "$status"; fi
+          fi
+          git push origin "$RELEASE_SHA:refs/heads/production"
+
+      # Push feito com GITHUB_TOKEN não dispara workflows; workflow_dispatch dispara.
+      - name: Disparar Deploy Preview em production
+        run: gh workflow run deploy-preview.yml --ref production --repo "$GITHUB_REPOSITORY"
+
+      - name: Resumo da promoção
+        env:
+          RELEASE_SHA: ${{ steps.target.outputs.sha }}
+        run: |
+          {
+            echo "production → \`${RELEASE_SHA}\`"
+            echo ''
+            echo 'Deploy Preview disparado (migration Neon preview + Vercel Preview).'
+            echo 'Depois de validar Preview: `gh workflow run deploy-production.yml --ref production`.'
+          } >> "$GITHUB_STEP_SUMMARY"

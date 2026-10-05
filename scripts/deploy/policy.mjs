@@ -3,6 +3,9 @@ export const PROJECT_ID = 'prj_mpILJv4OGXwsW3boJdXBPx3PSJGT';
 export const TEAM_ID = 'team_ICY1aaLTQI5BmxlyrSjpRTJC';
 export const PREVIEW_URL = 'https://techlab-troq-git-preview-bruno-m-noronha.vercel.app';
 export const PRODUCTION_URL = 'https://troqs.app';
+/** Branch de release: espelho por fast-forward de commits de main já aprovados no CI. */
+export const RELEASE_BRANCH = 'production';
+export const PREVIEW_EVENTS = ['push', 'workflow_dispatch'];
 export const SHA_PATTERN = /^[a-f0-9]{40}$/;
 export const RUNTIME_KEYS = [
   'APP_ENV',
@@ -28,7 +31,7 @@ export function requireEnvironmentMetadata(envs, target) {
   }
   if (target === 'preview') {
     for (const env of envs.filter(
-      (item) => item.target?.includes(target) && item.gitBranch === 'preview',
+      (item) => item.target?.includes(target) && item.gitBranch === RELEASE_BRANCH,
     )) {
       scoped.set(env.key, env);
     }
@@ -75,16 +78,17 @@ export function requireEnvironmentMetadata(envs, target) {
   }
 }
 
-export function requireSuccessfulRun(run, { path, event, sha } = {}) {
+export function requireSuccessfulRun(run, { path, event, sha, branch = 'main' } = {}) {
+  const events = Array.isArray(event) ? event : event ? [event] : [];
   if (
     run.repository?.full_name !== REPOSITORY ||
     run.head_repository?.full_name !== REPOSITORY ||
-    run.head_branch !== 'main' ||
+    run.head_branch !== branch ||
     run.status !== 'completed' ||
     run.conclusion !== 'success' ||
     !SHA_PATTERN.test(run.head_sha ?? '') ||
     (path && run.path !== path) ||
-    (event && run.event !== event) ||
+    (events.length && !events.includes(run.event)) ||
     (sha && run.head_sha !== sha)
   ) {
     throw new Error('Execução recusada: origem, revisão ou resultado não confiável.');
@@ -95,7 +99,8 @@ export function requireSuccessfulRun(run, { path, event, sha } = {}) {
 export function requirePreviewProof(proof, run) {
   const sha = requireSuccessfulRun(run, {
     path: '.github/workflows/deploy-preview.yml',
-    event: 'workflow_run',
+    event: PREVIEW_EVENTS,
+    branch: RELEASE_BRANCH,
   });
   if (
     proof.repository !== REPOSITORY ||

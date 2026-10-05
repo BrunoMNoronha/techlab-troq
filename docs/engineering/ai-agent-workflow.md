@@ -242,4 +242,4 @@ O relatório de bloqueio segue o formato da seção 6, com o item "Pendências" 
 
 ## Publicação por ambientes
 
-`main` e `preview` são permanentes. Branches de trabalho entram por PR em `main`; após o CI completo, o pipeline sincroniza `preview` por fast-forward, migra e publica Preview. Production exige workflow manual com SHA aprovado em Preview. Detalhes e limites operacionais: [deployment.md](deployment.md).
+`main` e `production` são permanentes. Branches de trabalho entram por PR em `main`, e push em `main` só roda o CI. O workflow manual `Promover para production` avança `production` por fast-forward até um commit de `main` com CI aprovado e dispara a migração e a publicação de Preview. Production exige outro disparo manual, com o mesmo SHA aprovado em Preview. Agentes não promovem nem publicam sem pedido explícito do responsável. Detalhes e limites operacionais: [deployment.md](deployment.md).

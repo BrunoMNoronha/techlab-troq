@@ -1,10 +1,11 @@
 name: Deploy Preview
 
+# Disparado pelo workflow "Promover para production" (workflow_dispatch com
+# --ref production) ou por push manual na branch production. main nunca publica.
 on:
-  workflow_run:
-    workflows: [CI]
-    types: [completed]
-    branches: [main]
+  push:
+    branches: [production]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -16,32 +17,26 @@ concurrency:
 jobs:
   release:
     name: Migrar e publicar Preview
-    if: >-
-      github.event.workflow_run.conclusion == 'success' &&
-      github.event.workflow_run.event == 'push' &&
-      github.event.workflow_run.head_branch == 'main' &&
-      github.event.workflow_run.head_repository.full_name == github.repository
+    if: github.ref == 'refs/heads/production' && github.repository == 'BrunoMNoronha/techlab-troq'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment:
       name: preview
       url: https://techlab-troq-git-preview-bruno-m-noronha.vercel.app
     permissions:
-      contents: write
+      contents: read
       actions: read
     env:
       GH_TOKEN: ${{ github.token }}
-      SOURCE_RUN_ID: ${{ github.event.workflow_run.id }}
       RELEASE_TARGET: preview
       VERCEL_ORG_ID: team_ICY1aaLTQI5BmxlyrSjpRTJC
       VERCEL_PROJECT_ID: prj_mpILJv4OGXwsW3boJdXBPx3PSJGT
 
     steps:
-      - name: Checkout da automação confiável
+      - name: Checkout da revisão de production
         uses: actions/checkout@v5
         with:
-          ref: main
-          fetch-depth: 0
+          ref: ${{ github.sha }}
 
       - name: Setup Node.js 24
         uses: actions/setup-node@v5
@@ -49,24 +44,9 @@ jobs:
           node-version: 24
           package-manager-cache: false
 
-      - name: Conferir CI e fixar revisão
+      - name: Conferir HEAD de production, ancestral de main e CI aprovado
         id: source
         run: node scripts/deploy/resolve-run.mjs
-
-      - name: Sincronizar preview sem force-push
-        env:
-          RELEASE_SHA: ${{ steps.source.outputs.sha }}
-        run: |
-          git fetch origin main
-          if git ls-remote --exit-code --heads origin refs/heads/preview >/dev/null; then
-            git fetch origin preview
-            git merge-base --is-ancestor origin/preview "$RELEASE_SHA"
-          else
-            status=$?
-            if [ "$status" -ne 2 ]; then exit "$status"; fi
-          fi
-          git push origin "$RELEASE_SHA:refs/heads/preview"
-          git checkout --detach "$RELEASE_SHA"
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4

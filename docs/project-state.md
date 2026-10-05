@@ -1,7 +1,7 @@
 # Estado do projeto
 
 **Primeiro registro:** 2026-09-07
-**Última atualização:** 2026-10-04 (infraestrutura de ambientes e pipeline de publicação; gates comerciais preservados)
+**Última atualização:** 2026-10-05 (release pela branch `production`, DEC-050; gates comerciais preservados)
 **Repositório:** `BrunoMNoronha/techlab-troq`, branch principal `main`
 **Fase 0:** concluída — gate de saída verificado e **APROVADO** em [delivery/phase-1-transition.md](delivery/phase-1-transition.md)
 **Fase 1:** **concluída** em 2026-09-16 — gate de saída verificado por **F1-011** e **APROVADO** em [delivery/phase-2-transition.md](delivery/phase-2-transition.md), com os cinco critérios `PASS` e os sete entregáveis (E-1 a E-7) conferidos sem regressão. A configuração operacional atual de Preview e Production está em [engineering/deployment.md](engineering/deployment.md); Production tem infraestrutura parcial própria, com publicação manual e liberação comercial bloqueada até concluir credenciais externas e homologação.
