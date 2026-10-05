@@ -1,4 +1,4 @@
-// Schema fisico inicial do TROQ — materializacao de docs/architecture/data-model.md.
+// Schema fisico inicial do TROQS — materializacao de docs/architecture/data-model.md.
 // Decisoes fisicas e limites do que o Prisma Schema consegue expressar estao em
 // docs/engineering/database.md. Garantias que exigem SQL customizado (indices
 // parciais, CHECKs e triggers) vivem na migration inicial, nao aqui.

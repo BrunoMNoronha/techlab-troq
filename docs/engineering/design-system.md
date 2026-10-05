@@ -1,4 +1,4 @@
-# Design System — TROQ
+# Design System — TROQS
 
 Fundação visual da aplicação: identidade, tokens, layout, componentes e padrões de tela. Este documento é a referência para criar ou alterar qualquer interface. A regra central é simples: **uma tela nova se monta com os componentes de `src/components`, sem CSS novo e sem estilo inline.**
 

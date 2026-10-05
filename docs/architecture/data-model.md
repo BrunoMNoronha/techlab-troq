@@ -1,4 +1,4 @@
-# Modelo de dados — TROQ
+# Modelo de dados — TROQS
 
 Modelo **lógico** de dados do MVP, suficiente para orientar o schema e as migrations da Fase 1. Produzido por **F0-022**, junto com [overview.md](overview.md), [payments-design.md](payments-design.md) e [contact-release.md](contact-release.md).
 
@@ -257,7 +257,7 @@ As entidades desta seção são especificadas em [payments-design.md](payments-d
 
 **DM-7.4 (invariante, restrição de banco).** Cada tentativa tem **no máximo um** pagamento canônico. A eleição é determinística, aplicada uma única vez e registrada (PE-3.1). Regra concreta em [payments-design.md](payments-design.md), PD-7.
 
-**DM-7.5 (invariante, restrição de banco).** O instante de **acreditação autoritativo** e o instante de **reconhecimento pelo TROQ** são campos distintos e ambos persistidos (CI-4). Confundi-los destruiria a regra de tempestividade de PE-4.1 e PE-4.2.
+**DM-7.5 (invariante, restrição de banco).** O instante de **acreditação autoritativo** e o instante de **reconhecimento pelo TROQS** são campos distintos e ambos persistidos (CI-4). Confundi-los destruiria a regra de tempestividade de PE-4.1 e PE-4.2.
 
 _Atualização de 2026-10-01 (DEC-043)._ A fonte do instante de acreditação autoritativo é a `date_approved` lida da Payments API conforme [../adr/0008-accreditation-instant-payments-api.md](../adr/0008-accreditation-instant-payments-api.md); o instante de reconhecimento continua sendo o `now()` do banco na transação de efeito.
 

@@ -1,6 +1,6 @@
 # Regras de negócio homologadas
 
-Regras de negócio vigentes do TROQ. A semântica de cada regra é preservada literalmente; a coluna de implicação operacional é apenas um resumo do efeito esperado e não substitui a regra.
+Regras de negócio vigentes do TROQS. A semântica de cada regra é preservada literalmente; a coluna de implicação operacional é apenas um resumo do efeito esperado e não substitui a regra.
 
 Observações aparecem somente quando já confirmadas. Questões derivadas que ainda não foram decididas estão em [../decisions/open-decisions.md](../decisions/open-decisions.md).
 

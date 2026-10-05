@@ -7,7 +7,7 @@
 //
 // A prova da sessao usa o cookie EMITIDO pelo provedor (`Set-Cookie` de
 // `signInEmail`), reapresentado a `getSession` como um navegador faria. O unico
-// mock do Next.js e `headers()`, para que o guard e as actions do TROQ leiam
+// mock do Next.js e `headers()`, para que o guard e as actions do TROQS leiam
 // esse mesmo cookie como leriam numa requisicao: ele prova a ponte, nao a sessao.
 //
 // ESCREVE no banco. Por isso so roda com INTEGRATION_EPHEMERAL_DB=1, declarando

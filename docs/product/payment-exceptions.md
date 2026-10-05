@@ -1,12 +1,12 @@
-# Exceções de pagamento — TROQ
+# Exceções de pagamento — TROQS
 
-Documento normativo que fecha [OD-07](../decisions/open-decisions.md) e registra DEC-037. Define, de forma implementável, o comportamento do TROQ diante das exceções do fluxo de pagamento Pix da solicitação de desbloqueio de contato.
+Documento normativo que fecha [OD-07](../decisions/open-decisions.md) e registra DEC-037. Define, de forma implementável, o comportamento do TROQS diante das exceções do fluxo de pagamento Pix da solicitação de desbloqueio de contato.
 
 Fontes internas: [business-rules.md](business-rules.md) (RB-001, RB-003, RB-004), [requirements.md](requirements.md) (RF-009 a RF-012, RF-020, RF-022), [interest-flow.md](interest-flow.md) (DEC-035), [listing-lifecycle.md](listing-lifecycle.md) (DEC-027), [negotiation-lifecycle.md](negotiation-lifecycle.md) (DEC-029), [reselection-policy.md](reselection-policy.md) (DEC-032), [prohibited-items.md](prohibited-items.md) (DEC-031), [data-retention-policy.md](data-retention-policy.md) (DEC-033), [../adr/0004-mercado-pago-pix.md](../adr/0004-mercado-pago-pix.md) (DEC-036) e [../delivery/spikes/f0-010-mercado-pago-pix-r099.md](../delivery/spikes/f0-010-mercado-pago-pix-r099.md).
 
 ## 1. Objetivo
 
-Eliminar a ambiguidade sobre **o que o TROQ faz** quando o fluxo de pagamento sai do caminho feliz, de modo que o design de pagamentos (F0-022) e a implementação (Fase 3) não precisem inventar comportamento de negócio.
+Eliminar a ambiguidade sobre **o que o TROQS faz** quando o fluxo de pagamento sai do caminho feliz, de modo que o design de pagamentos (F0-022) e a implementação (Fase 3) não precisem inventar comportamento de negócio.
 
 Cada exceção recebe aqui uma resposta a cinco perguntas: o pagamento vale? consome vaga? gera reembolso? torna o solicitante elegível à escolha? o que é auditado e reconciliado?
 
@@ -17,7 +17,7 @@ Neste documento:
 - duplicidade técnica de tentativa ou de pagamento;
 - confirmação atrasada ou ausente;
 - pagamento aprovado próximo ou depois do fim da janela de reserva;
-- falha entre a confirmação no gateway e a persistência do efeito no TROQ;
+- falha entre a confirmação no gateway e a persistência do efeito no TROQS;
 - reembolso técnico;
 - reversão posterior do pagamento;
 - fraude e falha operacional no contexto Pix;
@@ -49,8 +49,8 @@ Termos usados com sentido estrito. O vocabulário do provedor fica confinado ao 
 | **Solicitação paga válida** | Solicitação de desbloqueio com pagamento canônico acreditado dentro da janela da reserva que ela detinha. É o que conta para RB-003 e o que habilita a escolha (RF-013) |
 | **Vaga consumida** | Vaga de RB-003 definitivamente ocupada por uma solicitação paga válida. Consumo é fato histórico |
 | **Exceção técnica** | Situação em que houve dinheiro efetivamente acreditado sem que exista uma solicitação paga válida correspondente |
-| **Reembolso técnico** | Devolução integral iniciada pelo TROQ ao pagador, por exceção técnica. Ver seção 10 |
-| **Reversão externa** | Perda posterior do pagamento por ato de terceiro (pagador, PSP ou provedor), não iniciada pelo TROQ. Ver seção 11 |
+| **Reembolso técnico** | Devolução integral iniciada pelo TROQS ao pagador, por exceção técnica. Ver seção 10 |
+| **Reversão externa** | Perda posterior do pagamento por ato de terceiro (pagador, PSP ou provedor), não iniciada pelo TROQS. Ver seção 11 |
 | **Estado autoritativo** | O estado da cobrança tal como o Mercado Pago o reporta em consulta direta. Ver seção 5 |
 | **Inconsistência** | Divergência conhecida entre o estado local e o estado autoritativo, ou estado local que não pode ser determinado |
 
@@ -72,7 +72,7 @@ Consultas realizadas em **2026-09-14**, contra fontes primárias. Nada nesta se�
 | MP-6 | Referência de `POST /v1/orders/{order_id}/cancel` | Cancelamento da order e de suas transações; apenas orders com `status` `created` ou `action_required` podem ser canceladas. Também exige `X-Idempotency-Key` |
 | MP-7 | *Get order by ID*, `GET /v1/orders/{id}` (registrado em ADR-0004) | Mecanismo oficial de consulta da order e base da reconciliação |
 
-**Consequência direta de MP-4 para esta política:** a documentação consultada expõe `order.processed` como ação de notificação e **não** documenta notificação própria para reembolso ou reversão. Portanto o TROQ **não pode** depender de webhook para descobrir uma reversão: a descoberta é responsabilidade da reconciliação por consulta (seção 12).
+**Consequência direta de MP-4 para esta política:** a documentação consultada expõe `order.processed` como ação de notificação e **não** documenta notificação própria para reembolso ou reversão. Portanto o TROQS **não pode** depender de webhook para descobrir uma reversão: a descoberta é responsabilidade da reconciliação por consulta (seção 12).
 
 ### 4.2 Banco Central do Brasil
 
@@ -88,13 +88,13 @@ Fonte: *Guia de implementação dos procedimentos de devolução no Pix, com ên
 | BC-6 | **Recuperação de Valores** é o processo de abertura do MED nos casos de fraude, com rastreamento além da primeira conta de destino. A transação raiz precisa ter ocorrido há no máximo **80 dias**, ou **30 dias** quando se tratar de transação de devolução |
 | BC-7 | **Bloqueio cautelar:** bloqueio de valores realizado pelo PSP do recebedor por até **72 horas** quando houver suspeita de fraude, para avaliação mais detalhada do caso |
 
-**Consequência direta de BC-4 e BC-5 para esta política:** "chargeback" é vocabulário de arranjos de cartão e **não** descreve o Pix. Nenhum documento do TROQ deve usá-lo como termo genérico para reversão de Pix, e o TROQ **não** pode documentar desacordo comercial como hipótese de MED.
+**Consequência direta de BC-4 e BC-5 para esta política:** "chargeback" é vocabulário de arranjos de cartão e **não** descreve o Pix. Nenhum documento do TROQS deve usá-lo como termo genérico para reversão de Pix, e o TROQS **não** pode documentar desacordo comercial como hipótese de MED.
 
 ### 4.3 Divergências e limites da pesquisa
 
 1. **Reenvio de notificações.** ADR-0004 registrou "reenvio a cada 15 minutos até a confirmação". A documentação consultada hoje é mais precisa: a cada 15 minutos **nas três primeiras tentativas** e, depois, com prazo estendido, mantidos os envios. É refinamento, não contradição, e **não** altera nenhuma decisão de ADR-0004. Esta política não depende do número de tentativas: depende de a reconciliação funcionar sem nenhuma delas.
-2. **Ações de notificação.** Só `order.processed` foi encontrada documentada para o tópico `order`. Esta política **não** afirma que não existam outras; afirma que o TROQ não pode depender de nenhuma além dessa.
-3. **Comportamento do MED na prática.** O MED é executado entre PSPs. O TROQ é usuário recebedor de um provedor, não participante do Pix, e **não** controla o resultado de um MED. Esta política define o que o TROQ faz com o **efeito** de uma reversão, não como o MED é decidido.
+2. **Ações de notificação.** Só `order.processed` foi encontrada documentada para o tópico `order`. Esta política **não** afirma que não existam outras; afirma que o TROQS não pode depender de nenhuma além dessa.
+3. **Comportamento do MED na prática.** O MED é executado entre PSPs. O TROQS é usuário recebedor de um provedor, não participante do Pix, e **não** controla o resultado de um MED. Esta política define o que o TROQS faz com o **efeito** de uma reversão, não como o MED é decidido.
 4. **Nenhuma verificação foi feita contra conta de produção.** Nenhum pagamento real, nenhum reembolso real e nenhum acesso a painel produtivo ocorreram nesta tarefa.
 
 ## 5. Fonte de verdade do pagamento
@@ -151,29 +151,29 @@ Não confundir:
 
 | Relógio | O que é | Quem controla |
 | --- | --- | --- |
-| **Fim da janela de reserva** | Instante em que a reserva de vaga do TROQ deixa de poder produzir solicitação paga válida | TROQ |
+| **Fim da janela de reserva** | Instante em que a reserva de vaga do TROQS deixa de poder produzir solicitação paga válida | TROQS |
 | **Expiração da order/Pix** | `expiration_time` da cobrança no gateway (MP-1) | Mercado Pago, dentro dos limites de 30 minutos a 30 dias |
-| **Chegada da notificação** | Instante em que o TROQ recebeu — ou reprocessou — o aviso | Rede, filas e retentativas do provedor |
+| **Chegada da notificação** | Instante em que o TROQS recebeu — ou reprocessou — o aviso | Rede, filas e retentativas do provedor |
 
-**PE-4.1** — O instante decisivo é o **instante em que o pagamento foi efetivamente acreditado segundo o estado autoritativo do gateway**. Não é o instante de chegada da notificação, não é o instante de processamento pelo TROQ e não é o instante em que a reconciliação descobriu o fato.
+**PE-4.1** — O instante decisivo é o **instante em que o pagamento foi efetivamente acreditado segundo o estado autoritativo do gateway**. Não é o instante de chegada da notificação, não é o instante de processamento pelo TROQS e não é o instante em que a reconciliação descobriu o fato.
 
-**PE-4.2** — Uma notificação atrasada **não** transforma pagamento feito a tempo em pagamento atrasado. Se o instante de acreditação está dentro da janela da reserva, o pagamento é tempestivo, ainda que o TROQ só tome conhecimento dele muito depois. Nesse caso, a solicitação torna-se paga válida e a vaga que estava reservada é consumida.
+**PE-4.2** — Uma notificação atrasada **não** transforma pagamento feito a tempo em pagamento atrasado. Se o instante de acreditação está dentro da janela da reserva, o pagamento é tempestivo, ainda que o TROQS só tome conhecimento dele muito depois. Nesse caso, a solicitação torna-se paga válida e a vaga que estava reservada é consumida.
 
 **PE-4.3** — Por simetria, um pagamento cuja acreditação ocorreu **depois** do fim da janela da reserva **não** ressuscita a reserva perdida, **não** cria vaga e **não** pode violar RB-003.
 
 ### 7.2 Alinhamento entre a janela de reserva e a validade da order
 
-**PE-4.4** — A janela de reserva do TROQ tem duração **mínima de 30 minutos**. O piso é normativo e existe para que a validade da cobrança no gateway possa ser alinhada à janela: 30 minutos é o menor `expiration_time` que a Orders API aceita (MP-1). A duração concreta acima desse piso é design de F0-022 e **não** é fixada por este documento.
+**PE-4.4** — A janela de reserva do TROQS tem duração **mínima de 30 minutos**. O piso é normativo e existe para que a validade da cobrança no gateway possa ser alinhada à janela: 30 minutos é o menor `expiration_time` que a Orders API aceita (MP-1). A duração concreta acima desse piso é design de F0-022 e **não** é fixada por este documento.
 
 **PE-4.5** — O `expiration_time` da order é definido de modo que a cobrança **não sobreviva** à janela de reserva. Isso reduz a incidência de pagamento tardio; não a elimina.
 
-**PE-4.6** — A validação da janela **não** é delegada ao gateway. F0-010 registrou que o comportamento real da expiração não pôde ser observado e que a validação não é delegável; o TROQ verifica a tempestividade por conta própria, comparando o instante de acreditação autoritativo com o fim da janela, e o `expiration_time` é apenas defesa adicional.
+**PE-4.6** — A validação da janela **não** é delegada ao gateway. F0-010 registrou que o comportamento real da expiração não pôde ser observado e que a validação não é delegável; o TROQS verifica a tempestividade por conta própria, comparando o instante de acreditação autoritativo com o fim da janela, e o `expiration_time` é apenas defesa adicional.
 
 **PE-4.7** — Não existe extensão automática, prorrogação silenciosa nem reabertura de reserva expirada. Indisponibilidade do provedor **não** prorroga a janela.
 
 ### 7.3 Pagamento aprovado que não pode virar solicitação válida
 
-Quando um pagamento estiver efetivamente acreditado mas não puder legitimamente tornar-se solicitação paga válida — por janela encerrada, por reserva já liberada, por capacidade de RB-003 já esgotada ou por inexistência de reserva válida —, o TROQ:
+Quando um pagamento estiver efetivamente acreditado mas não puder legitimamente tornar-se solicitação paga válida — por janela encerrada, por reserva já liberada, por capacidade de RB-003 já esgotada ou por inexistência de reserva válida —, o TROQS:
 
 **PE-4.8** — **não** cria solicitação paga;
 
@@ -251,7 +251,7 @@ Quando um pagamento estiver efetivamente acreditado mas não puder legitimamente
 
 ### 10.1 Definição e hipóteses
 
-**PE-7.1** — Reembolso técnico é a devolução **integral** iniciada pelo TROQ ao pagador, por meio do gateway, de valor acreditado que **nunca deveria ter se tornado** uma solicitação paga válida.
+**PE-7.1** — Reembolso técnico é a devolução **integral** iniciada pelo TROQS ao pagador, por meio do gateway, de valor acreditado que **nunca deveria ter se tornado** uma solicitação paga válida.
 
 **PE-7.2** — As hipóteses de reembolso técnico no MVP são, exaustivamente:
 
@@ -260,7 +260,7 @@ Quando um pagamento estiver efetivamente acreditado mas não puder legitimamente
 | RT-1 | Pagamento excedente em duplicidade técnica, isto é, o não canônico (PE-3.4) |
 | RT-2 | Pagamento acreditado depois do fim da janela de reserva (PE-4.3) |
 | RT-3 | Pagamento acreditado sem reserva válida vigente, inclusive quando a vaga já foi legitimamente ocupada por outra solicitação (PE-5.5) |
-| RT-4 | Cobrança criada por defeito técnico do TROQ, sem correspondência a uma tentativa legítima da pessoa usuária |
+| RT-4 | Cobrança criada por defeito técnico do TROQS, sem correspondência a uma tentativa legítima da pessoa usuária |
 
 **PE-7.3** — O reembolso técnico é sempre **integral**. Ainda que a API admita devolução parcial (MP-5), o MVP não a utiliza: R$ 0,99 é indivisível neste modelo e não existe hipótese de devolução parcial.
 
@@ -286,32 +286,32 @@ _Atualização de 2026-10-01 (DEC-044; decisão do Bruno, F3-007, [#97](https://
 
 **PE-7.7** — A execução usa `POST /v1/orders/{order_id}/refund` com reembolso total e `X-Idempotency-Key` (MP-5), pelo módulo adaptador (ADR-0004, decisão 10).
 
-**PE-7.8** — Dois limites externos são conhecidos e **não** estão sob controle do TROQ: o prazo de **180 dias** a partir da aprovação e a exigência de **saldo suficiente** na conta (MP-5). Ambos são condições do provedor, não políticas do TROQ, e ambos podem fazer uma tentativa de reembolso falhar.
+**PE-7.8** — Dois limites externos são conhecidos e **não** estão sob controle do TROQS: o prazo de **180 dias** a partir da aprovação e a exigência de **saldo suficiente** na conta (MP-5). Ambos são condições do provedor, não políticas do TROQS, e ambos podem fazer uma tentativa de reembolso falhar.
 
 **PE-7.9** — Diante de falha, o caso entra em `reembolso_pendente`, permanece visível para a operação, é reconciliado e **não** é encerrado sem desfecho real. Falha de reembolso **nunca** é convertida em receita reconhecida, em vaga, em elegibilidade ou em silêncio.
 
-**PE-7.10** — Esgotadas as tentativas automáticas sem sucesso, o caso permanece aberto como pendência operacional. Ele **não** muda de natureza: continua sendo dinheiro que o TROQ não tem direito de reter.
+**PE-7.10** — Esgotadas as tentativas automáticas sem sucesso, o caso permanece aberto como pendência operacional. Ele **não** muda de natureza: continua sendo dinheiro que o TROQS não tem direito de reter.
 
-**PE-7.11** — Tentar reembolsar o mesmo pagamento mais de uma vez é seguro por construção: a chamada é idempotente e o erro `order_already_refunded` (MP-5) é desfecho de sucesso do ponto de vista do TROQ, não erro a repetir.
+**PE-7.11** — Tentar reembolsar o mesmo pagamento mais de uma vez é seguro por construção: a chamada é idempotente e o erro `order_already_refunded` (MP-5) é desfecho de sucesso do ponto de vista do TROQS, não erro a repetir.
 
-**PE-7.12** — RB-004 **não** autoriza o TROQ a reter dinheiro recebido por erro técnico. Este é o limite exato da regra e está detalhado na seção 17.
+**PE-7.12** — RB-004 **não** autoriza o TROQS a reter dinheiro recebido por erro técnico. Este é o limite exato da regra e está detalhado na seção 17.
 
 ## 11. Reversões posteriores, devolução Pix e MED
 
 ### 11.1 Quatro coisas diferentes
 
-| Fenômeno | Quem inicia | Como se aplica ao TROQ |
+| Fenômeno | Quem inicia | Como se aplica ao TROQS |
 | --- | --- | --- |
-| **Reembolso técnico** | O próprio TROQ, via gateway | Seção 10. É o único que o TROQ decide |
-| **Devolução Pix por iniciativa do recebedor** | O usuário recebedor, em até 90 dias (BC-1) | É o instrumento regulatório subjacente ao reembolso técnico; o TROQ o exerce **através** do provedor, não diretamente |
-| **MED** | O participante do Pix, isto é, o PSP (BC-2) | Hipóteses de fraude e de falha operacional (BC-3). O TROQ **sofre** o efeito; não o comanda |
+| **Reembolso técnico** | O próprio TROQS, via gateway | Seção 10. É o único que o TROQS decide |
+| **Devolução Pix por iniciativa do recebedor** | O usuário recebedor, em até 90 dias (BC-1) | É o instrumento regulatório subjacente ao reembolso técnico; o TROQS o exerce **através** do provedor, não diretamente |
+| **MED** | O participante do Pix, isto é, o PSP (BC-2) | Hipóteses de fraude e de falha operacional (BC-3). O TROQS **sofre** o efeito; não o comanda |
 | **Chargeback de cartão** | Arranjo de cartão de pagamento | **Não se aplica ao Pix** (BC-5) |
 
-**PE-8.1** — O termo **chargeback** não descreve reversão de Pix e **não** deve ser usado como termo genérico em documentos do TROQ. Quando um valor de `status` do provedor usar a palavra — `charged_back` em MP-2 —, trata-se de valor técnico da API, não de afirmação de que o Pix tenha chargeback.
+**PE-8.1** — O termo **chargeback** não descreve reversão de Pix e **não** deve ser usado como termo genérico em documentos do TROQS. Quando um valor de `status` do provedor usar a palavra — `charged_back` em MP-2 —, trata-se de valor técnico da API, não de afirmação de que o Pix tenha chargeback.
 
-**PE-8.2** — Desacordo comercial **não** é hipótese de MED (BC-4) e o TROQ **não** o documenta como tal. Insatisfação com a negociação, com o item ou com a contraparte é matéria das partes, não do arranjo de pagamento.
+**PE-8.2** — Desacordo comercial **não** é hipótese de MED (BC-4) e o TROQS **não** o documenta como tal. Insatisfação com a negociação, com o item ou com a contraparte é matéria das partes, não do arranjo de pagamento.
 
-**PE-8.3** — Fraude e falha operacional seguem a semântica real do Pix e do provedor. O TROQ **não** promete à pessoa usuária resultado que depende de instituições financeiras: não afirma que um MED será aceito, não estima prazo de devolução e não se coloca como decisor de mérito.
+**PE-8.3** — Fraude e falha operacional seguem a semântica real do Pix e do provedor. O TROQS **não** promete à pessoa usuária resultado que depende de instituições financeiras: não afirma que um MED será aceito, não estima prazo de devolução e não se coloca como decisor de mérito.
 
 ### 11.2 Detecção
 
@@ -325,7 +325,7 @@ _Atualização de 2026-10-01 (DEC-044; decisão do Bruno, F3-007, [#97](https://
 
 **PE-8.7** — Se o **contato já foi liberado**, a liberação é fato consumado e irreversível. Registra-se que a divulgação ocorreu e **não** se finge que ela pode ser desfeita. Isso é coerente com RB-001 e com DEC-032, que já estabelecem que liberação concedida nunca é revogada. A negociação existente segue governada por DEC-029 e não é encerrada por efeito da reversão.
 
-**PE-8.8** — A reversão **não** gera nova cobrança automática, **não** gera cobrança de recuperação e **não** cria dívida da pessoa usuária perante o TROQ no MVP.
+**PE-8.8** — A reversão **não** gera nova cobrança automática, **não** gera cobrança de recuperação e **não** cria dívida da pessoa usuária perante o TROQS no MVP.
 
 ### 11.4 Efeito sobre RB-003
 
@@ -360,7 +360,7 @@ _Atualização de 2026-10-01 (DEC-044; decisão do Bruno, F3-007, [#97](https://
 | Evento | Registro mínimo |
 | --- | --- |
 | Criação da reserva e da tentativa | solicitação, anúncio, reserva, janela, identidade da tentativa |
-| Aprovação do pagamento | tentativa, instante de acreditação autoritativo, instante de reconhecimento pelo TROQ, origem do reconhecimento (notificação ou reconciliação) |
+| Aprovação do pagamento | tentativa, instante de acreditação autoritativo, instante de reconhecimento pelo TROQS, origem do reconhecimento (notificação ou reconciliação) |
 | Recusa, expiração ou falha | tentativa, estado autoritativo observado, instante |
 | Duplicidade detectada | pagamentos envolvidos, canônico eleito, excedente |
 | Reembolso técnico | hipótese RT aplicada, solicitação, instante, resultado de cada tentativa, desfecho |
@@ -400,7 +400,7 @@ Conceitos suficientes para a implementação futura distinguir as situações de
 | `expirada` | Janela de reserva encerrada sem pagamento acreditado tempestivo; vaga liberada |
 | `falha` | Estado autoritativo terminal sem acreditação, por exemplo `canceled` ou `failed`; vaga liberada |
 | `reembolso_pendente` | Há valor acreditado a devolver e a devolução ainda não se concluiu |
-| `reembolsada_ou_revertida` | O valor não está mais com o TROQ, por reembolso técnico concluído ou por reversão externa |
+| `reembolsada_ou_revertida` | O valor não está mais com o TROQS, por reembolso técnico concluído ou por reversão externa |
 | `inconsistente` | Divergência conhecida, ou situação não coberta, aguardando reconciliação ou ação operacional |
 
 Regras de leitura:
@@ -414,7 +414,7 @@ Regras de leitura:
 
 Leitura das colunas: **consome vaga?** refere-se a RB-003; **reembolso?** refere-se exclusivamente ao reembolso técnico da seção 10; **elegível à escolha?** refere-se a RF-013 e a RB-001.
 
-| # | Cenário | Estado autoritativo observado | Ação do TROQ | Consome vaga? | Reembolso? | Elegível à escolha? | Auditoria / reconciliação |
+| # | Cenário | Estado autoritativo observado | Ação do TROQS | Consome vaga? | Reembolso? | Elegível à escolha? | Auditoria / reconciliação |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Fluxo normal: pagamento acreditado dentro da janela | `processed`/`accredited` | Torna a solicitação paga válida | **Sim** | Não | **Sim** | Auditoria de aprovação; reconciliação periódica para detectar reversão |
 | 2 | Cobrança criada, ninguém pagou ainda | `action_required`/`waiting_transfer` | Aguarda; nenhum direito concedido | Reserva ocupa provisoriamente | Não | Não | Em reconciliação até desfecho |
@@ -430,8 +430,8 @@ Leitura das colunas: **consome vaga?** refere-se a RB-003; **reembolso?** refere
 | 12 | Pagamento acreditado depois do fim da janela | `processed`/`accredited`, acreditação fora da janela | Não cria solicitação paga | Não | **Sim** (RT-2) | Não | Exceção técnica auditada e reconciliada |
 | 13 | Pagamento acreditado, mas as três vagas já estão consumidas | `processed`/`accredited` | Não cria solicitação paga; RB-003 prevalece | Não | **Sim** (RT-3) | Não | Exceção técnica auditada |
 | 14 | Corrida: pagamento tardio contra reserva legítima que tomou a vaga | `processed`/`accredited` | Prevalece a reserva legítima vigente | Não, para o tardio | **Sim** (RT-3) | Não, para o tardio | Auditoria da corrida resolvida |
-| 15 | Cobrança criada por defeito técnico do TROQ | `processed`/`accredited` | Reconhece o erro; devolve | Não | **Sim** (RT-4) | Não | Exceção técnica; causa registrada |
-| 16 | Reembolso técnico falha por saldo ou por prazo | valor ainda com o TROQ | Mantém `reembolso_pendente`; não oculta | Inalterado | **Pendente** | Não | Permanece aberto para reconciliação e ação operacional |
+| 15 | Cobrança criada por defeito técnico do TROQS | `processed`/`accredited` | Reconhece o erro; devolve | Não | **Sim** (RT-4) | Não | Exceção técnica; causa registrada |
+| 16 | Reembolso técnico falha por saldo ou por prazo | valor ainda com o TROQS | Mantém `reembolso_pendente`; não oculta | Inalterado | **Pendente** | Não | Permanece aberto para reconciliação e ação operacional |
 | 17 | Reversão externa antes da escolha | `refunded`, `partially_refunded` ou `charged_back` | Solicitação deixa de habilitar liberação de contato | **Sim**, permanece (PE-8.9) | Não: o valor já saiu | **Não** | Reversão registrada como evento novo; aprovação original preservada |
 | 18 | Reversão externa depois da escolha e da liberação | idem | Registra que a divulgação ocorreu; não revoga o já liberado | **Sim**, permanece | Não | Escolha já consumada | Reversão auditada; negociação segue DEC-029 |
 | 19 | MED ou suspeita de fraude sobre o pagamento recebido | reversão reportada pelo provedor | Preserva evidências; trata como reversão externa; não promete resultado | **Sim**, se a solicitação era válida | Não | Não, se ainda não escolhido | Evento de segurança e abuso, retido conforme DEC-033 |
@@ -449,7 +449,7 @@ RB-004 é preservada **literalmente**: a cobrança de R$ 0,99 é definitiva, mes
 
 **PE-12.1** — RB-004 qualifica **uma solicitação paga válida**. Ela responde à pergunta "o solicitante tem direito a reembolso por não ter sido escolhido?" — e a resposta é **não**, inclusive em desistência e reseleção, em encerramento de negociação e em remoção do anúncio.
 
-**PE-12.2** — RB-004 **não** responde à pergunta "o TROQ pode reter dinheiro que recebeu por erro técnico?". A resposta a essa outra pergunta é **não**, e é o que esta política estabelece.
+**PE-12.2** — RB-004 **não** responde à pergunta "o TROQS pode reter dinheiro que recebeu por erro técnico?". A resposta a essa outra pergunta é **não**, e é o que esta política estabelece.
 
 **PE-12.3** — Portanto, RB-004 **não** justifica: cobrança duplicada; cobrança sem vaga ou sem reserva válida; cobrança criada por defeito operacional; nem qualquer outra cobrança que nunca deveria ter se tornado solicitação paga válida. Confundir as duas perguntas transformaria uma regra de definitividade comercial em autorização para reter recebimento indevido, e isso **não** está em RB-004.
 
@@ -474,7 +474,7 @@ O design de pagamentos (F0-022) e a implementação (Fase 3) devem satisfazer, n
 | CI-1 | Toda tentativa de pagamento tem identidade estável derivada da reserva, e a chave de idempotência da criação é derivada dela de forma determinística |
 | CI-2 | Criação, notificação, transições, reembolso e cancelamento são idempotentes |
 | CI-3 | O estado pode ser reconstruído integralmente por consulta autoritativa, sem nenhuma notificação |
-| CI-4 | O instante de acreditação autoritativo é persistido separadamente do instante de reconhecimento pelo TROQ |
+| CI-4 | O instante de acreditação autoritativo é persistido separadamente do instante de reconhecimento pelo TROQS |
 | CI-5 | A janela de reserva tem ao menos 30 minutos e o `expiration_time` da order não a excede |
 | CI-6 | Reserva, pagamento, expiração, liberação de vaga e confirmação tardia são resolvidos atomicamente, sem instante observável com mais de três solicitações pagas válidas |
 | CI-7 | Existe estado explícito de reembolso pendente, visível à operação e não encerrável sem desfecho |

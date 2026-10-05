@@ -1,6 +1,6 @@
 # Ciclo de vida da negociação
 
-Fonte oficial do ciclo mínimo e do encerramento da negociação no MVP do TROQ. Este documento fecha **OD-01** e é registrado como **DEC-029** em [../decisions/decision-log.md](../decisions/decision-log.md).
+Fonte oficial do ciclo mínimo e do encerramento da negociação no MVP do TROQS. Este documento fecha **OD-01** e é registrado como **DEC-029** em [../decisions/decision-log.md](../decisions/decision-log.md).
 
 ## 1. Propósito e escopo
 
@@ -48,7 +48,7 @@ O que `closed` significa e o que não significa:
 | --- | --- |
 | A relação não está mais ativa no sistema | Que a troca foi concluída com sucesso |
 | A pré-condição temporal de RB-002 está satisfeita | Entrega, satisfação ou transferência de propriedade |
-| Nenhuma transição posterior de negociação é possível | Pagamento pelo bem ou qualquer resultado externo ao TROQ |
+| Nenhuma transição posterior de negociação é possível | Pagamento pelo bem ou qualquer resultado externo ao TROQS |
 
 Sucesso ou fracasso da troca **não** é modelado nesta decisão.
 
@@ -204,7 +204,7 @@ O log de encerramento **não** registra telefone/WhatsApp (DEC-023). A auditoria
 | Alternativa | Decisão | Motivo |
 | --- | --- | --- |
 | Confirmação bilateral do encerramento | **Rejeitada** no MVP | Permite *deadlock* permanente se uma das partes abandonar a plataforma ou não responder |
-| Encerramento automático por tempo (*timeout*, expiração, job) | **Rejeitado** | O TROQ não observa a negociação realizada por WhatsApp/telefone e não possui sinal confiável para concluir que ela terminou |
+| Encerramento automático por tempo (*timeout*, expiração, job) | **Rejeitado** | O TROQS não observa a negociação realizada por WhatsApp/telefone e não possui sinal confiável para concluir que ela terminou |
 | Estados de sucesso/falha (`completed`, `failed`, `cancelled`) | **Rejeitados** nesta etapa | Misturam encerramento da relação com resultado da troca e antecipariam regras de desistência, avaliação ou pós-negociação |
 | Reabertura de negociação encerrada | **Rejeitada** | Uma negociação encerrada é fato histórico imutável; qualquer relação futura será nova negociação, nos termos de [reselection-policy.md](reselection-policy.md) (DEC-032) |
 | Motivo ou resultado obrigatório no encerramento | **Rejeitados** | Ver seção 9.3 |

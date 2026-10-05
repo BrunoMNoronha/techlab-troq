@@ -1,12 +1,12 @@
 # Avaliações
 
-Fonte oficial da política de avaliações no MVP do TROQ. Este documento fecha **OD-02** e é registrado como **DEC-030** em [../decisions/decision-log.md](../decisions/decision-log.md).
+Fonte oficial da política de avaliações no MVP do TROQS. Este documento fecha **OD-02** e é registrado como **DEC-030** em [../decisions/decision-log.md](../decisions/decision-log.md).
 
 ## 1. Objetivo
 
 Definir quem avalia quem, quando, em qual formato, por quanto tempo, como a avaliação é publicada, quando pode ser alterada, como a reputação pública é calculada e como o abuso é tratado.
 
-O objetivo de produto é dar sinal de confiança entre desconhecidos que negociaram pelo TROQ, com o menor custo operacional possível e sem criar superfície de moderação desnecessária.
+O objetivo de produto é dar sinal de confiança entre desconhecidos que negociaram pelo TROQS, com o menor custo operacional possível e sem criar superfície de moderação desnecessária.
 
 ## 2. Escopo
 

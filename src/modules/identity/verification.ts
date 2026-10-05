@@ -2,7 +2,7 @@ import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import type { Prisma } from '@/generated/prisma/client';
 import { getPrismaClient } from '@/persistence/prisma';
 
-// Token de verificacao de email do TROQ (docs/architecture/identity-contract.md,
+// Token de verificacao de email do TROQS (docs/architecture/identity-contract.md,
 // IC-7 e IC-9). Unico lugar que emite, limita e consome esse token.
 //
 // - O token em claro (32 bytes, base64url) so existe em memoria e no link

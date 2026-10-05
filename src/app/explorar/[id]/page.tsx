@@ -27,8 +27,8 @@ export async function generateMetadata({
   const listing = await getListing(id);
   // Metadata so com campos da projecao publica; anuncio indisponivel nao revela nada.
   return listing
-    ? { title: `${listing.title} — TROQ`, description: `${listing.city} - ${listing.state}` }
-    : { title: 'Anúncio indisponível — TROQ' };
+    ? { title: `${listing.title} — TROQS`, description: `${listing.city} - ${listing.state}` }
+    : { title: 'Anúncio indisponível — TROQS' };
 }
 
 export default async function DetalheAnuncioPublicoPage({

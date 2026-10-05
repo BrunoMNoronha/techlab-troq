@@ -35,7 +35,7 @@ describe('sendVerificationEmail — fronteira do envio (IC-9.1)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.stubEnv('RESEND_API_KEY', API_KEY);
-    vi.stubEnv('EMAIL_FROM', 'TROQ <nao-responda@preview.troq.example>');
+    vi.stubEnv('EMAIL_FROM', 'TROQS <nao-responda@preview.troq.example>');
     error = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     log = vi.spyOn(console, 'log').mockImplementation(() => undefined);
   });
@@ -55,7 +55,7 @@ describe('sendVerificationEmail — fronteira do envio (IC-9.1)', () => {
     ['chave ausente', 'RESEND_API_KEY', undefined],
     ['chave placeholder', 'RESEND_API_KEY', 'SUBSTITUIR_RESEND_API_KEY'],
     ['remetente ausente', 'EMAIL_FROM', undefined],
-    ['remetente placeholder', 'EMAIL_FROM', 'TROQ <nao-responda@example.invalid>'],
+    ['remetente placeholder', 'EMAIL_FROM', 'TROQS <nao-responda@example.invalid>'],
   ])('%s e falha, sem chamar o provedor', async (_caso, variable, value) => {
     vi.stubEnv(variable, value);
 
@@ -88,7 +88,7 @@ describe('sendVerificationEmail — fronteira do envio (IC-9.1)', () => {
     expect(send).toHaveBeenCalledTimes(1);
     const [payload, options] = send.mock.calls[0];
     expect(payload).toMatchObject({
-      from: 'TROQ <nao-responda@preview.troq.example>',
+      from: 'TROQS <nao-responda@preview.troq.example>',
       to: [TO],
     });
     expect(payload.text).toContain(URL_WITH_TOKEN);

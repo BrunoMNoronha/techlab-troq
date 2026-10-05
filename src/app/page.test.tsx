@@ -22,7 +22,7 @@ function offer(id: string, title: string) {
 }
 
 describe('HomePage', () => {
-  it('apresenta o TROQ e leva a explorar e criar conta sem exigir login', () => {
+  it('apresenta o TROQS e leva a explorar e criar conta sem exigir login', () => {
     render(<HomePage />);
 
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/contato protegido/i);

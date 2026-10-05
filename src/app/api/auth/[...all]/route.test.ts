@@ -19,7 +19,7 @@ describe('rota /api/auth — superficie do Better Auth (#42 / F2-004; #81)', () 
 
   it.each([
     '/list-sessions',
-    // Inicio e vinculacao do OAuth so por Server Action, depois das regras do TROQ.
+    // Inicio e vinculacao do OAuth so por Server Action, depois das regras do TROQS.
     '/sign-in/social',
     '/link-social',
     '/list-accounts',

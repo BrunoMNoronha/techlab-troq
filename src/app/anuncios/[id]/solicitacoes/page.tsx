@@ -24,7 +24,7 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 export const metadata: Metadata = {
-  title: 'Solicitações do anúncio — TROQ',
+  title: 'Solicitações do anúncio — TROQS',
   robots: { index: false, follow: false },
 };
 

@@ -17,7 +17,7 @@ import { amountToCents, parseZonedInstant } from './values';
 //
 // Nunca usa `last_updated_date`, chegada da notificacao ou processamento.
 
-/** Um pagamento devolvido pela busca, em termos do TROQ. */
+/** Um pagamento devolvido pela busca, em termos do TROQS. */
 export interface SearchedPayment {
   providerPaymentId: string | null;
   status: string | null;

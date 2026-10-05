@@ -41,20 +41,20 @@ export async function sendVerificationEmail({
       {
         from,
         to: [to],
-        subject: 'Confirme seu e-mail no TROQ',
+        subject: 'Confirme seu e-mail no TROQS',
         text:
-          'Para concluir seu cadastro no TROQ, confirme seu e-mail abrindo o link abaixo.\n\n' +
+          'Para concluir seu cadastro no TROQS, confirme seu e-mail abrindo o link abaixo.\n\n' +
           `${verificationUrl}\n\n` +
           'O link vale por 24 horas e pode ser usado uma unica vez. ' +
-          'Se voce nao se cadastrou no TROQ, ignore esta mensagem.',
+          'Se voce nao se cadastrou no TROQS, ignore esta mensagem.',
         html: `
           <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <h2>Confirme seu e-mail no TROQ</h2>
-            <p>Para concluir seu cadastro no TROQ, clique no botao abaixo:</p>
+            <h2>Confirme seu e-mail no TROQS</h2>
+            <p>Para concluir seu cadastro no TROQS, clique no botao abaixo:</p>
             <p style="margin: 24px 0;">
               <a href="${safeUrl}" style="background-color: #2563eb; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; display: inline-block;">Confirmar e-mail</a>
             </p>
-            <p style="color: #6b7280; font-size: 14px;">O link vale por 24 horas e pode ser usado uma unica vez. Se voce nao se cadastrou no TROQ, ignore esta mensagem.</p>
+            <p style="color: #6b7280; font-size: 14px;">O link vale por 24 horas e pode ser usado uma unica vez. Se voce nao se cadastrou no TROQS, ignore esta mensagem.</p>
           </div>
         `,
       },

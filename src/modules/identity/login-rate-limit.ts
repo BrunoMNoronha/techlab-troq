@@ -3,7 +3,7 @@ import { getPrismaClient } from '@/persistence/prisma';
 
 // Limite de tentativas de login (docs/architecture/identity-contract.md,
 // IC-10.2). As chamadas `auth.api` feitas no servidor nao passam pelo
-// limitador do Better Auth (IC-10.1), entao o TROQ limita antes de chamar o
+// limitador do Better Auth (IC-10.1), entao o TROQS limita antes de chamar o
 // provedor.
 //
 // - Bucket por SHA-256 do e-mail normalizado, exista ou nao a conta: a

@@ -1,4 +1,4 @@
-# Ciclo de vida do anúncio — TROQ
+# Ciclo de vida do anúncio — TROQS
 
 Documento normativo do ciclo de vida do anúncio no MVP. Fecha [OD-04](../decisions/open-decisions.md) e é registrado como DEC-027 em [../decisions/decision-log.md](../decisions/decision-log.md).
 
@@ -47,7 +47,7 @@ Modelar `removed` como um sinalizador sobre `closed` misturaria decisão do usu�
 | `expired` / expirado | Prática comum de marketplaces com prazo de veiculação | **Fora do MVP** | Ver seção 7. |
 | `under_review` / em análise | `under_review` do Mercado Livre | **Fora do MVP** | Exigiria definir gatilhos, critérios e prazos de análise, que eram OD-03; [prohibited-items.md](prohibited-items.md) (DEC-031) os definiu **sem** criar estado intermediário de anúncio, confirmando esta rejeição. Uma denúncia é uma entidade própria (RF-018) e não precisa alterar o estado do anúncio para existir. Um anúncio permanece `published` até que a moderação decida removê-lo. |
 | `inactive` / inativo | `inactive` do Mercado Livre | **Fora do MVP** | É consequência de `under_review` no modelo de origem; sem `under_review`, não tem função. Não acrescenta nada a `paused`. |
-| `out_of_stock` / esgotado | `OUT_OF_STOCK` do eBay | **Fora do MVP** | Pressupõe estoque e quantidade. O TROQ não é comércio de estoque: o anúncio é uma oferta única de contato controlado. `paused` cobre o caso de indisponibilidade temporária. |
+| `out_of_stock` / esgotado | `OUT_OF_STOCK` do eBay | **Fora do MVP** | Pressupõe estoque e quantidade. O TROQS não é comércio de estoque: o anúncio é uma oferta única de contato controlado. `paused` cobre o caso de indisponibilidade temporária. |
 | `deleted` / excluído | `sub_status: deleted` do Mercado Livre | **Fora do MVP** | Exclusão de dados é assunto de retenção e LGPD, definido depois em [data-retention-policy.md](data-retention-policy.md) (DEC-033), não de ciclo de vida da oferta. A decisão de não criar esse estado permanece: a exclusão opera sobre dados e exposição, não sobre o estado da oferta. |
 | `negotiating` / em negociação | Direcionamento interno | **Rejeitado** | Confundiria anúncio com negociação. Ver seção 8. |
 | `fulfilled` / concluído | Direcionamento interno | **Rejeitado** | O desfecho da negociação pertence ao ciclo próprio da negociação ([negotiation-lifecycle.md](negotiation-lifecycle.md), DEC-029). Um anúncio cuja negociação terminou é encerrado pelo anunciante via `closed`, se ele assim decidir. |
@@ -167,7 +167,7 @@ Definido aqui:
 
 Fundamentação:
 
-- Marketplaces com prazo de veiculação usam expiração porque vendem tempo de exposição ou gerenciam estoque. O TROQ não faz nenhum dos dois: o anúncio é gratuito e a receita vem da solicitação paga de desbloqueio (RB-004).
+- Marketplaces com prazo de veiculação usam expiração porque vendem tempo de exposição ou gerenciam estoque. O TROQS não faz nenhum dos dois: o anúncio é gratuito e a receita vem da solicitação paga de desbloqueio (RB-004).
 - Expiração exigiria decidir prazo, política de renovação, aviso prévio e efeito sobre solicitações em andamento — quatro decisões novas sem regra de negócio vigente que as sustente.
 - Um anúncio obsoleto tem saída explícita e barata: `paused` ou `closed`, ambos sob controle do anunciante.
 - Introduzir expiração seria o único mecanismo do sistema capaz de mudar o estado de um anúncio sem ator humano, o que contraria a seção 4 e complicaria auditoria.
@@ -240,9 +240,9 @@ Consequências normativas:
 
 Consultadas para avaliar padrões de mercado, não para copiar modelo.
 
-| Fonte | Padrão observado | Uso no TROQ |
+| Fonte | Padrão observado | Uso no TROQS |
 | --- | --- | --- |
 | [Mercado Livre — Items & Searches](https://developers.mercadolivre.com.br/en_us/items-and-searches) | Distinção entre `paused` (oculto, reativável) e `closed` (definitivo); `under_review` e `inactive` para o fluxo de moderação; `sub_status: deleted` | Confirmou a separação pausa × encerramento, adotada. `under_review`, `inactive` e `deleted` foram rejeitados (seção 2.2). |
-| [eBay — ListingStatusEnum (Sell Inventory API)](https://developer.ebay.com/api-docs/sell/inventory/types/slr:ListingStatusEnum) | `ACTIVE`, `OUT_OF_STOCK` (ativo porém oculto da busca), `ENDED`, `INACTIVE` | Confirmou que "ativo" e "fim de vida" são estados distintos. `OUT_OF_STOCK` foi rejeitado por pressupor estoque, inexistente no TROQ (seção 2.2). |
+| [eBay — ListingStatusEnum (Sell Inventory API)](https://developer.ebay.com/api-docs/sell/inventory/types/slr:ListingStatusEnum) | `ACTIVE`, `OUT_OF_STOCK` (ativo porém oculto da busca), `ENDED`, `INACTIVE` | Confirmou que "ativo" e "fim de vida" são estados distintos. `OUT_OF_STOCK` foi rejeitado por pressupor estoque, inexistente no TROQS (seção 2.2). |
 
-Nenhuma das fontes justificou, por si só, a adoção de expiração automática; a decisão de excluí-la está fundamentada na seção 7 em características próprias do TROQ.
+Nenhuma das fontes justificou, por si só, a adoção de expiração automática; a decisão de excluí-la está fundamentada na seção 7 em características próprias do TROQS.

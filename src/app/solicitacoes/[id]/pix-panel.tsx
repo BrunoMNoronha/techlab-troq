@@ -19,7 +19,7 @@ import { TIME } from '../_components/phase';
 // a cobranca com a MESMA chave se ela ainda nao foi registrada (PD-4.2). Elas
 // vivem so no estado deste navegador; nunca vao para URL, log ou telemetria.
 //
-// O prazo exibido e o `reservedUntil` do TROQ (PD-3.1), pelo relogio do banco:
+// O prazo exibido e o `reservedUntil` do TROQS (PD-3.1), pelo relogio do banco:
 // o deslocamento entre o `now()` do servidor e o relogio local corrige a
 // contagem. No fim do prazo, a pagina e relida no servidor.
 

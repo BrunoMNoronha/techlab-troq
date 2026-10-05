@@ -1,4 +1,4 @@
-# Convenções de engenharia — TROQ
+# Convenções de engenharia — TROQS
 
 Base normativa de código, organização e qualidade para a implementação da aplicação. Este documento é **preparatório da Fase 1**: ele define os padrões que o futuro scaffold e o futuro CI devem materializar, para que essa tarefa não precise rediscutir padrões básicos.
 

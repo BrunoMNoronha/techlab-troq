@@ -526,7 +526,7 @@ describe.skipIf(!enabled)('superficies publicas por HTTP real (#49, D-13)', () =
 
   it('detalhe visivel: metadata e imagens so da projecao publica', async () => {
     const page = await fetchPage(`/explorar/${visible}`);
-    expect(page.body).toContain(`<title>Visivel ${RUN_ID} — TROQ</title>`);
+    expect(page.body).toContain(`<title>Visivel ${RUN_ID} — TROQS</title>`);
     expect(page.body).toContain(`/media/${readyImage}/large`);
     expect(page.body).toContain(`Imagem 1 de 1: Visivel ${RUN_ID}`);
     expect(page.body).not.toContain(pendingImage);
@@ -598,7 +598,7 @@ describe.skipIf(!enabled)('superficies publicas por HTTP real (#49, D-13)', () =
 
     const detail = await fetchPage(`/explorar/${id}`);
     const body = text(detail.body);
-    expect(detail.body).toContain('<title>Anúncio em revisão — TROQ</title>');
+    expect(detail.body).toContain('<title>Anúncio em revisão — TROQS</title>');
     expect(body).toContain('A descrição deste anúncio está em revisão pelo anunciante.');
     expect(body).toContain('Alternativa em revisão');
     expect(body).toContain('Imagem 1 de 1: Anúncio em revisão');

@@ -8,7 +8,7 @@ import type { ReactNode } from 'react';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'Design System — TROQ',
+  title: 'Design System — TROQS',
   robots: { index: false, follow: false },
 };
 

@@ -78,6 +78,7 @@ afterAll(async () => {
 beforeEach(() => {
   received = [];
   vi.stubEnv('MERCADO_PAGO_ACCESS_TOKEN', TOKEN);
+  vi.stubEnv('MERCADO_PAGO_PIX_SANDBOX_AUTO_APPROVE', undefined);
 });
 
 afterEach(() => {
@@ -93,6 +94,218 @@ const charge = {
   expiresInMs: 30 * 60 * 1000,
   payerEmail: 'pagador@example.test',
 };
+
+describe('homologacao Pix sandbox protegida', () => {
+  function enable(appEnv = 'preview') {
+    vi.stubEnv('MERCADO_PAGO_PIX_SANDBOX_AUTO_APPROVE', '1');
+    vi.stubEnv('APP_ENV', appEnv);
+    vi.stubEnv('VERCEL_ENV', undefined);
+  }
+
+  const collector = {
+    id: 123456789,
+    site_id: 'MLB',
+    tags: ['normal', 'test_user'],
+    email: 'collector-privado@example.test',
+    nickname: 'dado-privado-do-collector',
+  };
+
+  it.each([undefined, '0'])(
+    'flag %s: preserva o fluxo normal, inclusive em Production',
+    async (flag) => {
+      vi.stubEnv('MERCADO_PAGO_PIX_SANDBOX_AUTO_APPROVE', flag);
+      vi.stubEnv('APP_ENV', 'production');
+      vi.stubEnv('VERCEL_ENV', 'production');
+      respond = (_req, res) => json(res, 201, ORDER);
+      expect((await client().createPixCharge(charge)).ok).toBe(true);
+      expect(received).toHaveLength(1);
+      expect(received[0].url).toBe('/v1/orders');
+      expect(JSON.parse(received[0].body).payer).toEqual({ email: charge.payerEmail });
+    },
+  );
+
+  it.each(['development', 'preview'])(
+    '%s: confirma collector e envia o payload oficial na mesma tentativa',
+    async (appEnv) => {
+      enable(appEnv);
+      respond = (req, res) =>
+        json(res, req.url === '/users/me' ? 200 : 201, req.url === '/users/me' ? collector : ORDER);
+      const result = await client().createPixCharge(charge);
+      expect(result.ok).toBe(true);
+      expect(received.map((req) => [req.method, req.url])).toEqual([
+        ['GET', '/users/me'],
+        ['POST', '/v1/orders'],
+      ]);
+      const [read, create] = received;
+      expect(read.body).toBe('');
+      expect(read.headers['x-idempotency-key']).toBeUndefined();
+      expect(read.headers.authorization).toBe(`Bearer ${TOKEN}`);
+      expect(create.headers.authorization).toBe(read.headers.authorization);
+      expect(create.headers['x-idempotency-key']).toBe(KEY);
+      expect(JSON.parse(create.body)).toEqual({
+        type: 'online',
+        processing_mode: 'automatic',
+        external_reference: charge.externalReference,
+        total_amount: '0.99',
+        payer: { email: 'test_user_br@testuser.com', first_name: 'APRO' },
+        transactions: {
+          payments: [
+            {
+              amount: '0.99',
+              payment_method: { id: 'pix', type: 'bank_transfer' },
+              expiration_time: 'PT30M',
+            },
+          ],
+        },
+      });
+      expect(result).toMatchObject({
+        ok: true,
+        value: { snapshot: { state: { kind: 'pending' } } },
+      });
+      for (const value of [TOKEN, collector.email, collector.nickname, 'test_user']) {
+        expect(JSON.stringify(result)).not.toContain(value);
+      }
+    },
+  );
+
+  it.each([
+    ['production', undefined],
+    ['preview', 'production'],
+    ['development', 'production'],
+    ['test', undefined],
+    [undefined, undefined],
+  ])(
+    'recusa ambiente APP_ENV=%s / VERCEL_ENV=%s antes de qualquer chamada',
+    async (appEnv, vercelEnv) => {
+      enable();
+      vi.stubEnv('APP_ENV', appEnv);
+      vi.stubEnv('VERCEL_ENV', vercelEnv);
+      await expect(client().createPixCharge(charge)).rejects.toThrow(MercadoPagoConfigError);
+      expect(received).toEqual([]);
+    },
+  );
+
+  it.each(['true', 'false', '2', 'SEGREDO-SINTETICO'])(
+    'recusa flag invalida sem revelar seu valor',
+    async (flag) => {
+      enable();
+      vi.stubEnv('MERCADO_PAGO_PIX_SANDBOX_AUTO_APPROVE', flag);
+      const error = await client()
+        .createPixCharge(charge)
+        .catch((err: unknown) => err);
+      expect(error).toBeInstanceOf(MercadoPagoConfigError);
+      expect((error as Error).message).not.toContain(flag);
+      expect(received).toEqual([]);
+    },
+  );
+
+  it.each([
+    ['conta real', { ...collector, tags: ['normal'] }],
+    ['tag parecida', { ...collector, tags: ['test_user_extra'] }],
+    ['tags ausentes', { ...collector, tags: undefined }],
+    ['tags malformadas', { ...collector, tags: ['test_user', null] }],
+    ['collector ausente', null],
+    ['id ausente', { ...collector, id: undefined }],
+    ['id invalido', { ...collector, id: -1 }],
+    ['pais diferente', { ...collector, site_id: 'MLA' }],
+  ])('%s: nenhuma criacao e nenhum dado do collector no resultado', async (_label, body) => {
+    enable();
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      respond = (_req, res) => json(res, 200, body);
+      const result = await client().createPixCharge(charge);
+      expect(result).toEqual({
+        ok: false,
+        kind: 'rejected',
+        httpStatus: 200,
+        code: 'sandbox_collector_unverified',
+      });
+      expect(received.map((req) => req.url)).toEqual(['/users/me']);
+      expect(log).not.toHaveBeenCalled();
+      expect(JSON.stringify(result)).not.toContain(collector.email);
+      expect(JSON.stringify(result)).not.toContain(collector.nickname);
+    } finally {
+      log.mockRestore();
+    }
+  });
+
+  it.each([401, 403, 404, 429])(
+    'consulta HTTP %s: recusa sem ecoar corpo ou codigo do provedor',
+    async (status) => {
+      enable();
+      respond = (_req, res) =>
+        json(res, status, { ...collector, code: TOKEN, message: collector.email });
+      expect(await client().createPixCharge(charge)).toEqual({
+        ok: false,
+        kind: 'rejected',
+        httpStatus: status,
+        code: 'sandbox_collector_unverified',
+      });
+      expect(received.map((req) => req.url)).toEqual(['/users/me']);
+    },
+  );
+
+  it('consulta indisponivel: mantem indisponibilidade e nao cria a order', async () => {
+    enable();
+    respond = (_req, res) => json(res, 503, { message: TOKEN });
+    expect(await client().createPixCharge(charge)).toEqual({
+      ok: false,
+      kind: 'unavailable',
+      reason: 'server_error',
+    });
+    expect(received.map((req) => req.url)).toEqual(['/users/me']);
+  });
+
+  it.each(['network', 'timeout'] as const)(
+    '%s no collector: falha fechada sem imprimir excecao sensivel',
+    async (reason) => {
+      enable();
+      const doFetch = vi
+        .fn<typeof fetch>()
+        .mockRejectedValue(
+          reason === 'timeout' ? new DOMException(TOKEN, 'TimeoutError') : new Error(TOKEN),
+        );
+      const guarded = createMercadoPagoClient({ fetch: doFetch });
+      expect(await guarded.createPixCharge(charge)).toEqual({
+        ok: false,
+        kind: 'unavailable',
+        reason,
+      });
+      expect(doFetch).toHaveBeenCalledTimes(1);
+      expect(doFetch.mock.calls[0][0]).toBe('https://api.mercadopago.com/users/me');
+    },
+  );
+
+  it('revalida o collector em cada criacao e recusa uma troca para conta real', async () => {
+    enable();
+    let checks = 0;
+    respond = (req, res) => {
+      if (req.url !== '/users/me') return json(res, 201, ORDER);
+      checks += 1;
+      json(res, 200, { ...collector, tags: checks === 1 ? ['test_user'] : ['normal'] });
+    };
+    const guarded = client();
+    expect((await guarded.createPixCharge(charge)).ok).toBe(true);
+    expect((await guarded.createPixCharge(charge)).ok).toBe(false);
+    expect(received.map((req) => req.url)).toEqual(['/users/me', '/v1/orders', '/users/me']);
+  });
+
+  it('mantem o token confirmado durante rotacao entre a consulta e a criacao', async () => {
+    enable();
+    respond = (req, res) => {
+      if (req.url === '/users/me') {
+        vi.stubEnv('MERCADO_PAGO_ACCESS_TOKEN', 'outro-token-sintetico');
+        return json(res, 200, collector);
+      }
+      json(res, 201, ORDER);
+    };
+    expect((await client().createPixCharge(charge)).ok).toBe(true);
+    expect(received.map((req) => req.headers.authorization)).toEqual([
+      `Bearer ${TOKEN}`,
+      `Bearer ${TOKEN}`,
+    ]);
+  });
+});
 
 describe('createPixCharge (POST /v1/orders)', () => {
   it('envia cabecalhos e corpo exatos, com 0.99 e sem notification_url', async () => {

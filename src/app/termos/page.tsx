@@ -17,9 +17,9 @@ import {
 // TERMS_VERSION em src/modules/identity/terms.ts.
 
 export const metadata: Metadata = {
-  title: 'Termos de Uso — TROQ',
+  title: 'Termos de Uso — TROQS',
   description:
-    'Regras para usar o TROQ: conta, anúncios, solicitação paga de R$ 0,99, escolha, liberação do contato, reembolso técnico e responsabilidades.',
+    'Regras para usar o TROQS: conta, anúncios, solicitação paga de R$ 0,99, escolha, liberação do contato, reembolso técnico e responsabilidades.',
 };
 
 const mail = <a href={`mailto:${LEGAL_CONTACT_EMAIL}`}>{LEGAL_CONTACT_EMAIL}</a>;
@@ -31,7 +31,7 @@ const sections: LegalSection[] = [
     body: (
       <>
         <p>
-          Estes Termos de Uso regem o uso do TROQ (troqs.app), mantido por{' '}
+          Estes Termos de Uso regem o uso do TROQS (troqs.app), mantido por{' '}
           <strong>{LEGAL_CONTROLLER}</strong>. Ao criar uma conta, você declara ter 18 anos ou mais
           e aceita estes termos e a <Link href="/privacidade">Política de Privacidade</Link>. A
           versão aceita e a data do aceite ficam registradas na sua conta.
@@ -45,17 +45,18 @@ const sections: LegalSection[] = [
   },
   {
     id: 'servico',
-    title: 'O que é o TROQ',
+    title: 'O que é o TROQS',
     body: (
       <>
         <p>
-          O TROQ é uma plataforma de anúncios de troca entre pessoas. Quem anuncia publica um item e
-          as alternativas que aceita em troca; quem se interessa pode demonstrar interesse de graça
-          ou fazer uma solicitação paga para receber o contato do anunciante, se for escolhido.
+          O TROQS é uma plataforma de anúncios de troca entre pessoas. Quem anuncia publica um item
+          e as alternativas que aceita em troca; quem se interessa pode demonstrar interesse de
+          graça ou fazer uma solicitação paga para receber o contato do anunciante, se for
+          escolhido.
         </p>
         <div className={s.callout}>
           <p>
-            O TROQ <strong>não é parte da troca</strong>. Não somos donos dos itens, não os
+            O TROQS <strong>não é parte da troca</strong>. Não somos donos dos itens, não os
             inspecionamos, não fazemos entrega e não garantimos que a troca aconteça. A negociação,
             o encontro e a troca são combinados diretamente entre as pessoas.
           </p>
@@ -69,7 +70,7 @@ const sections: LegalSection[] = [
     body: (
       <ul>
         <li>
-          O TROQ é destinado exclusivamente a maiores de 18 anos, por decisão do serviço. Contas de
+          O TROQS é destinado exclusivamente a maiores de 18 anos, por decisão do serviço. Contas de
           menores de 18 anos serão encerradas.
         </li>
         <li>
@@ -103,14 +104,14 @@ const sections: LegalSection[] = [
           </li>
           <li>
             Título, descrição e alternativas de troca não podem conter telefone, WhatsApp, e-mail ou
-            endereço. O contato é entregue pelo próprio TROQ, só à pessoa escolhida.
+            endereço. O contato é entregue pelo próprio TROQS, só à pessoa escolhida.
           </li>
           <li>
             A localização exibida é apenas cidade e UF. As fotos devem ser do item e você precisa
             ter o direito de usá-las.
           </li>
           <li>
-            Ao publicar, você autoriza o TROQ a exibir o conteúdo do anúncio no site enquanto ele
+            Ao publicar, você autoriza o TROQS a exibir o conteúdo do anúncio no site enquanto ele
             estiver publicado.
           </li>
         </ul>
@@ -150,7 +151,7 @@ const sections: LegalSection[] = [
           <li>pagamento em duplicidade para a mesma solicitação;</li>
           <li>pagamento creditado depois de a reserva da vaga ter expirado;</li>
           <li>pagamento sem uma reserva válida correspondente;</li>
-          <li>cobrança gerada por falha do TROQ.</li>
+          <li>cobrança gerada por falha do TROQS.</li>
         </ol>
         <p>
           Uma cobrança que não chegou a ser paga é cancelada, não reembolsada. O reembolso segue os
@@ -183,13 +184,14 @@ const sections: LegalSection[] = [
     body: (
       <>
         <p>
-          A negociação acontece fora do TROQ, entre o anunciante e a pessoa escolhida. Encerrar a
-          negociação no TROQ não significa que a troca aconteceu. Divergências sobre o item, a troca
-          ou a conduta da outra pessoa são resolvidas entre os envolvidos; o TROQ não julga a troca.
+          A negociação acontece fora do TROQS, entre o anunciante e a pessoa escolhida. Encerrar a
+          negociação no TROQS não significa que a troca aconteceu. Divergências sobre o item, a
+          troca ou a conduta da outra pessoa são resolvidas entre os envolvidos; o TROQS não julga a
+          troca.
         </p>
         <p>
           Para sua segurança, prefira encontros em locais públicos e movimentados, confira o item
-          antes de trocar e desconfie de pedidos de pagamento antecipado fora do TROQ.
+          antes de trocar e desconfie de pedidos de pagamento antecipado fora do TROQS.
         </p>
       </>
     ),
@@ -238,8 +240,8 @@ const sections: LegalSection[] = [
     title: 'Disponibilidade e responsabilidade',
     body: (
       <p>
-        Trabalhamos para manter o TROQ disponível e seguro, mas o serviço pode passar por
-        manutenções e falhas. O TROQ não responde pelos itens anunciados, pela conduta das pessoas
+        Trabalhamos para manter o TROQS disponível e seguro, mas o serviço pode passar por
+        manutenções e falhas. O TROQS não responde pelos itens anunciados, pela conduta das pessoas
         nem pelo resultado das trocas, nos limites permitidos pela lei. Nada nestes termos afasta os
         direitos garantidos pelo Código de Defesa do Consumidor.
       </p>
@@ -250,8 +252,8 @@ const sections: LegalSection[] = [
     title: 'Propriedade intelectual',
     body: (
       <p>
-        A marca, o nome e o software do TROQ pertencem ao seu mantenedor. O conteúdo dos anúncios
-        continua sendo de quem o publicou, que autoriza sua exibição no TROQ nos termos da seção 4.
+        A marca, o nome e o software do TROQS pertencem ao seu mantenedor. O conteúdo dos anúncios
+        continua sendo de quem o publicou, que autoriza sua exibição no TROQS nos termos da seção 4.
       </p>
     ),
   },
@@ -285,7 +287,7 @@ export default function TermosPage() {
       title="Termos de Uso"
       summary={
         <>
-          As regras do TROQ em linguagem direta: interesse é gratuito, a solicitação de contato
+          As regras do TROQS em linguagem direta: interesse é gratuito, a solicitação de contato
           custa R$ 0,99, cada anúncio aceita até três, e só a pessoa escolhida recebe o contato.
         </>
       }

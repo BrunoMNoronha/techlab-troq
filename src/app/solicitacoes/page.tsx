@@ -16,7 +16,7 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 export const metadata: Metadata = {
-  title: 'Minhas solicitações — TROQ',
+  title: 'Minhas solicitações — TROQS',
   robots: { index: false, follow: false },
 };
 

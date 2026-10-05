@@ -1,4 +1,4 @@
-# Liberação de contato — desenho técnico — TROQ
+# Liberação de contato — desenho técnico — TROQS
 
 Desenho técnico de RB-001 no MVP. Produzido por **F0-022**, junto com [overview.md](overview.md), [data-model.md](data-model.md) e [payments-design.md](payments-design.md).
 
@@ -191,7 +191,7 @@ Motivo: uma propriedade entregue a um Client Component **está no payload**, mes
 
 **CR-6.3 (invariante).** O contato **nunca** aparece em URL, em nenhuma circunstância, nem como parâmetro, nem como fragmento, nem codificado. URLs são registradas em log de servidor, em histórico de navegador, em cabeçalho de referência e em ferramentas de análise — quatro lugares onde o dado não pode estar. Pelo mesmo motivo, a entrega nunca acontece por redirecionamento que carregue o valor.
 
-**CR-6.4 (decisão arquitetural).** Se a interface oferecer um atalho para abrir a conversa em aplicativo externo, ele é construído **no cliente do destinatário, a partir do valor já legitimamente entregue a ele** — nunca por uma rota do TROQ que receba o número e redirecione. Uma rota assim colocaria o contato na URL, violando CR-6.3.
+**CR-6.4 (decisão arquitetural).** Se a interface oferecer um atalho para abrir a conversa em aplicativo externo, ele é construído **no cliente do destinatário, a partir do valor já legitimamente entregue a ele** — nunca por uma rota do TROQS que receba o número e redirecione. Uma rota assim colocaria o contato na URL, violando CR-6.3.
 
 ## 7. Cache
 
@@ -275,7 +275,7 @@ _Atualização de 2026-10-01 (F3-001, DV-13)._ O MVP ainda não tem papel de mod
 | Verificar a autorização apenas na escolha e confiar depois | **Rejeitada** | Autorização é condição necessária, nunca suficiente; A5 e A6 são estado **atual** (CR-5.2) |
 | Aceitar do cliente o identificador da liberação e apenas checar existência | **Rejeitada** | Troca autorização por conhecimento de identificador (CR-5.3) |
 | Entregar o contato como propriedade de Client Component, oculto até o clique | **Rejeitada** | O payload é acessível; ocultação visual não é proteção (CR-6.2) |
-| Rota do TROQ que receba o número e redirecione para o aplicativo externo | **Rejeitada** | Colocaria o contato na URL, logo em log, histórico e cabeçalho de referência (CR-6.3, CR-6.4) |
+| Rota do TROQS que receba o número e redirecione para o aplicativo externo | **Rejeitada** | Colocaria o contato na URL, logo em log, histórico e cabeçalho de referência (CR-6.3, CR-6.4) |
 | Cachear a resposta que contém contato, ainda que por poucos segundos | **Rejeitada** | Não há ganho de latência que justifique um vazamento irreversível (CR-7.3) |
 | Registrar apenas o primeiro acesso | **Rejeitada** | Não responde quantas vezes e quando o dado saiu, que é a pergunta de um incidente (CR-5.6) |
 | Revogar a liberação após reversão do pagamento | **Rejeitada** | Contraria PE-8.7 e DEC-032 seção 3; é tecnicamente inócuo, pois o dado já foi divulgado, e inventaria revogação retroativa (CR-4.3) |

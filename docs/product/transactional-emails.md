@@ -1,4 +1,4 @@
-# Emails transacionais da Fase 3 — TROQ
+# Emails transacionais da Fase 3 — TROQS
 
 Contrato do catálogo de emails transacionais dos fluxos de solicitação, pagamento e escolha. Registra **DEC-048** e reduz a lacuna de [RF-021](requirements.md) para a Fase 3. Produzido por F3-013 ([#103](https://github.com/BrunoMNoronha/techlab-troq/issues/103)).
 
@@ -26,16 +26,16 @@ Este documento **não** define:
 
 | ID | Transição que dispara | Destinatário | Assunto | Link | Justificativa no fluxo |
 | --- | --- | --- | --- | --- | --- |
-| **TE-1** | Solicitação `reserved` → `paid` com a tentativa em `pagamento_confirmado` (PD-6.6, passo 4) | Quem pagou | "TROQ: pagamento da sua solicitação confirmado" | `/explorar/<anúncio>` | O Pix é pago fora do TROQ e a confirmação pode chegar minutos depois, inclusive pela reconciliação (PE-4.2, PE-6.6). Sem aviso, quem pagou não sabe que a solicitação entrou na lista do anunciante |
-| **TE-2** | A mesma transição de TE-1 | O anunciante dono do anúncio | "TROQ: nova solicitação paga em um anúncio seu" | `/anuncios` | A escolha (RF-013) depende de o anunciante saber que existe solicitação paga elegível. Sem aviso, a vaga consumida fica parada |
-| **TE-3** | Escolha ou reseleção que grava `Selection`, `Negotiation` `active` e `ContactRelease` (CR-3.3, DEC-032) | A pessoa escolhida | "TROQ: o anunciante escolheu você e liberou o contato" | `/contatos` | A liberação é o produto pago (RB-001). Quem foi escolhido precisa saber que o contato está disponível — e onde, porque ele não vai por email |
-| **TE-6** | `TechnicalRefund` → `concluido` (RT-1 a RT-4; PD-8), gravado pela execução que recebeu a devolução do provedor | Quem pagou | "TROQ: devolvemos um pagamento seu" | `/explorar/<anúncio>` | Decisão do Bruno em 2026-10-04 (seção 5). Quem pagou e não recebeu o que pagou precisa saber que o dinheiro voltou. O texto não diz a causa técnica nem o valor, e vale igualmente para duplicidade, fora da janela e sem vaga |
+| **TE-1** | Solicitação `reserved` → `paid` com a tentativa em `pagamento_confirmado` (PD-6.6, passo 4) | Quem pagou | "TROQS: pagamento da sua solicitação confirmado" | `/explorar/<anúncio>` | O Pix é pago fora do TROQS e a confirmação pode chegar minutos depois, inclusive pela reconciliação (PE-4.2, PE-6.6). Sem aviso, quem pagou não sabe que a solicitação entrou na lista do anunciante |
+| **TE-2** | A mesma transição de TE-1 | O anunciante dono do anúncio | "TROQS: nova solicitação paga em um anúncio seu" | `/anuncios` | A escolha (RF-013) depende de o anunciante saber que existe solicitação paga elegível. Sem aviso, a vaga consumida fica parada |
+| **TE-3** | Escolha ou reseleção que grava `Selection`, `Negotiation` `active` e `ContactRelease` (CR-3.3, DEC-032) | A pessoa escolhida | "TROQS: o anunciante escolheu você e liberou o contato" | `/contatos` | A liberação é o produto pago (RB-001). Quem foi escolhido precisa saber que o contato está disponível — e onde, porque ele não vai por email |
+| **TE-6** | `TechnicalRefund` → `concluido` (RT-1 a RT-4; PD-8), gravado pela execução que recebeu a devolução do provedor | Quem pagou | "TROQS: devolvemos um pagamento seu" | `/explorar/<anúncio>` | Decisão do Bruno em 2026-10-04 (seção 5). Quem pagou e não recebeu o que pagou precisa saber que o dinheiro voltou. O texto não diz a causa técnica nem o valor, e vale igualmente para duplicidade, fora da janela e sem vaga |
 
 Uma transição que não está na tabela **não** envia email. Acrescentar uma linha é decisão registrada neste documento, com a transição e a justificativa no fluxo.
 
 ## 3. Conteúdo
 
-**TE-4.1 (normativa).** Um email transacional contém **somente** texto fixo do TROQ, a origem pública do ambiente (`BETTER_AUTH_URL`, a mesma regra de URL base de IC-12.3) e identificadores internos usados no link. **Nenhum** texto escrito por pessoa usuária entra no email: título, descrição e alternativas de troca do anúncio, nome de exibição de qualquer pessoa.
+**TE-4.1 (normativa).** Um email transacional contém **somente** texto fixo do TROQS, a origem pública do ambiente (`BETTER_AUTH_URL`, a mesma regra de URL base de IC-12.3) e identificadores internos usados no link. **Nenhum** texto escrito por pessoa usuária entra no email: título, descrição e alternativas de troca do anúncio, nome de exibição de qualquer pessoa.
 
 Por quê: esses textos são livres. Desde DEC-049 ([#86](https://github.com/BrunoMNoronha/techlab-troq/issues/86)), título, descrição e alternativas recusam contato e endereço, mas essa recusa é um filtro, que pode deixar passar uma forma não prevista, e o texto gravado antes dela só é mascarado na exibição, não corrigido no banco; o nome de exibição continua livre. Excluir o texto da pessoa torna CR-6.1 uma propriedade estrutural do template, e não um filtro que pode falhar.
 

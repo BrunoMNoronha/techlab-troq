@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Provar ou refutar, com evidências técnicas, a viabilidade do Mercado Pago como primeiro candidato a gateway para cobrar exatamente R$ 0,99 via Pix no TROQ, cobrindo aceitação do valor, criação de cobrança, QR Code/Pix copia e cola, transição de status, idempotência, webhook e validação de assinatura, expiração e tarifas.
+Provar ou refutar, com evidências técnicas, a viabilidade do Mercado Pago como primeiro candidato a gateway para cobrar exatamente R$ 0,99 via Pix no TROQS, cobrindo aceitação do valor, criação de cobrança, QR Code/Pix copia e cola, transição de status, idempotência, webhook e validação de assinatura, expiração e tarifas.
 
 Este documento é evidência de spike. Não homologa gateway, não fecha OD-08 e não altera regra de negócio.
 
@@ -89,7 +89,7 @@ Procura por credenciais de teste em variáveis de ambiente e em locais de config
 - nenhum arquivo `.env` no repositório (o `.gitignore` já ignora `.env` e `.env.*`);
 - nenhum arquivo ou diretório de configuração do Mercado Pago no perfil do usuário.
 
-Existem arquivos `.env` de **outros projetos** no mesmo diretório de trabalho. Eles não foram lidos: são segredos de projetos não relacionados e não constituem credencial disponibilizada para o TROQ.
+Existem arquivos `.env` de **outros projetos** no mesmo diretório de trabalho. Eles não foram lidos: são segredos de projetos não relacionados e não constituem credencial disponibilizada para o TROQS.
 
 **Conclusão:** não há credencial de teste do Mercado Pago disponível para este spike. Nenhuma credencial foi inventada, improvisada ou obtida de terceiros.
 
@@ -181,13 +181,13 @@ Documentalmente (F1):
 | Mínimo | 30 minutos |
 | Máximo | 30 dias |
 
-O comportamento real da expiração não foi observado. A escolha do tempo de reserva/vencimento do TROQ não pertence a este spike e permanece para o design de pagamentos, vinculada a RF-010 e OD-07.
+O comportamento real da expiração não foi observado. A escolha do tempo de reserva/vencimento do TROQS não pertence a este spike e permanece para o design de pagamentos, vinculada a RF-010 e OD-07.
 
 ## Webhook
 
 **Não comprovado experimentalmente.**
 
-Motivo objetivo: não há endpoint HTTPS acessível neste ambiente para receber a notificação, nem acesso ao painel "Suas integrações" necessário para configurar a URL, obter a chave secreta e acionar o simulador oficial. Nenhum túnel foi instalado, nenhum endpoint público foi criado, nenhuma aplicação TROQ foi registrada e nenhum serviço de terceiros foi usado para receber dados.
+Motivo objetivo: não há endpoint HTTPS acessível neste ambiente para receber a notificação, nem acesso ao painel "Suas integrações" necessário para configurar a URL, obter a chave secreta e acionar o simulador oficial. Nenhum túnel foi instalado, nenhum endpoint público foi criado, nenhuma aplicação TROQS foi registrada e nenhum serviço de terceiros foi usado para receber dados.
 
 Capacidade documentada (F5, F6, F7):
 
@@ -253,7 +253,7 @@ Evidência documental: fontes F1 a F9 acima, com título, URL e data de consulta
 
 Justificativa: não há prova material de nenhum dos itens obrigatórios. R$ 0,99 não foi tentado, o Pix não foi gerado, o fluxo de estado não foi observado, a idempotência não foi exercitada, o webhook não foi recebido nem validado e o arredondamento da tarifa sobre R$ 0,99 permanece sem definição oficial.
 
-Não há, igualmente, qualquer evidência de incompatibilidade do Mercado Pago com requisito obrigatório do TROQ. Nada neste spike sustenta reprovação: o valor de R$ 0,99 é superior ao mínimo de qualquer meio de pagamento listado oficialmente, e o Pix sequer aparece na lista de mínimos.
+Não há, igualmente, qualquer evidência de incompatibilidade do Mercado Pago com requisito obrigatório do TROQS. Nada neste spike sustenta reprovação: o valor de R$ 0,99 é superior ao mínimo de qualquer meio de pagamento listado oficialmente, e o Pix sequer aparece na lista de mínimos.
 
 `INCONCLUSIVO` não é aprovação presumida. OD-08 permanece aberta e o Mercado Pago permanece candidato, exatamente como estabelecido em DEC-017.
 
@@ -411,7 +411,7 @@ Esta continua sendo a incerteza economicamente mais relevante do spike e corresp
 
 ## Expiração
 
-Documentado (G1), inalterado em relação à primeira execução: campo `transaction.payment.expiration_time`, duração ISO 8601, padrão 24 horas, mínimo 30 minutos a partir da criação do pagamento, máximo 30 dias. Não observado experimentalmente. O tempo de reserva do TROQ não é decidido aqui: pertence ao design de pagamentos e a OD-07, que permanece aberta.
+Documentado (G1), inalterado em relação à primeira execução: campo `transaction.payment.expiration_time`, duração ISO 8601, padrão 24 horas, mínimo 30 minutos a partir da criação do pagamento, máximo 30 dias. Não observado experimentalmente. O tempo de reserva do TROQS não é decidido aqui: pertence ao design de pagamentos e a OD-07, que permanece aberta.
 
 ## Critérios de conclusão de F0-010 nesta execução
 
@@ -560,7 +560,7 @@ A transição documentada em G2 ("the payment status will automatically change t
 
 **Critério 5 comprovado** no ambiente de teste. Observação importante: essa promoção automática é comportamento **do sandbox**, não prova do fluxo real de liquidação Pix em produção.
 
-Nota operacional relevante para o desenho do TROQ: após a acreditação, a resposta de `GET /v1/orders/{id}` **deixa de trazer** `qr_code`, `qr_code_base64` e `ticket_url`. O código copia e cola deve ser persistido no momento da criação, não recuperado sob demanda.
+Nota operacional relevante para o desenho do TROQS: após a acreditação, a resposta de `GET /v1/orders/{id}` **deixa de trazer** `qr_code`, `qr_code_base64` e `ticket_url`. O código copia e cola deve ser persistido no momento da criação, não recuperado sob demanda.
 
 ## Experimento 5 — QR Code e Pix copia e cola
 
@@ -601,7 +601,7 @@ Seis orders de R$ 0,99, variando `transactions.payments[0].expiration_time`:
 
 A janela é medida como `date_of_expiration` menos `created_date`. O padrão de 24 horas foi confirmado com precisão. Os limites de 30 minutos e 30 dias, porém, **não foram aplicados pela API no ambiente de teste**: valores fora da faixa documentada foram aceitos e refletidos literalmente em `date_of_expiration`.
 
-Consequência para o TROQ: a validação da janela de reserva (RF-010) **não pode ser delegada ao gateway**. O sistema deve validar o próprio `expiration_time` antes de enviar. Não se pode presumir que produção se comporte como o sandbox aqui — em qualquer dos dois sentidos.
+Consequência para o TROQS: a validação da janela de reserva (RF-010) **não pode ser delegada ao gateway**. O sistema deve validar o próprio `expiration_time` antes de enviar. Não se pode presumir que produção se comporte como o sandbox aqui — em qualquer dos dois sentidos.
 
 A expiração efetiva não foi observada até o vencimento: nenhuma order foi acompanhada por 29 minutos ou mais até mudar de estado por decurso de prazo. O comportamento **no** vencimento permanece não observado.
 
@@ -630,7 +630,7 @@ Leitura:
 
 **Critério 9 comprovado no ambiente de teste.**
 
-Ressalva que não pode ser omitida: esta é a tarifa aplicada a uma **conta de teste**, cuja tabela pode não coincidir com a tabela comercial de uma conta real do TROQ, que varia por acordo. Os pagamentos retornam `live_mode: true` apesar de a aplicação estar em `sandbox_mode: true`, o que torna esse campo inadequado como discriminador. O que este experimento estabelece com solidez é a **mecânica**: percentual aplicado ao valor bruto, arredondado half-up ao centavo, sem componente fixo e sem piso. O **percentual contratado** deve ser confirmado na conta real antes de decidir.
+Ressalva que não pode ser omitida: esta é a tarifa aplicada a uma **conta de teste**, cuja tabela pode não coincidir com a tabela comercial de uma conta real do TROQS, que varia por acordo. Os pagamentos retornam `live_mode: true` apesar de a aplicação estar em `sandbox_mode: true`, o que torna esse campo inadequado como discriminador. O que este experimento estabelece com solidez é a **mecânica**: percentual aplicado ao valor bruto, arredondado half-up ao centavo, sem componente fixo e sem piso. O **percentual contratado** deve ser confirmado na conta real antes de decidir.
 
 ## Webhook, assinatura e teste negativo — bloqueados
 
@@ -638,7 +638,7 @@ Critérios 7 e 8 **não comprovados experimentalmente**. Ao contrário das execu
 
 ### O que foi construído e provado
 
-Um receiver HTTPS descartável foi escrito **fora do repositório TROQ**, no diretório temporário da sessão, sem vínculo Git com o TROQ. Ele implementa a validação oficial de assinatura descrita em G4:
+Um receiver HTTPS descartável foi escrito **fora do repositório TROQS**, no diretório temporário da sessão, sem vínculo Git com o TROQS. Ele implementa a validação oficial de assinatura descrita em G4:
 
 - monta o manifesto `id:[data.id_url];request-id:[x-request-id_header];ts:[ts_header];`;
 - converte `data.id` para minúsculas;
@@ -706,7 +706,7 @@ Ambas são condições de ambiente, não achados sobre o Mercado Pago.
 
 ## Divergências entre documentação e comportamento observado
 
-Registro explícito, porque afeta o desenho do TROQ:
+Registro explícito, porque afeta o desenho do TROQS:
 
 | Ponto | Documentação | Observado |
 | --- | --- | --- |
@@ -721,12 +721,12 @@ Registro explícito, porque afeta o desenho do TROQ:
 2. Todos os experimentos ocorreram em conta de teste. Tarifa, limites de valor, validação de `expiration_time` e promoção automática a `approved` podem divergir em produção.
 3. A promoção a `approved` em cerca de 49 s é comportamento do sandbox e **não** mede o tempo real de liquidação Pix.
 4. A expiração não foi observada até o vencimento; o comportamento no vencimento permanece desconhecido.
-5. O percentual de tarifa aplicado à conta real do TROQ não foi confirmado; apenas a mecânica de cálculo foi estabelecida.
+5. O percentual de tarifa aplicado à conta real do TROQS não foi confirmado; apenas a mecânica de cálculo foi estabelecida.
 6. Nenhum dinheiro real foi movimentado e nenhuma credencial de produção foi procurada ou utilizada.
 
 ## O que esta execução não fez
 
-Nenhuma integração de pagamento foi implementada no produto, nenhum SDK do Mercado Pago foi adicionado ao TROQ, nenhum route handler de webhook, botão Pix, model, migration ou secret de Mercado Pago entrou no repositório. Nenhuma aplicação foi criada ou alterada no Mercado Pago, nenhuma configuração do painel foi modificada, nenhum endpoint público foi publicado, nenhum projeto de terceiros foi tocado e nenhum serviço público de captura de webhook foi utilizado. O receiver temporário viveu apenas em diretório de sessão e foi descartado. OD-07 e OD-08 permanecem abertas, ADR-0004 não foi criado, F0-011 permanece bloqueado e o Mercado Pago permanece apenas candidato, conforme DEC-017.
+Nenhuma integração de pagamento foi implementada no produto, nenhum SDK do Mercado Pago foi adicionado ao TROQS, nenhum route handler de webhook, botão Pix, model, migration ou secret de Mercado Pago entrou no repositório. Nenhuma aplicação foi criada ou alterada no Mercado Pago, nenhuma configuração do painel foi modificada, nenhum endpoint público foi publicado, nenhum projeto de terceiros foi tocado e nenhum serviço público de captura de webhook foi utilizado. O receiver temporário viveu apenas em diretório de sessão e foi descartado. OD-07 e OD-08 permanecem abertas, ADR-0004 não foi criado, F0-011 permanece bloqueado e o Mercado Pago permanece apenas candidato, conforme DEC-017.
 
 ---
 
@@ -805,7 +805,7 @@ Procurado em todos os escopos alcançáveis nesta sessão:
 
 O MCP Server oficial (`mcp.mercadopago.com`) **não** está configurado nesta sessão e a sessão é não interativa, o que impede executar o fluxo OAuth necessário para conectá-lo. O caminho utilizado foi, portanto, a **API pública** com o Access Token de teste já presente, complementada por navegação no **checkout sandbox** para disparar o evento.
 
-Nenhuma aplicação foi criada. A criação de uma aplicação exclusiva exigiria o painel "Suas integrações", que é justamente o recurso bloqueado. As aplicações `TechLab TROQ`, `Claudia e Bruno` e `upadotenis` não foram acessadas nem alteradas. Nenhum secret de aplicação existente foi procurado ou reutilizado.
+Nenhuma aplicação foi criada. A criação de uma aplicação exclusiva exigiria o painel "Suas integrações", que é justamente o recurso bloqueado. As aplicações `TechLab TROQS`, `Claudia e Bruno` e `upadotenis` não foram acessadas nem alteradas. Nenhum secret de aplicação existente foi procurado ou reutilizado.
 
 ## Achado material — a URL de notificação é configurável por requisição
 
@@ -818,7 +818,7 @@ A terceira execução concluiu que a URL de notificação só existia no nível 
 | `POST /checkout/preferences` | **aceito** | `HTTP 201`, com `notification_url` refletido na resposta |
 | `POST /merchant_orders` | **aceito no corpo** | `HTTP 201`, `notification_url` refletido; não gerou notificação por si só |
 
-Consequência de desenho para o TROQ: **receber webhooks do Mercado Pago não depende obrigatoriamente do painel.** A configuração por requisição, via `notification_url` da preferência, é suficiente para a entrega. O painel continua necessário apenas para a **chave secreta** que autentica a assinatura.
+Consequência de desenho para o TROQS: **receber webhooks do Mercado Pago não depende obrigatoriamente do painel.** A configuração por requisição, via `notification_url` da preferência, é suficiente para a entrega. O painel continua necessário apenas para a **chave secreta** que autentica a assinatura.
 
 ## Achado material — Pix não está habilitado nesta conta de teste
 
@@ -828,7 +828,7 @@ Isso não invalida a terceira execução, que criou cobranças Pix com sucesso p
 
 ## Receiver
 
-Reescrito e revisado nesta execução, mantido **fora do repositório TROQ**, em diretório temporário de sessão. Função única, sem dependências além do módulo `crypto` da biblioteca padrão do Node.js.
+Reescrito e revisado nesta execução, mantido **fora do repositório TROQS**, em diretório temporário de sessão. Função única, sem dependências além do módulo `crypto` da biblioteca padrão do Node.js.
 
 Implementa a validação oficial descrita em G4:
 
@@ -924,7 +924,7 @@ Correlação confirmada por API: `GET /merchant_orders/44469080694` retorna `HTT
 Dois pontos adicionais de valor, ambos observados e não presumidos:
 
 - O Mercado Pago **assina a notificação mesmo sem chave configurada no painel**. Os quatro componentes do manifesto chegam completos. Falta apenas a chave para fechar o critério 8.
-- `live_mode` **não aparece** no corpo das notificações de `merchant_order`. Qualquer lógica do TROQ que dependa desse campo precisa tratar sua ausência, ou obtê-lo pelo `resource`.
+- `live_mode` **não aparece** no corpo das notificações de `merchant_order`. Qualquer lógica do TROQS que dependa desse campo precisa tratar sua ausência, ou obtê-lo pelo `resource`.
 
 ## Critério 8 — por que continua bloqueado
 
@@ -984,7 +984,7 @@ O projeto Vercel temporário foi **deliberadamente mantido ativo**, contrariando
 
 ## O que esta execução não fez
 
-Nenhuma integração de pagamento foi implementada no produto; nenhum SDK do Mercado Pago, route handler de webhook, model, migration ou secret entrou no repositório TROQ. O projeto oficial `techlab-troq` na Vercel não foi usado, alterado nem consultado. Nenhuma aplicação do Mercado Pago foi criada ou alterada, nenhuma configuração de painel foi modificada e nenhum login foi tentado. Nenhum serviço público de captura de webhook de terceiros foi utilizado. Nenhum dinheiro real foi movimentado, nenhum cartão real foi usado e nenhuma credencial de produção foi procurada. Nenhum recurso preexistente foi excluído. OD-07 e OD-08 permanecem abertas, ADR-0004 não foi criado, F0-011 permanece bloqueado e o Mercado Pago permanece apenas candidato, conforme DEC-017.
+Nenhuma integração de pagamento foi implementada no produto; nenhum SDK do Mercado Pago, route handler de webhook, model, migration ou secret entrou no repositório TROQS. O projeto oficial `techlab-troq` na Vercel não foi usado, alterado nem consultado. Nenhuma aplicação do Mercado Pago foi criada ou alterada, nenhuma configuração de painel foi modificada e nenhum login foi tentado. Nenhum serviço público de captura de webhook de terceiros foi utilizado. Nenhum dinheiro real foi movimentado, nenhum cartão real foi usado e nenhuma credencial de produção foi procurada. Nenhum recurso preexistente foi excluído. OD-07 e OD-08 permanecem abertas, ADR-0004 não foi criado, F0-011 permanece bloqueado e o Mercado Pago permanece apenas candidato, conforme DEC-017.
 
 ---
 
@@ -1029,7 +1029,7 @@ Confirmação adicional, agora com o corpo inteiro observado: as notificações 
 
 A quarta execução registrou o painel como inalcançável por exigir "login interativo com reCAPTCHA". Isso estava correto para as condições daquela sessão, mas **não é mais o diagnóstico atual** e precisa ser corrigido.
 
-Com um navegador do próprio Bruno conectado ao agente, `https://www.mercadopago.com.br/developers/panel/app` abriu **diretamente, com a sessão já autenticada**: sem login, sem senha e sem reCAPTCHA. O painel "Suas integrações" listou as três aplicações existentes (`TechLab TROQ`, `Claudia e Bruno`, `upadotenis`), todas apenas lidas, nenhuma aberta ou alterada.
+Com um navegador do próprio Bruno conectado ao agente, `https://www.mercadopago.com.br/developers/panel/app` abriu **diretamente, com a sessão já autenticada**: sem login, sem senha e sem reCAPTCHA. O painel "Suas integrações" listou as três aplicações existentes (`TechLab TROQS`, `Claudia e Bruno`, `upadotenis`), todas apenas lidas, nenhuma aberta ou alterada.
 
 O bloqueio real apareceu um passo adiante. Ao acionar **Criar aplicação**, o Mercado Pago exigiu reautenticação por **TOTP**, exibindo um QR Code a ser escaneado no aplicativo do Mercado Pago: "Escaneie o QR para aprovar essa operação de forma segura". Há a alternativa "Usar outro método", que também recai em verificação humana.
 
@@ -1055,7 +1055,7 @@ Uma aprovação TOTP de Bruno no aplicativo do Mercado Pago. Tudo o mais está p
 
 ## O que esta execução não fez
 
-Nenhuma aplicação foi criada — a criação é exatamente o que o TOTP bloqueia. Nenhuma aplicação existente foi aberta, alterada ou teve secret lido ou reutilizado. Nenhuma configuração de painel foi modificada. Nenhum login foi tentado e nenhuma senha foi digitada. Nenhum TOTP, MFA ou CAPTCHA foi contornado. Nenhum código entrou no repositório TROQ, nenhum dinheiro foi movimentado e nenhuma credencial de produção foi utilizada. OD-07 e OD-08 permanecem abertas, ADR-0004 não foi criado, F0-011 permanece bloqueado e o Mercado Pago permanece apenas candidato, conforme DEC-017.
+Nenhuma aplicação foi criada — a criação é exatamente o que o TOTP bloqueia. Nenhuma aplicação existente foi aberta, alterada ou teve secret lido ou reutilizado. Nenhuma configuração de painel foi modificada. Nenhum login foi tentado e nenhuma senha foi digitada. Nenhum TOTP, MFA ou CAPTCHA foi contornado. Nenhum código entrou no repositório TROQS, nenhum dinheiro foi movimentado e nenhuma credencial de produção foi utilizada. OD-07 e OD-08 permanecem abertas, ADR-0004 não foi criado, F0-011 permanece bloqueado e o Mercado Pago permanece apenas candidato, conforme DEC-017.
 
 ---
 
@@ -1075,7 +1075,7 @@ Retomada imediatamente após a quinta execução, com um único objetivo: fechar
 
 | Item | Valor |
 | --- | --- |
-| Aplicação | `TROQ F0-010 Seller Test Webhook` |
+| Aplicação | `TROQS F0-010 Seller Test Webhook` |
 | `application_id` | `4982497380871264` |
 | Titular | Seller Test User, `user_id` `3689791164`, `tags: test_user` |
 | `sandbox_mode` | `true` |
@@ -1240,7 +1240,7 @@ Uma notificação só pode ser validada offline com a chave secreta da aplicaç�
 
 ### Aplicação da conta real `2253545272046056`
 
-A aplicação `TROQ F0-010 Webhook Validation`, criada na conta real de Bruno, cumpriu um papel e apenas um: com a chave secreta dela, o **simulador** do painel produziu HMAC válido contra o receiver. Ela **não** fechou o critério 8, e a rejeição daquela evidência estava correta, porque a operação real disponível na época nascera sob outro `application_id` — o `application_id` recebido divergia do `application_id` da aplicação cuja chave estava configurada. A chave dessa aplicação foi **rotacionada** após a exposição parcial descrita abaixo e não foi reutilizada.
+A aplicação `TROQS F0-010 Webhook Validation`, criada na conta real de Bruno, cumpriu um papel e apenas um: com a chave secreta dela, o **simulador** do painel produziu HMAC válido contra o receiver. Ela **não** fechou o critério 8, e a rejeição daquela evidência estava correta, porque a operação real disponível na época nascera sob outro `application_id` — o `application_id` recebido divergia do `application_id` da aplicação cuja chave estava configurada. A chave dessa aplicação foi **rotacionada** após a exposição parcial descrita abaixo e não foi reutilizada.
 
 ### Aplicação do Seller Test User `4982497380871264`
 
@@ -1288,12 +1288,12 @@ A classificação é baixa porque a fração exposta é insuficiente para recons
 | Área de transferência | limpa | conteúdo substituído |
 | Aplicação `2253545272046056` (conta real) | **pendente** | ver gate humano abaixo |
 
-Aplicações preexistentes do Seller Test User (`8054543444432991` e `1495245011178735`) não foram criadas por este spike e não foram tocadas. Na conta real, `TechLab TROQ`, `Claudia e Bruno` e `upadotenis` não foram tocadas.
+Aplicações preexistentes do Seller Test User (`8054543444432991` e `1495245011178735`) não foram criadas por este spike e não foram tocadas. Na conta real, `TechLab TROQS`, `Claudia e Bruno` e `upadotenis` não foram tocadas.
 
 ### Gate humano de limpeza
 
-A limpeza da aplicação `TROQ F0-010 Webhook Validation` (`2253545272046056`) **não** pôde ser concluída: a sessão de navegador está autenticada como o Seller Test User, o painel de desenvolvedores não oferece troca de conta e alcançar a conta real exige sair da sessão atual e autenticar com credenciais de Bruno. Isso é um gate humano e não foi contornado. O risco residual é baixo: a chave secreta dessa aplicação já foi rotacionada e a URL de webhook nela cadastrada aponta para um endpoint que agora devolve `HTTP 404`. A ação pendente é: entrar na conta real, remover a configuração de Webhook dessa aplicação e excluí-la.
+A limpeza da aplicação `TROQS F0-010 Webhook Validation` (`2253545272046056`) **não** pôde ser concluída: a sessão de navegador está autenticada como o Seller Test User, o painel de desenvolvedores não oferece troca de conta e alcançar a conta real exige sair da sessão atual e autenticar com credenciais de Bruno. Isso é um gate humano e não foi contornado. O risco residual é baixo: a chave secreta dessa aplicação já foi rotacionada e a URL de webhook nela cadastrada aponta para um endpoint que agora devolve `HTTP 404`. A ação pendente é: entrar na conta real, remover a configuração de Webhook dessa aplicação e excluí-la.
 
 ## O que esta execução não fez
 
-Nenhuma integração de pagamento foi implementada no produto; nenhum SDK do Mercado Pago, route handler de webhook, model, migration ou secret entrou no repositório TROQ. Nenhum segredo foi impresso, registrado em arquivo ou enviado a terceiros. Nenhum TOTP, MFA ou CAPTCHA foi contornado e nenhuma senha foi digitada. Nenhum dinheiro real foi movimentado e nenhuma credencial de produção foi usada. O projeto oficial `techlab-troq` não foi alterado. F0-011 foi **desbloqueado, mas não executado**. OD-08 permanece **aberta** e OD-07 permanece no estado vigente. ADR-0004 **não** foi criado. O Mercado Pago permanece apenas candidato, conforme DEC-017: este spike prova viabilidade técnica, não homologa gateway.
+Nenhuma integração de pagamento foi implementada no produto; nenhum SDK do Mercado Pago, route handler de webhook, model, migration ou secret entrou no repositório TROQS. Nenhum segredo foi impresso, registrado em arquivo ou enviado a terceiros. Nenhum TOTP, MFA ou CAPTCHA foi contornado e nenhuma senha foi digitada. Nenhum dinheiro real foi movimentado e nenhuma credencial de produção foi usada. O projeto oficial `techlab-troq` não foi alterado. F0-011 foi **desbloqueado, mas não executado**. OD-08 permanece **aberta** e OD-07 permanece no estado vigente. ADR-0004 **não** foi criado. O Mercado Pago permanece apenas candidato, conforme DEC-017: este spike prova viabilidade técnica, não homologa gateway.

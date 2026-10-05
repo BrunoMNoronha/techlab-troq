@@ -1,6 +1,6 @@
 import type { ReactNode, SVGProps } from 'react';
 
-// Conjunto único de ícones do TROQ: traço de 2px em grade de 24px, sem
+// Conjunto único de ícones do TROQS: traço de 2px em grade de 24px, sem
 // preenchimento, cor herdada do texto. Não há biblioteca de ícones no projeto;
 // um ícone novo entra aqui, no mesmo traço, em vez de vir de outro pacote.
 const PATHS = {

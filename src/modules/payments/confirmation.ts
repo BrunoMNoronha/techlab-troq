@@ -146,7 +146,7 @@ export async function markNotificationProcessed(
 // Estado autoritativo
 // ---------------------------------------------------------------------------
 
-/** Fato de pagamento em termos do TROQ, entregue a `request` (AR-3.5). */
+/** Fato de pagamento em termos do TROQS, entregue a `request` (AR-3.5). */
 export type PaymentFact =
   /** Sem consulta conclusiva: nada muda, segue em reconciliacao (PD-6.9). */
   | { kind: 'unavailable'; reason: string }
