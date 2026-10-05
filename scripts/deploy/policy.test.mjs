@@ -138,6 +138,10 @@ test('Production permanece manual e sem acionamento por push', () => {
   assert.ok(production.indexOf('prisma migrate deploy') < production.indexOf('vercel.mjs deploy'));
   const preview = readFileSync('.github/workflows/deploy-preview.yml', 'utf8');
   assert.match(preview, /workflow_run:/);
+  assert.match(preview, /git ls-remote --exit-code --heads origin refs\/heads\/preview/);
+  assert.match(preview, /if \[ "\$status" -ne 2 \]; then exit "\$status"; fi/);
+  assert.match(preview, /git merge-base --is-ancestor origin\/preview "\$RELEASE_SHA"/);
+  assert.doesNotMatch(preview, /git fetch origin main preview/);
   assert.doesNotMatch(preview, /git push[^\n]*(--force|-f\b)/);
   assert.equal(JSON.parse(readFileSync('vercel.json')).git.deploymentEnabled, false);
 });
