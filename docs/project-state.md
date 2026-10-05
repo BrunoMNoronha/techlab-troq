@@ -9,6 +9,15 @@
 
 Este documento separa categorias que não devem ser confundidas: o que **existe de fato hoje** no repositório, o que **já foi decidido**, o que **ainda não foi implementado** e, desde 2026-09-29, o que está **validado** e o que tem **evidência funcional pendente**. A seção 1 preserva a **baseline histórica** da inspeção inicial e **não** descreve o estado atual; as seções 3.1 e 3.2 descrevem o estado **ao fim da Fase 1**; para o estado atual da Fase 2, ver a seção 3.3.
 
+## Atualização verificada em 2026-10-05 — Google e Fases 4/5
+
+Esta atualização prevalece sobre descrições históricas de fase “não iniciada” e Production “não provisionado” abaixo. Baseline consultada: `main@f6d3ae51fb480d0b77f713dbfbd63f0c6fe92214`.
+
+- A Fase 3 tem implementação em execução, com gate #105 ainda aberto.
+- A release operacional #135 foi encerrada, com Production em `https://troqs.app` e [run 37273766162](https://github.com/BrunoMNoronha/techlab-troq/actions/runs/37273766162). Isso não constitui aprovação da operação comercial.
+- O consentimento Google foi publicado como **Externo / Em produção**. Configuração e homologação de cada ambiente são registradas em [delivery/google-sign-in-proof.md](delivery/google-sign-in-proof.md) e #133.
+- A Fase 4 foi decomposta em #163–#169 e a Fase 5 em #170–#179, vinculadas aos épicos #55/#56. Todas estão abertas. O [plano de execução](delivery/phase-4-5-plan.md) distingue preparação paralela, dependências e homologação por SHA.
+
 ## 1. Baseline histórica — estado encontrado na inspeção inicial
 
 **Registro histórico de 2026-09-07, preservado sem alteração.** Descreve o repositório **antes** de qualquer trabalho e **não** descreve o estado atual.

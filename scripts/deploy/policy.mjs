@@ -76,10 +76,8 @@ export function requireEnvironmentMetadata(envs, target) {
     }
   }
   if (scoped.has('DIRECT_URL')) throw new Error('DIRECT_URL não deve estar na Vercel.');
-  if (target === 'preview' || target === 'production') {
-    if (!scoped.has('GOOGLE_CLIENT_ID') || !scoped.has('GOOGLE_CLIENT_SECRET')) {
-      throw new Error('Cliente Google ausente ou incompleto.');
-    }
+  if (scoped.has('GOOGLE_CLIENT_ID') !== scoped.has('GOOGLE_CLIENT_SECRET')) {
+    throw new Error('Cliente Google parcialmente configurado.');
   }
 }
 

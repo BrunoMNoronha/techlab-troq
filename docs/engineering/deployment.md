@@ -61,7 +61,9 @@ Google exige clientes OAuth distintos, com origens das URLs acima e callbacks ex
 - Preview: `https://techlab-troq-git-preview-bruno-m-noronha.vercel.app/api/auth/callback/google`.
 - Production: `https://troqs.app/api/auth/callback/google`.
 
-Não instalar placeholders nem tokens sem consumidor. Sentry source maps só requerem token quando esse recurso de build estiver efetivamente configurado. Sem ambos os valores Google, o login Google permanece indisponível; um par incompleto é recusado.
+Não instalar placeholders nem tokens sem consumidor. Sentry source maps só requerem token quando esse recurso de build estiver efetivamente configurado. O preflight exige o par Google no escopo efetivo de Preview/Production e tipo Sensitive para o segredo, sem descriptografar valores. Não comprova a validade das credenciais: essa prova exige o fluxo real. Em runtime, configuração ausente ou inválida deixa o Google indisponível e preserva o login por senha.
+
+**Atualização operacional de 2026-10-05:** #135 está encerrada, com release em `https://troqs.app`; o consentimento Google foi publicado como Externo / Em produção. A configuração e o aceite específico de #133 estão em [google-sign-in-proof.md](../delivery/google-sign-in-proof.md). O estado de configuração datado ao fim deste documento preserva a baseline de implantação do pipeline e não substitui essa atualização.
 
 ## Backup, publicação e recuperação
 

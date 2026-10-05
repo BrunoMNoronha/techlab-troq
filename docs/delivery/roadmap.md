@@ -6,14 +6,16 @@ Fontes: [../product/mvp-scope.md](../product/mvp-scope.md), [../product/requirem
 
 ## Visão geral
 
+**Atualização de 2026-10-05.** O estado corrente está na tabela e no [plano das Fases 4 e 5](phase-4-5-plan.md). Os parágrafos com datas anteriores preservam o histórico. A release operacional #135 está encerrada; os gates de fase e a autorização comercial continuam pendentes.
+
 | Fase | Nome | Estado |
 | --- | --- | --- |
 | 0 | Descoberta e definição | concluída |
 | 1 | Fundação técnica | concluída |
 | 2 | Identidade e anúncios | concluída — gate de saída **aprovado** em 2026-09-30 |
-| 3 | Solicitações, pagamentos e contato | liberada para execução pelo gate da Fase 2; não iniciada |
-| 4 | Encerramento, avaliações e moderação | não iniciada |
-| 5 | Hardening e lançamento | não iniciada |
+| 3 | Solicitações, pagamentos e contato | em execução; gate #105 aberto |
+| 4 | Encerramento, avaliações e moderação | decomposta em #163–#169; execução depende de #105 |
+| 5 | Hardening e lançamento | decomposta em #170–#179; homologação depende de #55 |
 | — | Pós-MVP (candidatos) | não planejado |
 
 **Estado em 2026-09-30.** A **Fase 2 está concluída**: o seu gate de saída foi reverificado por F2-013 (Issue #51) e **APROVADO** em 2026-09-30, com G1, G2 e G3 `PASS` ([phase-3-transition.md](phase-3-transition.md), seção V). A **Fase 3 está liberada para execução** e ainda não foi iniciada; o seu acompanhamento está em [#54](https://github.com/BrunoMNoronha/techlab-troq/issues/54). Nada neste roadmap afirma produção ou deploy atual. O parágrafo seguinte é o registro de 2026-09-29.
@@ -102,6 +104,8 @@ Fontes: [../product/mvp-scope.md](../product/mvp-scope.md), [../product/requirem
 
 ## Fase 3 — Solicitações, pagamentos e contato
 
+**Atualização em 2026-10-05:** fase em execução, com gate [#105](https://github.com/BrunoMNoronha/techlab-troq/issues/105) ainda aberto. Os estados datados abaixo são históricos e não indicam ausência atual de implementação.
+
 **Objetivo:** implementar o núcleo monetizado: solicitação paga, limite de 3, escolha e liberação de contato.
 
 **Estado em 2026-10-01:** fase liberada, **decomposta e não iniciada**. F3-000 abriu as issues executoras [#91](https://github.com/BrunoMNoronha/techlab-troq/issues/91) a [#105](https://github.com/BrunoMNoronha/techlab-troq/issues/105) (F3-001 a F3-015) e registrou o inventário de desvio, as decisões pendentes e a rastreabilidade deste gate em [phase-3-plan.md](phase-3-plan.md). A próxima entrega é #91 (F3-001). O parágrafo seguinte é o registro de 2026-09-29.
@@ -130,6 +134,8 @@ Fontes: [../product/mvp-scope.md](../product/mvp-scope.md), [../product/requirem
 
 ## Fase 4 — Encerramento, avaliações e moderação
 
+**Decomposta em 2026-10-05:** sete issues executoras [#163–#169](phase-4-5-plan.md#fase-4--encerramento-avaliações-e-moderação), vinculadas ao épico [#55](https://github.com/BrunoMNoronha/techlab-troq/issues/55), com escopo, dependências, aceite e validação. A execução depende do gate #105; a decomposição não homologa a fase.
+
 **Objetivo:** fechar o ciclo da negociação e proteger a plataforma.
 
 **Principais entregáveis:**
@@ -149,6 +155,8 @@ Fontes: [../product/mvp-scope.md](../product/mvp-scope.md), [../product/requirem
 - Catálogo de itens proibidos publicado em [../product/prohibited-items.md](../product/prohibited-items.md) e implementado: denúncia, moderação e remoção operando com auditoria, e prazos de decisão mensuráveis pela trilha de auditoria.
 
 ## Fase 5 — Hardening e lançamento
+
+**Decomposta em 2026-10-05:** dez issues executoras [#170–#179](phase-4-5-plan.md#fase-5--hardening-e-operação-comercial), vinculadas ao épico [#56](https://github.com/BrunoMNoronha/techlab-troq/issues/56). A release operacional de [#135](https://github.com/BrunoMNoronha/techlab-troq/issues/135) já ocorreu; o gate comercial segue pendente. Métricas, revisão de políticas e desenho da exclusão admitem preparação paralela; a homologação exige o gate da Fase 4.
 
 **Objetivo:** tornar a plataforma pronta para produção comercial.
 

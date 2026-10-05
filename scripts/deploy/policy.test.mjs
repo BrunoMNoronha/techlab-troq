@@ -247,6 +247,55 @@ test('preflight não precisa recuperar secrets sensíveis e respeita overrides d
     ),
   );
 });
+test('Google exige par efetivo em cada target sem depender do valor dos secrets', () => {
+  for (const target of ['preview', 'production']) {
+    const values = target === 'preview' ? previewValues : productionValues;
+    const envs = Object.entries(values).map(([key, value]) => ({
+      key,
+      target: [target],
+      type: SENSITIVE_KEYS.has(key) || key === 'GOOGLE_CLIENT_ID' ? 'sensitive' : 'plain',
+      value: SENSITIVE_KEYS.has(key) || key === 'GOOGLE_CLIENT_ID' ? '' : value,
+    }));
+    assert.doesNotThrow(() => requireEnvironmentMetadata(envs, target));
+    const withoutGoogle = envs.filter((entry) => !entry.key.startsWith('GOOGLE_'));
+    assert.throws(
+      () => requireEnvironmentMetadata(withoutGoogle, target),
+      /Variável Vercel ausente ou fictícia: GOOGLE_CLIENT_ID/,
+    );
+    // Um par só no outro target ou em uma branch de prova não habilita a release.
+    for (const googleEntries of [
+      envs
+        .filter((entry) => entry.key.startsWith('GOOGLE_'))
+        .map((entry) => ({ ...entry, target: [target === 'preview' ? 'production' : 'preview'] })),
+      envs
+        .filter((entry) => entry.key.startsWith('GOOGLE_'))
+        .map((entry) => ({ ...entry, gitBranch: 'proof/81-google-preview' })),
+    ]) {
+      assert.throws(() => requireEnvironmentMetadata([...withoutGoogle, ...googleEntries], target));
+    }
+    assert.throws(
+      () =>
+        requireEnvironmentMetadata(
+          envs.map((entry) =>
+            entry.key === 'GOOGLE_CLIENT_SECRET'
+              ? { ...entry, type: 'plain', value: 'sintetico' }
+              : entry,
+          ),
+          target,
+        ),
+      /Variável deve ser sensível: GOOGLE_CLIENT_SECRET/,
+    );
+    if (target === 'preview') {
+      const scopedGoogle = envs
+        .filter((entry) => entry.key.startsWith('GOOGLE_'))
+        .map((entry) => ({ ...entry, gitBranch: 'production' }));
+      assert.doesNotThrow(() =>
+        requireEnvironmentMetadata([...withoutGoogle, ...scopedGoogle], target),
+      );
+    }
+  }
+});
+
 test('Production permanece manual e sem acionamento por push', () => {
   const production = readFileSync('.github/workflows/deploy-production.yml', 'utf8');
   assert.match(production, /workflow_dispatch:/);
