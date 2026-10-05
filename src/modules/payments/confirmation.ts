@@ -530,17 +530,35 @@ export async function createTechnicalRefundInTx(
   return created.id;
 }
 
+/** Desfecho da duplicidade: eleicao (ou a ja feita) ou canonico sem vinculo (#147). */
+export type DuplicateResolution =
+  | { kind: 'elected'; canonical: AccreditedPayment; excess: AccreditedPayment[] }
+  | { kind: 'canonical_unlinked'; canonicalProviderPaymentId: string };
+
+/** Motivo do caso aberto na duplicidade tardia sem vinculo documentado (#147). */
+const LATE_DUPLICATE_CASE_REASON = 'late_duplicate_canonical_unlinked';
+
 /**
  * Duplicidade (PD-7): elege o canonico UMA unica vez — menor instante de
  * acreditacao autoritativo, empate pelo menor id do provedor em ordem
  * lexicografica (PD-7.1) — por atualizacao condicionada a nao haver canonico
  * (DM-7.4, PD-7.2). Reprocessar devolve a eleicao ja feita, nunca reelege.
  * O excedente vira RT-1 (PD-7.3), auditado com o canonico (PE-3.5).
+ *
+ * Duplicidade TARDIA (#147): o canonico ja eleito nao esta entre os candidatos
+ * da busca. E o caso normal depois de uma confirmacao unica, que marca como
+ * canonico a transacao da order (`PAY01...`), enquanto a busca devolve ids
+ * numericos da Payments API; o provedor nao documenta vinculo entre os dois
+ * (decisao RT-1 de F3-007; PD-8.11, item 5). Sem saber qual candidato e o
+ * canonico, nao ha excedente identificavel: nada e reeleito, nada e
+ * classificado para reembolso e o canonico nao e tocado. Abre-se UM caso
+ * `inconsistente` (PD-10.5), auditado uma vez com os candidatos; o tratamento
+ * do excedente e operacional ate decisao do Bruno.
  */
 export async function resolveDuplicateInTx(
   tx: Prisma.TransactionClient,
   input: { attemptId: string; payments: AccreditedPayment[]; at: Date },
-): Promise<{ canonical: AccreditedPayment; excess: AccreditedPayment[] }> {
+): Promise<DuplicateResolution> {
   const candidates = [...input.payments].sort(
     (a, b) =>
       a.accreditedAt.getTime() - b.accreditedAt.getTime() ||
@@ -556,8 +574,26 @@ export async function resolveDuplicateInTx(
   let canonical = candidates.find((c) => c.providerPaymentId === existing?.providerPaymentId);
   if (!canonical) {
     if (existing) {
-      // Canonico ja eleito fora deste conjunto: nao se reelege por analogia.
-      throw new Error('duplicate_canonical_outside_candidates');
+      // Canonico ja eleito fora deste conjunto: nao se reelege por analogia
+      // (PD-7.2) nem se adivinha qual candidato ele e (PD-10.5). O caso e unico
+      // por motivo enquanto aberto, e a trava do anuncio serializa as
+      // execucoes concorrentes: reentregar ou reprocessar nao duplica.
+      await openCaseInTx(tx, {
+        attemptId: input.attemptId,
+        kind: 'inconsistente',
+        reason: LATE_DUPLICATE_CASE_REASON,
+        at: input.at,
+        details: {
+          rule: 'PD-10.5',
+          canonicalProviderPaymentId: existing.providerPaymentId,
+          candidates: candidates.map((c) => ({
+            providerPaymentId: c.providerPaymentId,
+            accreditedAt: c.accreditedAt.toISOString(),
+          })),
+          excessTreatment: 'pending_decision',
+        },
+      });
+      return { kind: 'canonical_unlinked', canonicalProviderPaymentId: existing.providerPaymentId };
     }
     canonical = candidates[0];
     await tx.$executeRaw`
@@ -611,7 +647,7 @@ export async function resolveDuplicateInTx(
     SET "closed_at" = ${input.at}, "outcome" = 'resolved_by_election', "updated_at" = ${input.at}
     WHERE "payment_attempt_id" = ${input.attemptId}::uuid AND "kind" = 'divergencia'
       AND "reason" = 'multiple_accredited' AND "closed_at" IS NULL`;
-  return { canonical: chosen, excess };
+  return { kind: 'elected', canonical: chosen, excess };
 }
 
 /**

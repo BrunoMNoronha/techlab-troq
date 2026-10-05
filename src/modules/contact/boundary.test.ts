@@ -36,6 +36,7 @@ const FIXTURE_EXCEPTIONS = new Set([
   'src/modules/platform/authorization-matrix.integration.test.ts',
   'src/modules/platform/telemetry-redaction.integration.test.ts',
   'src/modules/request/charge.integration.test.ts',
+  'src/modules/request/late-duplicate.integration.test.ts',
   'src/modules/request/payment-confirmation.integration.test.ts',
   'src/modules/request/payment-reconciliation.integration.test.ts',
   'src/modules/request/payment-reversal.integration.test.ts',
