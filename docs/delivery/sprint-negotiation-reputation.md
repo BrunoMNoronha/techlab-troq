@@ -1,6 +1,6 @@
 # Sprint de encerramento e reputação — #163 e #164
 
-Entrega em preparação em 2026-10-05, a partir de `main@9447b8af344201ac60d25721dbce78c7982ae01e`, na branch `codex/sprint-negociacoes-reputacao` e em checkout isolado. As alterações locais do checkout principal foram preservadas. **O aceite no Preview permanece pendente**, assim como a prova remota de #104 e o gate #105; a preparação isolada não libera a integração da Fase 4.
+Entrega em preparação em 2026-10-05, a partir de `main@9447b8af344201ac60d25721dbce78c7982ae01e`, na branch `codex/sprint-negociacoes-reputacao` e em checkout isolado. A [PR #182](https://github.com/BrunoMNoronha/techlab-troq/pull/182) permanece em rascunho; a revisão `07645aec76bea604f123e0040d70768c8df4c052` tem os dois jobs da CI aprovados. As alterações locais do checkout principal foram preservadas. **O aceite no Preview permanece pendente**, assim como a prova remota de #104 e o gate #105; a preparação isolada não libera a integração da Fase 4.
 
 ## Comportamento implementado
 
@@ -23,23 +23,39 @@ Banco PostgreSQL 17 exclusivo e descartável, com armazenamento temporário, por
 | Suíte unitária completa | 71 arquivos, 1.165 testes aprovados; nova página privada também coberta pela rodada focal abaixo |
 | Interface final | 39 testes aprovados em cinco arquivos, incluindo seis da nova página privada; ESLint e Prettier focais aprovados |
 | Pipeline de publicação | `pnpm test:deployment`: 10 testes aprovados |
-| Banco e HTTP finais | Em revalidação; o aceite não é inferido das rodadas intermediárias |
-| Navegador a 375 px | Pendente |
-| CI da branch e deployment da sprint | Pendentes |
+| Novas provas de banco e HTTP | 38 testes aprovados: 16 de encerramento, 11 de avaliações e 11 da jornada HTTP |
+| Regressão completa de banco e HTTP | 510 testes aprovados, 19 pulados por pré-requisitos externos e um timeout de 5 s em teste antigo de recuperação de imagens |
+| Diagnóstico focal de imagens | 31 testes aprovados com `--testTimeout=30000` na CLI, sem alterações no código ou na configuração do projeto |
+| Navegador a 375 px | Aprovado em servidor Next.js de produção local, com contas e pagamentos sintéticos no banco descartável; não substitui homologação no Preview |
+| Deployment da sprint | Pendente |
 
 Falhas intermediárias foram investigadas sem relaxar os controles: `pg_sleep` passou a usar `$executeRaw`, pois o retorno `void` não é desserializável por Prisma; a observação de `pg_stat_activity` foi movida para autocommit fora da transação que segura a trava, evitando o snapshot estático; a prova RSC verifica as propriedades do componente cliente, enquanto o HTML verifica o botão renderizado. A primeira nota HTTP vem do escolhido para o anunciante, comprovando que o agregado correto permanece cego.
 
+No navegador local, a largura efetiva e o `scrollWidth` foram conferidos como 375 px. A confirmação recebeu foco, abriu e cancelou por teclado, retornando o foco ao botão. Uma negociação foi encerrada pelo escolhido, outra pelo anunciante depois da reseleção; ambas continuaram no histórico. A primeira nota foi enviada como 2 e editada para 4, sem aparecer para o anunciante nem no agregado público. A segunda nota publicou ambas e bloqueou edição; o anúncio mostrou `4,0 de 5 estrelas · 1 avaliação`. Falhas de rede no encerramento e na edição exibiram aviso de resultado incerto e bloquearam repetição; a ação de atualizar, após reconexão, restaurou o estado confirmado no servidor. Capturas da confirmação, recuperação, cegamento, histórico e reputação foram guardadas fora do repositório, em `sprint-evidence` do checkout isolado.
+
+## Evidência de CI
+
+O [run 37348549731](https://github.com/BrunoMNoronha/techlab-troq/actions/runs/37348549731), evento `pull_request`, concluiu com sucesso para `07645aec76bea604f123e0040d70768c8df4c052`. Os logs dos dois jobs registram:
+
+| Job | Resultado observado |
+| --- | --- |
+| Validação: formatação, lint, typecheck, testes e build | Aprovado; 72 arquivos e 1.171 testes unitários aprovados; 10 testes de segurança e invariantes do pipeline aprovados |
+| Integração: PostgreSQL efêmero e HTTP | Aprovado; 35 arquivos aprovados e três pulados; 511 testes aprovados e 19 pulados, de 530 casos; inclui as 38 provas novas de #163/#164 |
+| Backup e restauração | Etapa aprovada com dados sintéticos no banco isolado |
+
+A CI terminou sem falha de teste, incluindo o teste antigo de imagens que atingiu timeout na regressão local. Os 19 casos pulados continuam dependendo de R2 real ou Mercado Pago sandbox. O sucesso da CI não substitui as provas funcionais no Preview nem aprova #104/#105.
+
 ## Preview e dependências externas
 
-O Preview disponível é o [run 37332427023](https://github.com/BrunoMNoronha/techlab-troq/actions/runs/37332427023), deployment `dpl_H2coTZhL45V7t52PTzJtfNcGM4hj`, SHA `9447b8af344201ac60d25721dbce78c7982ae01e`. **Ele ainda não contém #163/#164.** O gate vigente e seus limites estão em [phase-4-transition.md](phase-4-transition.md).
+O Preview disponível foi republicado no [run 37348109256](https://github.com/BrunoMNoronha/techlab-troq/actions/runs/37348109256), deployment `dpl_GJwe9CaW4gTrFg4HjpB6P9E2W3WW`, SHA `9447b8af344201ac60d25721dbce78c7982ae01e`. Os logs confirmam o smoke HTTP aprovado para páginas, consulta pública, sessão anônima e proteção de job. **Ele ainda não contém #163/#164.** O gate vigente e seus limites estão em [phase-4-transition.md](phase-4-transition.md).
 
-Na leitura dos metadados da Vercel, sem recuperar valores, o trio `MERCADO_PAGO_ACCESS_TOKEN`, `MERCADO_PAGO_APPLICATION_ID` e `MERCADO_PAGO_WEBHOOK_SECRET` existia somente em Production. A configuração própria de teste no Preview foi solicitada ao Bruno. O preflight atual exige esse trio apenas em Production; o sucesso do Deploy Preview não comprova Pix funcional. A aplicação falha fechada sem configuração, e não há fallback para credenciais de outro ambiente. A prova remota exige republicação após o provisionamento, fluxo controlado e varredura Vercel/Sentry com controles não vazios, conforme #104.
+Após o provisionamento, a leitura dos metadados da Vercel confirmou o trio `MERCADO_PAGO_ACCESS_TOKEN`, `MERCADO_PAGO_APPLICATION_ID` e `MERCADO_PAGO_WEBHOOK_SECRET` no ambiente Preview, marcado como Sensitive, sem recuperar ou registrar valores. O Preview da base foi republicado. O preflight atual exige esse trio apenas em Production; presença da configuração e smoke aprovado não comprovam Pix funcional. A aplicação falha fechada sem configuração, e não há fallback para credenciais de outro ambiente. A prova funcional remota C-8, a varredura Vercel/Sentry com controles não vazios e o gate #105 continuam pendentes, conforme #104.
 
-Google, na mesma origem estável: o Bruno relatou a recusa de vinculação implícita para um e-mail já cadastrado. Depois da vinculação explícita realizada por ele, o navegador confirmou a mensagem de conta vinculada, logout e nova entrada com Google na mesma conta verificada/ativa. Não foram expostos e-mail, credenciais ou cookies neste relatório. Cadastro novo com 18+/termos, cancelamento e links de e-mail continuam pendentes em #133; esses resultados não fecham a issue.
+Google, na mesma origem estável: o Bruno relatou a recusa de vinculação implícita para um e-mail já cadastrado. A prova funcional parcial confirmou vinculação explícita, logout e nova entrada com Google na mesma conta verificada/ativa. Não foram expostos e-mail, credenciais ou cookies neste relatório. Cadastro novo com 18+/termos, cancelamento e links de e-mail continuam pendentes em #133; esses resultados não fecham a issue.
 
 ## Roteiro de homologação
 
-1. Concluir #104 no Preview com configuração de teste própria, SHA/deployment/intervalo e controles diagnósticos da varredura. Reconciliar os contratos e registrar o gate #105.
+1. Concluir a prova funcional de #104 no Preview republicado, com SHA/deployment/intervalo e controles diagnósticos da varredura. Reconciliar os contratos e registrar o gate #105.
 2. Após integração autorizada e CI aprovada, publicar a revisão da sprint no Preview pelo pipeline existente.
 3. Encerrar uma negociação como anunciante e outra como escolhido; confirmar retry e acesso ao histórico. Reselecionar uma solicitação paga elegível, com anúncio publicado, preservando contato e negociação anteriores.
 4. Enviar e editar a primeira nota; conferir que a contraparte, HTML/RSC e agregado público não recebem a nota ainda cega. Enviar a segunda, verificar publicação e média/contagem; confirmar recusa de edição posterior.
