@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { registerUser } from '@/modules/identity/actions';
 import { ResendVerificationForm } from '../verificar-email/resend-form';
+import { GoogleDivider, GoogleSignInButton } from '@/app/_components/google-sign-in';
 
 export default function CadastroPage() {
   const [displayName, setDisplayName] = useState('');
@@ -267,6 +268,9 @@ export default function CadastroPage() {
           {loading ? 'Cadastrando...' : 'Criar minha conta'}
         </button>
       </form>
+
+      <GoogleDivider />
+      <GoogleSignInButton hint="Com o Google, você ainda declara ter 18 anos ou mais e aceita os Termos de Uso antes de a conta ser criada." />
     </main>
   );
 }

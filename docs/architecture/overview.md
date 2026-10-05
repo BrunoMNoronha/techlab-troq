@@ -132,7 +132,7 @@ As jornadas abaixo mostram **onde cada garantia mora**. Nenhuma delas cria compo
 
 ## 7. Autenticação e autorização
 
-**AR-7.1 (normativa).** Autenticação por email/senha com verificação de email, via Better Auth (DEC-012, DEC-013). Login social fora do núcleo inicial.
+**AR-7.1 (normativa).** Autenticação por email/senha com verificação de email, via Better Auth (DEC-012, DEC-013), e entrada opcional com Conta Google pelo mesmo provedor (DEC-047; [identity-contract.md](identity-contract.md), seção 15). Outros provedores sociais seguem fora.
 
 **AR-7.2 (decisão arquitetural).** Autorização é **sempre** decidida no servidor, no instante da execução, a partir do estado do servidor — nunca a partir do que o cliente afirmou. Ela é expressa em três níveis, todos obrigatórios e cumulativos:
 

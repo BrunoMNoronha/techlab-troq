@@ -8,7 +8,7 @@ const { GET, POST } = await import('./route');
 
 const BASE = 'http://localhost:3000/api/auth';
 
-describe('rota /api/auth — superficie do Better Auth (#42 / F2-004)', () => {
+describe('rota /api/auth — superficie do Better Auth (#42 / F2-004; #81)', () => {
   beforeEach(() => handler.mockClear());
 
   it('qualquer POST (sign-up, sign-in, sign-out, update/delete-user) responde 404 sem chegar ao provedor', async () => {
@@ -17,15 +17,29 @@ describe('rota /api/auth — superficie do Better Auth (#42 / F2-004)', () => {
     expect(handler).not.toHaveBeenCalled();
   });
 
-  it('GET fora da lista permitida responde 404', async () => {
-    const res = await GET(new Request(`${BASE}/list-sessions`));
+  it.each([
+    '/list-sessions',
+    // Inicio e vinculacao do OAuth so por Server Action, depois das regras do TROQ.
+    '/sign-in/social',
+    '/link-social',
+    '/list-accounts',
+    '/unlink-account',
+    // Outros provedores e o destino de erro padrao do provedor continuam fechados.
+    '/callback/github',
+    '/callback/google/extra',
+    '/error',
+  ])('GET %s fora da lista permitida responde 404', async (path) => {
+    const res = await GET(new Request(`${BASE}${path}`));
     expect(res.status).toBe(404);
     expect(handler).not.toHaveBeenCalled();
   });
 
-  it.each(['/ok', '/get-session'])('GET %s e repassado ao provedor', async (path) => {
-    const res = await GET(new Request(`${BASE}${path}`));
-    expect(res.status).toBe(200);
-    expect(handler).toHaveBeenCalledTimes(1);
-  });
+  it.each(['/ok', '/get-session', '/callback/google?code=c&state=s'])(
+    'GET %s e repassado ao provedor',
+    async (path) => {
+      const res = await GET(new Request(`${BASE}${path}`));
+      expect(res.status).toBe(200);
+      expect(handler).toHaveBeenCalledTimes(1);
+    },
+  );
 });
