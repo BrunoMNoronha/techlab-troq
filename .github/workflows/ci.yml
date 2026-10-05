@@ -45,6 +45,9 @@ jobs:
       - name: Testes
         run: pnpm run test:ci
 
+      - name: Segurança e invariantes do pipeline de deploy
+        run: pnpm run test:deployment
+
       - name: Build
         run: pnpm run build
 
@@ -101,7 +104,7 @@ jobs:
 
       - name: Gerar segredos sintéticos do job
         run: |
-          for name in BETTER_AUTH_SECRET CRON_SECRET MERCADO_PAGO_WEBHOOK_SECRET; do
+          for name in BETTER_AUTH_SECRET CRON_SECRET MERCADO_PAGO_WEBHOOK_SECRET BACKUP_PASSPHRASE; do
             value="$(openssl rand -base64 32)"
             echo "::add-mask::$value"
             echo "$name=$value" >> "$GITHUB_ENV"
@@ -131,6 +134,14 @@ jobs:
 
       - name: Suítes de integração e provas HTTP
         run: pnpm run test:integration
+
+      - name: Provar backup cifrado e restauração com dados sintéticos
+        env:
+          RESTORE_CONTAINER: ${{ job.services.postgres.id }}
+        run: |
+          docker exec "$RESTORE_CONTAINER" psql -U troq -d troq_ci -v ON_ERROR_STOP=1 -c 'CREATE ROLE restore_check LOGIN'
+          docker exec "$RESTORE_CONTAINER" createdb -U troq -O restore_check restore_check
+          bash scripts/deploy/backup.sh
 
       - name: Log do servidor em caso de falha
         if: failure()

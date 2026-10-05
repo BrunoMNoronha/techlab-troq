@@ -1,5 +1,8 @@
 # Ambientes, variáveis e segredos — TROQ
 
+**Estado operacional vigente — 2026-10-04.** O fluxo de publicação, inventário atual e pendências estão em [deployment.md](deployment.md), que substitui as afirmações operacionais históricas abaixo. Neon agora tem branches independentes Preview e Production, com Production padrão. Auth, cron e URLs foram configurados nos dois escopos Vercel; Production continua bloqueada para lançamento por credenciais externas e homologação. Os parágrafos de F1/F2 preservam o estado de cada entrega na sua data.
+
+
 Fonte normativa dos **ambientes** da aplicação e do **contrato de variáveis de ambiente e segredos**. Produzido por **F1-001**, o primeiro trabalho da Fase 1 ([../delivery/prompts/f1-001-environments-and-secrets.md](../delivery/prompts/f1-001-environments-and-secrets.md)).
 
 Documento irmão de [conventions.md](conventions.md), cuja seção 3.2 fixa a fronteira servidor/cliente para segredos, e de [testing.md](testing.md). Em caso de conflito entre este documento e uma decisão registrada em [../decisions/decision-log.md](../decisions/decision-log.md), nos ADRs em [../adr/](../adr/) ou em [../product/business-rules.md](../product/business-rules.md), **prevalece a decisão registrada** e este documento deve ser corrigido ([ai-agent-workflow.md](ai-agent-workflow.md), seção 2).
@@ -48,10 +51,10 @@ O projeto tem exatamente **três** ambientes. Ambiente é uma fronteira de isola
 
 | Aspecto | Definição |
 | --- | --- |
-| Propósito | Validar uma Pull Request em ambiente hospedado antes do merge |
-| Onde roda | Deployment de preview da Vercel, publicado a partir de PR |
+| Propósito | Validar a revisão integrada em main antes de publicação manual |
+| Onde roda | Deployment Preview da Vercel, publicado pelo CI aprovado de main |
 | Origem dos dados | Banco de preview, isolado de produção, com dados fictícios. **Nenhum dado pessoal real** |
-| Quem acessa | Quem revisa a PR; a URL é efêmera e por deployment |
+| Quem acessa | Equipe de validação; URL estável da branch preview e URL de cada deployment |
 | Classe de credencial admissível | Credencial de teste ou de sandbox, **própria deste ambiente**. Credencial de produção **nunca** é usada aqui |
 | Onde os valores vivem | Configuração de variáveis do projeto na Vercel, no escopo `preview`; e, para as conexões usadas pelo workflow de migrations, secrets do GitHub Environment `preview`, liberados apenas para jobs originados de `main` ([database.md](database.md), seção 15.2) |
 
@@ -70,7 +73,7 @@ O projeto tem exatamente **três** ambientes. Ambiente é uma fronteira de isola
 | Classe de credencial admissível | Exclusivamente credencial de produção, que **não sai deste ambiente** |
 | Onde os valores vivem | Configuração de variáveis do projeto na Vercel, no escopo `production`, e — para a conexão usada por migrations — no escopo de segredo do job de CI/CD ([../adr/0005-prisma-orm-migrations.md](../adr/0005-prisma-orm-migrations.md), decisões 7 e 10) |
 
-**Ambiente não é target de plataforma.** Esta seção define o ambiente `production` do TROQ. O target Production da Vercel, que recebe os deployments de `main`, existe tecnicamente, mas sem variáveis e sem homologação, e não constitui este ambiente enquanto o provisionamento e a homologação não forem feitos (seção 1, estado do target Production da Vercel).
+**Estado atual.** A publicação Production é exclusivamente manual, pelo SHA aprovado em Preview. Há configuração parcial própria de Production; homologação e liberação comercial seguem pendentes ([deployment.md](deployment.md)).
 
 ### 2.4 Quadro comparativo
 

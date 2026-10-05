@@ -1,0 +1,8 @@
+.git/
+.env
+.env.*
+release-proof/
+release-backup/
+*.log
+*.err
+coverage/
