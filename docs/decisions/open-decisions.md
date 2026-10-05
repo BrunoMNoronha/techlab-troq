@@ -1,6 +1,6 @@
 # Decisões abertas
 
-Registro das questões que **ainda não foram decididas** (criado na Fase 0; reaberto com OD-13 a OD-16 na Fase 3). Nenhum item desta lista deve ser tratado como homologado. Uma decisão aberta só é fechada quando um documento próprio (ADR ou documento de produto) a registrar e este arquivo for atualizado.
+Registro das questões que **ainda não foram decididas** (criado na Fase 0; reaberto com OD-13 a OD-16 na Fase 3 e com OD-17 e OD-18 pela frente proposta de troca, em 2026-10-05). Nenhum item desta lista deve ser tratado como homologado. Uma decisão aberta só é fechada quando um documento próprio (ADR ou documento de produto) a registrar e este arquivo for atualizado.
 
 ## Como distinguir decisão aberta de decisão vigente
 
@@ -11,7 +11,14 @@ Registro das questões que **ainda não foram decididas** (criado na Fase 0; rea
 
 ## Lista de decisões abertas
 
-**Nenhuma decisão aberta desde 2026-10-01.** OD-13 a OD-16 foram abertas na Fase 3 e fechadas em 2026-10-01 por decisão do Bruno: OD-13 por [../product/advertiser-contact.md](../product/advertiser-contact.md) (DEC-040), OD-14 por [../product/reservation-limit.md](../product/reservation-limit.md) (DEC-041), OD-15 por [../delivery/phase-3-plan.md](../delivery/phase-3-plan.md), seção 5.1 (DEC-042), e OD-16 por [../adr/0008-accreditation-instant-payments-api.md](../adr/0008-accreditation-instant-payments-api.md) (DEC-043), depois da validação no sandbox com a credencial PX-2.
+Duas decisões abertas, registradas por PT-00 ([#186](https://github.com/BrunoMNoronha/techlab-troq/issues/186)) em 2026-10-05. As duas pertencem à regra de troca **proposta de troca** ([../product/trade-proposal.md](../product/trade-proposal.md), DEC-053) e **não** afetam a solicitação paga.
+
+| ID | Decisão aberta | O que já está decidido | O que falta decidir | O que depende dela |
+| --- | --- | --- | --- | --- |
+| OD-17 | Preço final da cobrança na proposta de troca | Só o proponente paga, depois do aceite, e a cobrança é definitiva (RB-009). R$ 2,99 é o preço **candidato**, para o spike e o primeiro teste ([#185](https://github.com/BrunoMNoronha/techlab-troq/issues/185), decisão 11) | O valor final. Ele sai da prova de PT-01 ([#187](https://github.com/BrunoMNoronha/techlab-troq/issues/187)) — aceitação do valor e tarifa no sandbox — e do resultado do primeiro teste | A homologação de PT-11 ([#197](https://github.com/BrunoMNoronha/techlab-troq/issues/197)) e a abertura da regra a usuários reais. **Não** bloqueia código: o valor é gravado por fluxo (ADR-0009, decisão 9) |
+| OD-18 | Aviso prévio de troca de regra e forma final do consentimento | Cada regra tem o seu texto de Termos e de Privacidade, e o consentimento é gravado no próprio fluxo, ao propor e ao aceitar (#185, decisão 19) | O prazo e o canal do aviso que os Termos 1.0 prometem antes de mudança relevante, e a forma final do consentimento. Dependem da revisão jurídica de [#173](https://github.com/BrunoMNoronha/techlab-troq/issues/173) | Os textos legais de PT-09 ([#195](https://github.com/BrunoMNoronha/techlab-troq/issues/195)) e a homologação de PT-11 |
+
+**Registro anterior (2026-10-01 a 2026-10-05):** nenhuma decisão aberta. OD-13 a OD-16 foram abertas na Fase 3 e fechadas em 2026-10-01 por decisão do Bruno: OD-13 por [../product/advertiser-contact.md](../product/advertiser-contact.md) (DEC-040), OD-14 por [../product/reservation-limit.md](../product/reservation-limit.md) (DEC-041), OD-15 por [../delivery/phase-3-plan.md](../delivery/phase-3-plan.md), seção 5.1 (DEC-042), e OD-16 por [../adr/0008-accreditation-instant-payments-api.md](../adr/0008-accreditation-instant-payments-api.md) (DEC-043), depois da validação no sandbox com a credencial PX-2.
 
 **Fora desta lista, por ser configuração e não decisão de produto ou de arquitetura:** o alvo do webhook do Mercado Pago em `preview` (DP-4 de F3-000), registrado como pré-requisito pendente em [../engineering/environments.md](../engineering/environments.md), seção 5.6.
 
