@@ -16,7 +16,7 @@ O manifesto e os PNGs próprios estão em `src/modules/demo-data/manifest.ts` e 
 
 ## Remover pela interface
 
-Entre com uma conta ativa/verificada e abra **Minha conta → Configurações → Dados demonstrativos**. A tela mostra ambiente, versão, quantidade e situação da mídia. “Remover produtos exemplares” abre confirmação. Cancelar não altera dados. A confirmação está vinculada ao lote mostrado: uma tela antiga não pode remover uma recriação posterior.
+Entre com uma conta ativa/verificada e abra **Minha conta → Configurações → Produtos exemplares**. A tela mostra ambiente, versão, quantidade e situação da mídia. “Remover produtos exemplares” abre confirmação. Cancelar não altera dados. A confirmação está vinculada ao lote mostrado: uma tela antiga não pode remover uma recriação posterior.
 
 Para um lote intacto, a exclusão é física dos 30 registros de produto e de suas dependências operacionais sintéticas. Cadastros independentes, usuários, eventos de auditoria e metadados mínimos da execução permanecem. Não são selecionados os últimos 30 registros nem registros pelo título.
 

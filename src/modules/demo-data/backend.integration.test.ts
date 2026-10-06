@@ -51,6 +51,28 @@ function deferred() {
   return { promise, resolve };
 }
 
+/** Falha no preparador antes do sinal nao pode virar espera silenciosa. */
+async function waitForGate(gate: Promise<void>, operation: Promise<unknown>): Promise<void> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const deadline = new Promise<never>((_, reject) => {
+    timer = setTimeout(
+      () => reject(new Error('A operação não atingiu o gate em 10 segundos.')),
+      10_000,
+    );
+  });
+  try {
+    await Promise.race([
+      gate,
+      operation.then(() => {
+        throw new Error('A operação terminou antes de atingir o gate de concorrência.');
+      }),
+      deadline,
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
   'dados demonstrativos: PostgreSQL efêmero e mídia real com S3 simulado',
   () => {
@@ -58,6 +80,44 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
     let independentId: string;
     let technicalOwnerId: string | undefined;
     const ownBatchIds = new Set<string>();
+    const externalMediaKeys = Array.from(
+      { length: 30 },
+      (_, index) => `demo-test-unrelated/${randomUUID()}/${index}`,
+    );
+    const externalQueueRows = () =>
+      prisma().mediaObjectDeletion.findMany({
+        where: { objectKey: { in: externalMediaKeys } },
+        orderBy: { objectKey: 'asc' },
+        select: {
+          objectKey: true,
+          dueAt: true,
+          attempts: true,
+          lastErrorCode: true,
+          completedAt: true,
+        },
+      });
+    let externalQueueBaseline: Awaited<ReturnType<typeof externalQueueRows>> = [];
+
+    async function mediaKeys(batchId: string): Promise<string[]> {
+      const objects = await prisma().demoMediaObject.findMany({ where: { batchId } });
+      return objects.map((object) => object.objectKey);
+    }
+
+    async function consumeAndCheckOwnObjects(keys: string[]): Promise<void> {
+      await consumeDeletionQueue();
+      // O consumidor e global; a prova e sobre as chaves deste lote, mesmo
+      // quando outras suites deixaram objetos vencidos ou futuros na fila.
+      expect(
+        await prisma().mediaObjectDeletion.count({
+          where: { objectKey: { in: keys }, completedAt: { not: null } },
+        }),
+      ).toBe(keys.length);
+      expect(
+        await prisma().mediaObjectDeletion.count({
+          where: { objectKey: { in: keys }, completedAt: null },
+        }),
+      ).toBe(0);
+    }
 
     async function track() {
       if (!actorId) return;
@@ -109,6 +169,9 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
       ownBatchIds.clear();
       technicalOwnerId = undefined;
       storage.clear();
+      // Regressao da falha em CI: 30 pendencias futuras alheias nao entram
+      // nas contagens do lote nem podem ser antecipadas pelo teste de retry.
+      expect(await externalQueueRows()).toEqual(externalQueueBaseline);
     }
 
     beforeAll(async () => {
@@ -147,6 +210,15 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
         },
       });
       independentId = independent.id;
+      await prisma().mediaObjectDeletion.createMany({
+        data: externalMediaKeys.map((objectKey) => ({
+          objectKey,
+          reason: 'derivative_orphan',
+          dueAt: new Date(Date.now() + 24 * 60 * 60_000),
+        })),
+      });
+      externalQueueBaseline = await externalQueueRows();
+      expect(externalQueueBaseline).toHaveLength(30);
     });
 
     beforeEach(() => {
@@ -160,6 +232,9 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
       // em um filtro vazio, inclusive quando o DB nao era exclusivo.
       if (independentId) await prisma().listing.deleteMany({ where: { id: independentId } });
       if (actorId) await prisma().user.deleteMany({ where: { id: actorId } });
+      await prisma().mediaObjectDeletion.deleteMany({
+        where: { objectKey: { in: externalMediaKeys } },
+      });
       vi.unstubAllEnvs();
       await prisma().$disconnect();
     });
@@ -224,6 +299,7 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
 
     it('recria UUIDs novos; confirmação antiga não remove lote novo nem fila antiga apaga bytes novos', async () => {
       const first = await seed();
+      const oldObjectKeys = await mediaKeys(first);
       const oldKeys = [...storage.keys()];
       expect(await removeDemoData(actorId, first)).toMatchObject({ success: true, removed: 30 });
       const second = await seed();
@@ -234,7 +310,7 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
         success: false,
         reason: 'stale_batch',
       });
-      expect(await consumeDeletionQueue()).toMatchObject({ completed: 90 });
+      await consumeAndCheckOwnObjects(oldObjectKeys);
       expect(freshKeys.every((key) => storage.has(key))).toBe(true);
       expect(await getDemoDataSummary()).toMatchObject({ products: 30, pendingMedia: 0 });
     });
@@ -246,22 +322,28 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
       hooks.put = async () => {
         if (!first) return;
         first = false;
-        const pending = await prisma().mediaObjectDeletion.count({ where: { completedAt: null } });
-        expect(pending).toBe(90);
         entered.resolve();
         await release.promise;
       };
       const creation = seedDemoData();
-      await entered.promise;
       try {
-        expect(await seedDemoData()).toMatchObject({ success: false, reason: 'conflict' });
+        await waitForGate(entered.promise, creation);
         const summary = await getDemoDataSummary();
+        const keys = await mediaKeys(summary.batchId!);
+        expect(keys).toHaveLength(90);
+        expect(
+          await prisma().mediaObjectDeletion.count({
+            where: { objectKey: { in: keys }, completedAt: null },
+          }),
+        ).toBe(90);
+        expect(await seedDemoData()).toMatchObject({ success: false, reason: 'conflict' });
         expect(await removeDemoData(actorId, summary.batchId!)).toMatchObject({
           success: false,
           reason: 'conflict',
         });
       } finally {
         release.resolve();
+        await creation;
       }
       expect(await creation).toMatchObject({ success: true, created: 30 });
       expect(await prisma().listing.count()).toBe(31);
@@ -288,9 +370,10 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
         },
         { timeout: 30_000 },
       );
-      await inserted.promise;
-      const removal = removeDemoData(actorId, batchId);
+      let removal: ReturnType<typeof removeDemoData> | undefined;
       try {
+        await waitForGate(inserted.promise, writer);
+        removal = removeDemoData(actorId, batchId);
         let waiting = false;
         const stopAt = Date.now() + 5_000;
         while (Date.now() < stopAt && !waiting) {
@@ -306,9 +389,12 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
         expect(waiting).toBe(true);
       } finally {
         release.resolve();
+        await Promise.allSettled([writer, removal]);
         await writer;
+        if (removal) await removal;
       }
-      expect(await removal).toMatchObject({ success: false, reason: 'conflict' });
+      expect(removal).toBeDefined();
+      expect(await removal!).toMatchObject({ success: false, reason: 'conflict' });
       expect(await getDemoDataSummary()).toMatchObject({ products: 30, pendingMedia: 0 });
       expect(await prisma().contactRequest.count({ where: { listingId: item.listingId! } })).toBe(
         1,
@@ -326,28 +412,30 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
         await release.promise;
       };
       const abandoned = seedDemoData();
-      await entered.promise;
-      const old = await prisma().demoBatch.findFirstOrThrow({ where: { status: 'preparing' } });
-      // Simula queda/expiracao sem antecipar as intencoes do PUT em curso.
-      await prisma().demoBatch.update({
-        where: { id: old.id },
-        data: { leaseExpiresAt: new Date(Date.now() - 1_000) },
-      });
+      let oldBatchId: string | undefined;
       try {
+        await waitForGate(entered.promise, abandoned);
+        const old = await prisma().demoBatch.findFirstOrThrow({ where: { status: 'preparing' } });
+        oldBatchId = old.id;
+        // Simula queda/expiracao sem antecipar as intencoes do PUT em curso.
+        await prisma().demoBatch.update({
+          where: { id: old.id },
+          data: { leaseExpiresAt: new Date(Date.now() - 1_000) },
+        });
         expect(await seedDemoData()).toMatchObject({ success: true, created: 30 });
       } finally {
         release.resolve();
+        await abandoned;
       }
       expect(await abandoned).toMatchObject({ success: false, reason: 'conflict' });
       expect(await getDemoDataSummary()).toMatchObject({ products: 30, pendingMedia: 90 });
-      const oldKeys = (await prisma().demoMediaObject.findMany({ where: { batchId: old.id } })).map(
-        (object) => object.objectKey,
-      );
+      expect(oldBatchId).toBeDefined();
+      const oldKeys = await mediaKeys(oldBatchId!);
       await prisma().mediaObjectDeletion.updateMany({
         where: { objectKey: { in: oldKeys } },
         data: { dueAt: new Date() },
       });
-      expect(await consumeDeletionQueue()).toMatchObject({ completed: 90 });
+      await consumeAndCheckOwnObjects(oldKeys);
       expect(storage.size).toBe(90);
       expect(await getDemoDataSummary()).toMatchObject({ products: 30, pendingMedia: 0 });
     });
@@ -513,18 +601,32 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
         where: { objectKey: { in: keys } },
         data: { dueAt: new Date() },
       });
-      expect(await consumeDeletionQueue()).toMatchObject({ completed: 90 });
+      await consumeAndCheckOwnObjects(keys);
       expect(orphanKeys.some((key) => storage.has(key))).toBe(false);
       expect(storage.size).toBe(90);
     });
 
     it('falha externa conserva pendências honestas e recuperáveis', async () => {
       const batchId = await seed();
+      const keys = await mediaKeys(batchId);
       await removeDemoData(actorId, batchId);
       hooks.failDelete = true;
       const log = vi.spyOn(console, 'error').mockImplementation(() => undefined);
       try {
-        expect(await consumeDeletionQueue()).toMatchObject({ completed: 0, retried: 90 });
+        await consumeDeletionQueue();
+        const ownRows = await prisma().mediaObjectDeletion.findMany({
+          where: { objectKey: { in: keys } },
+          select: { attempts: true, lastErrorCode: true, completedAt: true },
+        });
+        expect(ownRows).toHaveLength(90);
+        expect(
+          ownRows.every(
+            (row) =>
+              row.attempts === 1 &&
+              row.lastErrorCode === 'r2_unavailable' &&
+              row.completedAt === null,
+          ),
+        ).toBe(true);
       } finally {
         log.mockRestore();
       }
@@ -532,10 +634,10 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
       expect(storage.size).toBe(90);
       hooks.failDelete = false;
       await prisma().mediaObjectDeletion.updateMany({
-        where: { completedAt: null },
+        where: { objectKey: { in: keys }, completedAt: null },
         data: { dueAt: new Date() },
       });
-      expect(await consumeDeletionQueue()).toMatchObject({ completed: 90 });
+      await consumeAndCheckOwnObjects(keys);
       expect(await getDemoDataSummary()).toMatchObject({ pendingMedia: 0 });
     });
 
