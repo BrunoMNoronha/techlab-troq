@@ -60,3 +60,4 @@ export type {
   TradeOptionField,
   TradeOptionSlots,
 } from './validation';
+export type { ProductCategoryCode } from './categories';

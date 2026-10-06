@@ -1,5 +1,7 @@
 # Contrato do formulário e da consulta de anúncios — TROQS
 
+**Dados exemplares (#201).** O provisionamento sintético em desenvolvimento e Preview é uma fronteira técnica separada: valida o mesmo conteúdo e mídia, cria estado inicial publicado e audita o lote sem registrar aceites/transições humanas. A publicação comum permanece sujeita ao contrato abaixo. Apenas exemplares intactos e identificados por procedência persistida podem ser excluídos fisicamente; históricos posteriores bloqueiam o lote. Ver [../engineering/demo-products.md](../engineering/demo-products.md).
+
 Contrato técnico canônico do anúncio no MVP: campos, validação do formulário, rascunho e publicação, estados, contratos de saída (DTOs), visibilidade, consulta pública, conteúdo livre e requisitos de interface. Entregável de F2-005 ([#43](https://github.com/BrunoMNoronha/techlab-troq/issues/43)).
 
 **Reconciliado em 2026-09-29** sobre `main` em `7296cb3`. A versão anterior deste documento divergia das fontes normativas (máximo de 5 imagens, estados `DRAFT`/`PUBLISHED`/`INACTIVE` e contato por "aceite mútuo"); a seção 14 registra o que mudou.

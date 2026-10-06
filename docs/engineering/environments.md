@@ -336,7 +336,19 @@ Plataforma de observabilidade do MVP homologada por [../adr/0007-observability-s
 
 **O que continua valendo, e é mais rígido que qualquer configuração.** Nenhum sinal de observabilidade contém telefone/WhatsApp, credencial, token, cookie de sessão, cabeçalho `Authorization`, string de conexão, request body arbitrário, payload integral de webhook, resposta integral de provedor ou qualquer outro dado protegido (AR-14.4, RNF-018, seção 6.5). Telefone/WhatsApp **nunca** é tag, atributo, contexto, breadcrumb, mensagem nem chave de correlação, em nenhuma forma derivada. **Session Replay fica fora do MVP e permanece desabilitado.** O *data scrubbing* do provedor é preservado ou reforçado, nunca afrouxado, e `sendDefaultPii` — ou a opção que o suceder — não é habilitada por conveniência ([../adr/0007-observability-sentry.md](../adr/0007-observability-sentry.md), decisões 5 a 9).
 
-### 5.9 Áreas que ainda não têm variável
+### 5.9 Dados demonstrativos (#201)
+
+Variáveis exclusivamente server-side, consumidas por `src/modules/demo-data/config.ts`, condicionais à geração e remoção dos 30 exemplares. Ficam vazias por padrão e não são necessárias para publicar ou usar as demais funções. Production recusa a função mesmo quando os valores estão presentes.
+
+| Variável | Ambientes | Classificação | Obrigatoriedade | Estado | Origem |
+| --- | --- | --- | --- | --- | --- |
+| `DEMO_DATA_TARGET` | development, preview | server-side, não segredo | condicional | consumido | Confirma explicitamente o ambiente permitido e deve coincidir com `APP_ENV` |
+| `DEMO_DATABASE_FINGERPRINT` | development, preview | server-side, não segredo | condicional | consumido | SHA-256 da identidade host/porta/banco, sem usuário, senha ou parâmetros; confere o banco isolado previamente selecionado |
+| `DEMO_MEDIA_FINGERPRINT` | development, preview | server-side, não segredo | condicional | consumido | SHA-256 do endpoint e bucket; confere a mídia isolada previamente selecionada |
+
+`pnpm demo:target` imprime os valores sem gravar dados. A identidade persistida do conjunto também é conferida em cada operação. Em hospedagem Vercel, `VERCEL`/`VERCEL_ENV` são conferidas no servidor; `NODE_ENV=production` de um build Preview não identifica o ambiente de dados. Nenhuma variável nova é pública. Roteiro, autorização de qualquer conta ativa/verificada e limitações da comprovação de isolamento: [demo-products.md](demo-products.md).
+
+### 5.10 Áreas que ainda não têm variável
 
 - **Módulos de domínio.** Os nove módulos de AR-3.3 existem como fronteira desde F1-005 (seção 2.5 de [conventions.md](conventions.md)), mas não têm comportamento e não introduzem variáveis próprias por enquanto.
 
