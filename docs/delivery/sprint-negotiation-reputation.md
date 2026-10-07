@@ -1,6 +1,6 @@
 # Sprint de encerramento e reputação — #163 e #164
 
-Entrega iniciada em 2026-10-05, a partir de `main@9447b8af344201ac60d25721dbce78c7982ae01e`, na branch `codex/sprint-negociacoes-reputacao` e em checkout isolado. A [PR #182](https://github.com/BrunoMNoronha/techlab-troq/pull/182) permanece em rascunho. A CI da Fase 4 registrada abaixo para `6152506b2abb0d5141f66d54c53d6e03286fdf80` é **histórica**. Após o registro documental `34758e790`, a branch incorporou `main@78e0035baa162b83bf00a433904605b05dacfc2c` sem conflitos, pelo merge `cc754c95832b32cb57ec73031acb5f2cd3a5754f`; a revisão `3383332e56d4cb911379215d553143e4c41e4f41` também teve [CI aprovada](https://github.com/BrunoMNoronha/techlab-troq/actions/runs/37375379313), anterior à atualização seguinte. Esta atualização incorpora `main@f85fe73d61d621a8fc5575b6aa1a544384e48434`, com PT-00 e a PR #200, sem conflitos. A nova revisão da sprint precisará de CI própria; as aprovações anteriores não a aprovam. As alterações locais do checkout principal foram preservadas.
+Entrega iniciada em 2026-10-05, a partir de `main@9447b8af344201ac60d25721dbce78c7982ae01e`, na branch `codex/sprint-negociacoes-reputacao` e em checkout isolado. A [PR #182](https://github.com/BrunoMNoronha/techlab-troq/pull/182) permanece em rascunho. A CI da Fase 4 registrada abaixo para `6152506b2abb0d5141f66d54c53d6e03286fdf80` é **histórica**. Após o registro documental `34758e790`, a branch incorporou `main@78e0035baa162b83bf00a433904605b05dacfc2c` sem conflitos, pelo merge `cc754c95832b32cb57ec73031acb5f2cd3a5754f`; a revisão `3383332e56d4cb911379215d553143e4c41e4f41` também teve [CI aprovada](https://github.com/BrunoMNoronha/techlab-troq/actions/runs/37375379313), anterior à atualização seguinte. O merge `79cfd304cd839ab8de2dae608ac1eb5568134759` incorporou `main@f85fe73d61d621a8fc5575b6aa1a544384e48434`, com PT-00 e a PR #200, sem conflitos. Sua CI própria foi conferida na reauditoria de 2026-10-07, registrada abaixo. As alterações locais do checkout principal foram preservadas.
 
 **A Fase 4 ainda não foi publicada nem homologada no Preview.** As jornadas e capturas A/B/C de `373748fe16fa8fc5d92130397f24400e41ba69a4` descritas abaixo são registros históricos, sem #163/#164 ou a correção da PR #198. C-8 remota de #104 e o gate #105 continuam abertos. A preparação isolada não libera a integração da Fase 4.
 
@@ -49,7 +49,19 @@ O [run 37357922701](https://github.com/BrunoMNoronha/techlab-troq/actions/runs/3
 | Integração: PostgreSQL efêmero e HTTP | Aprovado; 35 arquivos aprovados e três pulados; 511 testes aprovados e 19 pulados, de 530 casos; inclui as 38 provas novas de #163/#164 |
 | Backup e restauração | Etapa aprovada com dados sintéticos no banco isolado |
 
-A CI histórica terminou sem falha de teste, incluindo o teste antigo de imagens que atingiu timeout na regressão local. Os 19 casos pulados continuam dependendo de R2 real ou Mercado Pago sandbox. A revisão atual da sprint, com a base `f85fe73d` incorporada, ainda precisa de nova CI da Fase 4. O sucesso anterior não substitui essa revalidação, as provas funcionais no Preview ou o aceite de #104/#105.
+A CI histórica terminou sem falha de teste, incluindo o teste antigo de imagens que atingiu timeout na regressão local. Os 19 casos pulados naquela rodada dependiam de R2 real ou Mercado Pago sandbox. Essa CI antecede a incorporação da base `f85fe73d`; a revalidação correspondente está na seção seguinte. Nenhuma dessas provas substitui as provas funcionais no Preview ou o aceite de #104/#105.
+
+### Reauditoria de 2026-10-07
+
+Os metadados, etapas e resumos dos logs do [run 37387061108, tentativa 1](https://github.com/BrunoMNoronha/techlab-troq/actions/runs/37387061108) foram lidos nesta revisão. O evento `pull_request` identifica o HEAD `79cfd304cd839ab8de2dae608ac1eb5568134759`; ambos os jobs concluíram com `success`.
+
+| Verificação no SHA auditado | Resultado observado |
+| --- | --- |
+| Validação | Formatação, lint, typecheck e build aprovados; 1.254 testes unitários em 75 arquivos e 10 testes do pipeline aprovados |
+| PostgreSQL efêmero e HTTP | 521 testes aprovados e 21 pulados; 36 arquivos aprovados e três pulados |
+| Backup e restauração | Etapa de backup cifrado e restauração em PostgreSQL isolado aprovada com dados sintéticos |
+
+A leitura dessa CI resolve a lacuna documental de revalidação da base incorporada; não reexecuta as demonstrações locais históricas nem homologa #163/#164 no Preview. A revisão do diff, das issues e do estado remoto não encontrou comentários ou discussões de revisão abertos nesta PR. O rascunho e as pendências de #104/#105 permanecem. Commits posteriores, inclusive esta reconciliação documental, dependem de seus próprios checks.
 
 ## Preview e dependências externas
 
