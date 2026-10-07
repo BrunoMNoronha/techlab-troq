@@ -253,6 +253,7 @@ model User {
   appeals                 Appeal[]                  @relation("AppealAppellant")
   appealsDecided          Appeal[]                  @relation("AppealDecidedBy")
   auditEvents             AuditEvent[]              @relation("AuditEventActor")
+  demoDatasets            DemoDataset[]
 
   @@map("users")
 }
@@ -384,6 +385,7 @@ model Listing {
   negotiations        Negotiation[]
   contactReleases     ContactRelease[]
   moderationDecisions ModerationDecision[]
+  demoItem            DemoItem?
 
   @@index([ownerId])
   @@index([status])
@@ -495,6 +497,67 @@ model MediaObjectDeletion {
   createdAt     DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
 
   @@map("media_object_deletions")
+}
+
+/// #201: procedencia exclusiva do conjunto conhecido, sem identidade humana.
+model DemoDataset {
+  id                  String   @id
+  environment         String   @db.VarChar(20)
+  databaseFingerprint String   @map("database_fingerprint") @db.Char(64)
+  mediaFingerprint    String   @map("media_fingerprint") @db.Char(64)
+  ownerId             String   @unique @map("owner_id") @db.Uuid
+  createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  owner   User        @relation(fields: [ownerId], references: [id], onDelete: Restrict)
+  batches DemoBatch[]
+
+  @@map("demo_datasets")
+}
+
+/// A unicidade de um lote preparando/ativo por conjunto e parcial no SQL.
+model DemoBatch {
+  id             String    @id @default(uuid()) @db.Uuid
+  datasetId      String    @map("dataset_id")
+  version        String    @db.VarChar(60)
+  status         String    @db.VarChar(20)
+  leaseExpiresAt DateTime? @map("lease_expires_at") @db.Timestamptz(6)
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  completedAt    DateTime? @map("completed_at") @db.Timestamptz(6)
+
+  dataset      DemoDataset       @relation(fields: [datasetId], references: [id], onDelete: Restrict)
+  items        DemoItem[]
+  mediaObjects DemoMediaObject[]
+
+  @@index([datasetId, status])
+  @@map("demo_batches")
+}
+
+/// Identidade preservada depois de apagar o Listing. O ponteiro e solto
+/// explicitamente na transacao de remocao, sem afrouxar FKs do dominio.
+model DemoItem {
+  id        String  @id @default(uuid()) @db.Uuid
+  batchId   String  @map("batch_id") @db.Uuid
+  itemKey   String  @map("item_key") @db.VarChar(60)
+  listingId String? @unique @map("listing_id") @db.Uuid
+  imageId   String  @unique @map("image_id") @db.Uuid
+
+  batch   DemoBatch @relation(fields: [batchId], references: [id], onDelete: Restrict)
+  listing Listing?  @relation(fields: [listingId], references: [id], onDelete: Restrict)
+
+  @@unique([batchId, itemKey])
+  @@map("demo_items")
+}
+
+/// Chaves novas por execucao; permite contar pendencias apos remover o lote
+/// e recuperar uploads interrompidos com a fila existente.
+model DemoMediaObject {
+  objectKey String @id @map("object_key")
+  batchId   String @map("batch_id") @db.Uuid
+
+  batch DemoBatch @relation(fields: [batchId], references: [id], onDelete: Restrict)
+
+  @@index([batchId])
+  @@map("demo_media_objects")
 }
 
 // ---------------------------------------------------------------------------

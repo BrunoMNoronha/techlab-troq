@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { getOwnContactStatus } from '@/modules/contact';
 import { validateSession, logoutUser, loginRedirectPath } from '@/modules/identity';
 import { hasLinkedGoogleAccount, isGoogleSignInAvailable } from '@/modules/identity/google';
+import { requireDemoTarget } from '@/modules/demo-data';
 import { DescriptionList, List, ListItem } from '@/components/data-display';
 import { Alert } from '@/components/feedback';
 import { Form, FormActions } from '@/components/forms';
@@ -53,6 +54,13 @@ export default async function ContaPage({
   }
   const googleLinked = await hasLinkedGoogleAccount(user.id);
   const googleAvailable = isGoogleSignInAvailable();
+  let demoSettingsAvailable = false;
+  try {
+    requireDemoTarget();
+    demoSettingsAvailable = true;
+  } catch {
+    // A navegação só oferece a limpeza quando o servidor comprova um alvo permitido.
+  }
 
   async function handleLogout() {
     'use server';
@@ -137,6 +145,9 @@ export default async function ContaPage({
           <List>
             <ListItem href="/solicitacoes" icon="inbox" title="Minhas solicitações" />
             <ListItem href="/contatos" icon="phone" title="Contatos liberados para você" />
+            {demoSettingsAvailable && (
+              <ListItem href="/configuracoes" icon="settings" title="Configurações" />
+            )}
           </List>
         </Section>
 

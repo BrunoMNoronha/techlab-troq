@@ -4,6 +4,7 @@ import * as contactModule from '@/modules/contact';
 import * as contactActions from '@/modules/contact/actions';
 import * as identityModule from '@/modules/identity';
 import * as googleModule from '@/modules/identity/google';
+import { requireDemoTarget } from '@/modules/demo-data';
 import { ContactForm } from './contact-form';
 import ContaPage from './page';
 
@@ -30,6 +31,7 @@ vi.mock('@/modules/identity/google', () => ({
   isGoogleSignInAvailable: vi.fn().mockReturnValue(false),
 }));
 vi.mock('@/modules/identity/google-actions', () => ({ linkGoogleAccount: vi.fn() }));
+vi.mock('@/modules/demo-data', () => ({ requireDemoTarget: vi.fn() }));
 
 const validateSession = vi.mocked(identityModule.validateSession);
 const getOwnContactStatus = vi.mocked(contactModule.getOwnContactStatus);
@@ -43,6 +45,9 @@ function page() {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.mocked(requireDemoTarget).mockImplementation(() => {
+    throw new Error('Unavailable target');
+  });
   validateSession.mockResolvedValue({
     user: {
       id: 'u',
@@ -52,6 +57,28 @@ beforeEach(() => {
       status: 'active',
     },
     isValid: true,
+  });
+});
+
+describe('/conta — acesso às Configurações', () => {
+  it('oferece o atalho apenas quando o servidor comprova development ou preview', async () => {
+    getOwnContactStatus.mockResolvedValueOnce({ hasContact: true });
+    vi.mocked(requireDemoTarget).mockReturnValueOnce({
+      environment: 'preview',
+      databaseFingerprint: 'db',
+      mediaFingerprint: 'media',
+    });
+    render(await page());
+    expect(screen.getByRole('link', { name: /Configurações/ })).toHaveAttribute(
+      'href',
+      '/configuracoes',
+    );
+  });
+
+  it('não oferece o atalho em produção ou configuração não comprovada', async () => {
+    getOwnContactStatus.mockResolvedValueOnce({ hasContact: true });
+    render(await page());
+    expect(screen.queryByRole('link', { name: /Configurações/ })).toBeNull();
   });
 });
 

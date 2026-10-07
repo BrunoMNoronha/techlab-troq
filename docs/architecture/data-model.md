@@ -12,6 +12,8 @@ Os itens são identificados como `DM-x`.
 
 ## 1. Convenções
 
+**Fronteira sintética de #201.** `DemoDataset`, `DemoBatch`, `DemoItem` e `DemoMediaObject` registram exclusivamente procedência e preparação do conjunto de 30 produtos em desenvolvimento/Preview. Exemplares são provisionados tecnicamente, após validar conteúdo e mídia, sem forjar aceite ou transição humana. Remoção física só é admitida para um lote intacto, sem fatos humanos ou de negócio posteriores, preservando usuários, auditoria e metadados mínimos. O histórico de DM-1.5 e I-13 não é apagado para liberar FKs. Detalhes em [../engineering/demo-products.md](../engineering/demo-products.md).
+
 **DM-1.1.** Identificador: toda entidade tem identificador interno, opaco, gerado pela aplicação, estável e **não sequencial adivinhável**. Identificador de recurso exposto em URL pública nunca revela volume nem ordem.
 
 **DM-1.2.** Instantes são armazenados com fuso, em UTC. Cálculo de prazo em dias corridos (14 dias da avaliação, 7 dias da contestação, 30 dias da exclusão) usa o instante absoluto; prazo em dias úteis da moderação usa o fuso oficial de Brasília, conforme DEC-031, seção 9, item 3.
