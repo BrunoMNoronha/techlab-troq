@@ -71,7 +71,12 @@ describe('/solicitacoes (F3-012)', () => {
   it('paga e escolhida aparece como contato liberado', async () => {
     const listingId = '0b6f2d9e-3c4a-4e8b-9f1a-2d3c4b5a6e7f';
     vi.mocked(contactModule.listOwnContactReleases).mockResolvedValueOnce([
-      { contactReleaseId: 'r1', listingId, authorizedAt: '2026-10-05T16:00:00.000Z' },
+      {
+        contactReleaseId: 'r1',
+        negotiationId: 'n1',
+        listingId,
+        authorizedAt: '2026-10-05T16:00:00.000Z',
+      },
     ]);
     listOwnContactRequests.mockResolvedValue([
       {

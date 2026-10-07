@@ -2,10 +2,12 @@ import { render, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as listingModule from '@/modules/listing';
 import * as requestModule from '@/modules/request';
+import * as reputationModule from '@/modules/reputation';
 import DetalheAnuncioPublicoPage, { generateMetadata } from './page';
 
 vi.mock('@/modules/listing', () => ({ getPublicListingDetail: vi.fn() }));
 vi.mock('@/modules/request', () => ({ getContactRequestEntryView: vi.fn() }));
+vi.mock('@/modules/reputation', () => ({ getPublicListingReputation: vi.fn() }));
 vi.mock('@/modules/request/actions', () => ({ requestContactUnlock: vi.fn() }));
 vi.mock('next/navigation', () => ({
   notFound: () => {
@@ -16,6 +18,7 @@ vi.mock('next/navigation', () => ({
 
 const getPublicListingDetail = vi.mocked(listingModule.getPublicListingDetail);
 const getContactRequestEntry = vi.mocked(requestModule.getContactRequestEntryView);
+const getPublicListingReputation = vi.mocked(reputationModule.getPublicListingReputation);
 
 const ID = '0b6f2d9e-3c4a-4e8b-9f1a-2d3c4b5a6e7f';
 
@@ -50,6 +53,7 @@ const params = (id: string) => ({ params: Promise.resolve({ id }) });
 describe('detalhe publico /explorar/[id]', () => {
   beforeEach(() => {
     getPublicListingDetail.mockReset();
+    getPublicListingReputation.mockReset().mockResolvedValue({ average: null, count: 0 });
     getContactRequestEntry
       .mockReset()
       .mockResolvedValue({ state: 'login_required', ownRequestId: null });
@@ -141,5 +145,25 @@ describe('detalhe publico /explorar/[id]', () => {
       title: 'Bicicleta aro 29 — TROQS',
       description: 'Campinas - SP',
     });
+  });
+
+  it('reputação pública mostra apenas média e contagem com uma casa decimal', async () => {
+    getPublicListingDetail.mockResolvedValue(listing);
+    getPublicListingReputation.mockResolvedValue({ average: 4.3, count: 7 });
+    render(await DetalheAnuncioPublicoPage(params(ID)));
+    const reputation = screen.getByRole('region', { name: 'Reputação do anunciante' });
+    expect(reputation).toHaveTextContent('4,3 de 5 estrelas · 7 avaliações');
+    expect(within(reputation).queryByRole('link')).toBeNull();
+  });
+
+  it('ausência de avaliações não inventa média e falha de consulta não vira ausência', async () => {
+    getPublicListingDetail.mockResolvedValue(listing);
+    const page = render(await DetalheAnuncioPublicoPage(params(ID)));
+    expect(screen.getByText(/ainda não tem avaliações publicadas/)).toBeInTheDocument();
+    page.unmount();
+    getPublicListingReputation.mockResolvedValue(null);
+    render(await DetalheAnuncioPublicoPage(params(ID)));
+    expect(screen.getByText('Reputação indisponível no momento.')).toBeInTheDocument();
+    expect(screen.queryByText(/ainda não tem avaliações publicadas/)).toBeNull();
   });
 });

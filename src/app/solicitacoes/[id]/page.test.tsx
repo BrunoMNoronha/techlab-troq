@@ -142,7 +142,12 @@ describe('/solicitacoes/[id] (F3-012)', () => {
   it('paga e escolhida: leva a /contatos, sem o numero nesta pagina', async () => {
     getOwnContactRequest.mockResolvedValue(view({ phase: 'paid' }));
     listOwnContactReleases.mockResolvedValue([
-      { contactReleaseId: 'r1', listingId: LISTING_ID, authorizedAt: '2026-10-05T16:00:00.000Z' },
+      {
+        contactReleaseId: 'r1',
+        negotiationId: 'n1',
+        listingId: LISTING_ID,
+        authorizedAt: '2026-10-05T16:00:00.000Z',
+      },
     ]);
     const { container } = render(await SolicitacaoPage(params));
 
