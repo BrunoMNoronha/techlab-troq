@@ -658,5 +658,36 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
         mediaFingerprint(process.env.R2_S3_ENDPOINT, process.env.R2_BUCKET),
       );
     });
+
+    it('sobrescrita host/port na URL recusa criação e remoção sem tocar o lote', async () => {
+      const batchId = await seed();
+      const databaseUrl = process.env.DATABASE_URL!;
+      try {
+        for (const [parameter, value] of [
+          ['host', 'other.invalid'],
+          ['port', '55497'],
+        ]) {
+          const changed = new URL(databaseUrl);
+          changed.searchParams.set(parameter, value);
+          vi.stubEnv('DATABASE_URL', changed.toString());
+          expect(await seedDemoData()).toMatchObject({ success: false, reason: 'target' });
+          expect(await removeDemoData(actorId, batchId)).toMatchObject({
+            success: false,
+            reason: 'target',
+          });
+          expect(await prisma().listing.count()).toBe(31);
+          expect(await prisma().demoBatch.findUnique({ where: { id: batchId } })).toMatchObject({
+            status: 'active',
+          });
+          expect(
+            await prisma().mediaObjectDeletion.count({
+              where: { objectKey: { in: await mediaKeys(batchId) } },
+            }),
+          ).toBe(0);
+        }
+      } finally {
+        vi.stubEnv('DATABASE_URL', databaseUrl);
+      }
+    });
   },
 );

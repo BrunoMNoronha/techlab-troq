@@ -21,20 +21,45 @@ const invalid = (): never => {
 };
 
 /** Identidade do destino, sem senha, usuário, query string ou URL em logs. */
-export function databaseFingerprint(value: string | undefined): string {
+export function databaseFingerprint(
+  value: string | undefined,
+  env: Environment = process.env,
+): string {
   try {
     const url = new URL(value ?? '');
     if (
       !['postgres:', 'postgresql:'].includes(url.protocol) ||
       !url.hostname ||
       url.pathname.length < 2 ||
-      url.hash
+      url.hash ||
+      // pg permite substituir host/porta pela query; a identidade abaixo
+      // precisa representar o destino que o driver realmente vai abrir.
+      url.searchParams.has('host') ||
+      url.searchParams.has('port')
     )
       return invalid();
+    const decodedHost = decodeURIComponent(url.hostname);
+    // DNS ignora caixa; caminho de socket Unix nao. pg aceita o caminho
+    // percent-encoded no hostname, sem passar por sobrescrita na query.
+    const hostname = decodedHost.startsWith('/') ? decodedHost : decodedHost.toLowerCase();
+    // Somente o sufixo de pool documentado pelo Neon identifica o mesmo
+    // compute. Em outros provedores, estes hosts podem ser bancos distintos.
+    const databaseHost = /^ep-[a-z0-9-]+\..+\.neon\.tech$/.test(hostname)
+      ? hostname.replace(/-pooler(?=\.)/, '')
+      : hostname;
+    // pg recorre a PGPORT quando a URL nao fixa a porta. Canonicalizar evita
+    // colisao com o padrao 5432 e mantem equivalentes portas explicitas/PGPORT.
+    const configuredPort = (url.port || env.PGPORT || '5432').trim();
+    // Number aceita expoente/hexadecimal que parseInt(..., 10) do pg nao usa.
+    if (!/^\d+$/.test(configuredPort)) return invalid();
+    const port = Number(configuredPort);
+    if (!Number.isInteger(port) || port < 1 || port > 65535) return invalid();
     return fingerprint([
-      url.hostname.toLowerCase().replace(/-pooler(?=\.)/, ''),
-      url.port || '5432',
-      decodeURIComponent(url.pathname.slice(1)),
+      databaseHost,
+      String(port),
+      // pg-connection-string usa decodeURI: caracteres reservados escapados
+      // fazem parte do nome do banco e nao equivalem ao caractere literal.
+      decodeURI(url.pathname.slice(1)),
     ]);
   } catch {
     return invalid();
@@ -81,7 +106,7 @@ export function inspectDemoTarget(env: Environment = process.env): DemoTarget {
   }
   return {
     environment,
-    databaseFingerprint: databaseFingerprint(env.DATABASE_URL),
+    databaseFingerprint: databaseFingerprint(env.DATABASE_URL, env),
     mediaFingerprint: mediaFingerprint(env.R2_S3_ENDPOINT, env.R2_BUCKET),
   };
 }

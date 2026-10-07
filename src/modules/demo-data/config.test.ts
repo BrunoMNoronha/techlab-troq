@@ -46,6 +46,58 @@ describe('destinos exclusivos de dados demonstrativos', () => {
       expect(() => requireDemoTarget({ ...valid(), ...patch })).toThrow(DemoTargetError);
     }
   });
+  it.each(['host=other.invalid', 'port=55497', '%68ost=%2Ftmp%2Fpg-socket'])(
+    'recusa sobrescrita do destino PostgreSQL pela query: %s',
+    (query) => {
+      expect(() =>
+        requireDemoTarget({ ...valid(), DATABASE_URL: `${base.DATABASE_URL}?${query}` }),
+      ).toThrow(DemoTargetError);
+    },
+  );
+  it('distingue nomes de banco com caracteres reservados como o driver PostgreSQL', () => {
+    expect(databaseFingerprint('postgresql://test:synthetic@localhost/db%2Fname')).not.toBe(
+      databaseFingerprint('postgresql://test:synthetic@localhost/db/name'),
+    );
+    expect(databaseFingerprint('postgresql://test:synthetic@localhost/demo%5Ftest')).toBe(
+      databaseFingerprint('postgresql://test:synthetic@localhost/demo_test'),
+    );
+  });
+  it('preserva caixa em caminhos de socket Unix aceitos pelo driver', () => {
+    expect(databaseFingerprint('postgresql://test:synthetic@%2Ftmp%2FPG/demo')).not.toBe(
+      databaseFingerprint('postgresql://test:synthetic@%2Ftmp%2Fpg/demo'),
+    );
+    expect(databaseFingerprint('postgresql://test:synthetic@%2Ftmp%2FPG/demo')).toBe(
+      databaseFingerprint('postgresql://test:synthetic@%2ftmp%2fPG/demo'),
+    );
+  });
+  it('identifica a porta efetiva de PGPORT somente quando ausente na URL', () => {
+    const databaseUrl = 'postgresql://test:synthetic@localhost/demo_test';
+    const env = {
+      ...base,
+      DATABASE_URL: databaseUrl,
+      PGPORT: '6551',
+      DEMO_DATA_TARGET: 'development',
+      DEMO_DATABASE_FINGERPRINT: databaseFingerprint(databaseUrl, { PGPORT: '6551' }),
+      DEMO_MEDIA_FINGERPRINT: mediaFingerprint(base.R2_S3_ENDPOINT, base.R2_BUCKET),
+    };
+    expect(requireDemoTarget(env).databaseFingerprint).toBe(
+      databaseFingerprint('postgresql://test:synthetic@localhost:6551/demo_test', {}),
+    );
+    expect(() => requireDemoTarget({ ...env, PGPORT: '5432' })).toThrow(DemoTargetError);
+    expect(
+      databaseFingerprint('postgresql://test:synthetic@localhost:6551/demo_test', {
+        PGPORT: '5432',
+      }),
+    ).toBe(env.DEMO_DATABASE_FINGERPRINT);
+  });
+  it.each(['0', '-1', '65536', '6551invalid', '6e3', '0x1997'])(
+    'recusa PGPORT inválida sem aceitar outra porta: %s',
+    (PGPORT) => {
+      expect(() =>
+        databaseFingerprint('postgresql://test:synthetic@localhost/demo', { PGPORT }),
+      ).toThrow(DemoTargetError);
+    },
+  );
   it('usa o target efetivo da hospedagem, sem confundir build production com ambiente', () => {
     const preview = {
       ...valid(),
@@ -89,10 +141,20 @@ describe('destinos exclusivos de dados demonstrativos', () => {
       }
     }
   });
-  it('credencial não participa da identidade; endpoint pooled e direto são equivalentes', () => {
-    expect(databaseFingerprint('postgresql://a:a@ep-demo-pooler.test/db?sslmode=require')).toBe(
-      databaseFingerprint('postgresql://b:b@ep-demo.test/db'),
-    );
+  it('credencial não participa da identidade; endpoints Neon pooled e direto são equivalentes', () => {
+    expect(
+      databaseFingerprint(
+        'postgresql://a:a@ep-demo-pooler.us-east-2.aws.neon.tech/db?sslmode=require',
+      ),
+    ).toBe(databaseFingerprint('postgresql://b:b@ep-demo.us-east-2.aws.neon.tech/db'));
     expect(databaseFingerprint(base.DATABASE_URL)).not.toContain('synthetic');
+  });
+  it('preserva hosts distintos fora do Neon, mesmo com sufixo pooler', () => {
+    for (const hostname of ['db.example', 'ep-demo.example', 'ep-demo.neon.tech.example']) {
+      const pooled = hostname.replace('.', '-pooler.');
+      expect(databaseFingerprint(`postgresql://test:synthetic@${pooled}/db`)).not.toBe(
+        databaseFingerprint(`postgresql://test:synthetic@${hostname}/db`),
+      );
+    }
   });
 });
