@@ -13,7 +13,9 @@ async function main() {
   const { getPrismaClient } = await import('../../src/persistence/prisma');
   requireDemoTarget();
   try {
-    const result = await seedDemoData();
+    const result = await seedDemoData({
+      onFailure: (diagnostic) => console.error(`Diagnóstico: ${diagnostic}`),
+    });
     if (!result.success) {
       console.error(result.error);
       process.exitCode = 1;
