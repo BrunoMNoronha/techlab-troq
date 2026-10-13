@@ -6,6 +6,8 @@ Ponto de partida: [project-state.md](project-state.md), cuja seção 3.3 traz o 
 
 ## Grupos
 
+Produtos exemplares de desenvolvimento e Preview: [engineering/demo-products.md](engineering/demo-products.md), com autorização, alvo explícito, geração e remoção seletiva do lote de 30.
+
 ### product — produto e regras de negócio
 
 | Documento | Status | Conteúdo |

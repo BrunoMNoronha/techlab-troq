@@ -8,6 +8,9 @@
   },
   "packageManager": "pnpm@11.25.0",
   "scripts": {
+    "demo:seed": "tsx scripts/demo/seed.ts",
+    "demo:target": "tsx scripts/demo/target.ts",
+    "demo:assets": "node scripts/demo/generate-assets.mjs",
     "postinstall": "prisma generate",
     "dev": "next dev",
     "build": "prisma generate && next build",
@@ -51,6 +54,7 @@
     "jsdom": "^30.0.1",
     "prettier": "3.9.6",
     "prisma": "7.10.0",
+    "tsx": "4.20.6",
     "typescript": "5.9.3",
     "vite": "^8.3.0",
     "vitest": "5.0.0"
