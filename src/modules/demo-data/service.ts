@@ -15,6 +15,7 @@ import {
 } from '@/modules/media';
 import { getPrismaClient } from '@/persistence/prisma';
 import { DemoTargetError, requireDemoTarget, type DemoTarget } from './config';
+import { diagnoseFailure } from './diagnostic';
 import { DEMO_DATASET_VERSION, DEMO_PRODUCTS } from './manifest';
 
 const DATASET_ID = 'products';
@@ -338,7 +339,9 @@ async function abandon(batchId: string): Promise<void> {
 }
 
 /** Processo tecnico explicito (CLI); nao autentica nem envia mensagens. */
-export async function seedDemoData(): Promise<DemoOperationResult> {
+export async function seedDemoData(
+  options: { onFailure?: (diagnostic: string) => void } = {},
+): Promise<DemoOperationResult> {
   let preparation: Preparation | undefined;
   try {
     const target = requireDemoTarget();
@@ -474,6 +477,8 @@ export async function seedDemoData(): Promise<DemoOperationResult> {
       { timeout: 30_000 },
     );
   } catch (error) {
+    // Somente o CLI recebe o rotulo; o resultado (e a UI) seguem genericos.
+    options.onFailure?.(diagnoseFailure(error));
     if (preparation) await abandon(preparation.batchId);
     return failure(error);
   }
