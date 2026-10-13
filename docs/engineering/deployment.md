@@ -50,6 +50,7 @@ O catálogo da aplicação está em [environments.md](environments.md) e [.env.e
 | --- | --- |
 | Vercel, escopo correspondente | `APP_ENV`, `NEXT_PUBLIC_APP_URL`, `BETTER_AUTH_URL`, `BETTER_AUTH_SECRET`, `DATABASE_URL`, `CRON_SECRET`, R2, Resend, Mercado Pago, Sentry e Google configurado |
 | GitHub Environment correspondente | `DATABASE_URL`, `DIRECT_URL`, `CRON_SECRET`, `VERCEL_TOKEN`, `VERCEL_AUTOMATION_BYPASS_SECRET` quando autorizado |
+| Somente GitHub Environment Preview (workflow `Seed Preview`, #205) | Secrets `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`; variáveis `R2_S3_ENDPOINT`, `R2_REGION`, `R2_BUCKET`, `DEMO_DATA_TARGET`, `DEMO_DATABASE_FINGERPRINT`, `DEMO_MEDIA_FINGERPRINT` |
 | Somente GitHub Environment Production | `BACKUP_PASSPHRASE`; variável de liberação `PRODUCTION_READY` |
 
 `DATABASE_URL` é pooled. `DIRECT_URL` só chega aos passos de migration, verificação e backup, nunca à Vercel. O token Vercel deve acessar esta equipe e projeto. Operações Git usam `GITHUB_TOKEN`, com escrita somente no job de sincronização. Segredos de servidor na Vercel devem ter tipo sensível; nenhum valor secreto é versionado, registrado em log ou guardado no artefato de evidência.

@@ -14,6 +14,16 @@ Decisão de Bruno nesta execução: **qualquer usuário autenticado, com conta a
 4. Aplique as migrations incrementais pelo fluxo vigente. Em desenvolvimento, use banco local/descartável; em Preview, use o pipeline controlado. Não resetar banco nem usar `db push` no compartilhado.
 5. Na raiz do checkout validado, execute **`pnpm demo:seed`**. O comando lê `.env.local`/`.env` opcionais; variáveis do processo prevalecem. Confirme o alvo previamente. A operação informa `created`, `existing`, `removed` e `pendingMedia` separadamente.
 
+### Preview pelo workflow `Seed Preview` (#205)
+
+Em Preview, não use checkout local com credenciais: dispare o workflow manual `Seed Preview` (`.github/workflows/demo-seed-preview.yml`) no ref `production`, por exemplo `gh workflow run demo-seed-preview.yml --ref production -f mode=target`.
+
+- Ele roda no Environment `preview`, no grupo de concorrência `release-preview` (o mesmo das migrations e deploys), com `APP_ENV=preview` fixo. Revalida o HEAD de `production` com CI aprovado e exige `prisma migrate status` em dia.
+- `mode=target` (padrão) só publica no resumo `DEMO_DATA_TARGET` e as duas impressões digitais. Não escreve.
+- `mode=seed` executa `pnpm demo:seed` e publica `created`/`existing`/`removed`/`pendingMedia` no resumo.
+- Pré-requisitos no Environment `preview`: secrets `R2_ACCESS_KEY_ID` e `R2_SECRET_ACCESS_KEY`; variáveis `R2_S3_ENDPOINT`, `R2_REGION` e `R2_BUCKET` do bucket isolado do Preview. Depois do primeiro `target`, registre os três `DEMO_*` como variáveis desse Environment e no escopo Preview da Vercel. O workflow não os calcula, para que a declaração explícita do destino continue valendo.
+- O workflow só chega ao ref `production` pela promoção normal de `main`.
+
 O manifesto e os PNGs próprios estão em `src/modules/demo-data/manifest.ts` e `public/demo-products/`. `pnpm demo:assets` reproduz as ilustrações usando o gerador versionado. O provisionador passa os PNGs pelo processamento existente, envia os três derivados WebP ao bucket privado e somente então publica o conjunto completo. Não há chamada a serviço de geração ou notificação externa.
 
 ## Remover pela interface
