@@ -1,0 +1,98 @@
+name: Seed Preview
+
+# Execução manual de pnpm demo:seed no Preview (#205). Nunca roda em build,
+# migration ou deploy. mode=target só mostra o alvo; mode=seed escreve.
+# Os valores DEMO_* vêm de variáveis do Environment preview e não são
+# calculados aqui: a declaração explícita do destino continua obrigatória.
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: target = conferir o alvo sem escrever; seed = cadastrar os 30 produtos
+        required: true
+        default: target
+        type: choice
+        options: [target, seed]
+
+permissions:
+  contents: read
+
+# Mesmo grupo das migrations e dos deploys de Preview: serializa sem cancelar.
+concurrency:
+  group: release-preview
+  cancel-in-progress: false
+
+jobs:
+  seed:
+    name: Produtos exemplares no Preview
+    if: github.ref == 'refs/heads/production' && github.repository == 'BrunoMNoronha/techlab-troq'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: preview
+    permissions:
+      contents: read
+      actions: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_TARGET: preview
+      MODE: ${{ inputs.mode }}
+      APP_ENV: preview
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      R2_S3_ENDPOINT: ${{ vars.R2_S3_ENDPOINT }}
+      R2_REGION: ${{ vars.R2_REGION }}
+      R2_BUCKET: ${{ vars.R2_BUCKET }}
+      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+
+    steps:
+      - name: Checkout da revisão de production
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Setup Node.js 24
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          package-manager-cache: false
+
+      - name: Conferir HEAD de production, ancestral de main e CI aprovado
+        run: node scripts/deploy/resolve-run.mjs
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Instalar dependências
+        run: pnpm install --frozen-lockfile
+
+      - name: Exigir migrations aplicadas
+        env:
+          DIRECT_URL: ${{ secrets.DIRECT_URL }}
+        run: pnpm exec prisma migrate status
+
+      - name: Conferir alvo (sem escrita)
+        run: |
+          pnpm --silent demo:target > target.txt
+          {
+            echo '### Alvo demonstrativo do Preview'
+            echo 'Registre estes valores como variáveis do Environment preview e no escopo Preview da Vercel.'
+            echo '```'
+            cat target.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Cadastrar produtos exemplares
+        if: inputs.mode == 'seed'
+        env:
+          DEMO_DATA_TARGET: ${{ vars.DEMO_DATA_TARGET }}
+          DEMO_DATABASE_FINGERPRINT: ${{ vars.DEMO_DATABASE_FINGERPRINT }}
+          DEMO_MEDIA_FINGERPRINT: ${{ vars.DEMO_MEDIA_FINGERPRINT }}
+        run: |
+          pnpm --silent demo:seed > seed.json
+          {
+            echo '### Resultado do seed'
+            echo '```json'
+            cat seed.json
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
