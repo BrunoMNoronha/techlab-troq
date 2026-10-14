@@ -31,6 +31,10 @@ IF-1 a IF-3 são as mesmas pré-condições que RF-008 já registrava. O que est
 
 Qualquer tentativa de agir sobre anúncio que não esteja `published` continua rejeitada no servidor, sem revelar existência nem estado anterior do anúncio (DEC-027, seção 9).
 
+### 2.1 Segundo gatilho: o card da vitrine (DEC-056)
+
+Desde DEC-056, a mesma ação também começa no card da vitrine (home e `/explorar`), pelo botão "Solicitar contato · R$ 0,99". Abrir o diálogo do card é a ação gratuita desta seção, com outro rótulo: só lê, no servidor, o que a pessoa pode fazer naquele anúncio (entrar, confirmar e-mail, acompanhar a própria solicitação, ver o motivo da recusa ou confirmar), e IF-1 a IF-8 continuam valendo sem mudança. Nada é gravado, nenhuma vaga é ocupada e o anunciante não vê nada. A cobrança só começa em "Confirmar e gerar Pix", a mesma confirmação do detalhe, revalidada no servidor sob a trava.
+
 ## 3. Persistência
 
 **Não se persiste uma entidade de negócio separada apenas porque o usuário clicou em "Tenho interesse".**

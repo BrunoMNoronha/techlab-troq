@@ -5,6 +5,15 @@ import HomePage from './page';
 import { HOME_OFFERS_LIMIT, LatestOffers } from './_components/latest-offers';
 
 vi.mock('@/modules/listing', () => ({ getPublicFeed: vi.fn() }));
+// Vagas livres (DEC-056): todas livres; a consulta real e da suite de integracao.
+vi.mock('@/modules/request', () => ({
+  SLOTS_PER_LISTING: 3,
+  countFreeSlots: vi.fn(async (ids: string[]) => new Map(ids.map((id) => [id, 3]))),
+}));
+vi.mock('@/modules/request/actions', () => ({
+  getContactRequestCardState: vi.fn(),
+  requestContactUnlock: vi.fn(),
+}));
 
 const getPublicFeed = vi.mocked(listingModule.getPublicFeed);
 
@@ -17,6 +26,7 @@ function offer(id: string, title: string) {
     city: 'Recife',
     state: 'PE',
     createdAt: new Date('2026-09-29T12:00:00Z'),
+    tradeOptions: ['Notebook', 'Videogame', 'Câmera'],
     images: [],
   };
 }

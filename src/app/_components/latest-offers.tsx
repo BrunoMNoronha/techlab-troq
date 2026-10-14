@@ -2,6 +2,7 @@ import { EmptyState, ErrorState } from '@/components/feedback';
 import { Grid, Stack } from '@/components/layout';
 import { ButtonLink, TextLink } from '@/components/ui';
 import { getPublicFeed } from '@/modules/listing';
+import { loadFreeSlots } from './free-slots';
 import { ListingCard } from './listing-card';
 
 // Ofertas exibidas na landing: primeira pagina do feed publico (#43/#49), com a
@@ -38,11 +39,13 @@ export async function LatestOffers() {
     );
   }
 
+  const freeSlots = await loadFreeSlots(feed.listings.map((item) => item.id));
+
   return (
     <Stack gap={4}>
       <Grid columns="md">
         {feed.listings.map((item) => (
-          <ListingCard key={item.id} item={item} />
+          <ListingCard key={item.id} item={item} freeSlots={freeSlots.get(item.id)} />
         ))}
       </Grid>
       {feed.total > feed.listings.length && (

@@ -20,6 +20,7 @@ import { hasContact } from '@/modules/contact';
 import { validateSession } from '@/modules/identity';
 import { getListingOwnerId, getPublicListingDetail } from '@/modules/listing';
 import { getPrismaClient } from '@/persistence/prisma';
+import { countFreeSlots } from './slots';
 import { findOpenRequestOf } from './tracking';
 
 export type ContactRequestEntryState =
@@ -34,16 +35,12 @@ export type ContactRequestEntryState =
   | 'no_slots';
 
 /**
- * Vagas ocupadas AGORA: `paid` e `reserved` ainda dentro da janela. Leitura sem
- * trava, so para orientar a tela; a decisao real e da transacao da reserva. O
- * resultado nao sai daqui: a tela so sabe se ha vaga, nunca quantas pagas existem.
+ * Ha vaga livre AGORA? Leitura sem trava, so para orientar a tela; a decisao
+ * real e da transacao da reserva. Desde DEC-056 o card tambem mostra quantas
+ * estao livres (slots.ts), mas pagas e reservadas nunca saem separadas.
  */
 async function hasFreeSlot(listingId: string): Promise<boolean> {
-  const [{ occupied }] = await getPrismaClient().$queryRaw<{ occupied: number }[]>`
-    SELECT count(*)::int AS "occupied" FROM "contact_requests"
-    WHERE "listing_id" = ${listingId}::uuid
-      AND ("status" = 'paid' OR ("status" = 'reserved' AND "reserved_until" > now()))`;
-  return occupied < 3;
+  return ((await countFreeSlots([listingId])).get(listingId) ?? 0) > 0;
 }
 
 export interface ContactRequestEntryView {

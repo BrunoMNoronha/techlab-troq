@@ -3,6 +3,7 @@ import { Grid, Stack } from '@/components/layout';
 import { Pagination } from '@/components/navigation';
 import { ButtonLink, Text, TextLink } from '@/components/ui';
 import { getPublicFeed, type PublicFeedPage } from '@/modules/listing';
+import { loadFreeSlots } from '../_components/free-slots';
 import { ListingCard } from '../_components/listing-card';
 import { explorarHref, hasFilter, type ExplorarQuery } from './explorar-query';
 
@@ -68,6 +69,8 @@ export async function ExplorarResults({ query }: { query: ExplorarQuery }) {
     );
   }
 
+  const freeSlots = await loadFreeSlots(feed.listings.map((item) => item.id));
+
   return (
     <Stack gap={4}>
       <Text role="status" size="small" tone="muted">
@@ -75,7 +78,7 @@ export async function ExplorarResults({ query }: { query: ExplorarQuery }) {
       </Text>
       <Grid columns="md">
         {feed.listings.map((item) => (
-          <ListingCard key={item.id} item={item} />
+          <ListingCard key={item.id} item={item} freeSlots={freeSlots.get(item.id)} />
         ))}
       </Grid>
       {lastPage > 1 && (
