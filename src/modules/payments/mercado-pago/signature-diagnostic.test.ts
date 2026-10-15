@@ -4,15 +4,17 @@ import { describe, expect, it } from 'vitest';
 import { verifyNotification, type NotificationInput } from './signature';
 import {
   diagnoseRejectedSignature,
-  PREVIEW_DIAGNOSTIC_ORDER_ID as ORDER,
-  readPreviewDiagnosticOrderId,
+  isPreviewSignatureDiagnosticEnabled,
 } from './signature-diagnostic';
+
+// Order sintetica no formato do sandbox; qualquer Order e diagnosticada (#203).
+const ORDER = 'ORDTST01M470XYBP4A7H1CNTX4Y3D4F0';
 
 const config = { secret: randomBytes(32).toString('hex'), applicationId: '9900000000000001' };
 const env = {
   APP_ENV: 'preview',
   VERCEL_ENV: 'preview',
-  MERCADO_PAGO_WEBHOOK_DIAGNOSTIC_ORDER_ID: ORDER,
+  MERCADO_PAGO_WEBHOOK_SIGNATURE_DIAGNOSTIC: '1',
 };
 const REQUEST_ID = 'diagnostic-synthetic-request';
 const TS = '1742505638683';
@@ -33,17 +35,17 @@ function input(profile: 'raw' | 'lower' | 'other' = 'lower'): NotificationInput 
 describe('diagnostico temporario, sem perfil alternativo de autenticacao', () => {
   it.each([
     {},
-    { ...env, MERCADO_PAGO_WEBHOOK_DIAGNOSTIC_ORDER_ID: undefined },
-    { ...env, MERCADO_PAGO_WEBHOOK_DIAGNOSTIC_ORDER_ID: '0' },
-    { ...env, MERCADO_PAGO_WEBHOOK_DIAGNOSTIC_ORDER_ID: 'ORDTST-OUTRA' },
-    { ...env, MERCADO_PAGO_WEBHOOK_DIAGNOSTIC_ORDER_ID: ` ${ORDER}` },
+    { ...env, MERCADO_PAGO_WEBHOOK_SIGNATURE_DIAGNOSTIC: undefined },
+    { ...env, MERCADO_PAGO_WEBHOOK_SIGNATURE_DIAGNOSTIC: '0' },
+    { ...env, MERCADO_PAGO_WEBHOOK_SIGNATURE_DIAGNOSTIC: 'true' },
+    { ...env, MERCADO_PAGO_WEBHOOK_SIGNATURE_DIAGNOSTIC: ' 1' },
     { ...env, APP_ENV: 'development' },
     { ...env, APP_ENV: 'production' },
     { ...env, VERCEL_ENV: 'production' },
     { ...env, VERCEL_ENV: undefined },
     { ...env, APP_ENV: 'unknown' },
   ])('configuracao ausente/incoerente desliga sem alterar autenticacao (%j)', (disabled) => {
-    expect(readPreviewDiagnosticOrderId(disabled)).toBeNull();
+    expect(isPreviewSignatureDiagnosticEnabled(disabled)).toBe(false);
     expect(diagnoseRejectedSignature(input(), config, disabled)).toBeNull();
     expect(verifyNotification(input(), config)).toEqual({
       valid: false,
@@ -57,6 +59,7 @@ describe('diagnostico temporario, sem perfil alternativo de autenticacao', () =>
     const signature = notification.headers.get('x-signature');
     const body = JSON.stringify(notification.body);
     expect(diagnoseRejectedSignature(notification, config, env)).toEqual({
+      orderId: ORDER,
       rawMatch: false,
       lowerMatch: true,
       casesDiffer: true,
@@ -70,8 +73,9 @@ describe('diagnostico temporario, sem perfil alternativo de autenticacao', () =>
     });
   });
 
-  it('outra chave nao confere em nenhum dos perfis; resultado tem somente tres booleanos', () => {
+  it('outra chave nao confere em nenhum dos perfis; alem do id, so tres booleanos', () => {
     expect(diagnoseRejectedSignature(input('other'), config, env)).toEqual({
+      orderId: ORDER,
       rawMatch: false,
       lowerMatch: false,
       casesDiffer: true,
@@ -83,13 +87,21 @@ describe('diagnostico temporario, sem perfil alternativo de autenticacao', () =>
     expect(verifyNotification(input('raw'), config).valid).toBe(true);
   });
 
-  it.each([null, ORDER.toLowerCase(), `${ORDER}X`, 'ORDTST-OUTRA'])(
-    'somente query exata, nunca body (%s)',
+  it('sem data.id na query nao diagnostica; o corpo nunca e fonte do id', () => {
+    const notification = input();
+    notification.query.delete('data.id');
+    expect(diagnoseRejectedSignature(notification, config, env)).toBeNull();
+  });
+
+  it.each([`${ORDER}X`, 'ORDTST-OUTRA'])(
+    'qualquer Order e diagnosticada com o id da query (%s); a tentativa decide se grava',
     (id) => {
       const notification = input();
-      if (id === null) notification.query.delete('data.id');
-      else notification.query.set('data.id', id);
-      expect(diagnoseRejectedSignature(notification, config, env)).toBeNull();
+      notification.query.set('data.id', id);
+      expect(diagnoseRejectedSignature(notification, config, env)).toMatchObject({
+        orderId: id,
+        rawMatch: false,
+      });
     },
   );
 
