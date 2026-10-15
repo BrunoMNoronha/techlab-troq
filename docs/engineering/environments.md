@@ -124,13 +124,13 @@ O Preview estável passa a responder em `https://preview.troqs.app`, que substit
 | DNS (Cloudflare) | `CNAME preview → 2bf61b065696b254.vercel-dns-016.com`, **sem proxy**, valor recomendado pela API da Vercel. Os registros do Resend ficam em sub-nomes (`send.preview`, `resend._domainkey.preview`) e não conflitam com o CNAME |
 | Atribuição | Só pelo pipeline `Deploy Preview`, por `POST /v2/deployments/{id}/aliases`, depois do smoke do candidato. O hostname **não** é cadastrado como domínio do projeto com auto-atribuição, para não servir candidato sem smoke |
 | Certificado | Emitido pela API da Vercel (`POST /v8/certs`, `cert_a7G4VGIVS6piZK643tC6X0zs`, renovação automática) em 2026-10-15. É pré-requisito do alias: sem ele a API recusa com `cert_missing`, porque o hostname não é domínio do projeto |
-| Proteção | A proteção do projeto é a (Legacy) Standard Protection (`all_except_custom_domains`), que não cobre domínio próprio: `preview.troqs.app` é **público**. URLs `*.vercel.app` continuam protegidas |
+| Proteção | A Vercel Authentication do projeto (Standard Protection) **cobre** domínio próprio de Preview: logo após o primeiro alias, `preview.troqs.app` redirecionava ao login da Vercel. O domínio ficou **público** por uma **Deployment Protection Exception** só para ele, criada pelo Bruno no painel em 2026-10-15 (disponível em todos os planos, sem custo). URLs `*.vercel.app` continuam protegidas |
 | Indexação | Todas as respostas com `APP_ENV=preview` levam `X-Robots-Tag: noindex, nofollow` (`next.config.ts`) |
 | Webhook Mercado Pago | `https://preview.troqs.app/api/webhooks/mercadopago`, sem parâmetro de bypass |
 
 **Consequências do domínio público.** Qualquer pessoa alcança o Preview e pode se cadastrar; o sandbox Pix aprova automaticamente; a flag temporária de diagnóstico de assinatura (#203) fica alcançável. O ambiente continua sem dados pessoais reais e sem credencial de produção (seção 2.2); o risco está registrado em [../delivery/risks.md](../delivery/risks.md).
 
-**Reversão.** Remover o CNAME `preview` na Cloudflare e restaurar `PREVIEW_URL`, `BETTER_AUTH_URL` e `NEXT_PUBLIC_APP_URL` do Preview para o alias antigo, que segue existindo até a validação.
+**Reversão.** Para voltar a proteger sem trocar de domínio, remover a exceção em *Settings → Deployment Protection → Deployment Protection Exceptions* (a confirmação pede `reprotect my domain`); o webhook do Mercado Pago volta então a depender do bypass. Para abandonar o domínio, remover também o CNAME `preview` na Cloudflare e restaurar `PREVIEW_URL`, `BETTER_AUTH_URL` e `NEXT_PUBLIC_APP_URL` do Preview para o alias antigo, que segue existindo até a validação.
 
 ## 3. Classificação das variáveis
 

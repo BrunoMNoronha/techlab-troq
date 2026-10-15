@@ -19,7 +19,15 @@ Este documento separa categorias que não devem ser confundidas: o que **existe 
   - callback do cliente Google "TROQ preview";
   - CORS de `troq-media-preview`;
   - webhook da aplicação TROQ Sandbox, sem bypass.
-- **Pendente:** a primeira publicação no domínio novo e a validação ponta a ponta, registradas em #215.
+- **Publicado em 2026-10-15:**
+  - Deploy Preview: [run 38815821329](https://github.com/BrunoMNoronha/techlab-troq/actions/runs/38815821329), SHA `fe4c947`, com smoke aprovado.
+  - O domínio só ficou público depois da Deployment Protection Exception.
+  - HTTP anônimo:
+    - `/`, `/login`, `/explorar` e `get-session` → 200, com `X-Robots-Tag: noindex, nofollow`;
+    - webhook sem assinatura ou com assinatura inválida → 401;
+    - job sem autenticação → 401;
+    - `*.vercel.app` → login da Vercel.
+- **Pendente:** login, Google, upload e notificação sandbox real no domínio novo, registrados em #215.
 
 ## Atualização de 2026-10-05 — frente proposta de troca (PT-00)
 
