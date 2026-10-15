@@ -513,6 +513,7 @@ describe('getPublicFeed & getPublicListingDetail (RF-014)', () => {
       city: 'São Paulo',
       uf: 'SP',
       createdAt: new Date(),
+      tradeOptions: [],
       images: [],
     };
     vi.spyOn(prismaModule, 'getPrismaClient').mockReturnValue({
@@ -539,6 +540,7 @@ describe('getPublicFeed & getPublicListingDetail (RF-014)', () => {
         city: 'Recife',
         uf: 'PE',
         createdAt: new Date(),
+        tradeOptions: [],
         images: [],
       },
       {
@@ -548,6 +550,7 @@ describe('getPublicFeed & getPublicListingDetail (RF-014)', () => {
         city: 'Recife',
         uf: 'PE',
         createdAt: new Date(),
+        tradeOptions: [],
         images: [],
       },
     ];

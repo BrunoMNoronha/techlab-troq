@@ -12,6 +12,8 @@ Contrato técnico canônico do anúncio no MVP: campos, validação do formulár
 
 **Atualização de [#76](https://github.com/BrunoMNoronha/techlab-troq/issues/76) (2026-10-04, DEC-046).** O anúncio passou a ter as **três alternativas de troca** aceitas pelo anunciante: campo novo de conteúdo (seções 2.1 e 3.1), pré-condição de T1 e T4 (seções 4.4 e 5), restrição da edição de anúncio `published` ou `paused` (seção 4.2), DTO do dono e do detalhe público (seções 6.1 e 6.3) e regra para os anúncios anteriores (seção 17.3). Estado, decisões e provas estão na seção 17; a homologação em `preview`, na seção 17.5.
 
+**Atualização de DEC-056 (2026-10-14).** O card da vitrine passou a resumir o anúncio: as alternativas de troca saem também na listagem e na home (seção 6.1), e o card mostra quantas vagas da solicitação paga estão livres, composto na camada de app e fora do DTO do anúncio (seção 6.2). O anunciante e a reputação continuam fora do card, em OD-19 ([#208](https://github.com/BrunoMNoronha/techlab-troq/issues/208)). Estado e provas na seção 20.
+
 **Atualização de [#86](https://github.com/BrunoMNoronha/techlab-troq/issues/86) (2026-10-04, DEC-049).** Título, descrição e alternativas de troca passaram a **recusar telefone, WhatsApp, e-mail e endereço detectáveis** pelas regras documentadas, na criação, na edição e na releitura de T1 e T4 (seções 3, 3.1 e 10.1). O anúncio público gravado antes da regra continua público, com o campo afetado mascarado nas consultas públicas até o dono corrigi-lo (seção 10.2). Estado, decisões e provas estão na seção 18.
 
 ## 1. Escopo e hierarquia
@@ -227,7 +229,7 @@ Usado por listagem, detalhe, home e metadata. Somente estes campos existem; qual
 | `images[].id` | UUID | identificador opaco da imagem, usado como chave de renderização |
 | `images[].position` | inteiro | ordem; a primeira é a capa |
 | `images[].derivatives[]` | lista | `kind` (`thumb`/`medium`/`large`), `url`, `width`, `height` |
-| `tradeOptions` | lista de strings | **somente no detalhe** (`PublicListingDetail`): `ListingTradeOption.label`, em `position` crescente. Anúncio anterior a DEC-046 ainda não completado devolve lista vazia (seção 17.3). Listagem e home **não** carregam este campo |
+| `tradeOptions` | lista de strings | `ListingTradeOption.label`, em `position` crescente. Anúncio anterior a DEC-046 ainda não completado devolve lista vazia (seção 17.3). Até DEC-056 só o detalhe trazia este campo; desde então listagem e home também trazem, para o card |
 
 ```json
 {
@@ -237,6 +239,7 @@ Usado por listagem, detalhe, home e metadata. Somente estes campos existem; qual
   "city": "Campinas",
   "state": "SP",
   "category": "esportes",
+  "tradeOptions": ["Um notebook", "Um videogame", "Uma câmera"],
   "createdAt": "2026-09-29T12:00:00.000Z",
   "images": [
     {
@@ -264,7 +267,7 @@ Não pertencem ao DTO público, nem a HTML, payload RSC, JSON, metadata, mensage
 - `status`, timestamps de ciclo de vida, `updatedAt` e histórico de transições;
 - aceitação de termos, versão aceita e qualquer dado de auditoria;
 - chave do objeto original, objeto original, imagens que não estejam `ready` e metadados de imagem além de `kind`, `width` e `height`;
-- relações privadas (solicitações, pagamentos, escolhas, negociações, denúncias, decisões de moderação);
+- relações privadas (solicitações, pagamentos, escolhas, negociações, denúncias, decisões de moderação). A única exceção, desde DEC-056, é a quantidade de vagas **livres** de cada anúncio exibida no card: um número de 0 a 3, calculado por `countFreeSlots` (`src/modules/request`) e composto pela página, fora deste DTO. Pagas e reservadas nunca saem separadas, e nenhuma solicitação é identificada;
 - tokens, credenciais e segredos;
 - localização mais precisa que cidade/UF.
 
@@ -665,3 +668,18 @@ Nenhuma migration, dependência ou variável de ambiente nova. Nada é registrad
 ## 19. Categoria de produto (#89)
 
 As allowlists de entrada, DTO do dono, feed público e detalhe público incluem explicitamente `category: string | null`. Somente códigos do catálogo comercial são aceitos. Ausência é exibida como “Categoria não informada”. O patch omitido não altera a categoria; null/vazio limpa somente rascunhos. Categoria e demais alterações são gravadas na mesma transação, sob a trava do anúncio. Publicar, reativar e editar `published`/`paused` exigem categoria válida no conteúdo resultante. Legados continuam visíveis conforme os gates anteriores, sem backfill ou mudança de estado, e são regularizados pelo dono. Cards da home/explorar compartilham catálogo e apresentação; não há filtro por categoria. Regras completas: [product-categories.md](../product/product-categories.md).
+
+## 20. Card de produto (DEC-056)
+
+### 20.1 O que existe
+
+- `getPublicFeed` devolve `tradeOptions` com o mesmo `select` e o mesmo mascaramento de `getPublicListingDetail` (`publicTradeOption`, seção 10.2). `PublicListingDetail` passou a ser o mesmo tipo do item do feed.
+- `countFreeSlots(ids)` (`src/modules/request/slots.ts`) conta as vagas livres de uma página inteira numa única consulta agrupada, com o critério da reserva: ocupam vaga `paid` e `reserved` dentro da janela. `hasFreeSlot`, da entrada do detalhe, usa a mesma função. O módulo `listing` continua sem importar `request`: a home e `/explorar` compõem as duas leituras (`src/app/_components/free-slots.ts`), e uma falha na contagem só omite o bloco de vagas.
+- `ListingCard` é um `article` com título em `CardLink` (link estendido ao cartão inteiro), categoria em `Badge`, descrição, cidade/UF, "Aceita em troca", barra "Vagas livres" com o texto "X de 3" e o botão "Solicitar contato · R$ 0,99", desabilitado como "Sem vagas no momento" quando não há vaga.
+- O botão abre um diálogo (`ContactRequestCardAction`) que chama a Server Action somente leitura `getContactRequestCardState`, o mesmo cálculo de `getContactRequestEntryView`, e mostra a mensagem do estado (`ContactRequestEntryMessage`) ou a confirmação compartilhada com o detalhe (`ContactRequestConfirmation`). O estado é lido ao abrir, e não ao montar: a vitrine não faz uma consulta de sessão por anúncio.
+
+### 20.2 Provas
+
+- `src/app/_components/listing-card.test.tsx` e `contact-request-card-action.test.tsx` (suíte padrão): resumo, vagas em texto, botão sem vaga, nenhum botão dentro de link, cada estado do diálogo, a confirmação chamada uma única vez e nenhum servidor chamado só por abrir.
+- `src/modules/request/slots.integration.test.ts` (`INTEGRATION_EPHEMERAL_DB=1`): pagas, reserva viva, vencida, expirada e falha, com vários anúncios numa chamada.
+- `src/modules/listing/public-listing.integration.test.ts`: allowlist do feed e do detalhe com `tradeOptions`, e o mascaramento do legado também no feed.

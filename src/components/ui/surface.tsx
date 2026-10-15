@@ -1,4 +1,11 @@
-import { useId, type ElementType, type HTMLAttributes, type ReactNode } from 'react';
+import Link from 'next/link';
+import {
+  useId,
+  type ComponentProps,
+  type ElementType,
+  type HTMLAttributes,
+  type ReactNode,
+} from 'react';
 import { cx } from './cx';
 import { Icon, type IconName } from './icon';
 import styles from './surface.module.css';
@@ -57,6 +64,16 @@ export function CardBody({ className, ...rest }: HTMLAttributes<HTMLDivElement>)
 /** Último bloco de um `CardBody`, empurrado para a base do cartão. */
 export function CardFooter({ className, ...rest }: HTMLAttributes<HTMLDivElement>) {
   return <div className={cx(styles.cardFooter, className)} {...rest} />;
+}
+
+/**
+ * Link principal de um cartão que também tem ações próprias (botão no rodapé).
+ * A área clicável cobre o cartão inteiro, sem aninhar o botão dentro do link;
+ * o `CardFooter` fica por cima e continua clicável. Use no título, com
+ * `Card interactive` para o realce de hover.
+ */
+export function CardLink({ className, ...rest }: ComponentProps<typeof Link>) {
+  return <Link className={cx(styles.cardLink, className)} {...rest} />;
 }
 
 export function Panel(props: CardProps) {

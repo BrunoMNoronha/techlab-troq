@@ -258,12 +258,16 @@ describe.skipIf(!enabled)('consulta publica contra banco real (#49)', () => {
     }
   });
 
-  it('detalhe traz as alternativas de troca na ordem do anunciante; legado segue visivel, sem elas', async () => {
+  it('feed e detalhe trazem as alternativas de troca na ordem do anunciante; legado segue visivel, sem elas', async () => {
     expect((await getPublicListingDetail(visibleWithImages))?.tradeOptions).toEqual([
       'Um notebook',
       'Um videogame',
       'Uma camera',
     ]);
+    const inFeed = (await getPublicFeed({ city: CITY, limit: 50 })).listings.find(
+      (item) => item.id === visibleWithImages,
+    );
+    expect(inFeed?.tradeOptions).toEqual(['Um notebook', 'Um videogame', 'Uma camera']);
     // Anuncio publicado antes de #76: continua publico, sem alternativa inventada.
     const legacy = await getPublicListingDetail(tied[0]);
     expect(legacy).not.toBeNull();
@@ -290,12 +294,13 @@ describe.skipIf(!enabled)('consulta publica contra banco real (#49)', () => {
       'images',
       'state',
       'title',
+      // Alternativas de troca, como textos (#76); no feed desde DEC-056.
+      'tradeOptions',
     ];
     for (const item of feed.listings) {
       expect(Object.keys(item).sort()).toEqual(allowlist.sort());
     }
-    // So o detalhe acrescenta as alternativas de troca, como textos (#76).
-    expect(Object.keys(detail!).sort()).toEqual([...allowlist, 'tradeOptions'].sort());
+    expect(Object.keys(detail!).sort()).toEqual(allowlist.sort());
     const json = JSON.stringify({ feed, detail });
     for (const forbidden of [
       PHONE_MARKER,
@@ -348,6 +353,8 @@ describe.skipIf(!enabled)('consulta publica contra banco real (#49)', () => {
       title: 'Anúncio em revisão',
       description: 'A descrição deste anúncio está em revisão pelo anunciante.',
       city: legacyCity,
+      // DEC-056: o card mostra as alternativas, com o mesmo mascaramento do detalhe.
+      tradeOptions: ['Um notebook', 'Alternativa em revisão', 'Uma camera'],
     });
     expect(detail).toMatchObject({
       title: 'Anúncio em revisão',

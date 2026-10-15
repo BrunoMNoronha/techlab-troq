@@ -434,6 +434,12 @@ export interface PublicListingFeedItem {
   description: string;
   city: string;
   state: string;
+  /**
+   * Alternativas de troca, so os textos e na ordem do anunciante. Desde DEC-056
+   * tambem no feed, para o card (listing-contract.md, 6.1). Anuncio anterior a
+   * #76 ainda nao completado vem com lista vazia (secao 17.3).
+   */
+  tradeOptions: string[];
   createdAt: Date;
   images: {
     id: string;
@@ -448,13 +454,10 @@ export interface PublicListingFeedItem {
 }
 
 /**
- * Detalhe publico: o item do feed mais as alternativas de troca, so os textos e
- * na ordem do anunciante (listing-contract.md, 6.1). Anuncio anterior a #76
- * ainda nao completado vem com lista vazia (secao 17.3).
+ * Detalhe publico: a mesma projecao do item do feed, com todas as imagens
+ * `ready` (listing-contract.md, 6.1 e 9.4).
  */
-export interface PublicListingDetail extends PublicListingFeedItem {
-  tradeOptions: string[];
-}
+export type PublicListingDetail = PublicListingFeedItem;
 
 export interface PublicFeedPage {
   listings: PublicListingFeedItem[];
@@ -532,6 +535,7 @@ export async function getPublicFeed(options?: {
         uf: true,
         category: true,
         createdAt: true,
+        tradeOptions: TRADE_OPTIONS_SELECT,
         images: {
           where: { status: 'ready' },
           orderBy: { position: 'asc' },
@@ -560,6 +564,7 @@ export async function getPublicFeed(options?: {
     city: item.city,
     state: item.uf,
     category: item.category ?? null,
+    tradeOptions: item.tradeOptions.map((option) => publicTradeOption(option.label)),
     createdAt: item.createdAt,
     images: item.images.map((img) => ({
       id: img.id,

@@ -182,6 +182,10 @@ describe('getPublicFeed (D-10, D-11)', () => {
           city: 'Recife',
           uf: 'PE',
           createdAt,
+          tradeOptions: [
+            { position: 1, label: 'Um notebook' },
+            { position: 2, label: '(11) 98765-4321' },
+          ],
           images: [
             {
               id: 'i1',
@@ -202,6 +206,8 @@ describe('getPublicFeed (D-10, D-11)', () => {
         city: 'Recife',
         state: 'PE',
         category: null,
+        // DEC-056: alternativas no feed, mascaradas como no detalhe (10.2).
+        tradeOptions: ['Um notebook', 'Alternativa em revisão'],
         createdAt,
         images: [
           {
@@ -214,7 +220,17 @@ describe('getPublicFeed (D-10, D-11)', () => {
     ]);
     const select = findMany.mock.calls[0][0].select;
     expect(Object.keys(select).sort()).toEqual(
-      ['category', 'city', 'createdAt', 'description', 'id', 'images', 'title', 'uf'].sort(),
+      [
+        'category',
+        'city',
+        'createdAt',
+        'description',
+        'id',
+        'images',
+        'title',
+        'tradeOptions',
+        'uf',
+      ].sort(),
     );
   });
 });

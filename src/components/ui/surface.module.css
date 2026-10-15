@@ -80,6 +80,36 @@
   color: inherit;
 }
 
+/*
+ * Link estendido (CardLink): o pseudo-elemento cobre o cartão inteiro, e o
+ * rodapé sobe uma camada para que as ações dele continuem clicáveis.
+ */
+.card:has(.cardLink) {
+  position: relative;
+}
+
+.cardLink {
+  color: inherit;
+  text-decoration: none;
+}
+
+.cardLink::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+.cardLink:hover {
+  color: inherit;
+  text-decoration: underline;
+}
+
+.card:has(.cardLink) .cardFooter {
+  position: relative;
+  z-index: 1;
+}
+
 .divider {
   display: flex;
   align-items: center;
