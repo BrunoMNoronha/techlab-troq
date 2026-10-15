@@ -44,6 +44,19 @@ O sandbox valida o contrato do provedor em teste; não prova transferência Pix,
 
 `src/modules/request/charge.integration.test.ts` (`INTEGRATION_EPHEMERAL_DB=1`) cobre a order `APRO` sem instruções. Com a flag ligada, o resultado vem com `sandboxAutoApproval`, sem falha auditada e sem segunda order na releitura. Sem a flag, a tela continua oferecendo nova tentativa. `src/app/solicitacoes/[id]/pix-panel.test.tsx` cobre os dois estados da tela.
 
+## Diagnóstico de assinatura por flag — 2026-10-15 (#203)
+
+Em 2026-10-15 o Preview passou a receber as notificações da aplicação TROQ Sandbox, com URL com bypass e `MERCADO_PAGO_APPLICATION_ID` corretos: as recusas deixaram de ser `application_mismatch` e passaram a `signature_invalid`, também depois da troca da chave secreta. Restam duas hipóteses: a chave publicada não é a que assina, ou o manifesto precisa do `data.id` em minúsculas, como pede a receita oficial "Sem SDKs" (DEC-052 registra essa divergência). A conclusão anterior de que "a caixa não é a causa" foi tirada com a chave de outra aplicação e não separava as duas.
+
+O diagnóstico de 2026-10-05 valia para uma única Order sintética fixa e não alcança as orders reais: a primeira notificação chega segundos depois da criação. Ele foi substituído por uma flag:
+
+1. Configurar `MERCADO_PAGO_WEBHOOK_SIGNATURE_DIAGNOSTIC=1` **somente em Preview** e republicar.
+2. Criar uma cobrança sandbox pelo card. Cada recusa `signature_invalid` de Order com tentativa do TROQS grava no máximo um evento `payment.notification_signature_diagnostic` por tentativa, com `rawMatch`, `lowerMatch` e `casesDiffer`.
+3. Ler o evento: `lowerMatch=true` indica que a chave está certa e o manifesto precisa de minúsculas, o que exige decisão nova sobre DEC-052. `lowerMatch=false` indica que a chave publicada não é a que assina.
+4. Remover a variável e republicar. Nunca configurar em Production.
+
+As regras abaixo continuam valendo: o perfil raw segue sendo a única autenticação, nenhum resultado autoriza processamento, e só os três booleanos são gravados.
+
 ## Diagnóstico temporário de assinatura — 2026-10-05
 
 Diagnóstico técnico autorizado nesta execução para a única Order sintética `ORDTST01M470XYBP4A7H1CNTX4Y3D4F0`. `MERCADO_PAGO_WEBHOOK_DIAGNOSTIC_ORDER_ID` fica vazio por padrão. Só essa correspondência exata, com **ambos** `APP_ENV=preview` e `VERCEL_ENV=preview`, permite coletar; ausência, valor divergente ou outro ambiente desliga sem mudar a autenticação. Configuração/publicação remotas e reenvio do provedor dependem do fluxo operacional autorizado; esta alteração não os executa.
