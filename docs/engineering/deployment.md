@@ -33,7 +33,7 @@ Cada ambiente serializa migrations e deployments sem cancelar operações em and
 | Recurso | Preview | Production |
 | --- | --- | --- |
 | Git | HEAD de `production`, após promoção manual | mesmo SHA, já aprovado em Preview, por disparo manual |
-| URL | https://techlab-troq-git-preview-bruno-m-noronha.vercel.app | https://troqs.app |
+| URL | https://preview.troqs.app (público, DEC-057) | https://troqs.app |
 | Neon branch | `br-shiny-shadow-ac0q2v2v` | `br-mute-hat-acczbd28` (padrão) |
 | Banco | `troq`, dados preservados | `troq`, criado vazio |
 | Credenciais | próprias de teste | próprias de produção |
@@ -59,7 +59,7 @@ O build de cada ambiente ocorre remotamente na Vercel, com as variáveis sensív
 
 Google exige clientes OAuth distintos, com origens das URLs acima e callbacks exatos:
 
-- Preview: `https://techlab-troq-git-preview-bruno-m-noronha.vercel.app/api/auth/callback/google`.
+- Preview: `https://preview.troqs.app/api/auth/callback/google` (#215; o callback anterior no alias `techlab-troq-git-preview-bruno-m-noronha.vercel.app` sai depois da validação).
 - Production: `https://troqs.app/api/auth/callback/google`.
 
 Não instalar placeholders nem tokens sem consumidor. Sentry source maps só requerem token quando esse recurso de build estiver efetivamente configurado. O preflight exige o par Google no escopo efetivo de Preview/Production e tipo Sensitive para o segredo, sem descriptografar valores. Não comprova a validade das credenciais: essa prova exige o fluxo real. Em runtime, configuração ausente ou inválida deixa o Google indisponível e preserva o login por senha.
@@ -70,7 +70,7 @@ Não instalar placeholders nem tokens sem consumidor. Sentry source maps só req
 
 Antes de migrar Production, o runner gera dump PostgreSQL 17, cifra com AES256, decifra em área temporária e compara os arquivos. Restaura o dump em PostgreSQL isolado e confirma o histórico Prisma. Só o ciphertext é enviado a artifacts, por sete dias; a chave permanece no Environment Production. CI prova esse procedimento com dados sintéticos. A retenção Neon de seis horas não substitui esse backup.
 
-Depois da migration e de `prisma migrate status`, a aplicação é construída e publicada como candidato sem atribuir o domínio. O smoke verifica páginas públicas, consulta de sessão anônima e recusa de job sem autorização. A proteção de deployment permanece ativa; acesso HTTP automatizado depende de token de bypass do projeto expressamente autorizado e guardado somente nos environments GitHub.
+Depois da migration e de `prisma migrate status`, a aplicação é construída e publicada como candidato sem atribuir o domínio. O smoke verifica páginas públicas, consulta de sessão anônima e recusa de job sem autorização. A proteção de deployment permanece ativa nas URLs `*.vercel.app`; o domínio próprio do Preview, `preview.troqs.app`, é público por decisão (DEC-057). Acesso HTTP automatizado às URLs protegidas depende de token de bypass do projeto expressamente autorizado e guardado somente nos environments GitHub.
 
 Após smoke do candidato, a promoção pela API (`POST /v10/projects/{id}/promote/{deploymentId}`) atribui Production; o domínio é verificado novamente. Se a promoção falhar e o histórico de migrations não mudou, o workflow restaura o deployment anterior. Quando há migrations novas, a compatibilidade do deployment anterior exige análise manual: não se revertem migrations automaticamente. O resumo registra o deployment anterior e o comando de recuperação. Restauração de dados também exige procedimento manual e análise dos efeitos posteriores ao backup.
 

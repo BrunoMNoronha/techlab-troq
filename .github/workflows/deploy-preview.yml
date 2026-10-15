@@ -22,7 +22,7 @@ jobs:
     timeout-minutes: 30
     environment:
       name: preview
-      url: https://techlab-troq-git-preview-bruno-m-noronha.vercel.app
+      url: https://preview.troqs.app
     permissions:
       contents: read
       actions: read
@@ -89,5 +89,5 @@ jobs:
 
       - name: Resumo da publicação
         run: |
-          echo 'Preview: https://techlab-troq-git-preview-bruno-m-noronha.vercel.app' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Preview: https://preview.troqs.app' >> "$GITHUB_STEP_SUMMARY"
           echo 'Production requer disparo manual do workflow Deploy Production.' >> "$GITHUB_STEP_SUMMARY"

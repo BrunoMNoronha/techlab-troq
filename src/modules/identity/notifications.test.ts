@@ -15,7 +15,7 @@ vi.mock('@/modules/platform', () => ({ reportSignal: signals.report }));
 
 import { noticeIdempotencyKey, notifyUser, renderNotice, type UserNotice } from './notifications';
 
-const BASE = 'https://techlab-troq-git-preview-bruno-m-noronha.vercel.app';
+const BASE = 'https://preview.troqs.app';
 const RECIPIENT = '00000000-0000-4000-8000-000000000001';
 const REQUEST = '00000000-0000-4000-8000-000000000002';
 const LISTING = '00000000-0000-4000-8000-000000000003';
