@@ -25,6 +25,34 @@ export interface SignatureDiagnostic {
   rawMatch: boolean;
   lowerMatch: boolean;
   casesDiffer: boolean;
+  // Componentes do manifesto (#203): com tres chaves diferentes recusadas nos
+  // dois perfis de caixa, falta saber se o que entra no manifesto chega como o
+  // provedor o assinou. So fatos de presenca/forma; nenhum valor e gravado.
+  /** `x-request-id` chegou a funcao (sem ele o componente e omitido). */
+  requestIdPresent: boolean;
+  /** `data.id` do corpo e exatamente o da query. */
+  bodyIdMatchesQuery: boolean;
+  /** A query trouxe mais de um `data.id` (URL configurada com query propria). */
+  dataIdRepeated: boolean;
+  /** `ts` de `x-signature` com 13 digitos (milissegundos). */
+  tsInMilliseconds: boolean;
+}
+
+function bodyDataId(body: unknown): string | null {
+  if (typeof body !== 'object' || body === null) return null;
+  const data = (body as Record<string, unknown>).data;
+  if (typeof data !== 'object' || data === null) return null;
+  const id = (data as Record<string, unknown>).id;
+  return typeof id === 'string' ? id : null;
+}
+
+function signatureTs(header: string | null): string | null {
+  for (const part of (header ?? '').split(',')) {
+    const separator = part.indexOf('=');
+    if (separator >= 0 && part.slice(0, separator).trim() === 'ts')
+      return part.slice(separator + 1).trim();
+  }
+  return null;
 }
 
 /** Ligado so com a flag exatamente `1` e Preview nos dois indicadores de ambiente. */
@@ -66,5 +94,9 @@ export function diagnoseRejectedSignature(
     rawMatch: raw.valid,
     lowerMatch: lower.valid,
     casesDiffer: dataId !== lowerId,
+    requestIdPresent: Boolean(input.headers.get('x-request-id')),
+    bodyIdMatchesQuery: bodyDataId(input.body) === dataId,
+    dataIdRepeated: input.query.getAll('data.id').length > 1,
+    tsInMilliseconds: /^\d{13}$/.test(signatureTs(input.headers.get('x-signature')) ?? ''),
   };
 }

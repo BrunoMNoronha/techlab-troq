@@ -56,7 +56,7 @@ describe('persistencia best-effort de diagnostico limitado', () => {
     vi.restoreAllMocks();
   });
 
-  it('grava somente tres booleanos, ator nulo, alvo UUID e limite temporal da transacao', async () => {
+  it('grava somente booleanos, ator nulo, alvo UUID e limite temporal da transacao', async () => {
     await recordPreviewSignatureDiagnostic(input(), config);
     expect(mocks.audit).toHaveBeenCalledWith(expect.anything(), {
       eventType: 'payment.notification_signature_diagnostic',
@@ -64,7 +64,15 @@ describe('persistencia best-effort de diagnostico limitado', () => {
       targetType: 'payment_attempt',
       targetId: attemptId,
       result: 'rejected',
-      details: { rawMatch: false, lowerMatch: true, casesDiffer: true },
+      details: {
+        rawMatch: false,
+        lowerMatch: true,
+        casesDiffer: true,
+        requestIdPresent: true,
+        bodyIdMatchesQuery: false,
+        dataIdRepeated: false,
+        tsInMilliseconds: true,
+      },
     });
     const eventText = JSON.stringify(mocks.audit.mock.calls[0][1]);
     for (const marker of [ORDER, config.secret, ts, requestId, mac, 'synthetic-private-marker'])

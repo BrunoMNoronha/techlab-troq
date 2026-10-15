@@ -49,6 +49,10 @@ export async function recordPreviewSignatureDiagnostic(
             rawMatch: diagnostic.rawMatch,
             lowerMatch: diagnostic.lowerMatch,
             casesDiffer: diagnostic.casesDiffer,
+            requestIdPresent: diagnostic.requestIdPresent,
+            bodyIdMatchesQuery: diagnostic.bodyIdMatchesQuery,
+            dataIdRepeated: diagnostic.dataIdRepeated,
+            tsInMilliseconds: diagnostic.tsInMilliseconds,
           },
         });
       },

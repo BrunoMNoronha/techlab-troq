@@ -63,6 +63,10 @@ describe('diagnostico temporario, sem perfil alternativo de autenticacao', () =>
       rawMatch: false,
       lowerMatch: true,
       casesDiffer: true,
+      requestIdPresent: true,
+      bodyIdMatchesQuery: true,
+      dataIdRepeated: false,
+      tsInMilliseconds: true,
     });
     expect(notification.query.toString()).toBe(query);
     expect(notification.headers.get('x-signature')).toBe(signature);
@@ -79,12 +83,33 @@ describe('diagnostico temporario, sem perfil alternativo de autenticacao', () =>
       rawMatch: false,
       lowerMatch: false,
       casesDiffer: true,
+      requestIdPresent: true,
+      bodyIdMatchesQuery: true,
+      dataIdRepeated: false,
+      tsInMilliseconds: true,
     });
   });
 
   it('assinatura raw valida segue autenticacao normal e nao e diagnosticada', () => {
     expect(diagnoseRejectedSignature(input('raw'), config, env)).toBeNull();
     expect(verifyNotification(input('raw'), config).valid).toBe(true);
+  });
+
+  it('sinais dos componentes do manifesto, sem gravar valores (#203)', () => {
+    const notification = input('other');
+    notification.headers.delete('x-request-id');
+    notification.query.append('data.id', 'ORDTST-DUPLICADO');
+    notification.body = { type: 'order', application_id: config.applicationId, data: { id: 'x' } };
+    notification.headers.set(
+      'x-signature',
+      notification.headers.get('x-signature')!.replace(`ts=${TS}`, 'ts=1742505638'),
+    );
+    expect(diagnoseRejectedSignature(notification, config, env)).toMatchObject({
+      requestIdPresent: false,
+      bodyIdMatchesQuery: false,
+      dataIdRepeated: true,
+      tsInMilliseconds: false,
+    });
   });
 
   it('sem data.id na query nao diagnostica; o corpo nunca e fonte do id', () => {
