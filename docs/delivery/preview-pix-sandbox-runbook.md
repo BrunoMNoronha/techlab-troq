@@ -24,6 +24,7 @@ O [teste Pix oficial](https://www.mercadopago.com.br/developers/pt/docs/checkout
 ## Execução e evidência
 
 1. No navegador a 375 px, o solicitante confirma a solicitação e obtém a reserva e o Pix de **R$ 0,99** pelo fluxo existente. Conferir carregamento, prazo e instruções. A tentativa, a chave de idempotência, a referência e a janela são as persistidas pelo TROQS; não criar outra order manualmente.
+   - Com a flag ligada, a order pode ser registrada sem QR Code nem copia e cola, porque o pagador `APRO` é aprovado pelo próprio sandbox. Desde [#210](https://github.com/BrunoMNoronha/techlab-troq/issues/210), a tela da solicitação mostra "Pagamento em aprovação automática", sem erro e sem "Tentar novamente". Antes disso, o mesmo caso aparecia como "Não foi possível gerar o Pix agora" (Preview, 2026-10-15). Conferir no banco o evento `payment.charge_created` e a tentativa em `aguardando_pagamento`, sem `payment.charge_failed`. Sem a flag, a tela não muda.
 2. Aguardar a aprovação automática do sandbox. Não há prazo de aprovação garantido por este runbook; o spike histórico observou aproximadamente 49 segundos, sem transformar isso em SLA.
 3. Observar a mesma order como `processed/accredited`. O mecanismo existente consulta a order e busca o pagamento por `external_reference` para conferir `approved/accredited`, valor igual e `date_approved` válida (ADR-0008), e verifica a tempestividade em relação à reserva. Falha, ausência, divergência ou acreditação tardia seguem o tratamento existente; a flag não transforma nenhum deles em sucesso.
 4. Comprovar notificação real do provedor recebida e validada no Preview, com aplicação/HMAC corretos. Se necessário, invocar o job autenticado de reconciliação nos termos de DEC-042; observar processamento não vazio e convergência. Simular notificação no painel não modifica o estado autoritativo da order e não substitui essa comprovação.
@@ -40,6 +41,8 @@ O sandbox valida o contrato do provedor em teste; não prova transferência Pix,
 ## Validação local
 
 `pnpm test:ci src/modules/payments/mercado-pago/` exercita HTTP simulado local, inclusive guardas, payload normal, payload `APRO`, falhas e rotação da credencial. `pnpm lint`, `pnpm typecheck` e `pnpm build` validam o checkout. Esses checks não executam Mercado Pago, banco compartilhado ou Preview e não são prova de homologação remota.
+
+`src/modules/request/charge.integration.test.ts` (`INTEGRATION_EPHEMERAL_DB=1`) cobre a order `APRO` sem instruções. Com a flag ligada, o resultado vem com `sandboxAutoApproval`, sem falha auditada e sem segunda order na releitura. Sem a flag, a tela continua oferecendo nova tentativa. `src/app/solicitacoes/[id]/pix-panel.test.tsx` cobre os dois estados da tela.
 
 ## Diagnóstico temporário de assinatura — 2026-10-05
 
