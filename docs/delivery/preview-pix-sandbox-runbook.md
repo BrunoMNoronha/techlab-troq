@@ -50,6 +50,11 @@ Em 2026-10-15 o Preview passou a receber as notificações da aplicação TROQ S
 
 _Atualização de #215:_ a URL com bypass no alias `*.vercel.app` foi substituída por `https://preview.troqs.app/api/webhooks/mercadopago`, sem parâmetro. O hostname não entra no manifesto HMAC (`id`, `request-id`, `ts`), então a troca não interfere no diagnóstico.
 
+_Prova de 2026-10-15, depois do corte (#215):_
+- **Aplicação:** a aplicação em uso pelo Preview é **TROQS Preview** (`8846976504307203`), com o webhook de teste em `https://preview.troqs.app/api/webhooks/mercadopago`.
+- **Pix sandbox real:** às 22:41 UTC a cobrança foi criada, e quatro notificações chegaram ao domínio novo, no deployment novo. Elas passaram da checagem de aplicação e foram recusadas por `signature_invalid`, com diagnóstico gravado. Isso confirma que o `MERCADO_PAGO_APPLICATION_ID` do Preview corresponde à aplicação emissora, e mostra que #203 continua aberto do mesmo jeito.
+- **Alias antigo:** antes da revogação do bypass, a aplicação TROQ Sandbox (`8611661876852749`, outra conta) ainda enviava ao alias antigo com bypass e era recusada por `application_mismatch`. O bypass antigo foi revogado, e o alias passou a redirecionar para `preview.troqs.app`.
+
 O diagnóstico de 2026-10-05 valia para uma única Order sintética fixa e não alcança as orders reais: a primeira notificação chega segundos depois da criação. Ele foi substituído por uma flag:
 
 1. Configurar `MERCADO_PAGO_WEBHOOK_SIGNATURE_DIAGNOSTIC=1` **somente em Preview** e republicar.

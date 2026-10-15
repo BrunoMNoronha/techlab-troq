@@ -27,7 +27,15 @@ Este documento separa categorias que não devem ser confundidas: o que **existe 
     - webhook sem assinatura ou com assinatura inválida → 401;
     - job sem autenticação → 401;
     - `*.vercel.app` → login da Vercel.
-- **Pendente:** login, Google, upload e notificação sandbox real no domínio novo, registrados em #215.
+- **Jornadas comprovadas no domínio novo (2026-10-15):**
+  - login por e-mail;
+  - entrada com Google, pelo callback novo;
+  - publicação de anúncio com foto, com o CORS do R2;
+  - Pix sandbox com webhook entregue em `preview.troqs.app`. A recusa `signature_invalid` é a de #203, sem relação com o domínio.
+- **Limpeza:**
+  - callback antigo removido do cliente Google "TROQ preview";
+  - alias `techlab-troq-git-preview-bruno-m-noronha.vercel.app` redirecionando para `preview.troqs.app`;
+  - `VERCEL_AUTOMATION_BYPASS_SECRET` rotacionado. O segredo novo está na Vercel e nos Environments Preview e Production do GitHub, e o antigo foi revogado. O Deploy Preview [38820690289](https://github.com/BrunoMNoronha/techlab-troq/actions/runs/38820690289) passou só com o segredo novo. Production recebeu o mesmo valor, comprovado só no próximo Deploy Production.
 
 ## Atualização de 2026-10-05 — frente proposta de troca (PT-00)
 
