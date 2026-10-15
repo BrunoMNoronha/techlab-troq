@@ -99,6 +99,10 @@ describe('receptor: diagnostico nao autoriza nem substitui a auditoria normal', 
       rawMatch: false,
       lowerMatch: true,
       casesDiffer: true,
+      requestIdPresent: true,
+      bodyIdMatchesQuery: true,
+      dataIdRepeated: false,
+      tsInMilliseconds: true,
     });
     expect(mocks.register).not.toHaveBeenCalled();
     expect(mocks.confirm).not.toHaveBeenCalled();

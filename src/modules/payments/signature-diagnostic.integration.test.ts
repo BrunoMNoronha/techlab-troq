@@ -179,12 +179,24 @@ async function concurrent(destination: 'handler' | 'http') {
     targetType: 'payment_attempt',
     targetId: attemptId,
     result: 'rejected',
-    details: { rawMatch: false, lowerMatch: true, casesDiffer: true },
+    details: {
+      rawMatch: false,
+      lowerMatch: true,
+      casesDiffer: true,
+      requestIdPresent: true,
+      bodyIdMatchesQuery: true,
+      dataIdRepeated: false,
+      tsInMilliseconds: true,
+    },
   });
   expect(Object.keys(events[0].details as object).sort()).toEqual([
+    'bodyIdMatchesQuery',
     'casesDiffer',
+    'dataIdRepeated',
     'lowerMatch',
     'rawMatch',
+    'requestIdPresent',
+    'tsInMilliseconds',
   ]);
   for (const reply of replies)
     for (const marker of [SECRET, reply.ts, reply.mac, reply.id, ORDER])
@@ -363,7 +375,15 @@ describe.skipIf(!enabled)('diagnostico HMAC sobre PostgreSQL real isolado', () =
     const events = await diagnostics();
     expect(events.map((e) => e.targetId).sort()).toEqual([attemptId, attempt2Id].sort());
     for (const event of events)
-      expect(event.details).toEqual({ rawMatch: false, lowerMatch: true, casesDiffer: true });
+      expect(event.details).toEqual({
+        rawMatch: false,
+        lowerMatch: true,
+        casesDiffer: true,
+        requestIdPresent: true,
+        bodyIdMatchesQuery: true,
+        dataIdRepeated: false,
+        tsInMilliseconds: true,
+      });
     expect(JSON.stringify(events)).not.toContain(ORDER2);
     expect(await snapshot()).toEqual(before);
   });

@@ -52,7 +52,9 @@ O diagnóstico de 2026-10-05 valia para uma única Order sintética fixa e não 
 
 1. Configurar `MERCADO_PAGO_WEBHOOK_SIGNATURE_DIAGNOSTIC=1` **somente em Preview** e republicar.
 2. Criar uma cobrança sandbox pelo card. Cada recusa `signature_invalid` de Order com tentativa do TROQS grava no máximo um evento `payment.notification_signature_diagnostic` por tentativa, com `rawMatch`, `lowerMatch` e `casesDiffer`.
-3. Ler o evento: `lowerMatch=true` indica que a chave está certa e o manifesto precisa de minúsculas, o que exige decisão nova sobre DEC-052. `lowerMatch=false` indica que a chave publicada não é a que assina.
+3. Ler o evento: `lowerMatch=true` indica que a chave está certa e o manifesto precisa de minúsculas, o que exige decisão nova sobre DEC-052. Com `rawMatch` e `lowerMatch` falsos, ler os componentes do manifesto: `requestIdPresent` (o `x-request-id` chegou à função), `bodyIdMatchesQuery` (o `data.id` do corpo é o da URL), `dataIdRepeated` (a URL trouxe mais de um `data.id`) e `tsInMilliseconds` (`ts` com 13 dígitos). Com todos normais, a chave publicada não é a que assina.
+
+   Resultado em 2026-10-15: com três chaves diferentes, `rawMatch` e `lowerMatch` saíram falsos para três orders (Teclado às 14:51 e reenvios às 15:01). Os componentes passaram a ser registrados depois disso.
 4. Remover a variável e republicar. Nunca configurar em Production.
 
 As regras abaixo continuam valendo: o perfil raw segue sendo a única autenticação, nenhum resultado autoriza processamento, e só os três booleanos são gravados.
