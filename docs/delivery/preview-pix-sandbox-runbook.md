@@ -54,7 +54,15 @@ O diagnóstico de 2026-10-05 valia para uma única Order sintética fixa e não 
 2. Criar uma cobrança sandbox pelo card. Cada recusa `signature_invalid` de Order com tentativa do TROQS grava no máximo um evento `payment.notification_signature_diagnostic` por tentativa, com `rawMatch`, `lowerMatch` e `casesDiffer`.
 3. Ler o evento: `lowerMatch=true` indica que a chave está certa e o manifesto precisa de minúsculas, o que exige decisão nova sobre DEC-052. Com `rawMatch` e `lowerMatch` falsos, ler os componentes do manifesto: `requestIdPresent` (o `x-request-id` chegou à função), `bodyIdMatchesQuery` (o `data.id` do corpo é o da URL), `dataIdRepeated` (a URL trouxe mais de um `data.id`) e `tsInMilliseconds` (`ts` com 13 dígitos). Com todos normais, a chave publicada não é a que assina.
 
-   Resultado em 2026-10-15: com três chaves diferentes, `rawMatch` e `lowerMatch` saíram falsos para três orders (Teclado às 14:51 e reenvios às 15:01). Os componentes passaram a ser registrados depois disso.
+   Resultado em 2026-10-15, com a aplicação TROQ Sandbox:
+
+   - Em todas as orders diagnosticadas, `rawMatch` e `lowerMatch` saíram falsos, inclusive depois da **redefinição** da assinatura secreta no painel (order `ORDTST01M503ZWB8DXCHYRRPNFQWKNA2`, 15:48:17 UTC).
+   - Os componentes do manifesto chegam íntegros: `requestIdPresent=true`, `bodyIdMatchesQuery=true`, `dataIdRepeated=false` e `ts` com 10 dígitos.
+   - O `application_id` do corpo das notificações (`7747075571191345`) difere do número da TROQ Sandbox (`8611661876852749`).
+   - A validação de HMAC do TROQS nunca foi conferida contra uma assinatura real do provedor: os testes geram o próprio vetor.
+   - Um **reenvio** carrega a assinatura da entrega original. Só notificação nova testa uma chave trocada.
+
+   A causa ficou com o Mercado Pago: [chamado](mercado-pago-chamado-assinatura-webhook.md). Enquanto não houver resposta, as solicitações do Preview são confirmadas pela reconciliação autenticada, que o deploy do Preview executa.
 4. Remover a variável e republicar. Nunca configurar em Production.
 
 As regras abaixo continuam valendo: o perfil raw segue sendo a única autenticação, nenhum resultado autoriza processamento, e só os três booleanos são gravados.
