@@ -9,6 +9,18 @@
 
 Este documento separa categorias que não devem ser confundidas: o que **existe de fato hoje** no repositório, o que **já foi decidido**, o que **ainda não foi implementado** e, desde 2026-09-29, o que está **validado** e o que tem **evidência funcional pendente**. A seção 1 preserva a **baseline histórica** da inspeção inicial e **não** descreve o estado atual; as seções 3.1 e 3.2 descrevem o estado **ao fim da Fase 1**; para o estado atual da Fase 2, ver a seção 3.3.
 
+## Atualização de 2026-10-15 — Preview público em `preview.troqs.app` (#215)
+
+- **Decidido pelo Bruno:** o Preview estável passa a responder em `https://preview.troqs.app`, domínio **público** (DEC-057). As URLs `*.vercel.app` continuam protegidas, e o risco está em R-15.
+- **No repositório:** `PREVIEW_URL` aponta para o domínio novo (preflight, alias e smoke). O workflow `Deploy Preview` publica nesse endereço, e todas as respostas do Preview levam `X-Robots-Tag: noindex, nofollow`.
+- **Fora do repositório:**
+  - CNAME na Cloudflare;
+  - `BETTER_AUTH_URL` e `NEXT_PUBLIC_APP_URL` do Preview na Vercel;
+  - callback do cliente Google "TROQ preview";
+  - CORS de `troq-media-preview`;
+  - webhook da aplicação TROQ Sandbox, sem bypass.
+- **Pendente:** a primeira publicação no domínio novo e a validação ponta a ponta, registradas em #215.
+
 ## Atualização de 2026-10-05 — frente proposta de troca (PT-00)
 
 Registro de [#186](https://github.com/BrunoMNoronha/techlab-troq/issues/186). Baseline consultada: `main@373748fe16fa8fc5d92130397f24400e41ba69a4`. **Nada foi implementado:** esta atualização é só documentação.
