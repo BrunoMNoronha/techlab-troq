@@ -59,7 +59,7 @@ O build de cada ambiente ocorre remotamente na Vercel, com as variáveis sensív
 
 Google exige clientes OAuth distintos, com origens das URLs acima e callbacks exatos:
 
-- Preview: `https://preview.troqs.app/api/auth/callback/google` (#215; o callback anterior no alias `techlab-troq-git-preview-bruno-m-noronha.vercel.app` sai depois da validação).
+- Preview: `https://preview.troqs.app/api/auth/callback/google` (#215; o callback anterior no alias `techlab-troq-git-preview-bruno-m-noronha.vercel.app` foi removido em 2026-10-15).
 - Production: `https://troqs.app/api/auth/callback/google`.
 
 Não instalar placeholders nem tokens sem consumidor. Sentry source maps só requerem token quando esse recurso de build estiver efetivamente configurado. O preflight exige o par Google no escopo efetivo de Preview/Production e tipo Sensitive para o segredo, sem descriptografar valores. Não comprova a validade das credenciais: essa prova exige o fluxo real. Em runtime, configuração ausente ou inválida deixa o Google indisponível e preserva o login por senha.
