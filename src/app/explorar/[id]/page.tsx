@@ -8,6 +8,7 @@ import { BackLink } from '@/components/navigation';
 import { Card, Prose, Text } from '@/components/ui';
 import { getPublicListingDetail } from '@/modules/listing';
 import { getContactRequestEntryView } from '@/modules/request';
+import { getPublicListingReputation } from '@/modules/reputation';
 import { HowItWorks } from '../../_components/how-it-works';
 import { derivativeSrcSet, listingImageAlt, pickDerivative } from '../../_components/listing-image';
 import { ContactRequestEntry } from './contact-request-entry';
@@ -42,7 +43,10 @@ export default async function DetalheAnuncioPublicoPage({
     notFound();
   }
 
-  const entry = await getContactRequestEntryView(listing.id);
+  const [entry, reputation] = await Promise.all([
+    getContactRequestEntryView(listing.id),
+    getPublicListingReputation(listing.id),
+  ]);
   const entryState = entry.state;
   if (entryState === 'listing_unavailable') {
     notFound();
@@ -65,6 +69,19 @@ export default async function DetalheAnuncioPublicoPage({
       />
 
       <Stack gap={6}>
+        {reputation ? (
+          <Card variant="muted">
+            <Section title="Reputação do anunciante" titleId="reputacao-anunciante" gap={2}>
+              <Text>
+                {reputation.count > 0 && reputation.average !== null
+                  ? `${reputation.average.toFixed(1).replace('.', ',')} de 5 estrelas · ${reputation.count} ${reputation.count === 1 ? 'avaliação' : 'avaliações'}`
+                  : 'Este anunciante ainda não tem avaliações publicadas.'}
+              </Text>
+            </Section>
+          </Card>
+        ) : (
+          <Text tone="muted">Reputação indisponível no momento.</Text>
+        )}
         {images.length > 0 ? (
           <Grid as="ul" columns="sm" gap={2} aria-label="Imagens do anúncio">
             {images.map((image, index) => {

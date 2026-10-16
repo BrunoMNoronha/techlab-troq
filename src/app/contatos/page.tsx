@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import { CardList } from '@/components/data-display';
 import { EmptyState } from '@/components/feedback';
 import { PageContainer, PageHeader, Stack } from '@/components/layout';
-import { Card, Heading, Text } from '@/components/ui';
+import { ButtonLink, Card, Heading, Text } from '@/components/ui';
 import { listOwnContactReleases } from '@/modules/contact';
 import { loginRedirectPath, validateSession } from '@/modules/identity';
 import { getListingTitles } from '@/modules/listing';
@@ -60,6 +60,9 @@ export default async function ContatosPage() {
                   </Text>
                 </Stack>
                 <ContactReveal contactReleaseId={release.contactReleaseId} />
+                <ButtonLink href={`/negociacoes/${release.negotiationId}`} variant="outline">
+                  Acompanhar negociação e avaliar
+                </ButtonLink>
               </Stack>
             </Card>
           ))}
