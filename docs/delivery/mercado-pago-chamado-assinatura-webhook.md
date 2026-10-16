@@ -2,6 +2,8 @@
 
 Texto preparado em 2026-10-15 para a [#203](https://github.com/BrunoMNoronha/techlab-troq/issues/203). Ele não contém nenhum segredo: nem assinatura secreta, nem Access Token, nem o parâmetro de bypass da URL. Quem envia é o titular da conta, pelo [suporte do Mercado Pago Developers](https://www.mercadopago.com.br/developers/pt/support).
 
+> **Atualização posterior (2026-10-15, [#215](https://github.com/BrunoMNoronha/techlab-troq/issues/215)).** Depois que este texto foi preparado, o Preview passou a usar a aplicação **TROQS Preview** (`8846976504307203`), com o webhook de teste em `https://preview.troqs.app/api/webhooks/mercadopago`, sem parâmetro de bypass. Às 22:41 UTC, as notificações de um Pix sandbox dessa aplicação passaram da checagem de aplicação e continuaram recusadas por `signature_invalid`. O texto abaixo descreve a configuração anterior, na TROQ Sandbox. Se o chamado ainda não foi enviado, revisar aplicação, URL e exemplos antes de enviar.
+
 ---
 
 **Assunto:** Webhook de Orders (ambiente de teste): `x-signature` não confere com a assinatura secreta da aplicação, nem depois de redefini-la
