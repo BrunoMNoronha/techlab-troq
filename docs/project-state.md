@@ -9,6 +9,34 @@
 
 Este documento separa categorias que não devem ser confundidas: o que **existe de fato hoje** no repositório, o que **já foi decidido**, o que **ainda não foi implementado** e, desde 2026-09-29, o que está **validado** e o que tem **evidência funcional pendente**. A seção 1 preserva a **baseline histórica** da inspeção inicial e **não** descreve o estado atual; as seções 3.1 e 3.2 descrevem o estado **ao fim da Fase 1**; para o estado atual da Fase 2, ver a seção 3.3.
 
+## Atualização de 2026-10-15 — Preview público em `preview.troqs.app` (#215)
+
+- **Decidido pelo Bruno:** o Preview estável passa a responder em `https://preview.troqs.app`, domínio **público** (DEC-057). As URLs `*.vercel.app` continuam protegidas, e o risco está em R-15.
+- **No repositório:** `PREVIEW_URL` aponta para o domínio novo (preflight, alias e smoke). O workflow `Deploy Preview` publica nesse endereço, e todas as respostas do Preview levam `X-Robots-Tag: noindex, nofollow`.
+- **Fora do repositório:**
+  - CNAME na Cloudflare;
+  - `BETTER_AUTH_URL` e `NEXT_PUBLIC_APP_URL` do Preview na Vercel;
+  - callback do cliente Google "TROQ preview";
+  - CORS de `troq-media-preview`;
+  - webhook da aplicação TROQ Sandbox, sem bypass.
+- **Publicado em 2026-10-15:**
+  - Deploy Preview: [run 38815821329](https://github.com/BrunoMNoronha/techlab-troq/actions/runs/38815821329), SHA `fe4c947`, com smoke aprovado.
+  - O domínio só ficou público depois da Deployment Protection Exception.
+  - HTTP anônimo:
+    - `/`, `/login`, `/explorar` e `get-session` → 200, com `X-Robots-Tag: noindex, nofollow`;
+    - webhook sem assinatura ou com assinatura inválida → 401;
+    - job sem autenticação → 401;
+    - `*.vercel.app` → login da Vercel.
+- **Jornadas comprovadas no domínio novo (2026-10-15):**
+  - login por e-mail;
+  - entrada com Google, pelo callback novo;
+  - publicação de anúncio com foto, com o CORS do R2;
+  - Pix sandbox com webhook entregue em `preview.troqs.app`. A recusa `signature_invalid` é a de #203, sem relação com o domínio.
+- **Limpeza:**
+  - callback antigo removido do cliente Google "TROQ preview";
+  - alias `techlab-troq-git-preview-bruno-m-noronha.vercel.app` redirecionando para `preview.troqs.app`;
+  - `VERCEL_AUTOMATION_BYPASS_SECRET` rotacionado. O segredo novo está na Vercel e nos Environments Preview e Production do GitHub, e o antigo foi revogado. O Deploy Preview [38820690289](https://github.com/BrunoMNoronha/techlab-troq/actions/runs/38820690289) passou só com o segredo novo. Production recebeu o mesmo valor, comprovado só no próximo Deploy Production.
+
 ## Atualização de 2026-10-05 — frente proposta de troca (PT-00)
 
 Registro de [#186](https://github.com/BrunoMNoronha/techlab-troq/issues/186). Baseline consultada: `main@373748fe16fa8fc5d92130397f24400e41ba69a4`. **Nada foi implementado:** esta atualização é só documentação.

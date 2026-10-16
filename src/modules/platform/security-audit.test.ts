@@ -41,6 +41,7 @@ describe('Auditoria de segurança SIMULADA (unitária): RF-014, autorização e 
           city: 'São Paulo',
           uf: 'SP',
           createdAt: new Date(),
+          tradeOptions: [{ position: 1, label: 'Um notebook' }],
           images: [],
         },
       ]);
@@ -54,6 +55,7 @@ describe('Auditoria de segurança SIMULADA (unitária): RF-014, autorização e 
             city: 'São Paulo',
             uf: 'SP',
             createdAt: new Date(),
+            tradeOptions: [{ position: 1, label: 'Um notebook' }],
             images: [],
           },
         ],

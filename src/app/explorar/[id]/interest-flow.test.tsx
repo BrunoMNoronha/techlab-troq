@@ -65,6 +65,7 @@ describe('InterestFlow — Tenho interesse e confirmacao (F3-012)', () => {
         contactRequestId: REQUEST_ID,
         reservedUntil: '2026-10-05T12:30:00.000Z',
         pix: { copyPaste: '000201SIMULADO', qrCodeBase64: null, ticketUrl: null, expiresAt: null },
+        sandboxAutoApproval: false,
       }),
     );
 

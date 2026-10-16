@@ -3,6 +3,7 @@ import { getPrismaClient } from '@/persistence/prisma';
 import {
   createMercadoPagoClient,
   MercadoPagoConfigError,
+  readPixSandboxAutoApprove,
   type GatewayFailure,
   type MercadoPagoClient,
   type PixChargeCreated,
@@ -44,7 +45,17 @@ export interface PixPaymentDetails {
 export type ChargeOrigin = 'initial' | 'retry';
 
 export type ChargeOutcome =
-  | { ok: true; pix: PixPaymentDetails | null }
+  | {
+      ok: true;
+      pix: PixPaymentDetails | null;
+      /**
+       * Order registrada sem instrucoes Pix no modo de aprovacao automatica do
+       * sandbox (#210): o pagador oficial `APRO` e aprovado pelo proprio
+       * provedor, e nao ha QR para pagar. Sempre `false` fora desse modo, que
+       * so existe em `development` e `preview` (config.ts).
+       */
+      sandboxAutoApproval: boolean;
+    }
   | { ok: false; reason: 'gateway_unavailable' | 'gateway_rejected' | 'attempt_not_chargeable' };
 
 export interface ChargeContext {
@@ -87,6 +98,23 @@ function details(created: PixChargeCreated): PixPaymentDetails | null {
     qrCodeBase64: created.instructions.qrCodeBase64,
     ticketUrl: created.instructions.ticketUrl,
     expiresAt: created.snapshot.pixExpiresAt?.toISOString() ?? null,
+  };
+}
+
+/**
+ * Resultado de uma order registrada (criada ou relida). Sem instrucoes, so o
+ * modo de aprovacao automatica do sandbox explica a falta (#210), e apenas
+ * enquanto a order ainda pode ser ou ja foi acreditada; nos demais casos a
+ * tela segue oferecendo nova tentativa, como antes.
+ */
+function registeredCharge(charge: PixChargeCreated): ChargeOutcome {
+  const pix = details(charge);
+  const live =
+    charge.snapshot.state.kind === 'pending' || charge.snapshot.state.kind === 'accredited';
+  return {
+    ok: true,
+    pix,
+    sandboxAutoApproval: pix === null && live && readPixSandboxAutoApprove(),
   };
 }
 
@@ -189,7 +217,7 @@ export async function chargeForReservation(
           reason: existing.kind === 'unavailable' ? 'gateway_unavailable' : 'gateway_rejected',
         };
       }
-      return { ok: true, pix: details(existing.value) };
+      return registeredCharge(existing.value);
     }
     if (attempt.status !== 'tentativa_criada')
       return { ok: false, reason: 'attempt_not_chargeable' };
@@ -221,7 +249,7 @@ export async function chargeForReservation(
       await auditFailure(attempt.id, ctx, { kind: 'rejected', code: 'order_mismatch' });
       return { ok: false, reason: 'gateway_rejected' };
     }
-    return { ok: true, pix: details(created.value) };
+    return registeredCharge(created.value);
   } catch (err) {
     if (err instanceof MercadoPagoConfigError) {
       // Credencial ausente: fail-closed, sem cobranca e sem nome de valor.

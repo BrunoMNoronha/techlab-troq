@@ -19,6 +19,11 @@ import { TIME } from '../_components/phase';
 // a cobranca com a MESMA chave se ela ainda nao foi registrada (PD-4.2). Elas
 // vivem so no estado deste navegador; nunca vao para URL, log ou telemetria.
 //
+// No modo de aprovacao automatica do sandbox (#210; so `development` e
+// `preview`), a order e registrada sem QR: o provedor aprova o pagador oficial
+// `APRO` sozinho. A tela diz isso, sem erro e sem nova tentativa; a situacao
+// muda quando a confirmacao chega (webhook ou reconciliacao).
+//
 // O prazo exibido e o `reservedUntil` do TROQS (PD-3.1), pelo relogio do banco:
 // o deslocamento entre o `now()` do servidor e o relogio local corrige a
 // contagem. No fim do prazo, a pagina e relida no servidor.
@@ -26,6 +31,7 @@ import { TIME } from '../_components/phase';
 type PanelState =
   | { kind: 'loading' }
   | { kind: 'ready'; pix: PixPaymentDetails }
+  | { kind: 'auto_approval' }
   | { kind: 'retry'; message: string }
   | { kind: 'unavailable'; message: string };
 
@@ -53,6 +59,8 @@ export function PixPanel({
       const res = await getPixPayment(contactRequestId);
       if (res.success && res.pix) {
         setState({ kind: 'ready', pix: res.pix });
+      } else if (res.success && res.sandboxAutoApproval) {
+        setState({ kind: 'auto_approval' });
       } else if (res.success || res.reason === 'charge_unavailable') {
         setState({
           kind: 'retry',
@@ -120,6 +128,16 @@ export function PixPanel({
                 Tentar novamente
               </Button>
             </div>
+          </Alert>
+        )}
+
+        {state.kind === 'auto_approval' && (
+          <Alert tone="info" role="status" title="Pagamento em aprovação automática">
+            <p>
+              Neste ambiente de teste, o Mercado Pago aprova a cobrança sozinho: não há QR Code nem
+              código para pagar. Sua vaga continua reservada, e esta página mostra quando o
+              pagamento for confirmado.
+            </p>
           </Alert>
         )}
 

@@ -21,6 +21,18 @@ const nextConfig: NextConfig = {
   env: {
     APP_ENV: process.env.APP_ENV ?? '',
   },
+  // Preview publico em `preview.troqs.app` (#215): o dominio proprio nao passa
+  // pela protecao da Vercel, entao nenhuma resposta do ambiente de homologacao
+  // pode ser indexada. Production e development nao recebem o cabecalho.
+  async headers() {
+    if (process.env.APP_ENV !== 'preview') return [];
+    return [
+      {
+        source: '/:path*',
+        headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }],
+      },
+    ];
+  },
 };
 
 // Por que o wrapper e necessario, e nao herdado do wizard.

@@ -511,11 +511,11 @@ Divergências de detalhe, sem efeito contratual: o claim só seleciona linhas co
 | Bucket (jurisdição padrão, ENAM) | `AllowedOrigins` | `AllowedMethods` | `AllowedHeaders` |
 | --- | --- | --- | --- |
 | `troq-media-development` | `http://localhost:3000` | `PUT` | `content-type`, `if-none-match` |
-| `troq-media-preview` | `https://techlab-troq-*-bruno-m-noronha.vercel.app` | `PUT` | `content-type`, `if-none-match` |
+| `troq-media-preview` | `https://techlab-troq-*-bruno-m-noronha.vercel.app`, `https://preview.troqs.app` (#215) | `PUT` | `content-type`, `if-none-match` |
 
 Não há `ExposeHeaders` nem `MaxAgeSeconds`: a confirmação usa `HeadObject` no servidor (seção 6), e o cliente não lê cabeçalho da resposta do R2. Os dois buckets continuam privados: `r2.dev` desativado, sem Custom Domain e sem acesso anônimo.
 
-**Origem de preview.** Os deployments de preview do projeto usam os hosts `techlab-troq-<hash>-bruno-m-noronha.vercel.app` (URL do deployment) e `techlab-troq-git-<branch>-bruno-m-noronha.vercel.app` (alias da branch), conferidos pela API da Vercel. O R2 aceita um único `*` por origem, e esse `*` pode atravessar pontos. Por isso o padrão fixa o prefixo do projeto e o sufixo do time. O risco residual está na seção 18.
+**Origem de preview.** Os deployments de preview do projeto usam os hosts `techlab-troq-<hash>-bruno-m-noronha.vercel.app` (URL do deployment) e `techlab-troq-git-<branch>-bruno-m-noronha.vercel.app` (alias da branch), conferidos pela API da Vercel. O R2 aceita um único `*` por origem, e esse `*` pode atravessar pontos. Por isso o padrão fixa o prefixo do projeto e o sufixo do time. O risco residual está na seção 18. Desde #215 (DEC-057) o Preview estável responde em `https://preview.troqs.app`, origem exata acrescentada à mesma regra pelo painel da Cloudflare; o curinga continua cobrindo as URLs de deployment.
 
 **Fatos reconferidos na documentação oficial em 2026-09-30** ([Configure CORS](https://developers.cloudflare.com/r2/buckets/cors/)): presigned URL no navegador exige CORS; `AllowedOrigins` sem caminho e com no máximo um `*`; porta sem curinga; propagação em até 30 s; resposta de erro de presigned URL expirada vem **sem** cabeçalhos CORS, então o JavaScript não lê o corpo do erro.
 

@@ -2,10 +2,7 @@
 import { createHmac, randomBytes } from 'node:crypto';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Prisma } from '@/generated/prisma/client';
-import {
-  PREVIEW_DIAGNOSTIC_ENV,
-  PREVIEW_DIAGNOSTIC_ORDER_ID as ORDER,
-} from './mercado-pago/signature-diagnostic';
+import { PREVIEW_DIAGNOSTIC_ENV } from './mercado-pago/signature-diagnostic';
 import { recordPreviewSignatureDiagnostic } from './signature-diagnostic';
 
 const mocks = vi.hoisted(() => ({
@@ -19,6 +16,8 @@ vi.mock('@/modules/audit', () => ({ recordAuditEvent: mocks.audit }));
 vi.mock('@/persistence/prisma', () => ({
   getPrismaClient: () => ({ $transaction: mocks.transaction }),
 }));
+// Order sintetica no formato do sandbox; a flag vale para qualquer Order (#203).
+const ORDER = 'ORDTST01M470XYBP4A7H1CNTX4Y3D4F0';
 const config = { secret: randomBytes(32).toString('hex'), applicationId: '9900000000000001' };
 const attemptId = 'b4b181ea-8441-48c6-a313-a75669d349d7';
 const ts = '1742505638683';
@@ -37,7 +36,7 @@ describe('persistencia best-effort de diagnostico limitado', () => {
     vi.resetAllMocks();
     vi.stubEnv('APP_ENV', 'preview');
     vi.stubEnv('VERCEL_ENV', 'preview');
-    vi.stubEnv(PREVIEW_DIAGNOSTIC_ENV, ORDER);
+    vi.stubEnv(PREVIEW_DIAGNOSTIC_ENV, '1');
     mocks.execute.mockResolvedValue(1);
     mocks.query.mockResolvedValue([{ id: attemptId }]);
     mocks.prior.mockResolvedValue(null);
@@ -57,7 +56,7 @@ describe('persistencia best-effort de diagnostico limitado', () => {
     vi.restoreAllMocks();
   });
 
-  it('grava somente tres booleanos, ator nulo, alvo UUID e limite temporal da transacao', async () => {
+  it('grava somente booleanos, ator nulo, alvo UUID e limite temporal da transacao', async () => {
     await recordPreviewSignatureDiagnostic(input(), config);
     expect(mocks.audit).toHaveBeenCalledWith(expect.anything(), {
       eventType: 'payment.notification_signature_diagnostic',
@@ -65,7 +64,15 @@ describe('persistencia best-effort de diagnostico limitado', () => {
       targetType: 'payment_attempt',
       targetId: attemptId,
       result: 'rejected',
-      details: { rawMatch: false, lowerMatch: true, casesDiffer: true },
+      details: {
+        rawMatch: false,
+        lowerMatch: true,
+        casesDiffer: true,
+        requestIdPresent: true,
+        bodyIdMatchesQuery: false,
+        dataIdRepeated: false,
+        tsInMilliseconds: true,
+      },
     });
     const eventText = JSON.stringify(mocks.audit.mock.calls[0][1]);
     for (const marker of [ORDER, config.secret, ts, requestId, mac, 'synthetic-private-marker'])
@@ -76,6 +83,11 @@ describe('persistencia best-effort de diagnostico limitado', () => {
     });
     expect(mocks.execute.mock.calls[2][0].join('')).toContain('pg_advisory_xact_lock');
     expect(mocks.query.mock.calls[0][1]).toBe(ORDER);
+    // Lock e evento previo sao da propria Order/tentativa: um diagnostico por tentativa.
+    expect(mocks.execute.mock.calls[2][1]).toBe(`payments:preview-signature-diagnostic:${ORDER}`);
+    expect(mocks.prior).toHaveBeenCalledWith(
+      expect.objectContaining({ where: expect.objectContaining({ targetId: attemptId }) }),
+    );
     expect(mocks.execute.mock.invocationCallOrder[2]).toBeLessThan(
       mocks.prior.mock.invocationCallOrder[0],
     );
@@ -94,13 +106,13 @@ describe('persistencia best-effort de diagnostico limitado', () => {
     expect(mocks.prior).not.toHaveBeenCalled();
   });
 
-  it.each(['off', 'production', 'different_order'])(
+  it.each(['off', 'production', 'missing_order'])(
     'fora do escopo %s nao abre transacao',
     async (scope) => {
       const notification = input();
       if (scope === 'off') vi.stubEnv(PREVIEW_DIAGNOSTIC_ENV, '');
       if (scope === 'production') vi.stubEnv('VERCEL_ENV', 'production');
-      if (scope === 'different_order') notification.query.set('data.id', `${ORDER}X`);
+      if (scope === 'missing_order') notification.query.delete('data.id');
       await recordPreviewSignatureDiagnostic(notification, config);
       expect(mocks.transaction).not.toHaveBeenCalled();
     },

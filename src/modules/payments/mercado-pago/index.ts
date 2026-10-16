@@ -31,7 +31,12 @@ export {
   type ProviderPaymentFact,
   type ReversalReason,
 } from './classify';
-export { MERCADO_PAGO_ENV, MercadoPagoConfigError, readWebhookConfig } from './config';
+export {
+  MERCADO_PAGO_ENV,
+  MercadoPagoConfigError,
+  readPixSandboxAutoApprove,
+  readWebhookConfig,
+} from './config';
 export {
   buildManifest,
   verifyNotification,

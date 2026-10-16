@@ -46,6 +46,7 @@ describe('PixPanel (F3-012)', () => {
       contactRequestId: REQUEST_ID,
       reservedUntil: UNTIL,
       pix,
+      sandboxAutoApproval: false,
     });
     renderPanel();
 
@@ -70,6 +71,7 @@ describe('PixPanel (F3-012)', () => {
       contactRequestId: REQUEST_ID,
       reservedUntil: UNTIL,
       pix,
+      sandboxAutoApproval: false,
     });
     renderPanel();
 
@@ -84,6 +86,7 @@ describe('PixPanel (F3-012)', () => {
       contactRequestId: REQUEST_ID,
       reservedUntil: UNTIL,
       pix: { ...pix, qrCodeBase64: '"><script>', ticketUrl: 'javascript:alert(1)' },
+      sandboxAutoApproval: false,
     });
     renderPanel();
 
@@ -104,6 +107,7 @@ describe('PixPanel (F3-012)', () => {
         contactRequestId: REQUEST_ID,
         reservedUntil: UNTIL,
         pix,
+        sandboxAutoApproval: false,
       });
     renderPanel();
 
@@ -111,6 +115,41 @@ describe('PixPanel (F3-012)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Tentar novamente' }));
     expect(await screen.findByLabelText('Pix copia e cola')).toBeInTheDocument();
     expect(getPixPayment).toHaveBeenCalledTimes(2);
+  });
+
+  it('aprovacao automatica do sandbox (#210): informa, sem erro e sem nova tentativa', async () => {
+    getPixPayment.mockResolvedValue({
+      success: true,
+      contactRequestId: REQUEST_ID,
+      reservedUntil: UNTIL,
+      pix: null,
+      sandboxAutoApproval: true,
+    });
+    renderPanel();
+
+    expect(await screen.findByText('Pagamento em aprovação automática')).toBeVisible();
+    expect(screen.getByText(/não há QR Code nem código para pagar/)).toBeVisible();
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Tentar novamente' })).toBeNull();
+    expect(screen.queryByLabelText('Pix copia e cola')).toBeNull();
+    expect(refresh).not.toHaveBeenCalled();
+  });
+
+  it('sem Pix fora do modo de aprovacao automatica: mantem o erro com nova tentativa', async () => {
+    getPixPayment.mockResolvedValue({
+      success: true,
+      contactRequestId: REQUEST_ID,
+      reservedUntil: UNTIL,
+      pix: null,
+      sandboxAutoApproval: false,
+    });
+    renderPanel();
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Não foi possível gerar o Pix agora',
+    );
+    expect(screen.getByRole('button', { name: 'Tentar novamente' })).toBeEnabled();
+    expect(screen.queryByText('Pagamento em aprovação automática')).toBeNull();
   });
 
   it('recusa do servidor (prazo, pausa, outra pessoa) nao mostra Pix e rele a pagina', async () => {
@@ -149,6 +188,7 @@ describe('PixPanel (F3-012)', () => {
       contactRequestId: REQUEST_ID,
       reservedUntil: UNTIL,
       pix,
+      sandboxAutoApproval: false,
     });
     renderPanel();
     await act(async () => {});

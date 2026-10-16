@@ -6,10 +6,12 @@ import { createHmac, randomBytes, randomUUID } from 'node:crypto';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { handleMercadoPagoWebhook } from '@/app/api/webhooks/mercadopago/handler';
 import { getPrismaClient } from '@/persistence/prisma';
-import {
-  PREVIEW_DIAGNOSTIC_ENV,
-  PREVIEW_DIAGNOSTIC_ORDER_ID as ORDER,
-} from './mercado-pago/signature-diagnostic';
+import { PREVIEW_DIAGNOSTIC_ENV } from './mercado-pago/signature-diagnostic';
+
+// Orders sinteticas no formato do sandbox; a flag vale para qualquer Order com
+// tentativa do TROQS, com um diagnostico por tentativa (#203).
+const ORDER = 'ORDTST01M470XYBP4A7H1CNTX4Y3D4F0';
+const ORDER2 = 'ORDTST01M4ZZ0G9X8WG89DYX0VRQP8ZZ';
 
 const enabled = process.env.INTEGRATION_EPHEMERAL_DB === '1';
 const HTTP_BASE = process.env.HMAC_DIAGNOSTIC_HTTP_BASE_URL ?? '';
@@ -20,9 +22,12 @@ const LOCK = `payments:preview-signature-diagnostic:${ORDER}`;
 const TAG = `itdiag-R${Date.now()}-R${randomBytes(3).toString('hex')}`;
 const ownerId = randomUUID(),
   requesterId = randomUUID(),
+  requester2Id = randomUUID(),
   listingId = randomUUID(),
   requestId = randomUUID(),
-  attemptId = randomUUID();
+  request2Id = randomUUID(),
+  attemptId = randomUUID(),
+  attempt2Id = randomUUID();
 const db = () => getPrismaClient();
 let serial = 0;
 let localScopeVerified = false;
@@ -174,12 +179,24 @@ async function concurrent(destination: 'handler' | 'http') {
     targetType: 'payment_attempt',
     targetId: attemptId,
     result: 'rejected',
-    details: { rawMatch: false, lowerMatch: true, casesDiffer: true },
+    details: {
+      rawMatch: false,
+      lowerMatch: true,
+      casesDiffer: true,
+      requestIdPresent: true,
+      bodyIdMatchesQuery: true,
+      dataIdRepeated: false,
+      tsInMilliseconds: true,
+    },
   });
   expect(Object.keys(events[0].details as object).sort()).toEqual([
+    'bodyIdMatchesQuery',
     'casesDiffer',
+    'dataIdRepeated',
     'lowerMatch',
     'rawMatch',
+    'requestIdPresent',
+    'tsInMilliseconds',
   ]);
   for (const reply of replies)
     for (const marker of [SECRET, reply.ts, reply.mac, reply.id, ORDER])
@@ -199,7 +216,9 @@ describe.skipIf(!enabled)('diagnostico HMAC sobre PostgreSQL real isolado', () =
     if (HTTP_BASE && !['127.0.0.1', 'localhost', '[::1]'].includes(new URL(HTTP_BASE).hostname))
       throw new Error('HTTP de teste exige Next local');
     localScopeVerified = true;
-    expect(await db().paymentAttempt.count({ where: { providerOrderId: ORDER } })).toBe(0);
+    expect(
+      await db().paymentAttempt.count({ where: { providerOrderId: { in: [ORDER, ORDER2] } } }),
+    ).toBe(0);
     expect(await diagnostics()).toHaveLength(0);
     await db().user.createMany({
       data: [
@@ -208,6 +227,11 @@ describe.skipIf(!enabled)('diagnostico HMAC sobre PostgreSQL real isolado', () =
           id: requesterId,
           displayName: 'Requester sintetico',
           email: `${TAG}-requester@example.test`,
+        },
+        {
+          id: requester2Id,
+          displayName: 'Requester sintetico 2',
+          email: `${TAG}-requester2@example.test`,
         },
       ],
     });
@@ -244,17 +268,37 @@ describe.skipIf(!enabled)('diagnostico HMAC sobre PostgreSQL real isolado', () =
         status: 'aguardando_pagamento',
       },
     });
+    await db().contactRequest.create({
+      data: {
+        id: request2Id,
+        listingId,
+        requesterId: requester2Id,
+        slotIndex: 2,
+        reservedFrom: now,
+        reservedUntil: new Date(now.getTime() + 30 * 60_000),
+      },
+    });
+    await db().paymentAttempt.create({
+      data: {
+        id: attempt2Id,
+        contactRequestId: request2Id,
+        idempotencyKey: `${TAG}-key2`,
+        externalReference: `${TAG}-ref2`,
+        providerOrderId: ORDER2,
+        status: 'aguardando_pagamento',
+      },
+    });
   });
   beforeEach(async () => {
     vi.stubEnv('APP_ENV', 'preview');
     vi.stubEnv('VERCEL_ENV', 'preview');
-    vi.stubEnv(PREVIEW_DIAGNOSTIC_ENV, ORDER);
+    vi.stubEnv(PREVIEW_DIAGNOSTIC_ENV, '1');
     vi.stubEnv('MERCADO_PAGO_WEBHOOK_SECRET', SECRET);
     vi.stubEnv('MERCADO_PAGO_APPLICATION_ID', APP);
     await db().auditEvent.deleteMany({
       where: {
         OR: [
-          { eventType: EVENT, targetId: attemptId },
+          { eventType: EVENT, targetId: { in: [attemptId, attempt2Id] } },
           {
             eventType: 'payment.notification_rejected',
             details: { path: ['providerRequestId'], string_starts_with: TAG },
@@ -273,7 +317,7 @@ describe.skipIf(!enabled)('diagnostico HMAC sobre PostgreSQL real isolado', () =
     await db().auditEvent.deleteMany({
       where: {
         OR: [
-          { eventType: EVENT, targetId: attemptId },
+          { eventType: EVENT, targetId: { in: [attemptId, attempt2Id] } },
           { details: { path: ['providerRequestId'], string_starts_with: TAG } },
         ],
       },
@@ -281,10 +325,10 @@ describe.skipIf(!enabled)('diagnostico HMAC sobre PostgreSQL real isolado', () =
     await db().paymentNotification.deleteMany({
       where: { providerRequestId: { startsWith: TAG } },
     });
-    await db().paymentAttempt.deleteMany({ where: { id: attemptId } });
-    await db().contactRequest.deleteMany({ where: { id: requestId } });
+    await db().paymentAttempt.deleteMany({ where: { id: { in: [attemptId, attempt2Id] } } });
+    await db().contactRequest.deleteMany({ where: { id: { in: [requestId, request2Id] } } });
     await db().listing.deleteMany({ where: { id: listingId } });
-    await db().user.deleteMany({ where: { id: { in: [ownerId, requesterId] } } });
+    await db().user.deleteMany({ where: { id: { in: [ownerId, requesterId, requester2Id] } } });
     await db().$disconnect();
   });
 
@@ -303,7 +347,7 @@ describe.skipIf(!enabled)('diagnostico HMAC sobre PostgreSQL real isolado', () =
   ])('%s preserva recusas e fatos, sem diagnostico', async (mode) => {
     const before = await snapshot();
     if (mode === 'off') vi.stubEnv(PREVIEW_DIAGNOSTIC_ENV, '');
-    if (mode === 'invalid') vi.stubEnv(PREVIEW_DIAGNOSTIC_ENV, 'ORDTST-OTHER');
+    if (mode === 'invalid') vi.stubEnv(PREVIEW_DIAGNOSTIC_ENV, 'true');
     if (mode === 'app_production') vi.stubEnv('APP_ENV', 'production');
     if (mode === 'vercel_production') vi.stubEnv('VERCEL_ENV', 'production');
     const reply = await send({
@@ -320,6 +364,27 @@ describe.skipIf(!enabled)('diagnostico HMAC sobre PostgreSQL real isolado', () =
           : 'signature_invalid',
     );
     expect(await diagnostics()).toHaveLength(0);
+    expect(await snapshot()).toEqual(before);
+  });
+
+  it('outra Order com tentativa recebe o proprio diagnostico, tambem unico (#203)', async () => {
+    const before = await snapshot();
+    await assertRejected(await send({ order: ORDER }));
+    await assertRejected(await send({ order: ORDER2 }));
+    await assertRejected(await send({ order: ORDER2 }));
+    const events = await diagnostics();
+    expect(events.map((e) => e.targetId).sort()).toEqual([attemptId, attempt2Id].sort());
+    for (const event of events)
+      expect(event.details).toEqual({
+        rawMatch: false,
+        lowerMatch: true,
+        casesDiffer: true,
+        requestIdPresent: true,
+        bodyIdMatchesQuery: true,
+        dataIdRepeated: false,
+        tsInMilliseconds: true,
+      });
+    expect(JSON.stringify(events)).not.toContain(ORDER2);
     expect(await snapshot()).toEqual(before);
   });
 

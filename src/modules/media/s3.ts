@@ -174,7 +174,11 @@ export async function getObjectIfMatch(
   return { data: Buffer.from(bytes), contentLength: res.ContentLength ?? bytes.length };
 }
 
-export async function putDerivative(key: string, data: Buffer): Promise<void> {
+export async function putDerivative(
+  key: string,
+  data: Buffer,
+  abortSignal?: AbortSignal,
+): Promise<void> {
   const { client, bucket } = r2();
   await client.send(
     new PutObjectCommand({
@@ -184,6 +188,7 @@ export async function putDerivative(key: string, data: Buffer): Promise<void> {
       ContentType: 'image/webp',
       ContentLength: data.length,
     }),
+    { abortSignal },
   );
 }
 
