@@ -314,7 +314,7 @@ A Fase 3 está **liberada para execução** desde a aprovação do gate da Fase 
 | F3-011 | Reversões e seus efeitos ([#101](https://github.com/BrunoMNoronha/techlab-troq/issues/101)) | PD-9 e CR-4 (T-17, C-10) | F3-008, F3-010 | implementado (2026-10-05); prova em `preview` pendente |
 | F3-012 | Jornada de interface e homologação em `preview` ([#102](https://github.com/BrunoMNoronha/techlab-troq/issues/102)) | Jornada completa a 375 px com sandbox do Mercado Pago; fecha #59 | F3-008, F3-010; PX-2, PX-3, OD-15, DP-4 | código implementado (2026-10-05, PR aberta com `Refs`); homologação em `preview` pendente (#131 a #134) |
 | F3-013 | E-mails transacionais e observabilidade ([#103](https://github.com/BrunoMNoronha/techlab-troq/issues/103)) | Catálogo RF-021 da fase e sinais no Sentry | F3-006, F3-009 | próximo |
-| F3-014 | Verificação de segurança e revisão reforçada ([#104](https://github.com/BrunoMNoronha/techlab-troq/issues/104)) | Matriz de atores e C-8 | F3-011, F3-012, F3-013 | bloqueado |
+| F3-014 | Verificação de segurança e revisão reforçada ([#104](https://github.com/BrunoMNoronha/techlab-troq/issues/104)) | Matriz de atores e C-8 | F3-011, F3-012, F3-013 | parcial (revisão de 2026-10-07); C-8 remoto sem console da jornada e rastreabilidade por deployment; F3-S2 em [#203](https://github.com/BrunoMNoronha/techlab-troq/issues/203) |
 | F3-015 | Gate de saída da Fase 3 ([#105](https://github.com/BrunoMNoronha/techlab-troq/issues/105)) | Auditoria por SHA e transição para a Fase 4 | F3-014; OD-15; recomendação #86 | bloqueado |
 
 ## Fases 4 e 5 — decomposição em 2026-10-05
