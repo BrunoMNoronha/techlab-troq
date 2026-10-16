@@ -20,7 +20,7 @@ src/
     tokens.css          tokens (custom properties) — fonte única de valores
     globals.css         reset, tipografia dos elementos, foco, .sr-only
   components/
-    ui/                 primitivas: Button, Icon, Card (CardBody, CardFooter), Badge, Divider, Accordion, Tooltip, Heading, Text, TextLink, Prose
+    ui/                 primitivas: Button, Icon, Card (CardBody, CardFooter, CardLink), Badge, Divider, Accordion, Tooltip, Heading, Text, TextLink, Prose
     forms/              Form, Field, Input, Textarea, Select, Checkbox, Radio, Switch, SearchInput, DateInput, FileUpload, Fieldset, FieldRow, FormActions, Filters
     feedback/           Alert, EmptyState, ErrorState, Spinner, Skeleton, Progress, ToastProvider/useToast
     layout/             AppShell, PageContainer, PageHeader, Section, Stack, Cluster, Grow, Grid, GridItem
@@ -160,6 +160,7 @@ Primitivas de layout: `Stack` (coluna), `Cluster` (linha que quebra; `justify="b
 | `ButtonLink` | Navegação com aparência de botão. `reload` usa `<a>` nativo (recarga completa). |
 | `IconButton` | Ação só com ícone; `label` obrigatório. |
 | `TextLink` | Link de texto em destaque; `touch` garante 44px quando está sozinho na linha. |
+| `CardLink` | Link principal de um cartão que também tem ações próprias: vai no título, cobre o cartão inteiro e deixa o `CardFooter` por cima, clicável. Evita botão dentro de link. Use com `Card interactive`. |
 
 Navegação é link, ação é botão. Estados cobertos: padrão, hover, foco, ativo, desabilitado e carregando.
 
@@ -225,7 +226,7 @@ Prefira resolver na própria página. Diálogo é para confirmação destrutiva 
 
 ### 5.7 Containers
 
-`Card` (`variant`: `default`, `muted`, `dashed`; `padding`: `none`, `sm`, `md`, `lg`; `interactive` para cartão clicável; `media` + `CardBody`/`CardFooter` para cartão com imagem no topo), `Panel` (cartão suave), `Divider` (com rótulo opcional), `Accordion` (`<details>`), `Section`.
+`Card` (`variant`: `default`, `muted`, `dashed`; `padding`: `none`, `sm`, `md`, `lg`; `interactive` para cartão clicável; `media` + `CardBody`/`CardFooter` para cartão com imagem no topo; `CardLink` no título quando o cartão inteiro é link e o rodapé tem ações próprias, como o card de produto), `Panel` (cartão suave), `Divider` (com rótulo opcional), `Accordion` (`<details>`), `Section`.
 
 ## 6. Páginas-modelo
 

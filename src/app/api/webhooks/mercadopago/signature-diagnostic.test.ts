@@ -1,10 +1,7 @@
 // @vitest-environment node
 import { createHmac, randomBytes } from 'node:crypto';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-  PREVIEW_DIAGNOSTIC_ENV,
-  PREVIEW_DIAGNOSTIC_ORDER_ID as ORDER,
-} from '@/modules/payments/mercado-pago/signature-diagnostic';
+import { PREVIEW_DIAGNOSTIC_ENV } from '@/modules/payments/mercado-pago/signature-diagnostic';
 import { handleMercadoPagoWebhook } from './handler';
 
 const mocks = vi.hoisted(() => ({
@@ -30,6 +27,8 @@ vi.mock('@/modules/payments', async () => ({
   createMercadoPagoClient: vi.fn(),
 }));
 
+// Order sintetica no formato do sandbox; a flag vale para qualquer Order (#203).
+const ORDER = 'ORDTST01M470XYBP4A7H1CNTX4Y3D4F0';
 const secret = randomBytes(32).toString('hex');
 const appId = '9900000000000001';
 function request(
@@ -67,7 +66,7 @@ describe('receptor: diagnostico nao autoriza nem substitui a auditoria normal', 
     vi.resetAllMocks();
     vi.stubEnv('APP_ENV', 'preview');
     vi.stubEnv('VERCEL_ENV', 'preview');
-    vi.stubEnv(PREVIEW_DIAGNOSTIC_ENV, ORDER);
+    vi.stubEnv(PREVIEW_DIAGNOSTIC_ENV, '1');
     vi.stubEnv('MERCADO_PAGO_WEBHOOK_SECRET', secret);
     vi.stubEnv('MERCADO_PAGO_APPLICATION_ID', appId);
     mocks.rejection.mockResolvedValue(undefined);
@@ -100,6 +99,10 @@ describe('receptor: diagnostico nao autoriza nem substitui a auditoria normal', 
       rawMatch: false,
       lowerMatch: true,
       casesDiffer: true,
+      requestIdPresent: true,
+      bodyIdMatchesQuery: true,
+      dataIdRepeated: false,
+      tsInMilliseconds: true,
     });
     expect(mocks.register).not.toHaveBeenCalled();
     expect(mocks.confirm).not.toHaveBeenCalled();
@@ -131,12 +134,21 @@ describe('receptor: diagnostico nao autoriza nem substitui a auditoria normal', 
     [{ type: 'payment' }, 200, 'unsupported_topic'],
     [{ signature: null }, 401, 'signature_missing'],
     [{ signature: 'ts=invalid,v1=invalid' }, 401, 'signature_malformed'],
-    [{ order: `${ORDER}X` }, 401, 'signature_invalid'],
-  ] as const)('guarda anterior ou order divergente: %j', async (opts, status, reason) => {
+  ] as const)('guarda anterior: %j', async (opts, status, reason) => {
     const response = await handleMercadoPagoWebhook(request(opts));
     expect(response.status).toBe(status);
     expect(mocks.rejection).toHaveBeenCalledWith(expect.objectContaining({ reason }));
     expect(mocks.transaction).not.toHaveBeenCalled();
+    expect(mocks.register).not.toHaveBeenCalled();
+  });
+
+  it('outra Order tambem e diagnosticada; a recusa e o 401 continuam (#203)', async () => {
+    const response = await handleMercadoPagoWebhook(request({ order: `${ORDER}X` }));
+    expect(response.status).toBe(401);
+    expect(mocks.rejection).toHaveBeenCalledWith(
+      expect.objectContaining({ reason: 'signature_invalid' }),
+    );
+    expect(mocks.transaction).toHaveBeenCalledOnce();
     expect(mocks.register).not.toHaveBeenCalled();
   });
 

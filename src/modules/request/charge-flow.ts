@@ -30,6 +30,12 @@ export type PixChargeResult =
       reservedUntil: string;
       /** `null`: a reserva existe, mas a cobranca nao pode ser criada agora; tentar de novo. */
       pix: PixPaymentDetails | null;
+      /**
+       * `pix: null` porque a order foi registrada no modo de aprovacao automatica
+       * do sandbox (#210): nao ha QR para pagar nem nova tentativa a fazer; a
+       * confirmacao chega pelo webhook ou pela reconciliacao.
+       */
+      sandboxAutoApproval: boolean;
     }
   | { success: false; reason: PixChargeFailureReason; error: string };
 
@@ -103,6 +109,7 @@ async function chargeIfAllowed(
     contactRequestId,
     reservedUntil: gate.reservedUntil.toISOString(),
     pix: outcome.pix,
+    sandboxAutoApproval: outcome.sandboxAutoApproval,
   };
 }
 
@@ -132,6 +139,7 @@ export async function requestContactUnlockFlow(
     contactRequestId: reservation.contactRequestId,
     reservedUntil: reservation.reservedUntil,
     pix: null,
+    sandboxAutoApproval: false,
   };
 }
 

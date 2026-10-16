@@ -17,7 +17,8 @@ const sqlOf = (call: unknown[]) => (call[0] as TemplateStringsArray).join('?');
 function database({ occupied = 0, openRequestId = null as string | null } = {}) {
   queryRaw.mockImplementation(async (strings: TemplateStringsArray) => {
     const sql = strings.join('?');
-    if (sql.includes('count(*)')) return [{ occupied }];
+    // countFreeSlots (slots.ts): uma linha por anuncio com vaga ocupada.
+    if (sql.includes('count(*)')) return occupied ? [{ listingId: LISTING_ID, occupied }] : [];
     return openRequestId ? [{ id: openRequestId }] : [];
   });
 }

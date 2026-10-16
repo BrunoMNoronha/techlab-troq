@@ -10,7 +10,7 @@ O [teste Pix oficial](https://www.mercadopago.com.br/developers/pt/docs/checkout
 
 1. Confirmar SHA, run/tentativa, deployment e alias estável de Preview. Conferir que o deployment usa `APP_ENV=preview` e que a Vercel identifica o escopo como Preview.
 2. Usar a aplicação e as credenciais **de teste** destinadas a esse ambiente. Aplicações Orders novas geram vendedor e credenciais de teste automaticamente. `APP_USR` também é prefixo de teste: não classificar o token pelo prefixo. Confirmar a origem em **Suas integrações → aplicação → Testes → Credenciais de teste**, sem copiar valores para a evidência. [Credenciais automáticas](https://www.mercadopago.com.br/developers/pt/news/2025/11/19/Streamlined-integration-testing-with-automatic-credentials), [contas de teste](https://www.mercadopago.com.br/developers/pt/docs/checkout-api-orders/resources/test-accounts).
-3. Conferir que Access Token, `MERCADO_PAGO_APPLICATION_ID` e chave de webhook pertencem à configuração de teste correta. O webhook deve alcançar `/api/webhooks/mercadopago` no Preview protegido, com o tópico Order habilitado e a configuração de proteção já autorizada. Registrar apenas resultados de conferência; nunca tokens, headers de autorização, URLs com segredo, payload integral, email ou dados do collector.
+3. Conferir que Access Token, `MERCADO_PAGO_APPLICATION_ID` e chave de webhook pertencem à configuração de teste correta. O webhook deve alcançar `https://preview.troqs.app/api/webhooks/mercadopago`, domínio público do Preview desde #215 (DEC-057), com o tópico Order habilitado e **sem** parâmetro de bypass de proteção. Registrar apenas resultados de conferência; nunca tokens, headers de autorização, URLs com segredo, payload integral, email ou dados do collector.
 4. Preparar atores sintéticos/elegíveis do TROQS e anúncio por seus fluxos autorizados: dono com contato sintético, solicitante que será escolhido e outro ator para a negativa de acesso. Um seed explicitamente autorizado em Preview pode preparar essas pré-condições, desde que seja auditado como sintético e não crie solicitação, reserva, tentativa, pagamento, escolha, negociação ou liberação. Esse seed não prova cadastro, Google, entrega de email, maioridade ou consentimento humano. A jornada monetizada começa pela interface e conserva as autorizações normais. O pagador fixo existe somente no corpo enviado ao Mercado Pago; contas de teste Mercado Pago são distintas desses atores.
 5. Ativar, somente no servidor de Preview, `MERCADO_PAGO_PIX_SANDBOX_AUTO_APPROVE=1` e publicar a revisão autorizada. A variável não usa `NEXT_PUBLIC_`, não aparece em UI e não aceita seleção pelo solicitante. Production mantém ausente/`0`.
 
@@ -24,6 +24,7 @@ O [teste Pix oficial](https://www.mercadopago.com.br/developers/pt/docs/checkout
 ## Execução e evidência
 
 1. No navegador a 375 px, o solicitante confirma a solicitação e obtém a reserva e o Pix de **R$ 0,99** pelo fluxo existente. Conferir carregamento, prazo e instruções. A tentativa, a chave de idempotência, a referência e a janela são as persistidas pelo TROQS; não criar outra order manualmente.
+   - Com a flag ligada, a order pode ser registrada sem QR Code nem copia e cola, porque o pagador `APRO` é aprovado pelo próprio sandbox. Desde [#210](https://github.com/BrunoMNoronha/techlab-troq/issues/210), a tela da solicitação mostra "Pagamento em aprovação automática", sem erro e sem "Tentar novamente". Antes disso, o mesmo caso aparecia como "Não foi possível gerar o Pix agora" (Preview, 2026-10-15). Conferir no banco o evento `payment.charge_created` e a tentativa em `aguardando_pagamento`, sem `payment.charge_failed`. Sem a flag, a tela não muda.
 2. Aguardar a aprovação automática do sandbox. Não há prazo de aprovação garantido por este runbook; o spike histórico observou aproximadamente 49 segundos, sem transformar isso em SLA.
 3. Observar a mesma order como `processed/accredited`. O mecanismo existente consulta a order e busca o pagamento por `external_reference` para conferir `approved/accredited`, valor igual e `date_approved` válida (ADR-0008), e verifica a tempestividade em relação à reserva. Falha, ausência, divergência ou acreditação tardia seguem o tratamento existente; a flag não transforma nenhum deles em sucesso.
 4. Comprovar notificação real do provedor recebida e validada no Preview, com aplicação/HMAC corretos. Se necessário, invocar o job autenticado de reconciliação nos termos de DEC-042; observar processamento não vazio e convergência. Simular notificação no painel não modifica o estado autoritativo da order e não substitui essa comprovação.
@@ -40,6 +41,30 @@ O sandbox valida o contrato do provedor em teste; não prova transferência Pix,
 ## Validação local
 
 `pnpm test:ci src/modules/payments/mercado-pago/` exercita HTTP simulado local, inclusive guardas, payload normal, payload `APRO`, falhas e rotação da credencial. `pnpm lint`, `pnpm typecheck` e `pnpm build` validam o checkout. Esses checks não executam Mercado Pago, banco compartilhado ou Preview e não são prova de homologação remota.
+
+`src/modules/request/charge.integration.test.ts` (`INTEGRATION_EPHEMERAL_DB=1`) cobre a order `APRO` sem instruções. Com a flag ligada, o resultado vem com `sandboxAutoApproval`, sem falha auditada e sem segunda order na releitura. Sem a flag, a tela continua oferecendo nova tentativa. `src/app/solicitacoes/[id]/pix-panel.test.tsx` cobre os dois estados da tela.
+
+## Diagnóstico de assinatura por flag — 2026-10-15 (#203)
+
+Em 2026-10-15 o Preview passou a receber as notificações da aplicação TROQ Sandbox, com URL com bypass e `MERCADO_PAGO_APPLICATION_ID` corretos: as recusas deixaram de ser `application_mismatch` e passaram a `signature_invalid`, também depois da troca da chave secreta. Restam duas hipóteses: a chave publicada não é a que assina, ou o manifesto precisa do `data.id` em minúsculas, como pede a receita oficial "Sem SDKs" (DEC-052 registra essa divergência). A conclusão anterior de que "a caixa não é a causa" foi tirada com a chave de outra aplicação e não separava as duas.
+
+_Atualização de #215:_ a URL com bypass no alias `*.vercel.app` foi substituída por `https://preview.troqs.app/api/webhooks/mercadopago`, sem parâmetro. O hostname não entra no manifesto HMAC (`id`, `request-id`, `ts`), então a troca não interfere no diagnóstico.
+
+_Prova de 2026-10-15, depois do corte (#215):_
+- **Aplicação:** a aplicação em uso pelo Preview é **TROQS Preview** (`8846976504307203`), com o webhook de teste em `https://preview.troqs.app/api/webhooks/mercadopago`.
+- **Pix sandbox real:** às 22:41 UTC a cobrança foi criada, e quatro notificações chegaram ao domínio novo, no deployment novo. Elas passaram da checagem de aplicação e foram recusadas por `signature_invalid`, com diagnóstico gravado. Isso confirma que o `MERCADO_PAGO_APPLICATION_ID` do Preview corresponde à aplicação emissora, e mostra que #203 continua aberto do mesmo jeito.
+- **Alias antigo:** antes da revogação do bypass, a aplicação TROQ Sandbox (`8611661876852749`, outra conta) ainda enviava ao alias antigo com bypass e era recusada por `application_mismatch`. O bypass antigo foi revogado, e o alias passou a redirecionar para `preview.troqs.app`.
+
+O diagnóstico de 2026-10-05 valia para uma única Order sintética fixa e não alcança as orders reais: a primeira notificação chega segundos depois da criação. Ele foi substituído por uma flag:
+
+1. Configurar `MERCADO_PAGO_WEBHOOK_SIGNATURE_DIAGNOSTIC=1` **somente em Preview** e republicar.
+2. Criar uma cobrança sandbox pelo card. Cada recusa `signature_invalid` de Order com tentativa do TROQS grava no máximo um evento `payment.notification_signature_diagnostic` por tentativa, com `rawMatch`, `lowerMatch` e `casesDiffer`.
+3. Ler o evento: `lowerMatch=true` indica que a chave está certa e o manifesto precisa de minúsculas, o que exige decisão nova sobre DEC-052. Com `rawMatch` e `lowerMatch` falsos, ler os componentes do manifesto: `requestIdPresent` (o `x-request-id` chegou à função), `bodyIdMatchesQuery` (o `data.id` do corpo é o da URL), `dataIdRepeated` (a URL trouxe mais de um `data.id`) e `tsInMilliseconds` (`ts` com 13 dígitos). Com todos normais, a chave publicada não é a que assina.
+
+   Resultado em 2026-10-15: com três chaves diferentes, `rawMatch` e `lowerMatch` saíram falsos para três orders (Teclado às 14:51 e reenvios às 15:01). Os componentes passaram a ser registrados depois disso.
+4. Remover a variável e republicar. Nunca configurar em Production.
+
+As regras abaixo continuam valendo: o perfil raw segue sendo a única autenticação, nenhum resultado autoriza processamento, e só os três booleanos são gravados.
 
 ## Diagnóstico temporário de assinatura — 2026-10-05
 

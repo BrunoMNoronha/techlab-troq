@@ -17,10 +17,12 @@
 // direcional: `request` -> `listing`, `payments`; nunca o inverso.
 export { getContactRequestEntry, getContactRequestEntryView } from './entry';
 export type { ContactRequestEntryState, ContactRequestEntryView } from './entry';
+// DEC-056: vagas livres por anuncio, para o card da vitrine.
+export { countFreeSlots, SLOTS_PER_LISTING } from './slots';
 // F3-012 (#102): acompanhamento da solicitacao pelo proprio solicitante.
 export { getOwnContactRequest, listOwnContactRequests } from './tracking';
 export type { OwnContactRequestSummary, OwnContactRequestView, OwnRequestPhase } from './tracking';
-export { getPixPayment, requestContactUnlock } from './actions';
+export { getContactRequestCardState, getPixPayment, requestContactUnlock } from './actions';
 export { getPixPaymentFlow, requestContactUnlockFlow } from './charge-flow';
 export type { PixChargeFailureReason, PixChargeResult } from './charge-flow';
 export { createContactRequest, RESERVATION_WINDOW_MS } from './reservation';

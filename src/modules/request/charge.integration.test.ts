@@ -73,8 +73,11 @@ const sim = {
   byKey: new Map<string, SimOrder>(),
   byId: new Map<string, SimOrder>(),
   requests: [] as SimRequest[],
-  /** Proxima criacao: normal, 503 ou "cria e derruba o socket". */
-  nextCreate: 'ok' as 'ok' | 'unavailable' | 'drop',
+  /**
+   * Proxima criacao: normal, 503, "cria e derruba o socket" ou order sem
+   * instrucoes Pix, como no modo de aprovacao automatica do sandbox (#210).
+   */
+  nextCreate: 'ok' as 'ok' | 'unavailable' | 'drop' | 'no_instructions',
   counter: 0,
 };
 
@@ -132,12 +135,22 @@ function handle(req: IncomingMessage, res: ServerResponse, raw: string) {
     let order = key ? sim.byKey.get(key) : undefined;
     if (!order) {
       order = newOrder(JSON.parse(raw));
+      if (mode === 'no_instructions') {
+        const method = order.transactions.payments[0].payment_method as Record<string, unknown>;
+        delete method.qr_code;
+        delete method.qr_code_base64;
+        delete method.ticket_url;
+      }
       if (key) sim.byKey.set(key, order);
       sim.byId.set(order.id, order);
     }
     // A order foi criada, mas a resposta se perde: o adaptador ve queda de rede.
     if (mode === 'drop') return req.socket.destroy();
     return reply(res, 201, order);
+  }
+  // Guarda do modo de aprovacao automatica: collector de teste brasileiro.
+  if (req.method === 'GET' && req.url === '/users/me') {
+    return reply(res, 200, { id: 123456, site_id: 'MLB', tags: ['normal', 'test_user'] });
   }
   const get = /^\/v1\/orders\/([^/]+)$/.exec(req.url ?? '');
   if (req.method === 'GET' && get) {
@@ -235,7 +248,7 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
       const port = (server.address() as AddressInfo).port;
       gateway = createMercadoPagoClient({ baseUrl: `http://127.0.0.1:${port}`, timeoutMs: 2_000 });
 
-      for (const tag of ['owner', 'r0', 'r1', 'r2', 'r3', 'r4', 'r5', 'other']) {
+      for (const tag of ['owner', 'r0', 'r1', 'r2', 'r3', 'r4', 'r5', 'r6', 'r7', 'other']) {
         await createUser(tag);
         cookies[tag] = await signIn(tag);
       }
@@ -249,6 +262,7 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
     beforeEach(() => {
       sim.nextCreate = 'ok';
       vi.stubEnv('MERCADO_PAGO_ACCESS_TOKEN', TOKEN);
+      vi.stubEnv('MERCADO_PAGO_PIX_SANDBOX_AUTO_APPROVE', '');
     });
 
     afterAll(async () => {
@@ -406,6 +420,45 @@ describe.skipIf(process.env.INTEGRATION_EPHEMERAL_DB !== '1')(
       if (!again.success || !again.pix) throw new Error('esperava Pix');
       expect(again.pix.copyPaste).toBe(first.pix.copyPaste);
       expect(creates().length).toBe(before);
+    });
+
+    // #210: no modo de aprovacao automatica do sandbox a order e registrada sem
+    // QR. Isso nao e falha: a tela informa a aprovacao, sem nova tentativa.
+    it('aprovacao automatica: order sem QR registrada vira sandboxAutoApproval, sem falha auditada', async () => {
+      vi.stubEnv('MERCADO_PAGO_PIX_SANDBOX_AUTO_APPROVE', '1');
+      const listingId = await publishedListing();
+      sim.nextCreate = 'no_instructions';
+      const res = await as('r6', () => requestContactUnlockFlow(listingId, { gateway }));
+      expect(res).toMatchObject({ success: true, pix: null, sandboxAutoApproval: true });
+      if (!res.success) throw new Error('a reserva devia existir');
+
+      const created = creates().at(-1)!;
+      expect(JSON.parse(created.body).payer).toEqual({
+        email: 'test_user_br@testuser.com',
+        first_name: 'APRO',
+      });
+      const attempt = await attemptOf(res.contactRequestId);
+      expect(attempt.status).toBe('aguardando_pagamento');
+      expect(await audits('payment.charge_failed', attempt.id)).toHaveLength(0);
+
+      // A releitura da tela devolve o mesmo estado, sem criar outra order.
+      const before = creates().length;
+      expect(
+        await as('r6', () => getPixPaymentFlow(res.contactRequestId, { gateway })),
+      ).toMatchObject({ success: true, pix: null, sandboxAutoApproval: true });
+      expect(creates().length).toBe(before);
+    });
+
+    it('sem a flag, order sem QR continua pedindo nova tentativa (sandboxAutoApproval false)', async () => {
+      const listingId = await publishedListing();
+      sim.nextCreate = 'no_instructions';
+      const collectorChecks = () => sim.requests.filter((r) => r.url === '/users/me').length;
+      const checksBefore = collectorChecks();
+      const res = await as('r7', () => requestContactUnlockFlow(listingId, { gateway }));
+      expect(res).toMatchObject({ success: true, pix: null, sandboxAutoApproval: false });
+      // Sem a flag nao ha guarda de collector nem pagador APRO.
+      expect(collectorChecks()).toBe(checksBefore);
+      expect(JSON.parse(creates().at(-1)!.body).payer.first_name).toBeUndefined();
     });
 
     it.each([

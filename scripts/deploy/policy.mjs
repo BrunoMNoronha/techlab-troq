@@ -1,7 +1,7 @@
 export const REPOSITORY = 'BrunoMNoronha/techlab-troq';
 export const PROJECT_ID = 'prj_mpILJv4OGXwsW3boJdXBPx3PSJGT';
 export const TEAM_ID = 'team_ICY1aaLTQI5BmxlyrSjpRTJC';
-export const PREVIEW_URL = 'https://techlab-troq-git-preview-bruno-m-noronha.vercel.app';
+export const PREVIEW_URL = 'https://preview.troqs.app';
 export const PRODUCTION_URL = 'https://troqs.app';
 /** Branch de release: espelho por fast-forward de commits de main já aprovados no CI. */
 export const RELEASE_BRANCH = 'production';
