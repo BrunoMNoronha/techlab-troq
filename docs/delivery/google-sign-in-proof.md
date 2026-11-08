@@ -4,6 +4,18 @@ Registro da evidência com o **Google real** exigida por [#81](https://github.co
 
 A entrada com Google foi aprovada por DEC-047 (2026-10-04) e é oferecida **só em `preview` e `production`**; `development` não é provisionado.
 
+## Revalidação de 2026-11-08 nos domínios atuais
+
+Em 2026-10-24, a entrada falhava em Production com "Nao foi possivel iniciar a entrada com Google" porque o Neon recusava conexões por cota esgotada (`P2039`/`53000`; [../engineering/environments.md](../engineering/environments.md), seção 5.0). Depois da renovação da cota, o agente repetiu o acesso posterior no navegador integrado, usando uma Conta Google já autenticada no perfil do navegador e já vinculada a uma conta TROQS. Nenhuma senha foi digitada.
+
+| Passo | Production (`troqs.app`, `dpl_816MtftqmBnqygecE27SFfjUosJn`) | Preview (`preview.troqs.app`, `dpl_E1JUBjxskS44MHJ8Pmr328Jb4T1P`) |
+| --- | --- | --- |
+| Botão "Continuar com Google" em `/login` | PASS | PASS |
+| Retorno a `/explorar` com sessão ativa e e-mail verificado | PASS; log com `GET /api/auth/callback/google` no domínio | PASS; primeira prova registrada no domínio novo |
+| `/conta` informa Conta Google vinculada | PASS | PASS |
+
+**Não coberto nesta rodada:** cadastro novo, colisão com conta por senha e logout. Os parâmetros do pedido OAuth (`scope`, PKCE) também não foram observados, porque o retorno automático não deixou o pedido visível no navegador. A rodada não consultou contagens no banco. As duas sessões criadas continuam abertas no perfil do navegador integrado.
+
 ## Atualização de #133 em 2026-10-05: Google publicado para usuários externos
 
 No console do projeto `troq-510700`, o público foi publicado e confirmado como **Externo / Em produção**. Branding salvo: homepage `https://troqs.app`, política `https://troqs.app/privacidade`, termos `https://troqs.app/termos`; domínios autorizados `troqs.app` e `techlab-troq-git-preview-bruno-m-noronha.vercel.app`. O acesso a dados declara apenas `openid` e `userinfo.email`, sem escopos sensíveis ou restritos.
