@@ -184,6 +184,46 @@ Legenda das colunas:
 - **Estado** — `previsto` significa **ainda não consumido por código**; `consumido` significa que existe código versionado que a lê, indicado na própria célula. Hoje estão `consumido` **`DATABASE_URL`**, **`DIRECT_URL`** (seção 5.2), **`APP_ENV`** e **`NEXT_PUBLIC_SENTRY_DSN`** (seções 5.1 e 5.8, desde F1-010), as variáveis de Better Auth e Resend (seções 5.4 e 5.5, desde F2-002 e F2-003), as do cliente OAuth do Google (seção 5.5, desde #81, opcionais), as cinco `R2_*` (seção 5.3) e **`CRON_SECRET`** (seção 5.7), desde F2-008; as demais estão `previsto` (seção 1).
 - **Origem** — a fonte normativa que exige a variável e a justificativa do nome.
 
+### 5.0 Matriz por ambiente para a versão 1.0 (conferida em 2026-10-24)
+
+Leitura feita pela API da Vercel (projeto `techlab-troq`, só metadados, sem descriptografar) e pela API dos GitHub Environments (só nomes de secrets). `development` não foi conferido: vive no `.env.local` de cada máquina. Os parágrafos "Estado após…" das seções 5.1 a 5.9 são históricos; **onde divergirem, vale esta matriz**.
+
+Legenda: **S** = Sensitive na Vercel; **P** = Plain; **E** = Encrypted; **GH** = secret ou variável do GitHub Environment de mesmo nome; **—** = ausente, como deve ser.
+
+| Variável | Preview | Production | Observação |
+| --- | --- | --- | --- |
+| `APP_ENV` | P `preview` | P `production` | ok |
+| `NEXT_PUBLIC_APP_URL` | P `https://preview.troqs.app` | P `https://troqs.app` | ok; exigida pelo preflight, sem leitor no código |
+| `BETTER_AUTH_URL` | P `https://preview.troqs.app` | P `https://troqs.app` | ok |
+| `BETTER_AUTH_SECRET` | S | S | ok |
+| `DATABASE_URL` | S + GH | S + GH | ok; ver pendência 3 |
+| `DIRECT_URL` | só GH | só GH | ok, fora da Vercel |
+| `R2_S3_ENDPOINT`, `R2_REGION` | P (+ GH) | P | ok |
+| `R2_BUCKET` | P `troq-media-preview` (+ GH) | P `troq-media-production` | ok, buckets distintos |
+| `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` | S (+ GH) | S | ok; em Preview o GH serve ao `Seed Preview` |
+| `RESEND_API_KEY` | S | S | ok |
+| `EMAIL_FROM` | P `TROQ <nao-responda@preview.troqs.app>` | P `TROQ <nao-responda@troqs.app>` | ver pendência 2 |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | S | S | ok, clientes distintos |
+| `MERCADO_PAGO_ACCESS_TOKEN`, `MERCADO_PAGO_WEBHOOK_SECRET`, `MERCADO_PAGO_APPLICATION_ID` | S | S | ok |
+| `MERCADO_PAGO_WEBHOOK_SIGNATURE_DIAGNOSTIC` | S | — | temporária; remover ao fechar #203 |
+| `MERCADO_PAGO_PIX_SANDBOX_AUTO_APPROVE` | S | — | ok; nunca em Production |
+| `CRON_SECRET` | S + GH | S + GH | ok |
+| `NEXT_PUBLIC_SENTRY_DSN` | P | E | ok; **Production já tem DSN própria**, o que supera a frase "production continua sem projeto Sentry" da seção 5.8 |
+| `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT` | — | — | ok; condicionais a source maps |
+| `DEMO_DATA_TARGET`, `DEMO_*_FINGERPRINT` | P (+ GH) | — | ok; nunca em Production |
+| `TRADE_RULE` | — | — | ok até PT-02 (#188) |
+| `NEXT_PUBLIC_MEDIA_BASE_URL` | — | — | ok, aposentada |
+
+Credenciais de operação, fora do runtime: `VERCEL_TOKEN` e `VERCEL_AUTOMATION_BYPASS_SECRET` nos dois GitHub Environments; `BACKUP_PASSPHRASE` e a variável `PRODUCTION_READY=true` só em Production.
+
+**Resultado:** todas as chaves que `scripts/deploy/policy.mjs` exige estão presentes nos dois ambientes, com o tipo exigido. Nenhuma credencial de teste ou flag de homologação está em Production.
+
+**Pendências da conferência:**
+
+1. **Bloqueio de lançamento, fora do catálogo.** O projeto Neon `techlab-troq` (`late-hall-79735405`, plano `free_v3`) estourou a cota de compute de outubro: 396.923 s (cerca de 110 CU-hora) em 2026-10-24, e `compute_last_active_at` parou em 2026-10-22 16:20 UTC. O provedor recusa conexões com `53000 ... exceeded the quota`, e isso derruba Preview e Production juntos, porque os dois são branches do mesmo projeto. Login por senha, entrada com Google, home, explorar e os crons falham. A cota renova em 2026-11-01. O consumo combina com os crons de cinco minutos mantendo o compute de Production ativo o tempo todo. Por isso, o plano Free não sustenta a 1.0. **Atualização de 2026-11-08:** a cota renovou e os dois ambientes voltaram a responder — `https://troqs.app`, `https://troqs.app/explorar`, `https://preview.troqs.app` e `https://preview.troqs.app/explorar` respondem 200 por HTTP anônimo. O sintoma passou; a causa permanece, e a decisão de plano pago do Neon continua pendente para o lançamento.
+2. **`EMAIL_FROM` com o nome `TROQ`.** Os dois ambientes exibem `TROQ` como remetente, mas a marca é `TROQS`, como em `.env.example`. Corrigir só o nome de exibição, por exemplo `TROQS <nao-responda@troqs.app>`, e manter o endereço. A mudança vale a partir do próximo deployment.
+3. **`sslmode` de `DATABASE_URL`.** O runtime avisa que `sslmode=require` hoje equivale a `verify-full` e mudará de sentido no `pg` 9. Para manter o comportamento atual, trocar para `sslmode=verify-full` nos dois ambientes, na Vercel e no GH. Não bloqueia.
+
 ### 5.1 Aplicação
 
 | Variável | Ambientes | Classificação | Obrigatoriedade | Estado | Origem |

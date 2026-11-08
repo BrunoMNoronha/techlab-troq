@@ -1,13 +1,36 @@
 # Estado do projeto
 
 **Primeiro registro:** 2026-09-07
-**Última atualização:** 2026-10-05 (frente proposta de troca registrada por PT-00: DEC-053 a DEC-055, OD-17 e OD-18, sem código; antes, release pela branch `production`, DEC-050; gates comerciais preservados)
+**Última atualização:** 2026-10-20 (consolidação de 2026-10-06 a 2026-10-16: produtos exemplares, card de produto com DEC-056 e OD-19, tela do Pix no modo APRO, Preview em `preview.troqs.app` com DEC-057 e estado da assinatura do webhook em #203; gates das Fases 3 a 5 preservados)
 **Repositório:** `BrunoMNoronha/techlab-troq`, branch principal `main`
 **Fase 0:** concluída — gate de saída verificado e **APROVADO** em [delivery/phase-1-transition.md](delivery/phase-1-transition.md)
 **Fase 1:** **concluída** em 2026-09-16 — gate de saída verificado por **F1-011** e **APROVADO** em [delivery/phase-2-transition.md](delivery/phase-2-transition.md), com os cinco critérios `PASS` e os sete entregáveis (E-1 a E-7) conferidos sem regressão. A configuração operacional atual de Preview e Production está em [engineering/deployment.md](engineering/deployment.md); Production tem infraestrutura parcial própria, com publicação manual e liberação comercial bloqueada até concluir credenciais externas e homologação.
 **Fase 2:** **concluída** em 2026-09-30 — gate de saída reverificado por **F2-013 (#51)** e **APROVADO**, com G1, G2 e G3 `PASS` ([delivery/phase-3-transition.md](delivery/phase-3-transition.md), seção V): jornada completa em `preview` a 375 px no deployment `dpl_GGU1oNG7CGQ48V93Gn5gupZTsEqS` (código idêntico ao de `main` em `eedd686`), RF-014 provado na CI com PostgreSQL efêmero e servidor real, CI verde em `main` e cinco rodadas locais completas seguidas. **A Fase 3 está liberada para execução** ([#54](https://github.com/BrunoMNoronha/techlab-troq/issues/54)) e não foi iniciada. Registro anterior: a Fase 2 esteve em andamento desde 2026-09-16, com **implementação parcial integrada** (PRs #52, #53, #57, #58 e #60) e **gate de saída NÃO aprovado**. A aprovação registrada em 2026-09-28 foi **retificada em 2026-09-29** ([delivery/phase-3-transition.md](delivery/phase-3-transition.md)): G1 `NÃO ATENDIDO`, G2 `NÃO COMPROVADO`, G3 `PARCIAL`, sem nenhum `PASS`. Das issues #38 a #51, #39 a #45 (F2-001 a F2-007) e #47 (F2-009) foram encerradas em 2026-09-29 com evidência; #46 (F2-008) está integrada; a política CORS dos buckets foi aplicada em 2026-09-30 e o upload pelo navegador foi comprovado ([media-pipeline-contract.md](architecture/media-pipeline-contract.md), seção 20.4), com o agendamento ainda bloqueado; #48 (F2-010), publicação e ciclo de vida pelo dono, foi concluída em 2026-09-30 ([listing-contract.md](architecture/listing-contract.md), seção 15); #49 (F2-011), vitrine pública sem contato, foi implementada e provada em 2026-09-30 ([listing-contract.md](architecture/listing-contract.md), seção 16); #50 (F2-012), verificação de autorização, concorrência e ausência de contato, foi concluída em 2026-09-30 ([delivery/phase-2-security-verification.md](delivery/phase-2-security-verification.md)); #38 foi atendida pela PR #85 e #51 pela verificação de 2026-09-30; ver a seção 3.3
 
 Este documento separa categorias que não devem ser confundidas: o que **existe de fato hoje** no repositório, o que **já foi decidido**, o que **ainda não foi implementado** e, desde 2026-09-29, o que está **validado** e o que tem **evidência funcional pendente**. A seção 1 preserva a **baseline histórica** da inspeção inicial e **não** descreve o estado atual; as seções 3.1 e 3.2 descrevem o estado **ao fim da Fase 1**; para o estado atual da Fase 2, ver a seção 3.3.
+
+## Atualização de 2026-10-20 — consolidação de 2026-10-06 a 2026-10-16
+
+Baseline consultada: `main@6b5d906`, igual a `origin/main`. Registra entregas que ainda não constavam neste documento. A seção seguinte (#215) continua valendo.
+
+- **Produtos exemplares ([#201](https://github.com/BrunoMNoronha/techlab-troq/issues/201), [#205](https://github.com/BrunoMNoronha/techlab-troq/issues/205)):**
+  - Entregues pela PR #202, mais o workflow `Seed Preview` (#206) e o diagnóstico do CLI (#207). Contrato e operação em [engineering/demo-products.md](engineering/demo-products.md).
+  - No Preview, o [run 38429314225](https://github.com/BrunoMNoronha/techlab-troq/actions/runs/38429314225) criou os 30 produtos, e o [run 38430108069](https://github.com/BrunoMNoronha/techlab-troq/actions/runs/38430108069) repetiu a carga sem duplicar. #205 está encerrada.
+  - **#201 continua aberta.** Falta o último critério de aceite: evidência separada em desenvolvimento e no Preview, com contagens antes e depois e a **remoção autenticada em Configurações**. Remover o lote no Preview apaga os 30 produtos ativos. Só fazer com autorização do Bruno e recriar o lote depois.
+- **Card de produto ([#209](https://github.com/BrunoMNoronha/techlab-troq/pull/209)):**
+  - **DEC-056:** o card da vitrine mostra as alternativas de troca e as vagas livres, e passa a ser um segundo ponto de entrada da solicitação. A cobrança continua começando em "Confirmar e gerar Pix".
+  - **OD-19 ([#208](https://github.com/BrunoMNoronha/techlab-troq/issues/208)), aberta:** anunciante e reputação no card e no detalhe. Depende também do módulo `reputation`, que ainda é só a fronteira em `main`.
+- **Tela do Pix no modo APRO ([#210](https://github.com/BrunoMNoronha/techlab-troq/issues/210), PR #211):** com `MERCADO_PAGO_PIX_SANDBOX_AUTO_APPROVE` ligada, a order sem QR Code não aparece mais como erro. A flag continua aceita só em `development` e `preview`.
+- **Assinatura do webhook ([#203](https://github.com/BrunoMNoronha/techlab-troq/issues/203)), aberta:**
+  - Resolvido: o Preview usa uma aplicação própria do Mercado Pago, separada da de Production. O webhook de teste aponta para `preview.troqs.app`, sem parâmetro de bypass, e a checagem de aplicação passa.
+  - Pendente: todas as notificações continuam recusadas por `signature_invalid`, também depois de redefinir a chave. Os diagnósticos das PRs #212 e #213 mostram que os componentes do manifesto estão íntegros. A validação de HMAC nunca foi conferida contra uma assinatura real do provedor.
+  - Próximo passo: o chamado ao suporte, em [delivery/mercado-pago-chamado-assinatura-webhook.md](delivery/mercado-pago-chamado-assinatura-webhook.md). O texto descreve a aplicação anterior e precisa ser revisado antes do envio.
+  - Enquanto isso, as confirmações de pagamento no Preview vêm da reconciliação autenticada.
+- **PRs em rascunho:**
+  - [#204](https://github.com/BrunoMNoronha/techlab-troq/pull/204) registra C-8 remoto parcial e as pendências de F3-014 (#104).
+  - [#182](https://github.com/BrunoMNoronha/techlab-troq/pull/182) traz o encerramento da negociação e a reputação (#163, #164). A Fase 4 existe só nessa PR, e o merge espera o gate #105.
+  - As duas foram feitas sobre `f85fe73` e precisam ser atualizadas com `main`.
+- **Gates:** #104, #105, #54, #55, #56 e #130 continuam abertos. O caminho crítico é #203 → #104 → #105. PT-01 ([#187](https://github.com/BrunoMNoronha/techlab-troq/issues/187)) ainda pode começar sem esperar o gate e ainda não começou.
 
 ## Atualização de 2026-10-15 — Preview público em `preview.troqs.app` (#215)
 
