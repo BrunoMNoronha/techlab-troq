@@ -24,7 +24,7 @@ Baseline consultada: `main@6b5d906`, igual a `origin/main`. Registra entregas qu
 - **Assinatura do webhook ([#203](https://github.com/BrunoMNoronha/techlab-troq/issues/203)), aberta:**
   - Resolvido: o Preview usa uma aplicação própria do Mercado Pago, separada da de Production. O webhook de teste aponta para `preview.troqs.app`, sem parâmetro de bypass, e a checagem de aplicação passa.
   - Pendente: todas as notificações continuam recusadas por `signature_invalid`, também depois de redefinir a chave. Os diagnósticos das PRs #212 e #213 mostram que os componentes do manifesto estão íntegros. A validação de HMAC nunca foi conferida contra uma assinatura real do provedor.
-  - Próximo passo: o chamado ao suporte, em [delivery/mercado-pago-chamado-assinatura-webhook.md](delivery/mercado-pago-chamado-assinatura-webhook.md). O texto descreve a aplicação anterior e precisa ser revisado antes do envio.
+  - Próximo passo: o chamado ao suporte, em [delivery/mercado-pago-chamado-assinatura-webhook.md](delivery/mercado-pago-chamado-assinatura-webhook.md). O texto descreve a aplicação anterior e precisa ser revisado antes do envio. **Atualização de 2026-11-08:** o chamado foi suspenso por decisão do Bruno; a causa provável é a assinatura pela aplicação-espelho do vendedor de teste (`7747075571191345`), e o procedimento de troca da chave está no [runbook do Pix em Preview](delivery/preview-pix-sandbox-runbook.md).
   - Enquanto isso, as confirmações de pagamento no Preview vêm da reconciliação autenticada.
 - **PRs em rascunho:**
   - [#204](https://github.com/BrunoMNoronha/techlab-troq/pull/204) registra C-8 remoto parcial e as pendências de F3-014 (#104).

@@ -70,6 +70,24 @@ O diagnóstico de 2026-10-05 valia para uma única Order sintética fixa e não 
    - Um **reenvio** carrega a assinatura da entrega original. Só notificação nova testa uma chave trocada.
 
    A causa ficou com o Mercado Pago: [chamado](mercado-pago-chamado-assinatura-webhook.md). Enquanto não houver resposta, as solicitações do Preview são confirmadas pela reconciliação autenticada, que o deploy do Preview executa.
+
+   **Atualização de 2026-11-08 — causa provável identificada sem o chamado.** O Bruno decidiu não esperar o suporte. A investigação cruzou a evidência acumulada com relatos públicos e fechou numa hipótese única, consistente com todos os fatos:
+
+   - As orders do Preview são criadas com as **credenciais de teste** da aplicação, e essas credenciais pertencem à **aplicação-espelho do vendedor de teste** — o `application_id` do corpo das notificações (`7747075571191345`), que não aparece entre as aplicações do painel do titular. É essa aplicação-espelho que **assina** as notificações reais do sandbox.
+   - A assinatura secreta exibida em Webhooks → Configurar notificações da aplicação do titular pertence à aplicação do titular, e por isso as quatro chaves tentadas em 2026-10-15 falharam todas: nenhuma era a da aplicação que assina. O botão "Simular" do painel usa a chave do titular, o que explica os vetores que conferem no simulador e falham nas notificações reais.
+   - Relato público com a mesma conclusão: [campusShare PR #37](https://github.com/gustavotrespach/campusShare/pull/37) — "o segredo do webhook no sandbox é o da aplicação do vendedor de teste". A documentação oficial não registra o caso; a prova definitiva é a troca da chave descrita abaixo.
+
+   **Procedimento (painel, pelo Bruno):**
+
+   1. Em **Suas integrações → TROQS Preview → Testes → Contas de teste**, copiar usuário e senha do **vendedor de teste**.
+   2. Em janela anônima, entrar no Mercado Pago **como o vendedor de teste** e abrir o painel de desenvolvedores dessa conta.
+   3. Localizar a aplicação-espelho e conferir que o número é `7747075571191345` (o mesmo do corpo das notificações).
+   4. Nessa aplicação, abrir **Webhooks → Configurar notificações** e **revelar a assinatura secreta**; se não existir configuração, salvar uma com a URL `https://preview.troqs.app/api/webhooks/mercadopago` e o evento Order para gerá-la.
+   5. Na Vercel, substituir `MERCADO_PAGO_WEBHOOK_SECRET` **somente no escopo Preview** pela chave revelada (Sensitive) e republicar o Preview.
+   6. Criar uma cobrança sandbox nova pelo card (reenvio não serve: carrega a assinatura original). Com a chave certa, a notificação valida; o diagnóstico por flag deve registrar `rawMatch=true` ou nenhum evento novo de recusa.
+   7. Validada a notificação e provada a repetição sem efeito novo, remover `MERCADO_PAGO_WEBHOOK_SIGNATURE_DIAGNOSTIC` do Preview, republicar e encerrar #203. `MERCADO_PAGO_APPLICATION_ID` continua como está: já confere com o emissor.
+
+   Se o passo 4 não exibir assinatura secreta na aplicação-espelho, o caminho do chamado volta a valer, com este registro como evidência adicional.
 4. Remover a variável e republicar. Nunca configurar em Production.
 
 As regras abaixo continuam valendo: o perfil raw segue sendo a única autenticação, nenhum resultado autoriza processamento, e só os três booleanos são gravados.
