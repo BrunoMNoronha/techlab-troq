@@ -150,3 +150,6 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
+
+# Worktrees criados por agentes (Claude Code / Codex)
+.claude/worktrees/
