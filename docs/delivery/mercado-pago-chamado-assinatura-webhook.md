@@ -2,6 +2,8 @@
 
 Texto preparado em 2026-10-15 para a [#203](https://github.com/BrunoMNoronha/techlab-troq/issues/203). Ele não contém nenhum segredo: nem assinatura secreta, nem Access Token, nem o parâmetro de bypass da URL. Quem envia é o titular da conta, pelo [suporte do Mercado Pago Developers](https://www.mercadopago.com.br/developers/pt/support).
 
+> **Atualização de 2026-11-08 — chamado suspenso por decisão do Bruno.** O envio foi dispensado: a causa provável foi identificada sem o suporte, e o procedimento de correção está no [runbook do Pix em Preview](preview-pix-sandbox-runbook.md), seção "Diagnóstico de assinatura por flag". Em resumo: as notificações reais do sandbox são assinadas pela **aplicação-espelho do vendedor de teste** (`7747075571191345`, o `application_id` do corpo), cuja assinatura secreta só aparece no painel quando se entra **como o vendedor de teste** — nenhuma das chaves da aplicação do titular poderia conferir. As perguntas 1 e 2 abaixo ficam respondidas por essa hipótese; o texto permanece como registro e como plano B caso a troca da chave não resolva.
+
 > **Atualização posterior (2026-10-15, [#215](https://github.com/BrunoMNoronha/techlab-troq/issues/215)).** Depois que este texto foi preparado, o Preview passou a usar a aplicação **TROQS Preview** (`8846976504307203`), com o webhook de teste em `https://preview.troqs.app/api/webhooks/mercadopago`, sem parâmetro de bypass. Às 22:41 UTC, as notificações de um Pix sandbox dessa aplicação passaram da checagem de aplicação e continuaram recusadas por `signature_invalid`. O texto abaixo descreve a configuração anterior, na TROQ Sandbox. Se o chamado ainda não foi enviado, revisar aplicação, URL e exemplos antes de enviar.
 
 ---
