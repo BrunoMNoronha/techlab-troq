@@ -1,6 +1,6 @@
 # Verificação de segurança da Fase 3 — F3-014 (#104)
 
-Baseline: `23b503d` (inclui #147, #148 e #89). Branch: `codex/issue-104-seguranca`. Revisão técnica: Codex, no escopo da execução solicitada por Bruno. Status: **parcial; Preview e Sentry remoto pendentes**. Este documento não aprova #105/#54 nem o lançamento #130.
+Baseline da revisão de código: `23b503d` (inclui #147, #148 e #89), na branch `codex/issue-104-seguranca`. Revisão técnica inicial: Codex, no escopo da execução solicitada por Bruno. Status após a revisão documental de 2026-10-07: **parcial**. A varredura remota registrada em 2026-10-06 cobre as superfícies da seção "C-8 remoto no Preview"; faltam a captura do console da jornada e a rastreabilidade dos deployments para concluir C-8 remoto. Este documento não aprova #104/#105/#54 nem o lançamento #130.
 
 ## Método e matriz
 
@@ -23,10 +23,44 @@ Novo caso em `payment-confirmation.integration.test.ts`: reserva e Pix pelo flux
 
 A captura tem controles não vazios: envelope com marcador diagnóstico conhecido, erro real e log real, além de um acesso gravado. Isso comprova a fronteira local da SDK; **não comprova recebimento nem busca no Sentry remoto do Preview**.
 
-## Achado corrigido
+## C-8 remoto no Preview (2026-10-06)
+
+Varredura registrada em 2026-10-06 sobre a jornada executada no Preview estável, de **2026-10-05 18:30 UTC a 2026-10-06 00:30 UTC**. Revisão técnica da coleta: Claude Code, a pedido de Bruno. Só leitura: nenhuma configuração, publicação, cobrança ou escrita no banco. A revisão documental de 2026-10-07 conferiu o diff, as fontes do contrato e a CI citada; não repetiu a coleta remota nem declara os resultados abaixo como uma nova execução.
+
+**O fluxo observado.** A auditoria do banco de Preview registra a jornada inteira, pelas ações reais da interface:
+
+| Evento | Quantidade |
+| --- | --- |
+| Tentativa, reserva e cobrança Pix sandbox | 4 de cada |
+| Pagamento aprovado e solicitação paga | 4 |
+| Escolha e autorização de liberação | 2 |
+| Entrega de contato auditada | 6 |
+| Acesso ao contato negado | 9 |
+| Notificação do provedor recusada | 25 |
+
+O registro da coleta atribui os deployments do intervalo à branch `production` nos SHAs `373748f`, `78e0035` e `f85fe73`; o último era a `main` no momento da coleta. O relatório não identifica cada deployment, seu run/tentativa e os eventos de cada SHA. Esses dados ainda precisam ser registrados para conferir o alvo efetivo Preview e correlacionar a jornada e os controles por deployment, como exige o [runbook](preview-pix-sandbox-runbook.md), seções "Pré-condições e isolamento" e "Execução e evidência". O nome da branch não comprova o ambiente publicado. O contato do anunciante é sintético e não é reproduzido aqui.
+
+**Superfícies varridas.** A busca usou o número completo, o número sem DDI e variantes com separador.
+
+| Superfície | Controle não vazio no intervalo | Ocorrências |
+| --- | --- | --- |
+| Sentry de Preview, eventos de erro (JSON completo de cada evento) | 8 eventos `signal:payments.notification_rejected` | 0 |
+| Sentry de Preview, logs estruturados | 177 logs de sinais e jobs | 0 |
+| Sentry de Preview, spans (busca no servidor) | 454 spans de `/contatos`, 12 deles do POST da entrega; a mesma busca curinga acha as rotas | 0 |
+| Logs de runtime da Vercel, Preview | Requisições de todas as rotas da jornada, incluindo `/contatos`, `/solicitacoes`, o webhook e os jobs; a mesma busca acha "reconciliacao executada" em 8 deployments | 0 |
+| Banco de Preview, todas as tabelas públicas, linha inteira como texto | 74 auditorias e 6 acessos ao contato | 0 fora de `user_contacts` |
+
+A única ocorrência no banco é o próprio cadastro do contato, o armazenamento legítimo, e serve de controle positivo da busca. Os 82 registros de nível `error` da Vercel são todos o aviso de `sslmode` do driver `pg` escrito no stderr, sem dado de usuário.
+
+**Receptor público sob rejeição real.** As 25 notificações recusadas correspondem exatamente às orders das tentativas do TROQS. Nenhuma criou `payment_notifications`, efeito financeiro, vaga ou liberação. A auditoria guarda só motivo e identificadores técnicos, sem o número. Isso cumpre a verificação pedida por F3-001 sobre volume de rejeições, agora com tráfego real do provedor.
+
+**Limite.** O console do navegador da jornada de 2026-10-05 não foi capturado e não pode ser recuperado. As mensagens de erro da interface têm prova nas suítes HTTP da CI, em uma camada distinta da jornada remota. A varredura de console faz parte da execução definida pelo runbook; sua ausência impede declarar C-8 remoto integralmente aprovado. As quatro aprovações vieram da reconciliação autenticada, e não do webhook: isso é o achado F3-S2.
+
+## Achados
 
 | ID | Severidade | Evidência e correção | Limite |
 | --- | --- | --- | --- |
+| F3-S2 | Bloqueia a homologação do webhook; isolamento de configuração a conferir | Callbacks reais do sandbox no Preview recusados: 17 `signature_invalid`, 5 `application_mismatch` e 3 `signature_missing`. A recusa por assinatura persistiu depois da DEC-052 (`78e0035`), com o identificador em maiúsculas e a caixa preservada; essa correção não resolveu a recusa. A coleta diagnóstica da PR #200 não gravou nenhum evento. O receptor falhou fechado no fluxo observado | A [conferência do painel registrada em #203](https://github.com/BrunoMNoronha/techlab-troq/issues/203#issuecomment-6012565436) identificou credenciais de teste da aplicação de Production no Preview e a URL de teste dessa aplicação com bypass na query. A conferência não alterou a configuração. Ainda é necessário comprovar o isolamento e um callback legítimo aceito; a recusa não demonstra ausência de risco na configuração nem elimina toda hipótese de código. Não há evidência registrada de comprometimento. #203 continua condição do gate #105 |
 | F3-S1 | Média | Webhook rejeitado com telefone em `x-request-id` e `data.id` persistia o número em `AuditEvent.details`. A regressão falhou antes da correção, mostrando os dois campos. `safeRejectedId` agora descarta identificadores que a redação compartilhada reconhece como sensíveis, antes de gravar a negativa. Prova também pela rota HTTP | Heurística conservadora pode descartar identificadores técnicos numéricos; não altera assinatura, resposta, correlação de notificações validadas, pagamentos ou vagas |
 
 O prefixo dos identificadores sintéticos de rejeição foi ajustado para distinguir correlação técnica de uma sequência isolada semelhante a telefone. Os testes continuam exigindo o identificador técnico completo no registro legítimo; não foram relaxados. A rajada HTTP tem 32 requisições concorrentes, cada uma recusada e auditada, sem alteração dos fatos financeiros nem persistência do telefone enviado no corpo.
@@ -64,7 +98,7 @@ O job de integração aplica todas as migrations em PostgreSQL efêmero, faz o b
 | C-5 | Mesma suíte: prova substituta de DV-13, ator real sem relação; reexecutar com moderador real em #55 |
 | C-6 | Mesma suíte, matriz e HTTP: entrega e auditoria de cada acesso |
 | C-7 | `contact-delivery.http.integration.test.ts`: cabeçalhos e manifesto sem pré-renderização |
-| C-8 | Fluxo completo com SDK real e erro real nesta entrega; Preview remoto ainda pendente |
+| C-8 | Fluxo completo com SDK real e erro real na prova local; varredura remota registrada em 2026-10-06 na seção "C-8 remoto no Preview", parcial por ausência de console e rastreabilidade por deployment |
 | C-9 | `selection.integration.test.ts`: escolhas concorrentes observadas no banco |
 | C-10 | `payment-reversal.integration.test.ts` e entrega: contato anterior permanece após reversão |
 | C-11 | `contact-reveal.test.tsx` e HTTP: número ausente de propriedades e payload antes da ação autorizada |
@@ -77,19 +111,28 @@ O job de integração aplica todas as migrations em PostgreSQL efêmero, faz o b
 - F3-S1: regressão inicialmente **reprovada** com os dois identificadores contendo telefone, antes da correção.
 - Unitários locais focados em redação/opções de Sentry e componente de contato: **58/58 aprovados**. Formatação, lint e typecheck locais aprovados.
 - **CI completa aprovada no SHA `cfe2c9b3c4180058f0d4d6e96f8962985eb60b57`**, [run 37281574190](https://github.com/BrunoMNoronha/techlab-troq/actions/runs/37281574190): ambos os required checks `success`; 63 arquivos e **1.085 testes unitários**; 32 arquivos e **471 testes de integração aprovados**; 3 arquivos/19 casos pulados pelos pré-requisitos externos de R2 real e sandbox Mercado Pago. A camada de provedor real não foi declarada aprovada por esses testes.
-- No mesmo SHA: matriz **25/25**, confirmação/C-8/F3-S1 **33/33**, contato por HTTP **30/30**, webhook por HTTP **11/11**. Todos os contratos T/C da tabela rodaram nesse checkout, incluindo as provas realmente concorrentes. **C-8 remoto permanece pendente** e C-5 permanece substituto conforme DV-13.
+- No mesmo SHA: matriz **25/25**, confirmação/C-8/F3-S1 **33/33**, contato por HTTP **30/30**, webhook por HTTP **11/11**. Todos os contratos T/C da tabela rodaram nesse checkout, incluindo as provas realmente concorrentes. Na data desse run, **C-8 remoto permanecia pendente**; a coleta remota posterior e seus limites estão registrados acima. C-5 permanece substituto conforme DV-13.
 - Build, aplicação de migrations, **8/8 testes do pipeline** e backup cifrado/restauração com dados sintéticos passaram no mesmo run. Isso não é deploy nem prova de recursos compartilhados.
 - Revisão de fonte: validação de sessão por ação; autorização por titularidade; cadeia da entrega conferida a cada acesso; trava de anúncio e guard de pagamento; ausência de número nos DTOs, auditoria legítima, sinais e e-mails; receptor público com corpo limitado e assinatura obrigatória; jobs por segredo, sem substituição por cookie.
 
-Nenhuma dependência nova ou migration criada. As mudanças de produção se limitam à redação dos identificadores de webhook rejeitado e à exportação da função compartilhada de redação. Nenhuma nova política de negócio, perfil de moderação ou exceção a RB-001.
+Na entrega inicial de código, nenhuma dependência nova ou migration foi criada. As mudanças de produção se limitaram à redação dos identificadores de webhook rejeitado e à exportação da função compartilhada de redação. Nenhuma nova política de negócio, perfil de moderação ou exceção a RB-001. A PR #204 altera somente este relatório e o estado de F3-014 no plano e no backlog.
 
-A revisão reforçada de **código e CI** está registrada acima. A entrega permanece parcial por causa da prova remota explicitamente exigida por #104. O contêiner PostgreSQL descartável `troq-issue104-ephemeral` e seu volume anônimo foram removidos após as provas locais, sem tocar os demais recursos. A atualização deste relatório após o run altera apenas documentação.
+A revisão reforçada de **código e CI** está registrada acima. O contêiner PostgreSQL descartável `troq-issue104-ephemeral` e seu volume anônimo foram removidos após as provas locais, sem tocar os demais recursos. As atualizações posteriores deste relatório alteram apenas documentação; a revisão documental de 2026-10-07 não executou testes locais nem alterou recursos de Preview.
 
-## Pendências de aceite
+## Reexecução na `main` em `f85fe73`
 
-1. Revalidar o fluxo completo no Preview identificado, incluindo o recebimento e a busca no Sentry remoto, logs da Vercel e erros da interface. A tentativa de ler a aba Edge autenticada do Sentry falhou duas vezes por timeout de CDP; nenhum resultado remoto foi presumido.
-2. Registrar SHA, deployment, intervalo e controles que comprovem que a varredura observou eventos do fluxo. Os registros históricos de #103 demonstram sinais de jobs na release `dc51132`; não substituem C-8 desta revisão.
-3. Promoção/publicação do Preview requer pedido explícito conforme `ai-agent-workflow.md`, seção Publicação por ambientes. Nenhuma promoção foi realizada nesta entrega.
-4. Reexecutar C-5 com moderador real quando a Fase 4 introduzir o papel (#55).
+A [CI 37385633546](https://github.com/BrunoMNoronha/techlab-troq/actions/runs/37385633546) da `main` em `f85fe73` passou nos dois required checks. Foram 1.192 testes unitários e 483 de integração aprovados, com 21 pulados pelos pré-requisitos de R2 real e sandbox. No mesmo SHA passaram a matriz (25), confirmação/C-8/F3-S1 (33), contato por HTTP (30), webhook por HTTP (12), reserva (22), escolha (21), reconciliação (21), reembolso técnico (11), cobrança (10), reversão (9), entrega (9), contato (9), superfície pública (10) e duplicidade tardia (3).
 
-Não há achado de código conhecido deixado sem correção nesta entrega. Não se atribui dono ou prazo inventado para acesso/homologação pendentes. Até concluir a prova remota, a PR usa **Refs #104**, permanece aberta e #104 não fecha; #105/#54 também permanecem pendentes.
+## Pendências de aceite de #104
+
+1. Executar a jornada autorizada em Preview com captura e varredura de console, mensagens de erro, runtime Vercel e Sentry remoto, com controles não vazios ligados ao mesmo fluxo e intervalo. A prova HTTP/local não substitui a captura remota ausente.
+2. Registrar SHA, run/tentativa, identidade de cada deployment, alvo Preview e intervalo de seus eventos e controles, sem URLs com segredo ou dados pessoais. Os três SHAs históricos, sem esses vínculos, não comprovam toda a rastreabilidade exigida pelo runbook.
+
+Até cumprir essas pendências, a PR usa **Refs #104**; a matriz e C-8 local têm evidência, mas #104 permanece parcial. Não se declara nova prova remota nesta revisão.
+
+## Pendências de homologação e fase seguinte
+
+1. F3-S2 ([#203](https://github.com/BrunoMNoronha/techlab-troq/issues/203)): confirmar a configuração isolada do Preview e comprovar um webhook legítimo aceito, com repetição idempotente. Continua exigido pelo gate #105 e pelo runbook da homologação Pix. A decisão e a configuração de aplicação/chave no painel são do Bruno; este relatório não as executa.
+2. C-5 com moderador real, quando a Fase 4 introduzir o papel (#55).
+
+A matriz exercita os atores reais, a prova local de C-8 passou, F3-S1 foi corrigido e F3-S2 está rastreado em #203 com dono e prazo. A coleta remota registrada não basta para encerrar #104 pelos limites acima. #105, #54 e #130 permanecem sem aprovação por esta entrega.
