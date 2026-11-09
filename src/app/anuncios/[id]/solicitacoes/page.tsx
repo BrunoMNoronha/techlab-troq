@@ -1,12 +1,13 @@
 import type { Metadata } from 'next';
+import { CardList } from '@/components/data-display';
 import { notFound, redirect } from 'next/navigation';
 import { Alert, ErrorState } from '@/components/feedback';
 import { PageContainer, PageHeader, Section, Stack } from '@/components/layout';
 import { BackLink } from '@/components/navigation';
-import { Badge, ButtonLink, Text } from '@/components/ui';
+import { Badge, ButtonLink, Card, Text } from '@/components/ui';
 import { loginRedirectPath, validateSession } from '@/modules/identity';
 import { getListingTitles } from '@/modules/listing';
-import { getSelectionOptions } from '@/modules/negotiation';
+import { getSelectionOptions, listOwnedListingNegotiations } from '@/modules/negotiation';
 import { LISTING_STATUS_LABELS } from '../../_components/listing-status';
 import { SelectionPanel } from './selection-panel';
 
@@ -54,7 +55,11 @@ export default async function SolicitacoesDoAnuncioPage({
   }
 
   const options = result.success ? result.options : null;
-  const title = options ? ((await getListingTitles([id])).get(id) ?? null) : null;
+  const [titles, history] = options
+    ? await Promise.all([getListingTitles([id]), listOwnedListingNegotiations(id)])
+    : [null, null];
+  if (history && !history.success && history.reason === 'not_found') notFound();
+  const title = titles?.get(id) ?? null;
 
   return (
     <PageContainer width="content">
@@ -101,6 +106,12 @@ export default async function SolicitacoesDoAnuncioPage({
                 O seu contato foi liberado só para essa pessoa. Enquanto esta negociação estiver em
                 andamento, não é possível escolher outra pessoa.
               </p>
+              <ButtonLink
+                href={`/negociacoes/${options.activeNegotiation.negotiationId}`}
+                variant="outline"
+              >
+                Acompanhar negociação
+              </ButtonLink>
             </Alert>
           )}
 
@@ -127,6 +138,42 @@ export default async function SolicitacoesDoAnuncioPage({
               }))}
             />
           </Section>
+
+          {history?.success && history.negotiations.length > 0 ? (
+            <Section title="Histórico de negociações">
+              <CardList>
+                {history.negotiations.map((negotiation) => (
+                  <Card as="li" key={negotiation.negotiationId}>
+                    <Stack gap={3}>
+                      <Text weight="semibold" wrapAnywhere>
+                        {negotiation.counterpartDisplayName}
+                      </Text>
+                      <Text size="small" tone="muted">
+                        {negotiation.status === 'closed'
+                          ? `Encerrada${negotiation.closedAt ? ` em ${DATE_TIME.format(new Date(negotiation.closedAt))}` : ''}`
+                          : 'Em andamento'}
+                      </Text>
+                      <ButtonLink
+                        href={`/negociacoes/${negotiation.negotiationId}`}
+                        variant="outline"
+                      >
+                        Ver negociação
+                      </ButtonLink>
+                    </Stack>
+                  </Card>
+                ))}
+              </CardList>
+            </Section>
+          ) : history && !history.success ? (
+            <ErrorState
+              title="Não foi possível carregar o histórico de negociações."
+              action={
+                <ButtonLink href={here} reload variant="outline">
+                  Tentar novamente
+                </ButtonLink>
+              }
+            />
+          ) : null}
         </Stack>
       )}
     </PageContainer>
