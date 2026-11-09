@@ -1,13 +1,12 @@
-// Modulo de dominio `reputation` (docs/architecture/overview.md, AR-3.3).
-//
-// Responsabilidade: Avaliacoes e reputacao publica.
-// Entidades proprias (docs/architecture/data-model.md): `Rating`.
-//
-// Este arquivo e a API PUBLICA do modulo: o que nao for exportado aqui nao e
-// importado de fora (docs/engineering/conventions.md, secao 2.2). Consumidores
-// externos importam `@/modules/reputation`; nunca um caminho interno do modulo.
-//
-// F1-005 materializa apenas a fronteira: nao ha implementacao, e nenhuma
-// entidade, servico, repositorio ou caso de uso e antecipado aqui. O `export {}`
-// mantem o arquivo como modulo TypeScript sob `isolatedModules`, sem comportamento.
-export {};
+// API publica de reputation: DEC-030, DM-9 e F4-002 (#164).
+// Consultas ficam server-only; somente submitRating e Server Action.
+export { submitRating } from './actions';
+export { getOwnRating, getPublicListingReputation } from './ratings';
+export type {
+  OwnRatingResult,
+  OwnRatingView,
+  PublicReputation,
+  RatingFailureReason,
+  SubmitRatingInput,
+  SubmitRatingResult,
+} from './ratings';

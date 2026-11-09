@@ -1,6 +1,11 @@
 'use server';
 
 import { selectRequester, type SelectionResult, type SelectRequesterInput } from './selection';
+import {
+  closeNegotiationFlow,
+  type CloseNegotiationInput,
+  type CloseNegotiationResult,
+} from './closure';
 
 // Fronteira chamavel pelo cliente da escolha do solicitante (F3-009, #99). A
 // regra inteira -- sessao, confirmacao explicita, travas, P1 a P7 e auditoria --
@@ -11,4 +16,11 @@ import { selectRequester, type SelectionResult, type SelectRequesterInput } from
 /** Escolhe uma solicitacao paga do proprio anuncio, com confirmacao explicita. */
 export async function chooseRequester(input: SelectRequesterInput): Promise<SelectionResult> {
   return selectRequester(input);
+}
+
+/** Encerramento unilateral pelo participante autenticado, confirmado e irreversivel. */
+export async function closeNegotiation(
+  input: CloseNegotiationInput,
+): Promise<CloseNegotiationResult> {
+  return closeNegotiationFlow(input);
 }
