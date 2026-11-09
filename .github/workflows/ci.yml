@@ -2,32 +2,39 @@ name: CI
 
 on:
   pull_request:
+    branches: [main]
+    paths-ignore: ['**.md', 'docs/**']
   push:
     branches: [main]
+    paths-ignore: ['**.md', 'docs/**']
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   validate:
-    name: Validação (format, lint, typecheck, test, build)
-    runs-on: ubuntu-latest
+    name: Validação (format, lint, typecheck, test)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
 
-      - name: Setup Node.js 24
-        uses: actions/setup-node@v5
+      - name: Setup Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 24
+          node-version-file: package.json
           cache: pnpm
 
       - name: Instalar dependências
@@ -48,18 +55,16 @@ jobs:
       - name: Segurança e invariantes do pipeline de deploy
         run: pnpm run test:deployment
 
-      - name: Build
-        run: pnpm run build
-
   # Suites de integracao que ESCREVEM (INTEGRATION_EPHEMERAL_DB=1) contra um
   # PostgreSQL efemero do proprio job, mais as provas HTTP contra um servidor
   # Next.js real ligado ao mesmo banco (docs/engineering/testing.md, secao 7).
   # Nenhum secret de ambiente real: BETTER_AUTH_SECRET e CRON_SECRET sao
   # gerados aqui e mascarados. As suites que exigem o R2 real
   # (R2_INTEGRATION=1) ficam de fora e se declaram puladas.
+  # O build de producao e verificado aqui (a prova HTTP usa "pnpm start").
   integration:
     name: Integração (PostgreSQL efêmero)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 25
 
     services:
@@ -91,15 +96,17 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
 
-      - name: Setup Node.js 24
-        uses: actions/setup-node@v5
+      - name: Setup Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 24
+          node-version-file: package.json
           cache: pnpm
 
       - name: Gerar segredos sintéticos do job
@@ -122,7 +129,7 @@ jobs:
       - name: Iniciar servidor da prova HTTP
         run: |
           nohup pnpm start -p 3100 > next-start.log 2>&1 &
-          for attempt in $(seq 1 60); do
+          for _ in $(seq 1 60); do
             if curl -fsS -o /dev/null http://localhost:3100/; then
               echo "servidor pronto"
               exit 0
